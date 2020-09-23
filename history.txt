@@ -9,9 +9,14 @@
 ***     Fabian Brinkmann, TU-Berlin
 ***		Robert Pelzer, TU-Berlin
 ***		Junaid Khan, FH Technikum Wien
+***     Oliver Weissbarth, TU Berlin
 *************************************************************
 
 *** DEVELOPMENT STATUS *** 
+
+*** v0.4.0
+- this will be the last release supporting Blender < 3.8
+- new directory structure
 
 *** v0.3.2
 - big fix and improvements in PreProcessing/MeshGrading (ticket #25, commit r38)
