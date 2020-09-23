@@ -1006,16 +1006,23 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     if nearFieldCalculation:
                         fw("../../EvaluationGrids/NF_Sphere/Nodes.txt\n")
                     else:
+                        # alphabetically sorted list of used evaluation grids
+                        evaluationGrids = []
                         if not evaluationGrid1 == 'None':
-                            fw("../../EvaluationGrids/%s/Nodes.txt\n" % evaluationGrid1)
+                            evaluationGrids.append(evaluationGrid1)
                         if not evaluationGrid2 == 'None':
-                            fw("../../EvaluationGrids/%s/Nodes.txt\n" % evaluationGrid2)
+                            evaluationGrids.append(evaluationGrid2)
                         if not evaluationGrid3 == 'None':
-                            fw("../../EvaluationGrids/%s/Nodes.txt\n" % evaluationGrid3)
+                            evaluationGrids.append(evaluationGrid3)
                         if not evaluationGrid4 == 'None':
-                            fw("../../EvaluationGrids/%s/Nodes.txt\n" % evaluationGrid4)
+                            evaluationGrids.append(evaluationGrid4)
                         if not evaluationGrid5 == 'None':
-                            fw("../../EvaluationGrids/%s/Nodes.txt\n" % evaluationGrid5)
+                            evaluationGrids.append(evaluationGrid5)
+                        evaluationGrids.sort()
+
+                        # write file path of nodes to input file
+                        for grid in evaluationGrids:
+                            fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
                     fw("##\n")
                     fw("ELEMENTS\n")
                     if not frequencyDependency:
@@ -1025,16 +1032,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     if nearFieldCalculation:
                         fw("../../EvaluationGrids/NF_Sphere/Elements.txt\n")
                     else:
-                        if not evaluationGrid1 == 'None':
-                            fw("../../EvaluationGrids/%s/Elements.txt\n" % evaluationGrid1)
-                        if not evaluationGrid2 == 'None':
-                            fw("../../EvaluationGrids/%s/Elements.txt\n" % evaluationGrid2)
-                        if not evaluationGrid3 == 'None':
-                            fw("../../EvaluationGrids/%s/Elements.txt\n" % evaluationGrid3)
-                        if not evaluationGrid4 == 'None':
-                            fw("../../EvaluationGrids/%s/Elements.txt\n" % evaluationGrid4)
-                        if not evaluationGrid5 == 'None':
-                            fw("../../EvaluationGrids/%s/Elements.txt\n" % evaluationGrid5)
+                        # write file path of elements to input file
+                        for grid in evaluationGrids:
+                            fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
                     fw("##\n")
                     fw("# SYMMETRY\n")
                     fw("# 0 0 0\n")
@@ -1046,11 +1046,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         else:
                             tmpEar='Right ear'
 
-                        #changed tmpEar to ear
-                        #if ear=='Right ear':
-                        #    tmpEar='Right ear'
-                        #if ear=='Left ear':
-                        #    tmpEar='Left ear'
                         fw("BOUNDARY\n")
                         for ii in range(len(obj_data.polygons[:])):
                             if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots[tmpEar].name:
