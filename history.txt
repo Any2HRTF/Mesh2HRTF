@@ -1,0 +1,27 @@
+*************************************************************
+*** History of Mesh2HRTF
+*** Acoustics Research Institute, Austrian Academy of Sciences, Vienna
+*** Project leader: Piotr Majdak, piotr@majdak.com
+*** Contributors:
+***		Wolfgang Kreuzer, ARI
+***		Harald Ziegelwanger, ARI
+*** 	Michael Kalcher, ARI
+***     Fabian Brinkmann, TU-Berlin
+***		Robert Pelzer, TU-Berlin
+*************************************************************
+
+*** DEVELOPMENT STATUS ***
+
+*** v0.2.0 (???, Fabian Brinkmann, Robert Pelzer)
+-
+
+
+
+*** v0.1.3 (1.6.2018, Wolfgang Kreuzer, Harald Ziegelwanger, Piotr Majdak)
+- mesh-grading plugin for Open Flipper added
+- Output: various bug fixes
+- Output: Paraview scripts added 
+- NumCalc: Dissolve tiny clusters and add their elements to next bigger cluster. This seems to enhance the stability of the MLFMM.
+
+*** v1.0.2 (18.6.2016, Harald Ziegelwanger)
+initial commit
