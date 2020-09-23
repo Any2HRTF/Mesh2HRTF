@@ -13,6 +13,9 @@
 
 *** DEVELOPMENT STATUS *** 
 
+*** v0.3.1 
+- bug fix in NumCalc
+
 *** v0.3.0 (28.05.2019, Junaid Khan)
 - New directory structure
 - Pascal-case naming of the files

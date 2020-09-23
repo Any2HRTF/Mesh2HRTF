@@ -671,7 +671,7 @@ void NC_GenerateClustersFMM
 {
     int i, j, k, l, ibg, nelgri, nodgri, ieli, ndij, inodi, nclus, l1, iclus, i1;
     int idexel = 0;
-    Vector<int> nundgri(numNodesOfBoundaryMesh_), ndiv_xyz(NDIM);
+    Vector<int> nundgri(numNodesOfBoundaryMesh_), ndiv_xyz(NDIM); 
     double d0, d1, dCluEdgLv = ClusEdgL1/pow(2.0, nu_lev);
     Vector<double> xyz_max(NDIM), xyz_min(NDIM), dif_xyz(NDIM);
     
@@ -710,7 +710,9 @@ void NC_GenerateClustersFMM
             Lab0clusMetho1: continue;
             }
         }
-        
+	// nundgri contains now the nodenumbers of the nodes in the current element group
+
+	
         // compute the maximum and minimum coordinates of the nodes of the current group
         xyz_max = -1.0e20;
         xyz_min = 1.0e20;
@@ -773,8 +775,9 @@ void NC_GenerateClustersFMM
             d1 = xyz_min[j];
             for(k=0; k<ndiv_xyz[j]; k++)
             {
-                d1 += dif_xyz[j];
-                d0 = d1 - dif_xyz[j];
+	      d0 = d1; // changed by kreiza
+	      d1 += dif_xyz[j];
+	      //                d0 = d1 - dif_xyz[j];
                 for(i=0; i<nelgri; i++)
                 {
                     ieli = nuelbegrp[i];
@@ -804,8 +807,11 @@ void NC_GenerateClustersFMM
                 for(l=0; l<nelgri; l++) 
                     if(nuindxyz(l, 0) == i && nuindxyz(l, 1) == j && nuindxyz(l, 2) == k)
                     {
-                        l1++;
-                        nue_clus[i1++] = nuelbegrp[l];
+		      if(nuelbegrp[l] == 23568)
+			cout << "do something";
+		      
+		      l1++;
+		      nue_clus[i1++] = nuelbegrp[l];
                     }
                 ne_clus[iclus++] = l1;
             }
@@ -1004,8 +1010,10 @@ void NC_GenerateClusterArrayAtLevelMLFMM
 
 		// numbers of the elements of the cluster
 		clulevarry[nu_lev].ClastArLv[i].NumsOfEl = new int[nel_clus[i]];
-		for(j=0; j<nel_clus[i]; j++) 
-			clulevarry[nu_lev].ClastArLv[i].NumsOfEl[j] = nuel_clus[l_sum++];
+		for(j=0; j<nel_clus[i]; j++) {
+		  // for debugging
+		  clulevarry[nu_lev].ClastArLv[i].NumsOfEl[j] = nuel_clus[l_sum++];
+		}
 
 		// number of the element group to which the cluster belongs
 		ie0 = clulevarry[nu_lev].ClastArLv[i].NumsOfEl[0];
@@ -2192,8 +2200,17 @@ void NC_CancelSmallClusters
     {
       if(NearClus[i] >= 0)
 	{
-	  j = ne_clus[i] + ne_clus[NearClus[i]];
-	  if(j > jdimtx) jdimtx = j; 
+
+	  /* kreiza 01.04.2020
+	     the old version had the problem, that two clusters can 
+	     have the same neightbour cluster, and then jdimtx may be 
+	     too small, thus we decided to waste a bit more memory space and 
+	     add the dimension of the small cluster to jdimtx
+	     old version:
+	     j = ne_clus[i] + ne_clus[NearClus[i]];
+	     if(j > jdimtx) jdimtx = j; 
+	  */
+	  jdimtx = jdimtx + ne_clus[i];
 	}
     }
   Matrix<int> NuElClust(nclus, jdimtx, -1);
