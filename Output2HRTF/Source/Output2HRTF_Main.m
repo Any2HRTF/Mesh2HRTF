@@ -296,8 +296,9 @@ end
 %% Save HRTFs as SOFA file
 if reciprocity
 
-		SOFAstart;
+	SOFAstart;
 		
+		% Save as GeneralTF
     Obj = SOFAgetConventions('GeneralTF');
 
     Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
@@ -324,8 +325,17 @@ if reciprocity
     Obj.SourcePosition=evaluationGridNodes(:,2:4);
 
     Obj=SOFAupdateDimensions(Obj);
-
+    SOFAsave('EvaluationGrid_GeneralTF.sofa',Obj);
+	
+		% Save as SimpleFreeFieldTF
+	N=SOFAgetConventions('SimpleFreeFieldTF');
+	Obj.ListenerView_Units=N.ListenerView_Units;
+	Obj.ListenerView_Type=N.ListenerView_Type;
+	Obj.ListenerView= N.ListenerView;
+	Obj.GLOBAL_SOFAConventions=N.GLOBAL_SOFAConventions;
+	Obj=SOFAupdateDimensions(Obj);
     SOFAsave('EvaluationGrid.sofa',Obj);
+	
 end
 
 end %of function
