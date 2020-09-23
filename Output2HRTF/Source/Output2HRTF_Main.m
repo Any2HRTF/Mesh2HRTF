@@ -190,7 +190,7 @@ if ~isempty(evaluationGrids)
     pressure=pressure(idx,:,:);
 end
 
-%% save EvalulaitonGrid data for visualization
+%% save EvaluationGrid data for visualization
 fprintf('\nSave EvaluationGrid data ...');
 if ~isempty(evaluationGrids)
     %save results in the sagittal plane
@@ -297,7 +297,9 @@ end
 if reciprocity
 
 	SOFAstart;
-		
+		% prepare pressure to be size of MRN even when R=1
+    pressure=shiftdim(shiftdim(pressure,-1),2);
+    
 		% Save as GeneralTF
     Obj = SOFAgetConventions('GeneralTF');
 
@@ -312,8 +314,8 @@ if reciprocity
     Obj.N=frequencies;
 
     %add division G([0,0,0],evaluationGrid)
-    Obj.Data.Real=real(shiftdim(pressure,1));
-    Obj.Data.Imag=imag(shiftdim(pressure,1));
+    Obj.Data.Real=real(pressure);
+    Obj.Data.Imag=imag(pressure);
     Obj.Data.Real_LongName='pressure';
     Obj.Data.Real_Units='pascal';
     Obj.Data.Imag_LongName='pressure';
@@ -339,8 +341,8 @@ if reciprocity
     Obj.ReceiverPosition=receiverPositions;
     Obj.N=frequencies;
 
-    Obj.Data.Real=real(shiftdim(pressure,1));
-    Obj.Data.Imag=imag(shiftdim(pressure,1));
+    Obj.Data.Real=real(pressure);
+    Obj.Data.Imag=imag(pressure);
     Obj.Data.Real_LongName='pressure';
     Obj.Data.Real_Units='pascal';
     Obj.Data.Imag_LongName='pressure';
