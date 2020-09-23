@@ -71,11 +71,9 @@
 *                                                                            *
 \*===========================================================================*/
 
-#ifndef PROGRESSEMITTER_HH
-#define PROGRESSEMITTER_HH
+#pragma once
 
 #include <QObject>
-#include <OpenFlipper/BasePlugin/PluginFunctions.hh>
 
 class ProgressEmitter : public QObject
 {
@@ -86,19 +84,13 @@ class ProgressEmitter : public QObject
     void changeDescription(QString _jobId, QString _description);
 
   public:
-    ProgressEmitter(QString _jobId) : jobId_(_jobId) {}
+    explicit ProgressEmitter(QString _jobId);
 
-    void sendProgressSignal(double _percent) {
-      emit signalJobState(jobId_, (int)_percent);
-    }
+    void sendProgressSignal(double _percent);
 
-    void sendChangeDescriptionSignal(QString _description) {
-      emit changeDescription(jobId_, _description);
-    }
+    void sendChangeDescriptionSignal(QString _description);
 
   private:
     QString jobId_;
 };
 
-
-#endif //PROGRESSEMITTER_HH

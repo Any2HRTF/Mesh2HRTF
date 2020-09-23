@@ -1,2 +1,4 @@
 include (plugin)
-openflipper_plugin (INSTALLDATA Icons)
+openflipper_plugin (PYTHONINTERFACE
+                    INSTALLDATA Icons
+                    TYPES TRIANGLEMESH)

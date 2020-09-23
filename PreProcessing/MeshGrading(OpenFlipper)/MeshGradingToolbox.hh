@@ -71,7 +71,9 @@
 *                                                                            *
 \*===========================================================================*/
 
-#include "ui_toolbox.hh"
+#pragma once
+
+#include "ui_toolbox.h"
 
 #if QT_VERSION >= 0x050000
   #include <QtWidgets>

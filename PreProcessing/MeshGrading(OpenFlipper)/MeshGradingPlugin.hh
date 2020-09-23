@@ -81,6 +81,7 @@
 #include <OpenFlipper/BasePlugin/RPCInterface.hh>
 #include <OpenFlipper/BasePlugin/ProcessInterface.hh>
 #include <OpenFlipper/BasePlugin/ScriptInterface.hh>
+#include <OpenFlipper/BasePlugin/PythonInterface.hh>
 #include <OpenFlipper/BasePlugin/BackupInterface.hh>
 #include <OpenFlipper/common/Types.hh>
 #include <ObjectTypes/TriangleMesh/TriangleMesh.hh>
@@ -97,7 +98,7 @@
 
 
 class MeshGradingPlugin : public QObject, BaseInterface, BackupInterface , ToolboxInterface, LoggingInterface,
-    RPCInterface, ProcessInterface, ScriptInterface
+    RPCInterface, ProcessInterface, ScriptInterface, PythonInterface
 {
 Q_OBJECT
 Q_INTERFACES(BaseInterface)
@@ -107,6 +108,7 @@ Q_INTERFACES(RPCInterface)
 Q_INTERFACES(ProcessInterface)
 Q_INTERFACES(ScriptInterface)
 Q_INTERFACES(BackupInterface)
+Q_INTERFACES(PythonInterface)
 
 #if QT_VERSION >= 0x050000
   Q_PLUGIN_METADATA(IID "org.OpenFlipper.Plugins.Plugin-MeshGrading")
@@ -156,7 +158,7 @@ public :
   MeshGradingPlugin();
   ~MeshGradingPlugin() {};
 
-  QString name() { return (QString("Mesh Grading")); };
+  QString name() { return (QString("MeshGrading")); }; // This has to be one word as it is used as a variable name by the python api
   QString description( ) { return (QString("Pre-processing for Mesh2HRTF (a-priori mesh-grading).")); };
 
 //GUI
@@ -190,6 +192,7 @@ public slots:
 
 public slots:
   QString version() { return QString("1.0"); };
+  void noguiSupported() {}
 };
 
 #endif //MESHGRADINGPLUGIN_HH

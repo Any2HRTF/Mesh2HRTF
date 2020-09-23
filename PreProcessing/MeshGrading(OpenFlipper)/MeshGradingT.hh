@@ -88,11 +88,13 @@ public:
 
 private:
 
-  void splitLongEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertex, const unsigned int _gradingFunction, const double _gradingOrder );
+  void splitLongEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertexLeft, const typename MeshT::Point earVertexRight, const unsigned int _ear, const unsigned int _gradingFunction, const double _gradingOrder);
 
-  void collapseShortEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertex, const unsigned int _gradingFunction, const double _gradingOrder );
+  void collapseShortEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertexLeft, const typename MeshT::Point earVertexRight, const unsigned int _ear, const unsigned int _gradingFunction, const double _gradingOrder);
 
   void equalizeValences( MeshT& _mesh );
+
+  double compute_distance(const typename MeshT::Point vec_midpoint, const unsigned int _ear,const typename MeshT::Point earVertex, const typename MeshT::Point earVertexLeft, const typename MeshT::Point earVertexRight);
 
   inline
   int targetValence( MeshT& _mesh, const typename MeshT::VertexHandle& _vh );

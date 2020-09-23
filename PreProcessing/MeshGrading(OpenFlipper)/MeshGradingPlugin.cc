@@ -90,15 +90,17 @@ thread_(0)
 
 /// init the Toolbox
 void MeshGradingPlugin::initializePlugin() {
-  tool_ = new MeshGradingToolBox();
+  if ( OpenFlipper::Options::gui()) {
+    tool_ = new MeshGradingToolBox();
 
-  QSize size(300, 300);
-  tool_->resize(size);
+    QSize size(300, 300);
+    tool_->resize(size);
 
-  connect(tool_->meshGradingButton, SIGNAL(clicked()), this, SLOT(slotMeshGradingButtonClicked()) );
+    connect(tool_->meshGradingButton, SIGNAL(clicked()), this, SLOT(slotMeshGradingButtonClicked()) );
 
-  toolIcon_ = new QIcon(OpenFlipper::Options::iconDirStr()+OpenFlipper::Options::dirSeparator()+"MeshGrading.png");
-  emit addToolbox( tr("Mesh Grading") , tool_, toolIcon_ );
+    toolIcon_ = new QIcon(OpenFlipper::Options::iconDirStr()+OpenFlipper::Options::dirSeparator()+"MeshGrading.png");
+    emit addToolbox( tr("Mesh Grading") , tool_, toolIcon_ );
+  }
 }
 
 void MeshGradingPlugin::slotMeshGradingButtonClicked() {
@@ -111,6 +113,9 @@ void MeshGradingPlugin::slotMeshGradingButtonClicked() {
   }
   if (tool_->ear_right->isChecked()){
       ear_ = 2;
+  }
+  if (tool_->ear_both->isChecked()){
+      ear_ = 3;
   }
 
   if (tool_->POWalpha->isChecked()){

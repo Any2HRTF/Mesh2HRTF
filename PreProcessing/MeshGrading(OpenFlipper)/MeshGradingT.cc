@@ -88,42 +88,49 @@ template< class MeshT >
 void MeshGrading< MeshT >::grading( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const unsigned int _ear, const unsigned int _gradingFunction, const double _gradingOrder )
 {
 
-  typename MeshT::Point earVertex;
-  earVertex[0]=100.0;
-  earVertex[1]=0.0;
-  earVertex[2]=100.0;
+  typename MeshT::Point earVertexLeft;
+  earVertexLeft[0]=100.0;
+  earVertexLeft[1]=0.0;
+  earVertexLeft[2]=100.0;
+  typename MeshT::Point earVertexRight;
+  earVertexRight[0]=100.0;
+  earVertexRight[1]=0.0;
+  earVertexRight[2]=100.0;
   typename MeshT::VertexIter v_it;
   typename MeshT::VertexIter v_end = _mesh.vertices_end();
 
-  if (_ear==1)
+  if (_ear==1 || _ear==3)
   {
     for (v_it = _mesh.vertices_begin(); v_it != v_end; ++v_it)
     {
       typename MeshT::Point currentVertex = _mesh.point(*v_it);
       if (currentVertex[1]>0)
       {
-        if (sqrt(currentVertex[0]*currentVertex[0]+currentVertex[2]*currentVertex[2])<=sqrt(earVertex[0]*earVertex[0]+earVertex[2]*earVertex[2]))
+        if (sqrt(currentVertex[0]*currentVertex[0]+currentVertex[2]*currentVertex[2])<=sqrt(earVertexLeft[0]*earVertexLeft[0]+earVertexLeft[2]*earVertexLeft[2]))
         {
-          earVertex=currentVertex;
+          earVertexLeft=currentVertex;
         }
       }
     }
   }
-  if (_ear==2)
+  if (_ear==2 || _ear==3)
   {
     for (v_it = _mesh.vertices_begin(); v_it != v_end; ++v_it)
     {
       typename MeshT::Point currentVertex = _mesh.point(*v_it);
       if (currentVertex[1]<0)
       {
-        if (sqrt(currentVertex[0]*currentVertex[0]+currentVertex[2]*currentVertex[2])<=sqrt(earVertex[0]*earVertex[0]+earVertex[2]*earVertex[2]))
+        if (sqrt(currentVertex[0]*currentVertex[0]+currentVertex[2]*currentVertex[2])<=sqrt(earVertexRight[0]*earVertexRight[0]+earVertexRight[2]*earVertexRight[2]))
         {
-          earVertex=currentVertex;
+          earVertexRight=currentVertex;
         }
       }
     }
   }
-  std::cout << earVertex[0] << ' ' << earVertex[1] << ' ' << earVertex[2] << ' ' << std::endl;
+
+  std::cout << earVertexLeft[0] << ' ' << earVertexLeft[1] << ' ' << earVertexLeft[2] << ' ' << std::endl;
+  std::cout << earVertexRight[0] << ' ' << earVertexRight[1] << ' ' << earVertexRight[2] << ' ' << std::endl;
+
 
   MeshT meshCopy = _mesh;
   OpenMeshTriangleBSPT< MeshT >* triangleBSP = getTriangleBSP(meshCopy);
@@ -134,11 +141,11 @@ void MeshGrading< MeshT >::grading( MeshT& _mesh, const double _minEdgeLengthGlo
 
     std::cout << "Iteration = " << i << std::endl;
 
-    splitLongEdges(_mesh, _minEdgeLengthGlobal, _maxEdgeLengthGlobal, earVertex, _gradingFunction, _gradingOrder);
+    splitLongEdges(_mesh, _minEdgeLengthGlobal, _maxEdgeLengthGlobal, earVertexLeft, earVertexRight, _ear, _gradingFunction, _gradingOrder);
     if (prgEmt_)
       prgEmt_->sendProgressSignal(i + 0.2);
 
-    collapseShortEdges(_mesh, _minEdgeLengthGlobal, _maxEdgeLengthGlobal, earVertex, _gradingFunction, _gradingOrder);
+    collapseShortEdges(_mesh, _minEdgeLengthGlobal, _maxEdgeLengthGlobal, earVertexLeft, earVertexRight, _ear, _gradingFunction, _gradingOrder);
     if (prgEmt_)
       prgEmt_->sendProgressSignal(i + 0.4);
 
@@ -178,17 +185,51 @@ OpenMeshTriangleBSPT< MeshT >* MeshGrading< MeshT >::getTriangleBSP(MeshT& _mesh
   // return pointer to triangle bsp
   return triangle_bsp;
 }
+template< class MeshT>
+double MeshGrading<MeshT>::compute_distance(const typename MeshT::Point vec_midpoint, const unsigned int _ear,const typename MeshT::Point earVertex, const typename MeshT::Point earVertexLeft, const typename MeshT::Point earVertexRight){
+    double distance;
+
+    if(_ear == 1 || _ear == 2){
+        typename MeshT::Point vec_distance = vec_midpoint - earVertex;
+        distance = sqrt(vec_distance.sqrnorm());
+    }else{
+        typename MeshT::Point vec_distance_left = vec_midpoint - earVertexLeft;
+        typename MeshT::Point vec_distance_right = vec_midpoint - earVertexRight;
+        const double distance_left = sqrt(vec_distance_left.sqrnorm());
+        const double distance_right = sqrt(vec_distance_right.sqrnorm());
+        if(distance_left < distance_right){
+            distance = distance_left;
+        }else{
+            distance = distance_right;
+        }
+    }
+    return distance;
+}
 
 /// performs edge splits until all edges are shorter than the threshold
 template< class MeshT >
-void MeshGrading< MeshT >::splitLongEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertex, const unsigned int _gradingFunction, const double _gradingOrder )
+void MeshGrading< MeshT >::splitLongEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertexLeft, const typename MeshT::Point earVertexRight, const unsigned int _ear, const unsigned int _gradingFunction, const double _gradingOrder )
 {
 
   double maxEdgeLength = 0;
-  double distance = 0;
   double grading = 0;
 
-  const double headwidth = sqrt(earVertex.sqrnorm())*2;
+  typename MeshT::Point earVertex;
+  double headwidth;
+
+  if(_ear == 1){
+      headwidth = sqrt(earVertexLeft.sqrnorm())*2;
+      earVertex = earVertexLeft;
+  }
+  if(_ear == 2){
+      headwidth = sqrt(earVertexRight.sqrnorm())*2;
+      earVertex = earVertexRight;
+  }
+  if(_ear == 3){
+      headwidth = sqrt((earVertexLeft - earVertexRight).sqrnorm());
+  }
+
+
 
   typename MeshT::EdgeIter e_it;
   typename MeshT::EdgeIter e_end = _mesh.edges_end();
@@ -203,11 +244,10 @@ void MeshGrading< MeshT >::splitLongEdges( MeshT& _mesh, const double _minEdgeLe
     const typename MeshT::Point vec_edge = _mesh.point(v1) - _mesh.point(v0);
     const typename MeshT::Point vec_midpoint = (_mesh.point(v1) + _mesh.point(v0))/2;
 
-    typename MeshT::Point vec_distance = vec_midpoint - earVertex;
-    distance = sqrt(vec_distance.sqrnorm());
+    const double distance = compute_distance(vec_midpoint, _ear, earVertex, earVertexLeft, earVertexRight);
 
     grading=distance/headwidth;
-
+    
     switch(_gradingFunction)
     {
         case 1:
@@ -250,15 +290,27 @@ void MeshGrading< MeshT >::splitLongEdges( MeshT& _mesh, const double _minEdgeLe
 
 /// collapse edges shorter than minEdgeLength if collapsing doesn't result in new edge longer than maxEdgeLength
 template< class MeshT >
-void MeshGrading< MeshT >::collapseShortEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertex, const unsigned int _gradingFunction, const double _gradingOrder )
+void MeshGrading< MeshT >::collapseShortEdges( MeshT& _mesh, const double _minEdgeLengthGlobal, const double _maxEdgeLengthGlobal, const typename MeshT::Point earVertexLeft, const typename MeshT::Point earVertexRight, const unsigned int _ear, const unsigned int _gradingFunction, const double _gradingOrder )
 {
 
   double minEdgeLength = 0;
   double maxEdgeLength = 0;
-  double distance = 0;
   double grading = 0;
 
-  const double headwidth = sqrt(earVertex.sqrnorm())*2;
+  typename MeshT::Point earVertex;
+  double headwidth;
+
+  if(_ear == 1){
+      headwidth = sqrt(earVertexLeft.sqrnorm())*2;
+      earVertex = earVertexLeft;
+  }
+  if(_ear == 2){
+      headwidth = sqrt(earVertexRight.sqrnorm())*2;
+      earVertex = earVertexRight;
+  }
+  if(_ear == 3){
+      headwidth = sqrt((earVertexLeft - earVertexRight).sqrnorm());
+  }
 
   //add checked property
   OpenMesh::EPropHandleT< bool > checked;
@@ -293,8 +345,7 @@ void MeshGrading< MeshT >::collapseShortEdges( MeshT& _mesh, const double _minEd
         const typename MeshT::Point vec_edge = _mesh.point(v1) - _mesh.point(v0);
         const typename MeshT::Point vec_midpoint = (_mesh.point(v1) + _mesh.point(v0))/2;
 
-        typename MeshT::Point vec_distance = vec_midpoint - earVertex;
-        double distance = sqrt(vec_distance.sqrnorm());
+        const double distance = compute_distance(vec_midpoint, _ear, earVertex, earVertexLeft, earVertexRight);
 
         const double edgeLength = vec_edge.sqrnorm();
 
