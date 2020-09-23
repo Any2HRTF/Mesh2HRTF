@@ -328,12 +328,29 @@ if reciprocity
     SOFAsave('EvaluationGrid_GeneralTF.sofa',Obj);
 	
 		% Save as SimpleFreeFieldTF
-	N=SOFAgetConventions('SimpleFreeFieldTF');
-	Obj.ListenerView_Units=N.ListenerView_Units;
-	Obj.ListenerView_Type=N.ListenerView_Type;
-	Obj.ListenerView= N.ListenerView;
-	Obj.GLOBAL_SOFAConventions=N.GLOBAL_SOFAConventions;
-	Obj=SOFAupdateDimensions(Obj);
+	Obj=SOFAgetConventions('SimpleFreeFieldTF');
+    Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
+    Obj.GLOBAL_ApplicationVersion = '0.1.1';	% Todo: apply the correct version automatically
+    Obj.GLOBAL_Organization = '';				% Todo: Organization, Title, Authorcontact: ask for the data and apply
+    Obj.GLOBAL_Title = '';
+    Obj.GLOBAL_DateCreated = date;
+    Obj.GLOBAL_AuthorContact = '';
+
+    Obj.ReceiverPosition=receiverPositions;
+    Obj.N=frequencies;
+
+    Obj.Data.Real=real(shiftdim(pressure,1));
+    Obj.Data.Imag=imag(shiftdim(pressure,1));
+    Obj.Data.Real_LongName='pressure';
+    Obj.Data.Real_Units='pascal';
+    Obj.Data.Imag_LongName='pressure';
+    Obj.Data.Imag_Units='pascal';
+
+    Obj.SourcePosition_Type='cartesian';
+    Obj.SourcePosition_Units='meter';
+    Obj.SourcePosition=evaluationGridNodes(:,2:4);
+
+    Obj=SOFAupdateDimensions(Obj);
     SOFAsave('EvaluationGrid.sofa',Obj);
 	
 end
