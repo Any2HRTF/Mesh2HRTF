@@ -17,10 +17,13 @@ https://sourceforge.net/p/mesh2hrtf/wiki/Tutorials/
 #References
 
 For information about the BEM algorithm please refer to:
-H. Ziegelwanger, W. Kreuzer, and P. Majdak, “Mesh2HRTF: An open-source software package for the numerical calculation of head-related transfer functions,” Florence, Italy, Jul. 2015.
+
+[H. Ziegelwanger, W. Kreuzer, and P. Majdak, “Mesh2HRTF: An open-source software package for the numerical calculation of head-related transfer functions,” Florence, Italy, Jul. 2015.](https://www.researchgate.net/publication/280007918_MESH2HRTF_AN_OPEN-SOURCE_SOFTWARE_PACKAGE_FOR_THE_NUMERICAL_CALCULATION_OF_HEAD-RELATED_TRANFER_FUNCTIONS)
 
 The mesh-grading is described in:
-H. Ziegelwanger, W. Kreuzer, and P. Majdak, “A-priori mesh grading for the numerical calculation of the head-related transfer functions,” Appl. Acoust., vol. 114, pp. 99–110, Dec. 2016, doi: 10.1016/j.apacoust.2016.07.005.
+
+[H. Ziegelwanger, W. Kreuzer, and P. Majdak, “A-priori mesh grading for the numerical calculation of the head-related transfer functions,” Appl. Acoust., vol. 114, pp. 99–110, Dec. 2016, doi: 10.1016/j.apacoust.2016.07.005.](https://doi.org/10.1016/j.apacoust.2016.07.005)
 
 For general recomendations on the mesh and microphone area see:
-H. Ziegelwanger, P. Majdak, and W. Kreuzer, “Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization,” J. Acoust. Soc. Am., vol. 138, no. 1, pp. 208–222, Jul. 2015, doi: 10.1121/1.4922518.
+
+[H. Ziegelwanger, P. Majdak, and W. Kreuzer, “Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization,” J. Acoust. Soc. Am., vol. 138, no. 1, pp. 208–222, Jul. 2015, doi: 10.1121/1.4922518.](https://doi.org/10.1121/1.4922518)
