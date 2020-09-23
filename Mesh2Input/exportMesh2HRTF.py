@@ -430,7 +430,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         bpy.data.scenes['Scene'].render.pixel_aspect_y = 1
         bpy.data.scenes['Scene'].render.resolution_x = 1440
         bpy.data.scenes['Scene'].render.resolution_y = 1920
-        
+
         tmp = open("%s/VERSION" % programPath)
         version = tmp.readline()
 
@@ -510,7 +510,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     else:
                         fw("%d %d %d %d 0 0 0\n" % tuple(obj_data.polygons[ii].vertices[:]))
                 file.close
-                
+
                 objects.append(obj.name)
 
         maxObjectFrequency = ([])
@@ -522,7 +522,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 except:
                     print('No maximum object frequency found.\nPlease change object names to L{maxobjfq}/R{maxobjfq} e.g. L20000 or R20000.')
         maxObjectFrequency.sort()
-        
+
         bpy.ops.wm.save_as_mainfile(filepath=("%s/3d Model.blend" % filepath1), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
 
 # ------------------------ Write evaluation grid data --------------------------
@@ -541,7 +541,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             temp = ("%s/EvaluationGrids/NF_Sphere" % (filepath1))
             if not os.path.exists(temp):
                 os.mkdir(temp)
-           
+
             file = open(("%s/EvaluationGrids/NF_Sphere/Nodes.txt" % (filepath1)), "w", encoding="utf8", newline="\n")
             fw = file.write
             fw("%i\n" % len(NFGrid_data.vertices[:]))
@@ -582,7 +582,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         temp = ("%s/EvaluationGrids/User/" % filepath1)
                         if not os.path.exists(temp):
                             os.mkdir(temp)
-              
+
                         file = open(("%s/EvaluationGrids/User/Nodes.txt" % filepath1), "w", encoding="utf8", newline="\n")
                         fw = file.write
                         fw("%i\n" % len(obj_data.vertices[:]))
@@ -590,7 +590,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                             fw("%i " % (ii+350000))
                             fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
                         file.close
-            
+
                         file = open(("%s/EvaluationGrids/User/Elements.txt" % filepath1), "w", encoding="utf8", newline="\n")
                         fw = file.write
                         fw("%i\n" % len(obj_data.polygons[:]))
@@ -640,7 +640,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         frequencySteps = divmod(maxFrequency-lowFrequency, frequencyStepSize)
         if not frequencySteps[1] == 0:
             raise Exception("Error, frequencyStepSize is not a divisor of maxFrequency-lowFrequency")
-            
+
         numCoresAvailable = (cpuLast-cpuFirst+1-lowFrequencyCores)*numCoresPerCPU
         numCoresUsedPerEar = int((cpuLast-cpuFirst+1-lowFrequencyCores*numEars)*numCoresPerCPU/numEars)
         frequencyStepsPerCore = divmod(frequencySteps[0], numCoresUsedPerEar)
@@ -658,7 +658,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             tmp.append([])
         for cpu in range(1, 11):
             frequencies.append(tmp[:])
-            
+
         if not frequencyDependency:
             coresteps = 0
             for tmpEar in range(1, numEars+1):
@@ -691,11 +691,11 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                                     else:
                                         cpusAndCores[cpu-1][temp_ear+coresteps] = tmpEar
                                 coresteps += 1
-							
+
                             else:
                                 #general case
                                 cpusAndCores[cpu-1][core-1] = tmpEar
-				
+
                         if count == numCoresUsedPerEar:
                             break
                     if count == numCoresUsedPerEar:
@@ -764,7 +764,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("close all\n")
         fw("clear\n")
         fw("\n")
-        
+
         fw("cpusAndCores=[")
         for cpu in range(1, 11):
             for core in range(1, 9):
@@ -775,7 +775,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 fw("; ...\n")
         fw("];\n")
         fw("\n")
-        
+
         fw("objectMeshes={")
         for cpu in range(1, 11):
             for core in range(1, 9):
@@ -802,7 +802,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 fw("; ...\n")
         fw("};\n")
         fw("\n")
-                
+
         fw("reciprocity=")
         if reciprocity:
             fw("1")
@@ -844,7 +844,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             fw("0")
         fw(";\n")
         fw("\n")
-                
+
         fw("nearFieldCalculation=")
         if nearFieldCalculation:
             fw("1")
@@ -891,7 +891,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
                     file = open(("%s%s" % (filepath2, filename1)), "w", encoding="utf8", newline="\n")
                     fw = file.write
-                    
+
                     if frequencyDependency:
                         if cpusAndCores[cpu-1][core-1] == 1:
                             tmpEar = "L"
@@ -908,7 +908,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
                     obj = bpy.data.objects[obj_name]
                     obj_data = obj.data
-    
+
                     fw("##-------------------------------------------\n")
                     fw("## This file was created by export_mesh2hrtf\n")
                     fw("## Date: %s\n" % datetime.date.today())
@@ -1040,17 +1040,16 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
                     fw("##\n")
                     if reciprocity:
-                        '''
-                        if cpusAndCores[cpu-1][core-1]==1:
+                        if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
                             tmpEar='Left ear'
-                        if cpusAndCores[cpu-1][core-1]==2:
+                        else:
                             tmpEar='Right ear'
-                        '''
-                        #changed tmpEar to ear 
-                        if ear=='Right ear':
-                            tmpEar='Right ear'
-                        if ear=='Left ear':
-                            tmpEar='Left ear'
+
+                        #changed tmpEar to ear
+                        #if ear=='Right ear':
+                        #    tmpEar='Right ear'
+                        #if ear=='Left ear':
+                        #    tmpEar='Left ear'
                         fw("BOUNDARY\n")
                         for ii in range(len(obj_data.polygons[:])):
                             if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots[tmpEar].name:
