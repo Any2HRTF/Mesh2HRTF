@@ -259,13 +259,13 @@ public:
     Complex& operator=(const int& i)
     {
         re_ = (double)i;
-        im_ = (double)i; 
+        im_ = 0.0; 
         return *this;
     }
     Complex& operator=(const double& d)
     {
         re_ = d;
-        im_ = d; 
+        im_ = 0.0; 
         return *this;
     }
     Complex& operator=(const Complex& x)
