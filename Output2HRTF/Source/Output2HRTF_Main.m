@@ -17,7 +17,7 @@
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverPositions,frequencyDependency,nearFieldCalculation,microphoneArea,reference,speedOfSound,densityOfAir)
+function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverCenter,frequencyDependency,nearFieldCalculation,receiverArea,reference,speedOfSound,densityOfAir)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
 %   receiverPositions,frequencyDependency,nearFieldCalculation) calculates
@@ -46,8 +46,8 @@ function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverPosi
 
 ears=max(unique(cpusAndCores));
 %% --------------------------default parameter-----------------------------
-if ~exist('microphoneArea', 'var')
-    microphoneArea = [1 1];
+if ~exist('receiverArea', 'var')
+    receiverArea = [1 1];
 end
 if ~exist('reference', 'var')
     reference = false;
@@ -227,8 +227,8 @@ if reference
     volumeFlow = .1 * ones(size(pressure));
     if exist('microphoneArea', 'var')
         %has to be fixed for both ears....
-        for nn = 1:numel(microphoneArea)
-            volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * microphoneArea(nn);
+        for nn = 1:numel(receiverArea)
+            volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * receiverArea(nn);
         end       
     end
     
@@ -378,7 +378,7 @@ if reciprocity
     Obj.GLOBAL_DateCreated = date;
     Obj.GLOBAL_AuthorContact = '';
 
-    Obj.ReceiverPosition=receiverPositions;
+    Obj.ReceiverPosition=receiverCenter;
     Obj.N=frequencies;
 
     %add division G([0,0,0],evaluationGrid)
@@ -406,7 +406,7 @@ if reciprocity
     Obj.GLOBAL_DateCreated = date;
     Obj.GLOBAL_AuthorContact = '';
 
-    Obj.ReceiverPosition=receiverPositions;
+    Obj.ReceiverPosition=receiverCenter;
     Obj.N=frequencies;
 
     Obj.Data.Real=real(pressure);

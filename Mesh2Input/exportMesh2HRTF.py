@@ -15,7 +15,7 @@
 #   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 #
 # Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
-# Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
+# Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)
 
 import os
 import bpy
@@ -352,6 +352,60 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         def rvec2d(v):
             return round(v[0], 6), round(v[1], 6)
 
+        # for calculating the center and area of the receivers in reciprocal mode
+        def calculateReceiverProperties(obj, obj_data, unitFactor):
+
+            # allocate variables
+            earArea   = [0., 0.]
+            earCenter = [[[1e6,-1e6],
+                          [1e6,-1e6],
+                          [1e6,-1e6]
+                         ],
+                         [[1e6,-1e6],
+                          [1e6,-1e6],
+                          [1e6,-1e6]
+                         ]]
+
+            # loop elements in obj_data
+            for ii in range(len(obj_data.polygons[:])):
+                if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name or obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
+
+                    # select the ear
+                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
+                        ear = 0
+                    else:
+                        ear = 1
+
+                    # update min and max x,y,z-values
+                    for vertex in range(3):
+                        for coord in range (3):
+                            value = obj_data.vertices[obj_data.polygons[ii].vertices[vertex]].co[coord]
+                            if value < earCenter[ear][coord][0]: earCenter[ear][coord][0] = value
+                            if value > earCenter[ear][coord][1]: earCenter[ear][coord][1] = value
+
+                    ## to calculate the polygons (triangles) area first calculate the side lengths using euclidean distance and then use Heron´s formula to calculate the area
+                    # side_a = corner 0 to corner 1
+                    side_a=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)*unitFactor**2)
+
+                    # side_b = corner 1 to corner 2
+                    side_b=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)*unitFactor**2)
+
+                    # side_c = corner 2 to corner 0
+                    side_c=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)*unitFactor**2)
+
+                    # increment area using Heron´s formula
+                    earArea[ear] += 0.25 * math.sqrt((side_a+side_b+side_c)*(-side_a+side_b+side_c)*(side_a-side_b+side_c)*(side_a+side_b-side_c))
+
+            # estimate the center from min and max x,y,z-values
+            earCenter  = [[( earCenter[0][0][0]  + earCenter[0][0][1]  ) / 2 * unitFactor,   # left ear center
+                           ( earCenter[0][1][0]  + earCenter[0][1][1]  ) / 2 * unitFactor,
+                           ( earCenter[0][2][0]  + earCenter[0][2][1]  ) / 2 * unitFactor],
+                          [( earCenter[1][0][0]  + earCenter[1][0][1]  ) / 2 * unitFactor,   # right ear center
+                           ( earCenter[1][1][0]  + earCenter[1][1][1]  ) / 2 * unitFactor,
+                           ( earCenter[1][2][0]  + earCenter[1][2][1]  ) / 2 * unitFactor]]
+
+
+            return earCenter, earArea
 # ----------------------- Initialize constants ---------------------------------
         bpy.ops.object.transform_apply(location=True)
         bpy.ops.object.transform_apply(rotation=True)
@@ -758,85 +812,31 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("\n")
 
         if reciprocity:
-            obj = bpy.data.objects['Reference']
-            obj_data = obj.data
+
+            # get the receiver/ear centers and areas
+            obj                = bpy.data.objects['Reference']
+            obj_data           = obj.data
+            earCenter, earArea = calculateReceiverProperties(obj,obj_data,unitFactor)
+
+            # write left ear data
             if ear=='Left ear' or ear=='Both ears':
-                fw("receiverPositions(1,1:3)=[")
-                for ii in range(len(obj_data.polygons[:])):
-                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
-                        fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
-                        break
-                        
+                fw("% left ear / receiver\n")
+                fw("receiverCenter(1,1:3)=[%f %f %f];\n" % (earCenter[0][0], earCenter[0][1], earCenter[0][2]))
+                fw("receiverArea(1,1)    =%g;\n" % earArea[0])
 
-                fw("microphone_area(1,1)=[")
-                for ii in range(len(obj_data.polygons[:])):
-                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
-
-                        ## to calculate the polygons (triangles) area first calculate the side lengths  using euclidean distance and then use Heron´s formula to calculate the area
-                        #left_right_distance=math.sqrt((right[0]-left[0])**2 + (right[1]-left[1])**2 + (right[2]-left[2])**2)
-
-                        # side_a = corner 0 to corner 1
-                        side_a=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)*unitFactor**2)
-
-                        # side_b = corner 1 to corner 2
-                        side_b=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)*unitFactor**2)
-                        
-                        # side_c = corner 2 to corner 0
-                        side_c=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)*unitFactor**2)
-                        
-                        # Heron´s formula
-                        microphone_area=0.25 * math.sqrt((side_a+side_b+side_c)*(-side_a+side_b+side_c)*(side_a-side_b+side_c)*(side_a+side_b-side_c))
-                        
-                        
-                        fw("%g];\n" % (microphone_area))
-                        break
-                    
-
-                          
-            if ear=='Right ear':
-                nn = 1
-            if ear=='Both ears':
-                nn = 2
-            
-
+            # write right ear data
             if ear=='Right ear' or ear=='Both ears':
-                fw("receiverPositions(%d,1:3)=[" %(nn))
-               
-                for ii in range(len(obj_data.polygons[:])):
-                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
-                        fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
-                        break
+                if ear=='Right ear':
+                    nn = 1
+                if ear=='Both ears':
+                    nn = 2
 
+                fw("% right ear / receiver\n")
+                fw("receiverCenter(%d,1:3)=[%f %f %f];\n" %(nn, earCenter[1][0], earCenter[1][1], earCenter[1][2]))
+                fw("receiverArea(%d,1)    =%g;\n" %(nn, earArea[1]))
 
-                fw("microphone_area(%d,1)=[" %(nn))
-                
-                for ii in range(len(obj_data.polygons[:])):
-                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
-
-                         ## to calculate the polygons (triangles) area first calculate the side lengths  using euclidean distance and then use Heron´s formula to calculate the area
-                        #left_right_distance=math.sqrt((right[0]-left[0])**2 + (right[1]-left[1])**2 + (right[2]-left[2])**2)
-
-                         # side_a = corner 0 to corner 1
-                        side_a=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)*unitFactor**2)
-
-                        # side_b = corner 1 to corner 2
-                        side_b=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)*unitFactor**2)
-                        
-                        # side_c = corner 2 to corner 0
-                        side_c=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)*unitFactor**2)
-                        
-                        # Heron´s formula
-                        microphone_area=0.25 * math.sqrt((side_a+side_b+side_c)*(-side_a+side_b+side_c)*(side_a-side_b+side_c)*(side_a+side_b-side_c))
-                        
-                        
-                        fw("%g];\n" % (microphone_area))
-                        break
             fw("\n")
-                
+
         fw("frequencyDependency=")
         if frequencyDependency:
             fw("1")
@@ -861,10 +861,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,")
         if reciprocity:
-            fw("receiverPositions")
+            fw("receiverCenter")
         else:
             fw("[0 0 0; 0 0 0]")
-        fw(",frequencyDependency,nearFieldCalculation,microphone_area,reference,speedOfSound,densityOfAir);")
+        fw(",frequencyDependency,nearFieldCalculation,receiverArea,reference,speedOfSound,densityOfAir);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------
