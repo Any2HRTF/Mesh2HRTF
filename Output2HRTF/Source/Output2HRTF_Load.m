@@ -62,10 +62,15 @@ frequency=zeros(numFrequencies,1);
 
 for ii=1:numFrequencies
     tmpData = importdata([foldername 'be.' num2str(ii) '/' filename], ' ', numHeaderlines_BE);
-    tmpFrequency = importdata([foldername '..' filesep 'fe.out' filesep 'fe.' num2str(ii) '/load'], ' ', 2);
+    if ~isempty(tmpData)
+        tmpFrequency = importdata([foldername '..' filesep 'fe.out' filesep 'fe.' num2str(ii) '/load'], ' ', 2);
     
-    data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
-    frequency(ii,1)=int32(round(tmpFrequency.data(1,1)));
+        data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
+        frequency(ii,1)=int32(round(tmpFrequency.data(1,1)));
+    else
+        data(ii,:)      = NaN;
+        frequency(ii,1) = NaN;
+    end
 end
 
 end %of function
