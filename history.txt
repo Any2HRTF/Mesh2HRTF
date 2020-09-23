@@ -12,6 +12,8 @@
 
 *** DEVELOPMENT STATUS ***
 
+*** v0.2.1 (???)
+
 *** v0.2.0 (Fabian Brinkmann, Robert Pelzer, Piotr Majdak)
 - Mesh2Input: 
   - MaterialAssignment.py: A Python script that can be loaded into Blender to center the head mesh in the coordinate system
