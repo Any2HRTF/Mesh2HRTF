@@ -15,7 +15,7 @@
 
 *** v0.3.0 (28.05.2019, Junaid Khan)
 - New directory structure
-- Starting of Pascal-case naming of the files
+- Pascal-case naming of the files
 - Small bugfixes in the scripts
 
 *** v0.2.0 (Fabian Brinkmann, Robert Pelzer, Piotr Majdak)
