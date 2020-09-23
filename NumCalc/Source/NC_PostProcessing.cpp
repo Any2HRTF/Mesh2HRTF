@@ -635,6 +635,8 @@ void NC_WriteResultsEvaluationGrid
 	}
 
 	// computing potentials and velocities at internal points
+
+	
 	if(numInternalPointsClusters_ > 0) // SLFMBEM or MLFMBEM
 	{
 		// contributions of all elements to the results at the internal point

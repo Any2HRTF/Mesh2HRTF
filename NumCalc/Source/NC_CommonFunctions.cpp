@@ -33,6 +33,11 @@
  *        and sound localization: Microphone model and mesh discretization,"  *
  *        The Journal of the Acoustical Society of America, 138, 208-222.     *
  *                                                                            *
+ *                                                                            *
+ *  Change Log:                                                               *
+ *      10.04.2018: kreiza: Changed the initialization from random to 0       *
+ *                          This has the effect that the relativ error is     *
+ *                          calculated using the right hand side              *
  \*===========================================================================*/
 
 
@@ -1130,8 +1135,9 @@ BeginCGS:
 	// initialize the solution vector by using the random function
 	for(j=0; j<numRowsOfCoefficientMatrix_; j++)
 	{
-        zX_j[j].set(((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0,
-                        ((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0);
+	  //        zX_j[j].set(((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0,
+          //              ((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0);
+	  zX_j[j].set(0.0,0.0);
 	}
 
 	NC_MatrixVectorMultiplication(zX_j, zV_j);
@@ -1192,7 +1198,10 @@ BeginCGS:
             err_rel = sqrt(dwk1)/err_ori;
 		}
 
-		if(j > 0 && j/10*10 == j) cout << j << " " << err_rel << endl;
+		if(j > 0 && j/10*10 == j) {
+		  cout << j << " " << err_rel << endl;
+		  cout << j << " Abs Error:" << sqrt(dwk1) << endl;
+		}
         
 		if(err_rel < ErroIterSols || j == niter_max - 1)
 		{
