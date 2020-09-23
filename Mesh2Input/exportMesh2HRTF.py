@@ -855,14 +855,16 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         fw("% Reference to a point source in the origin\n")
         fw("% accoring to the classical HRTF definition\n")
-        fw("reference = false;\n\n")
+        fw("reference    = false;\n")
+        fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
+        fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
         fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,")
         if reciprocity:
             fw("receiverPositions")
         else:
             fw("[0 0 0; 0 0 0]")
-        fw(",frequencyDependency,nearFieldCalculation,reference);")
+        fw(",frequencyDependency,nearFieldCalculation,microphone_area,reference,speedOfSound,densityOfAir);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------

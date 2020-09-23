@@ -17,7 +17,7 @@
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverPositions,frequencyDependency,nearFieldCalculation,microphoneArea,reference)
+function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverPositions,frequencyDependency,nearFieldCalculation,microphoneArea,reference,speedOfSound,densityOfAir)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
 %   receiverPositions,frequencyDependency,nearFieldCalculation) calculates
@@ -51,6 +51,12 @@ if ~exist('microphoneArea', 'var')
 end
 if ~exist('reference', 'var')
     reference = false;
+end
+if ~exist('speedOfSound', 'var')
+    speedOfSound = 346.18;
+end
+if ~exist('densityOfAir', 'var')
+    densityOfAir = 1.1839;
 end
 
 %% ----------------------------load meta data------------------------------
@@ -217,8 +223,6 @@ if reference
     
     % reference to pressure in the middle of the head with the head absent
     % (HRTF definition). We do it reciprocal for ease of computation.
-    c          = 343;      % needs to be passed to the function!
-    roh        = 1.1839;   % needs to be passed to the function!
     
     volumeFlow = .1 * ones(size(pressure));
     if exist('microphoneArea', 'var')
@@ -240,12 +244,12 @@ if reference
     % point source in the origin evaluated at r
     % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
     freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
-    ps   = -1j * roh * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
-           exp(1j * 2*pi*freqMatrix/c .* r) ./ r;
+    ps   = -1j * densityOfAir * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
+           exp(1j * 2*pi*freqMatrix/speedOfSound .* r) ./ r;
     % here we go...
     pressure = pressure ./ ps;
     
-    clear c roh Areceiver r freqMatrix ps
+    clear Areceiver r freqMatrix ps
 end
 % end of added Fabian Brinkmann
 
