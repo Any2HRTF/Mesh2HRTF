@@ -13,6 +13,9 @@
 # - In your publication, cite both articles:
 #   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 #   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+#
+# Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
+# Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
 import os
 import bpy
@@ -112,7 +115,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
                ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
                ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('User', 'User', 'User defined evaluation grid'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
                ('None', 'None', 'None')],
         default='3_ARI',
         )
@@ -129,6 +132,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
                ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
                ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
                ('None', 'None', 'None')],
         default='None',
         )
@@ -145,6 +149,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
                ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
                ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
                ('None', 'None', 'None')],
         default='None',
         )
@@ -161,6 +166,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
                ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
                ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
                ('None', 'None', 'None')],
         default='None',
         )
@@ -177,6 +183,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
                ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
                ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
                ('None', 'None', 'None')],
         default='None',
         )
@@ -236,8 +243,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         )
     programPath = StringProperty(
         name="Mesh2HRTF-path",
-        description="Path to the Mesh2HRTF folder",
-        default="",
+        description="Path to mesh2HRTF",
+        default=r"C:\Users\Robert\Documents\Dokumente\Studium TU\Masterarbeit\Digital_Appendix\11 Scripts\mesh2hrtf_edit",
         )
 
     @classmethod
@@ -369,7 +376,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         bpy.data.scenes['Scene'].render.pixel_aspect_y = 1
         bpy.data.scenes['Scene'].render.resolution_x = 1440
         bpy.data.scenes['Scene'].render.resolution_y = 1920
-
+        
         tmp = open("%s/VERSION" % programPath)
         version = tmp.readline()
 
@@ -449,7 +456,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     else:
                         fw("%d %d %d %d 0 0 0\n" % tuple(obj_data.polygons[ii].vertices[:]))
                 file.close
-
+                
                 objects.append(obj.name)
 
         maxObjectFrequency = ([])
@@ -461,8 +468,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 except:
                     print('No maximum object frequency found.\nPlease change object names to L{maxobjfq}/R{maxobjfq} e.g. L20000 or R20000.')
         maxObjectFrequency.sort()
-
-
+        
         bpy.ops.wm.save_as_mainfile(filepath=("%s/3d Model.blend" % filepath1), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
 
 # ------------------------ Write evaluation grid data --------------------------
@@ -481,7 +487,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             temp = ("%s/EvaluationGrids/NF_Sphere" % (filepath1))
             if not os.path.exists(temp):
                 os.mkdir(temp)
-
+           
             file = open(("%s/EvaluationGrids/NF_Sphere/Nodes.txt" % (filepath1)), "w", encoding="utf8", newline="\n")
             fw = file.write
             fw("%i\n" % len(NFGrid_data.vertices[:]))
@@ -522,7 +528,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         temp = ("%s/EvaluationGrids/User/" % filepath1)
                         if not os.path.exists(temp):
                             os.mkdir(temp)
-
+              
                         file = open(("%s/EvaluationGrids/User/Nodes.txt" % filepath1), "w", encoding="utf8", newline="\n")
                         fw = file.write
                         fw("%i\n" % len(obj_data.vertices[:]))
@@ -530,7 +536,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                             fw("%i " % (ii+350000))
                             fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
                         file.close
-
+            
                         file = open(("%s/EvaluationGrids/User/Elements.txt" % filepath1), "w", encoding="utf8", newline="\n")
                         fw = file.write
                         fw("%i\n" % len(obj_data.polygons[:]))
@@ -580,7 +586,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         frequencySteps = divmod(maxFrequency-lowFrequency, frequencyStepSize)
         if not frequencySteps[1] == 0:
             raise Exception("Error, frequencyStepSize is not a divisor of maxFrequency-lowFrequency")
-
+            
         numCoresAvailable = (cpuLast-cpuFirst+1-lowFrequencyCores)*numCoresPerCPU
         numCoresUsedPerEar = int((cpuLast-cpuFirst+1-lowFrequencyCores*numEars)*numCoresPerCPU/numEars)
         frequencyStepsPerCore = divmod(frequencySteps[0], numCoresUsedPerEar)
@@ -598,7 +604,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             tmp.append([])
         for cpu in range(1, 11):
             frequencies.append(tmp[:])
-
+            
         if not frequencyDependency:
             coresteps = 0
             for tmpEar in range(1, numEars+1):
@@ -704,7 +710,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("close all\n")
         fw("clear\n")
         fw("\n")
-
+        
         fw("cpusAndCores=[")
         for cpu in range(1, 11):
             for core in range(1, 9):
@@ -715,7 +721,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 fw("; ...\n")
         fw("];\n")
         fw("\n")
-
+        
         fw("objectMeshes={")
         for cpu in range(1, 11):
             for core in range(1, 9):
@@ -742,7 +748,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 fw("; ...\n")
         fw("};\n")
         fw("\n")
-
+                
         fw("reciprocity=")
         if reciprocity:
             fw("1")
@@ -754,7 +760,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if reciprocity:
             obj = bpy.data.objects['Reference']
             obj_data = obj.data
-            if ear == 'Left ear':
+            if ear=='Left ear' or ear=='Both ears':
                 fw("receiverPositions(1,1:3)=[")
                 for ii in range(len(obj_data.polygons[:])):
                     if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
@@ -762,31 +768,75 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
                         fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
                         break
-            if ear == 'Right ear':
-                fw("receiverPositions(1,1:3)=[")
-                for ii in range(len(obj_data.polygons[:])):
-                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
-                        fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
-                        break
-            if ear == 'Both ears':
-                fw("receiverPositions(1,1:3)=[")
+                        
+
+                fw("microphone_area(1,1)=[")
                 for ii in range(len(obj_data.polygons[:])):
                     if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
-                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
-                        fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
+
+                        ## to calculate the polygons (triangles) area first calculate the side lengths  using euclidean distance and then use Heron´s formula to calculate the area
+                        #left_right_distance=math.sqrt((right[0]-left[0])**2 + (right[1]-left[1])**2 + (right[2]-left[2])**2)
+
+                        # side_a = corner 0 to corner 1
+                        side_a=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)*unitFactor**2)
+
+                        # side_b = corner 1 to corner 2
+                        side_b=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)*unitFactor**2)
+                        
+                        # side_c = corner 2 to corner 0
+                        side_c=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)*unitFactor**2)
+                        
+                        # Heron´s formula
+                        microphone_area=0.25 * math.sqrt((side_a+side_b+side_c)*(-side_a+side_b+side_c)*(side_a-side_b+side_c)*(side_a+side_b-side_c))
+                        
+                        
+                        fw("%g];\n" % (microphone_area))
                         break
-                fw("receiverPositions(2,1:3)=[")
+                    
+
+                          
+            if ear=='Right ear':
+                nn = 1
+            if ear=='Both ears':
+                nn = 2
+            
+
+            if ear=='Right ear' or ear=='Both ears':
+                fw("receiverPositions(%d,1:3)=[" %(nn))
+               
                 for ii in range(len(obj_data.polygons[:])):
                     if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
                         fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
                         fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
                         fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
+                        break
+
+
+                fw("microphone_area(%d,1)=[" %(nn))
+                
+                for ii in range(len(obj_data.polygons[:])):
+                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
+
+                         ## to calculate the polygons (triangles) area first calculate the side lengths  using euclidean distance and then use Heron´s formula to calculate the area
+                        #left_right_distance=math.sqrt((right[0]-left[0])**2 + (right[1]-left[1])**2 + (right[2]-left[2])**2)
+
+                         # side_a = corner 0 to corner 1
+                        side_a=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)*unitFactor**2)
+
+                        # side_b = corner 1 to corner 2
+                        side_b=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)*unitFactor**2)
+                        
+                        # side_c = corner 2 to corner 0
+                        side_c=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)*unitFactor**2)
+                        
+                        # Heron´s formula
+                        microphone_area=0.25 * math.sqrt((side_a+side_b+side_c)*(-side_a+side_b+side_c)*(side_a-side_b+side_c)*(side_a+side_b-side_c))
+                        
+                        
+                        fw("%g];\n" % (microphone_area))
                         break
             fw("\n")
-
+                
         fw("frequencyDependency=")
         if frequencyDependency:
             fw("1")
@@ -794,7 +844,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             fw("0")
         fw(";\n")
         fw("\n")
-
+                
         fw("nearFieldCalculation=")
         if nearFieldCalculation:
             fw("1")
@@ -803,12 +853,16 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw(";\n")
         fw("\n")
 
+        fw("% Reference to a point source in the origin\n")
+        fw("% accoring to the classical HRTF definition\n")
+        fw("reference = false;\n\n")
+
         fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,")
         if reciprocity:
             fw("receiverPositions")
         else:
             fw("[0 0 0; 0 0 0]")
-        fw(",frequencyDependency,nearFieldCalculation);")
+        fw(",frequencyDependency,nearFieldCalculation,microphone_area,reference);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------
@@ -835,7 +889,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
                     file = open(("%s%s" % (filepath2, filename1)), "w", encoding="utf8", newline="\n")
                     fw = file.write
-
+                    
                     if frequencyDependency:
                         if cpusAndCores[cpu-1][core-1] == 1:
                             tmpEar = "L"
@@ -852,7 +906,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
                     obj = bpy.data.objects[obj_name]
                     obj_data = obj.data
-
+    
                     fw("##-------------------------------------------\n")
                     fw("## This file was created by export_mesh2hrtf\n")
                     fw("## Date: %s\n" % datetime.date.today())
@@ -984,10 +1038,17 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
                     fw("##\n")
                     if reciprocity:
-                        if cpusAndCores[cpu-1][core-1] == 1:
-                            tmpEar = 'Left ear'
-                        if cpusAndCores[cpu-1][core-1] == 2:
-                            tmpEar = 'Right ear'
+                        '''
+                        if cpusAndCores[cpu-1][core-1]==1:
+                            tmpEar='Left ear'
+                        if cpusAndCores[cpu-1][core-1]==2:
+                            tmpEar='Right ear'
+                        '''
+                        #changed tmpEar to ear 
+                        if ear=='Right ear':
+                            tmpEar='Right ear'
+                        if ear=='Left ear':
+                            tmpEar='Left ear'
                         fw("BOUNDARY\n")
                         for ii in range(len(obj_data.polygons[:])):
                             if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots[tmpEar].name:

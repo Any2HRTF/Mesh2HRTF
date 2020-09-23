@@ -13,8 +13,11 @@
 % - In your publication, cite both articles:
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+%
+% Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
+% Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverPositions,frequencyDependency,nearFieldCalculation)
+function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverPositions,frequencyDependency,nearFieldCalculation,microphoneArea,reference)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
 %   receiverPositions,frequencyDependency,nearFieldCalculation) calculates
@@ -32,8 +35,23 @@ function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverPosi
 %       frequencyDependency:
 % 
 %       nearFieldCalculation:
+%
+%       microphoneArea: are of the mesh elements that were used as sound
+%       source in reciprocal calculation in square meters
+%
+%       reference: 'true' complex pressure at the evaluation grid is
+%       devided by a point source in the origin of the coordinate system.
+%       This is the calssical HRTF definition (pressure st the ear divided
+%       by pressure at the center of the head with the head being absent)
 
 ears=max(unique(cpusAndCores));
+%% --------------------------default parameter-----------------------------
+if ~exist('microphoneArea', 'var')
+    microphoneArea = [1 1];
+end
+if ~exist('reference', 'var')
+    reference = false;
+end
 
 %% ----------------------------load meta data------------------------------
 temp=dir('EvaluationGrids');
@@ -190,7 +208,48 @@ if ~isempty(evaluationGrids)
     pressure=pressure(idx,:,:);
 end
 
-%% save EvaluationGrid data for visualization
+% added Fabian Brinkmann
+if reference
+    
+    % this might be a parameter in the function call
+    refMode = 1;    % 1: reference to only one radius (the smallest found)
+                    % 2: reference to all indivudal radii
+    
+    % reference to pressure in the middle of the head with the head absent
+    % (HRTF definition). We do it reciprocal for ease of computation.
+    c          = 343;      % needs to be passed to the function!
+    roh        = 1.1839;   % needs to be passed to the function!
+    
+    volumeFlow = .1 * ones(size(pressure));
+    if exist('microphoneArea', 'var')
+        %has to be fixed for both ears....
+        for nn = 1:numel(microphoneArea)
+            volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * microphoneArea(nn);
+        end       
+    end
+    
+    % distance of source positions from the origin
+    if refMode == 1
+        r = min(sqrt(evaluationGridNodes(:,2).^2 + evaluationGridNodes(:,3).^2 + evaluationGridNodes(:,4).^2));
+        r = repmat(r, [size(pressure,1) size(pressure, 2) size(pressure, 3)]);
+    else
+        r = sqrt(evaluationGridNodes(:,2).^2 + evaluationGridNodes(:,3).^2 + evaluationGridNodes(:,4).^2);
+        r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
+    end
+
+    % point source in the origin evaluated at r
+    % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
+    freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
+    ps   = -1j * roh * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
+           exp(1j * 2*pi*freqMatrix/c .* r) ./ r;
+    % here we go...
+    pressure = pressure ./ ps;
+    
+    clear c roh Areceiver r freqMatrix ps
+end
+% end of added Fabian Brinkmann
+
+%% save EvaluaitonGrid data for visualization
 fprintf('\nSave EvaluationGrid data ...');
 if ~isempty(evaluationGrids)
     %save results in the sagittal plane
@@ -297,10 +356,15 @@ end
 if reciprocity
 
 	SOFAstart;
-		% prepare pressure to be size of MRN even when R=1
-    pressure=shiftdim(shiftdim(pressure,-1),2);
     
-		% Save as GeneralTF
+    % prepare pressure to be size of MRN when R=2
+    pressure = shiftdim(pressure, 1);
+    % prepare pressure to be size of MRN when R=1
+    if size(pressure, 3) == 1
+        pressure = reshape(pressure, size(pressure,1), 1, size(pressure, 2));
+    end
+    
+    % Save as GeneralTF
     Obj = SOFAgetConventions('GeneralTF');
 
     Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
@@ -329,7 +393,7 @@ if reciprocity
     Obj=SOFAupdateDimensions(Obj);
     SOFAsave('EvaluationGrid_GeneralTF.sofa',Obj);
 	
-		% Save as SimpleFreeFieldTF
+	% Save as SimpleFreeFieldTF
 	Obj=SOFAgetConventions('SimpleFreeFieldTF');
     Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
     Obj.GLOBAL_ApplicationVersion = '0.1.1';	% Todo: apply the correct version automatically

@@ -12,8 +12,14 @@
 
 *** DEVELOPMENT STATUS ***
 
-*** v0.2.0 (???, Fabian Brinkmann, Robert Pelzer)
--
+*** v0.2.0 (Fabian Brinkmann, Robert Pelzer)
+- Output2HRTF_Main.m: Added optional referencing of HRTFs if calculated reciprocally to achieve that the low frequency magnitude of the HRTFs is 0 dB. This is done by dividing the complex pressure by the area of the ear elements (radiating element), compensating for the velocity of the radiating element, and by a division of the complex pressure with the pressure of a point source in the origin of coordinates. (export_mesh2hrtf.py writes the area of the radiating elements, and the flag for referencing to Output2HRTF.m)
+- Arbitrary user defined evaluation grids (spatial sampling grids) can now be generated with the Matlab code in PreProcessing/WriteReadEvaluationGrids/demo.m (The folder 'User' in 'Mesh2Input/Data/Evaluation Grids' was renamed to 'Custom' for this purpose, because 'User' is a reserved variable in Blender/Python)
+- The evaluation grids (spatial sampling grids) that are part of Mesh2HRTF can now be plotted with the Matlab code in PreProcessing/WriteReadEvaluationGrids/demo.m
+- Added a Python script that can be loaded into Blender to center the head mesh in the coordinate system (PreProcessing/MaterialAssignment/MaterialAssignment.py)
+- Added a Python script that can be loaded into Blender to automatically assign the materials 'Skin', 'Left ear', and 'Right ear' (PreProcessing/MeshCentering/MeshCentering.py)
+export_mesh2hrtf.py: Bug fix to correctly export data for calculating the left ear, right ear and both ears.
+Output2HRTF_Main.m: Big fix to correctly export SOFA files with data for the left ear, right ear, and both ears.
 
 
 
