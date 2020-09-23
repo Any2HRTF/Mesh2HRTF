@@ -237,7 +237,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     programPath = StringProperty(
         name="Mesh2HRTF-path",
         description="Path to the Mesh2HRTF folder",
-        default="",
+        default="P:\Projects\Loca Photo\PhotoRec\Results\Mesh2HRTF",
         )
 
     @classmethod
@@ -336,7 +336,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              unit='mm',
              frequencyDependency=False,
              nearFieldCalculation=False,
-             programPath="",
+             programPath="P:\Projects\Loca Photo\PhotoRec\Results\Mesh2HRTF",
              ):
 
         def rvec3d(v):
@@ -455,9 +455,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         maxObjectFrequency = ([])
         for ii in range(0, len(objects)):
             if not objects[ii] == 'Reference' and not objects[ii] == 'User':
-                if maxObjectFrequency.count(int(objects[ii][1:len(objects[ii]):1])) == 0:
-                    maxObjectFrequency.append(int(objects[ii][1:len(objects[ii]):1]))
+                try:
+                    if maxObjectFrequency.count(int(objects[ii][1:len(objects[ii]):1])) == 0:
+                        maxObjectFrequency.append(int(objects[ii][1:len(objects[ii]):1]))
+                except:
+                    print('No maximum object frequency found.\nPlease change object names to L{maxobjfq}/R{maxobjfq} e.g. L20000 or R20000.')
         maxObjectFrequency.sort()
+
 
         bpy.ops.wm.save_as_mainfile(filepath=("%s/3d Model.blend" % filepath1), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
 
@@ -596,9 +600,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             frequencies.append(tmp[:])
 
         if not frequencyDependency:
+            coresteps = 0
             for tmpEar in range(1, numEars+1):
                 count = 0
                 for core in range(1, numCoresPerCPU+1):
+                    if tmpEar == 2 and numCPUs == 1:
+                        core += numCoresUsedPerEar
                     for cpu in range(cpuFirst+(int(numCPUs/2)*(tmpEar-1))*(numEars-1), cpuLast-(int(numCPUs/2)*(-(tmpEar-2)))*(numEars-1)+1):
                         tmp = ([])
                         if lowFrequencyCores > 0 and cpu == cpuFirst+(int(numCPUs/2)*(tmpEar-1))*(numEars-1):
@@ -614,7 +621,21 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                                     break
                         frequencies[cpu-1][core-1] = tmp
                         if not frequencies[cpu-1][core-1] == ([]):
-                            cpusAndCores[cpu-1][core-1] = tmpEar
+							#case: both ears on one cpu
+                            if numCPUs == 1 and numEars == 2:
+                                if numCoresPerCPU < 4:
+                                    raise Exception('Please use at least 4 cores for calculation of 2 ears')
+                                for temp_ear in range(0, numCoresUsedPerEar):
+                                    if int((temp_ear+coresteps)/2) >= numCoresUsedPerEar:
+                                        break
+                                    else:
+                                        cpusAndCores[cpu-1][temp_ear+coresteps] = tmpEar #work here!!
+                                coresteps += 1
+							
+                            else:
+                                #general case
+                                cpusAndCores[cpu-1][core-1] = tmpEar
+				
                         if count == numCoresUsedPerEar:
                             break
                     if count == numCoresUsedPerEar:
@@ -733,18 +754,41 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if reciprocity:
             obj = bpy.data.objects['Reference']
             obj_data = obj.data
-            if ear == 'Left ear' or ear == 'Both ears':
+            #fw("Ear: %s\n" % ear)
+            if ear == 'Left ear':
+                #fw("%1st if ear:\n")
                 fw("receiverPositions(1,1:3)=[")
                 for ii in range(len(obj_data.polygons[:])):
                     if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
+                 #       fw("\n%1st if obj...:\n")
                         fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
                         fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
                         fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
                         break
-            if ear == 'Right ear' or ear == 'Both ears':
+            if ear == 'Right ear':
+                #fw("%2nd if ear:\n")
+                fw("receiverPositions(1,1:3)=[")
+                for ii in range(len(obj_data.polygons[:])):
+                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
+                 #       fw("\n%2nd if obj...:\n")
+                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
+                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
+                        fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
+                        break
+            if ear == 'Both ears':
+                #fw("%1st if ear:\n")
+                fw("receiverPositions(1,1:3)=[")
+                for ii in range(len(obj_data.polygons[:])):
+                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
+                 #       fw("\n%1st if obj...:\n")
+                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
+                        fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
+                        fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
+                        break
                 fw("receiverPositions(2,1:3)=[")
                 for ii in range(len(obj_data.polygons[:])):
                     if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
+                 #       fw("\n%2nd if obj...:\n")
                         fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])/3*unitFactor))
                         fw("%f " % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])/3*unitFactor))
                         fw("%f];\n" % ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]+obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])/3*unitFactor))
