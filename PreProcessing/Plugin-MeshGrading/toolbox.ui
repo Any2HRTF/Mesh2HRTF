@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MeshGradingTool</class>
+ <widget class="QWidget" name="MeshGradingTool">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>322</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+
+      <item>
+       <widget class="QLabel" name="label_description">
+        <property name="text">
+         <string>A-priori mesh-grading for Mesh2HRTF</string>
+        </property>
+       </widget>
+      </item>
+
+      <item>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Select the ear:</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_ear">
+         <item>
+          <widget class="QRadioButton" name="ear_left">
+           <property name="toolTip">
+            <string>Note that the interautal axis has to be aligned with the y-axis!</string>
+           </property>
+           <property name="text">
+            <string>left</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="ear_right">
+           <property name="toolTip">
+            <string>Note that the interautal axis has to be aligned with the y-axis!</string>
+           </property>
+           <property name="text">
+            <string>right</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+
+      <item>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Select the grading function:</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_gradingFunction">
+         <item>
+          <widget class="QRadioButton" name="POWalpha">
+           <property name="toolTip">
+            <string>Power-function based grading</string>
+           </property>
+           <property name="text">
+            <string>POWalpha</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="COSalpha">
+           <property name="toolTip">
+            <string>Raised-cosine based grading</string>
+           </property>
+           <property name="text">
+            <string>COSalpha</string>
+           </property>
+          </widget>
+         </item>
+
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_gradingOrder">
+           <item>
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Grading Order:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="gradingOrder">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>16</number>
+             </property>
+             <property name="value">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+
+        </layout>
+       </widget>
+      </item>
+
+      <item>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Global target edge length (in m):</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_edgelength">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_minedgelength">
+              <item>
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>Minimum:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="minEdgeLength">
+                <property name="decimals">
+                 <number>4</number>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.000100000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.001000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_maxedgelength">
+              <item>
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Maximum:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="maxEdgeLength">
+                <property name="decimals">
+                 <number>4</number>
+                </property>
+                <property name="maximum">
+                 <double>1.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.000100000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.001000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+        </layout>
+       </widget>
+      </item>
+
+      <item>
+       <widget class="QPushButton" name="meshGradingButton">
+        <property name="text">
+         <string>Start</string>
+        </property>
+       </widget>
+      </item>
+
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
