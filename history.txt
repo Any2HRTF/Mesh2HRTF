@@ -8,11 +8,15 @@
 *** 	Michael Kalcher, ARI
 ***     Fabian Brinkmann, TU-Berlin
 ***		Robert Pelzer, TU-Berlin
+***		Junaid Khan, FH Technikum Wien
 *************************************************************
 
-*** DEVELOPMENT STATUS ***
+*** DEVELOPMENT STATUS *** 
 
-*** v0.2.1 (???)
+*** v0.3.0 (28.05.2019, Junaid Khan)
+- New directory structure
+- Starting of Pascal case naming of the files
+- Small bugfixes in the scripts
 
 *** v0.2.0 (Fabian Brinkmann, Robert Pelzer, Piotr Majdak)
 - Mesh2Input: 

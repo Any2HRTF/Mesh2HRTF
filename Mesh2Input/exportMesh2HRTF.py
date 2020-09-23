@@ -244,7 +244,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     programPath = StringProperty(
         name="Mesh2HRTF-path",
         description="Path to mesh2HRTF",
-        default=r"C:\Users\Robert\Documents\Dokumente\Studium TU\Masterarbeit\Digital_Appendix\11 Scripts\mesh2hrtf_edit",
+        default=r"C:\Users\jkhan\Documents\Mesh2HRTF - Kopie\trunk",
         )
 
     @classmethod
@@ -420,7 +420,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 lowFrequency = 0
                 lowFrequencyCores = 0
 
-        evaluationGridPath = ("%s/Mesh2Input/Data/Evaluation Grids" % programPath)
+        evaluationGridPath = ("%s/Mesh2Input/EvaluationGrids" % programPath)
 
 # ------------------------ Write object data -----------------------------------
         for obj in bpy.context.scene.objects[:]:
@@ -862,7 +862,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             fw("receiverPositions")
         else:
             fw("[0 0 0; 0 0 0]")
-        fw(",frequencyDependency,nearFieldCalculation,microphone_area,reference);")
+        fw(",frequencyDependency,nearFieldCalculation,reference);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------
