@@ -811,6 +811,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw(";\n")
         fw("\n")
 
+        # add information about the reciever/point source
         if reciprocity:
 
             # get the receiver/ear centers and areas
@@ -832,10 +833,15 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     nn = 2
 
                 fw("% right ear / receiver\n")
-                fw("receiverCenter(%d,1:3)=[%f %f %f];\n" %(nn, earCenter[1][0], earCenter[1][1], earCenter[1][2]))
-                fw("receiverArea(%d,1)    =%g;\n" %(nn, earArea[1]))
+                fw("receiverCenter(%d,1:3) = [%f %f %f];\n" %(nn, earCenter[1][0], earCenter[1][1], earCenter[1][2]))
+                fw("receiverArea(%d,1)     = %g;\n" %(nn, earArea[1]))
 
             fw("\n")
+        else:
+
+            fw("% point source / receiver\n")
+            fw("receiverCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition, sourceYPosition, sourceZPosition))
+            fw("receiverArea(1,1)     = 1;\n")
 
         fw("frequencyDependency=")
         if frequencyDependency:
@@ -859,12 +865,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
         fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
-        fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,")
-        if reciprocity:
-            fw("receiverCenter")
-        else:
-            fw("[0 0 0; 0 0 0]")
-        fw(",frequencyDependency,nearFieldCalculation,receiverArea,reference,speedOfSound,densityOfAir);")
+        fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,receiverCenter,frequencyDependency,nearFieldCalculation,receiverArea,reference,speedOfSound,densityOfAir);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------
