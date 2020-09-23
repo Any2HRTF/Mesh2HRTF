@@ -83,6 +83,8 @@ void NC_AllocateTmtxMLFMM(ofstream&);
 void NC_AllocateSmtxMLFMM(ofstream&);
 void NC_CheckClusters(ofstream&,	const int&,	const int&,	ElCluster*);
 void NC_DeleteArrays(const int&, const int&, const int&);
+void NC_CancelSmallClusters(Vector<int>&, Vector<int>&,  int&,  int&);
+
 
 
 double ClusEdgL1;
@@ -807,8 +809,13 @@ void NC_GenerateClustersFMM
                     }
                 ne_clus[iclus++] = l1;
             }
-        
-        // store the results
+        // if there are very small clusters, combine them with the nearest
+	// bigger one
+	NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
+
+
+	
+	// store the results
         i1 = 0;
         for(i=0; i<nclus; i++)
         {
@@ -2054,3 +2061,175 @@ void NC_DeleteArrays(const int& imultpol, const int& nlevmlfm, const int& ifdelN
 
 	delete [] zrhs;
 }
+
+
+//--------------------------------------------------------------------------
+// << A11 >> seek very small clusters, attach them to the nearst ones and cancel them
+//
+// original Code by Chen, modified by kreiza 2018
+//
+//  Notes and warnings:
+//    *  thresfac1 is hardcoded with 3.0, the factor was set by Chen and
+//       probably tested to some degree, so in general this factor can be
+//       trusted
+//--------------------------------------------------------------------------
+void NC_CancelSmallClusters
+(
+ Vector<int>& ne_clus,	// I,O: number of elements in each cluster
+ Vector<int>& nue_clus,	// I,O: numbers of elements in each cluster
+ int& nclus,				// I  : number of clusters
+ int& ibg                // I  : number of element group
+ )
+{
+  int i, j, k, i1, iel, ine, nel_max = 0, n_nod, l1, m;
+  double dwk, dmin, threshfac1 = 3.0, dispo, rdmax, rdmin, rdaver;
+  bool iffewel = false;
+  
+  // maximum number of elements in a cluster
+  for(i=0; i<nclus; i++) if(ne_clus[i] > nel_max) nel_max = ne_clus[i];
+  
+  // vector to store nodal numbers of each cluster
+  Vector<int> nu_nod_cl(nel_max*NNODPE);
+  
+  // vector of radius of each cluster
+  Vector<double> radi_cl(nclus);
+  
+  // create the array of coordinates of the center of each cluster
+  double **crdcenters = new double*[nclus];
+  //	crdcenters = new double*[nclus];
+  if(!crdcenters) {
+    fprintf(stderr,"Could not allocate crdcenters\n");
+    exit(-1);
+  }
+  for(i=0; i<nclus; i++) {
+    crdcenters[i] = new double[NDIM];
+    if(!crdcenters[i]) {
+      fprintf(stderr,"Could not allocate crdcenters[i]\n");
+      exit(-1);
+    }
+  }
+  for(i=0; i<nclus; i++) for(j=0; j<NDIM; j++) crdcenters[i][j] = 0.0; 
+
+  // loop over clusters
+  i1 = 0;
+  for(i=0; i<nclus; i++)
+    {
+      if(ne_clus[i] == 0) continue;
+      
+      // compute number and numbers of the nodes of the current cluster
+      n_nod = 0;
+      for(j=0; j<ne_clus[i]; j++)
+	{
+	  iel = nue_clus[i1++];
+	  for(k=0; k<listNumberNodesPerElement[iel]; k++) 
+	    {
+	      l1 = elementsConnectivity[iel][k];
+	      for(m=0; m<n_nod; m++) if(nu_nod_cl[m] == l1) goto LbclustAray1;
+	      nu_nod_cl[n_nod++] = l1;
+	    LbclustAray1: continue;
+	    }
+	}
+      
+      // compute the coordinates of the center of the cluster
+      for(j=0; j<n_nod; j++)
+	{
+	  for(k=0; k<NDIM; k++) crdcenters[i][k] += nodesCoordinates[nu_nod_cl[j]][k];
+	}
+      for(k=0; k<NDIM; k++) crdcenters[i][k] /= (double)n_nod;
+      
+      // compute the radius of the cluster
+      radi_cl[i] = 0.0;
+      for(j=0; j<n_nod; j++)
+	{
+	  dispo = Dispoi_dim3_(crdcenters[i], nodesCoordinates[nu_nod_cl[j]]);
+	  if(dispo > radi_cl[i]) radi_cl[i] = dispo;
+	}
+    } // end of loop I
+  
+  // compute maximum, average and minimum radius of the clusters
+  rdmax = rdaver = i1 = 0;
+  rdmin = 1.0e20;
+  for(i=0; i<nclus; i++)
+    {
+      if(ne_clus[i] == 0) continue;
+      rdaver += radi_cl[i];
+      i1++;
+      if(radi_cl[i] < rdmin) rdmin = radi_cl[i];
+      if(radi_cl[i] > rdmax) rdmax = radi_cl[i];
+    }
+  rdaver /= (double)i1;
+  
+  // see if there are small clusters
+  if(rdaver > threshfac1*rdmin) iffewel = true;
+  
+  if(!iffewel) {
+    for(i=0; i<nclus; i++) delete [] crdcenters[i];
+    delete [] crdcenters;
+    return;
+  }
+  
+  // search the nearest cluster for each small cluster
+  Vector<int> NearClus(nclus, -1);
+  for(i=0; i<nclus; i++)
+    {
+      if(ne_clus[i] == 0 || threshfac1*radi_cl[i] >= rdaver) continue;
+      dmin = 1.0e20;
+      for(j=0; j<nclus; j++)
+	{
+	  if(i == j || ne_clus[j] == 0 || threshfac1*radi_cl[j] < rdaver) continue;
+	  dwk = Dispoi_dim3_(crdcenters[i], crdcenters[j]);
+	  if(dwk < dmin)
+	    {
+	      dmin = dwk;
+	      NearClus[i] = j;
+	    }
+	}
+    }
+
+  // store the element numbers in a matrix
+  int jdimtx = nel_max;
+  for(i=0; i<nclus; i++)
+    {
+      if(NearClus[i] >= 0)
+	{
+	  j = ne_clus[i] + ne_clus[NearClus[i]];
+	  if(j > jdimtx) jdimtx = j; 
+	}
+    }
+  Matrix<int> NuElClust(nclus, jdimtx, -1);
+  i1 = 0;
+  for(i=0; i<nclus; i++)
+    {
+      if(ne_clus[i] == 0) continue;
+      for(j=0; j<ne_clus[i]; j++) NuElClust(i, j) = nue_clus[i1++];
+    }
+  
+  // attach the small clusters to the nearst clusters
+  for(i=0; i<nclus; i++)
+    {
+      if(NearClus[i] == -1) continue;
+      
+      ine = NearClus[i];
+      i1 = 0;
+      for(j=0; j<jdimtx; j++)
+	{
+	  if(NuElClust(ine, j) == -1) break;
+	  i1++;
+	}
+      for(j=0; j<ne_clus[i]; j++) NuElClust(ine, i1 + j) = NuElClust(i, j);
+      ne_clus[ine] += ne_clus[i];
+      ne_clus[i] = 0;
+    }
+  
+  i1 = 0;
+  for(i=0; i<nclus; i++)
+    {
+      if(ne_clus[i] == 0) continue;
+      for(j=0; j<ne_clus[i]; j++) nue_clus[i1++] = NuElClust(i, j);
+    }
+  
+  // delete the array of coordinates of the center of each cluster
+  for(i=0; i<nclus; i++) delete [] crdcenters[i];
+  delete [] crdcenters;
+}
+
