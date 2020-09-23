@@ -20,19 +20,19 @@
 close all; clear
 
 % path of the grid
-evaluationGrid = fullfile('..', '..', 'Mesh2Input', 'Data', 'Evaluation Grids', '3_ARI');
+evaluationGrid = fullfile('..', '..', 'Mesh2Input', 'EvaluationGrids', '3_ARI');
 % show a figure
 doPlot         = true;
 
 % get the evaluation grid
-[nodes, numNodes, elems, numElems] = getMesh2HRTFevalGrid(evaluationGrid, doPlot);
+[nodes, numNodes, elems, numElems] = GetMesh2HRTFevalGrid(evaluationGrid, doPlot);
 
 
 %% --------------------------------- write an equal angle grid to Mesh2HRTF
 close all; clear
 
 % path of the grid for saving
-evaluationGrid = fullfile('..', '..', 'Mesh2Input', 'Data', 'Evaluation Grids', 'Custom');
+evaluationGrid = fullfile('..', '..', 'Mesh2Input', 'EvaluationGrids', 'Custom');
 
 % euqual angle grid in spherical coordinates
 sg        = [repmat( (0:10:350)', [17 1] ) repelem( (80:-10:-80)', 36)];
@@ -40,7 +40,7 @@ sg        = [repmat( (0:10:350)', [17 1] ) repelem( (80:-10:-80)', 36)];
 [x, y, z] = sph2cart( sg(:,1)/180*pi, sg(:,2)/180*pi, ones(size(sg,1),1) );
 
 
-writeMesh2HRTFevalGrid([x y z], evaluationGrid, true)
+WriteMesh2HRTFevalGrid([x y z], evaluationGrid, true)
 
 % save additional data - if wanted
 % print('-dpdf', fullfile(evaluationGrid, 'evaluationGrid'))

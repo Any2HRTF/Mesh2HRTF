@@ -1,5 +1,5 @@
 % D O C U M E N T A T I O N
-% function writeMesh2HRTFevalGrid(nodes, path, doPlot)
+% function WriteMesh2HRTFevalGrid(nodes, path, doPlot)
 %
 % writes evaluation grid in the format required by mesh2HRTF in the
 % location specified by path. nodes specify the spatial sampling points by
@@ -26,7 +26,7 @@
 % - In your publication, cite both articles:
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
-function writeMesh2HRTFevalGrid(nodes, path, doPlot)
+function WriteMesh2HRTFevalGrid(nodes, path, doPlot)
 
 % triangulate the nodes
 elements  = delaunayTriangulation(nodes(:,1), nodes(:,2), nodes(:,3)); 

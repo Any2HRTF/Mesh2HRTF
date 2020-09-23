@@ -25,5 +25,5 @@ if exist('ObjectMesh.mat','file')
     if ~exist(['Visualization' filesep 'ObjectMesh'],'dir')
         mkdir(['Visualization' filesep 'ObjectMesh'])
     end
-    EvalTools_export2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes{1}(:,2:end),elements{1}(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')
+    EvalToolsExport2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes{1}(:,2:end),elements{1}(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')
 end

@@ -14,7 +14,7 @@
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 
-function EvalTools_export2VTK(path,nodes,elements,data,datatype)
+function EvalToolsExport2VTK(path,nodes,elements,data,datatype)
 %EvalTools_EXPORT2VTK
 %   []=EvalTools_export2VTK(path,nodes,elements,data,datatype) exports
 %   data to VTK file for visualization in Paraview
