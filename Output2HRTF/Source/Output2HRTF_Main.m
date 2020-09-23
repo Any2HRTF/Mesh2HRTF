@@ -225,7 +225,7 @@ if reference
     % (HRTF definition). We do it reciprocal for ease of computation.
     
     volumeFlow = .1 * ones(size(pressure));
-    if exist('microphoneArea', 'var')
+    if exist('receiverArea', 'var')
         %has to be fixed for both ears....
         for nn = 1:numel(receiverArea)
             volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * receiverArea(nn);
