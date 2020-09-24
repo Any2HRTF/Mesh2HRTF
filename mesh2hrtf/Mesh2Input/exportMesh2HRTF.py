@@ -22,7 +22,7 @@ import datetime
 import math
 import shutil
 from math import pi
-from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty, FloatProperty, FloatVectorProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper
 
 bl_info = {
