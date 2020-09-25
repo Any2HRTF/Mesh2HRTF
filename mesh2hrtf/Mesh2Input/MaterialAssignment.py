@@ -1,15 +1,10 @@
 # material_and_assignment.py
-
-# Created by Robert Pelzer, Audio Communication Group, Technical University Berlin on 27.06.2017
-#################################################
-
-# This script will create the materials Skin, Left and Right ear and will automatically assign the materials accordingly. 
-# Two conditions have to be considered: 
-#   1: the head is already alligned and centered so that the ear canals are on the y-axis. This is important because this script defines the ear elements by finding the elements closest to the y-axis.
-#   2: if the head is remeshed the name of the ear (left or right) has to appear in the name. When neither of the expressions occur it is assumed that no re-mashing has taken place yet
+# Authors: The Mesh2HRTF developers
 #
-# To start the script load the mesh in object mode, select it and run the script.
-
+# See class MaterialAssignment(bpy.types.Operator) for information on how to
+# use this file. For debugging use the commeted code at the end insude Blenders
+# text editor.
+#
 #                                Mesh2HRTF
 #                Copyright (C) 2015 by Harald Ziegelwanger,
 #        Acoustics Research Institute, Austrian Academy of Sciences
@@ -26,219 +21,193 @@
 #   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 #   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 
-
 import bpy
 import bmesh
 import math
-
-head = bpy.context.active_object
-name=head.name
+from bpy.props import FloatProperty
 
 
+class MaterialAssignment(bpy.types.Operator):
+    '''Create and assign skin and ear materials for Mesh2HRTF export.
 
-#################################
-#material part
-################################
+    Actions on currently active object
+    ----------------------------------
+    0. remove all existing materials from the object
+    1. assign the material `Skin` to the entire object
+    2. assign the materials `Left ear` to the face that is closest to the
+       y-axis and has a positive y-value
+    3. assign the materials `Right ear` to the face that is closest to the
+       y-axis and has a negative y-value
+    4. rename the object to `Reference`
 
-# Create Material Skin
-skin = bpy.data.materials.new(name="Skin")
-# Assign Colour
-skin.diffuse_color=(0,1,0)
-#Create new amterial slot
-head.data.materials.append(skin)
+    Requirements
+    ------------
+    the head is already alligned and centered, i.e., the ear canals are on the
+    the y-axis. This is important because this script defines the ear elements
+    by finding the faces closest to the y-axis.
 
-# override false names, such as Skin.001 etc
-bpy.context.object.active_material_index = 0
-bpy.context.object.active_material.name = "Skin"
+    Usage
+    -----
+    1. Load the script into blender, e.g., by copying it to scripts/startup
+       (https://docs.blender.org/api/current/info_overview.html).
+    2. execute `bpy.ops.object.materialassignment()` in Blenders python
+       terminal or inside a script. Can also called with custom tolerance,
+       e.g., `bpy.ops.object.materialassignment(tolerance=3)`
 
-# Create Material for left ear
-left_ear= bpy.data.materials.new(name="Left ear")
-# Assign Colour
-left_ear.diffuse_color=(0,0,1)
-#Create new amterial slot
-head.data.materials.append(left_ear)
-# override false names
-bpy.context.object.active_material_index = 1
-bpy.context.object.active_material.name = "Left ear"
-
-# Create Material for right ear
-right_ear= bpy.data.materials.new(name="Right ear")
-# Assign Colour
-right_ear.diffuse_color=(1,0,0)
-#Create new amterial slot
-head.data.materials.append(right_ear)
-# override false names
-bpy.context.object.active_material_index = 2
-bpy.context.object.active_material.name = "Right ear"
-
-###switch into edit mode
-bpy.ops.object.editmode_toggle()
+    Input
+    -----
+    tolerance : FloatProperty
+        maximum distance from y-axis in mesh units ('mm' or 'm'). The default
+        is 2.
 
 
-##############################################
-#finding ears and assigning material
-##############################################
+    '''
+    bl_idname = "object.materialassignment"
+    bl_label = "MaterialAssignment"
+
+    tolerance: FloatProperty(
+        name = "tolerance",
+        description = "maximum distance from y-axis in mesh units \
+                       ('mm' or 'm'). The default is 2.",
+        default = 2,
+        )
+
+    def execute(self, context):
+        # unit = 'mm'
+        keywords = self.as_keywords(ignore=("check_existing", "filter_glob"))
+        assign_material(bpy.context.active_object, **keywords)
+        return {'FINISHED'}
 
 
+def setup_materials(obj):
+    '''Remove existing and create new materials required by Mesh2HRTF.'''
+
+    # remove existing materials
+    for i in range(len(bpy.context.object.material_slots)):
+        bpy.context.object.active_material_index = 0
+        bpy.ops.object.material_slot_remove()
+
+    # assign materials required for Mesh2HRTF
+    for idx, (name, color) in enumerate(zip(
+            ["Skin", "Left ear", "Right ear"],
+            [(0, 1, 0, 1), (0, 0, 1, 1), (1, 0, 0, 1)])):
+
+        # Create the material
+        material = bpy.data.materials.new(name=name)
+        # Assign Colour
+        material.diffuse_color=color
+        #Create new amterial slot
+        obj.data.materials.append(material)
+        # override false names, such as Skin.001 etc
+        bpy.context.object.active_material_index = idx
+        bpy.context.object.active_material.name = name
 
 
-obj = bpy.context.edit_object
-me = obj.data
-bm = bmesh.from_edit_mesh(me)
-bpy.ops.mesh.select_all(action = 'DESELECT')
+def get_ear_indices(bm, obj, tolerance):
+    '''Return indicees of faces at the entrance to the ear channels'''
 
-# use before accessing bm.verts[] with blender 2.73
-if hasattr(bm.verts, "ensure_lookup_table"): 
     bm.verts.ensure_lookup_table()
     bm.faces.ensure_lookup_table()
 
-# initialize helper variables
-left_index=0
-right_index=0
-dist_l_old=1
-dist_r_old=1
-y_l_old=1
-y_r_old=1
-y_delta=0.002
+    # initialize helper variables
+    left_indices = []
+    left_xy_distance = []
+    left_y = []
+    right_indices = []
+    right_xy_distance = []
+    right_y = []
+    min_y = [1000, 1000]
 
-# notice in Bmesh polygons are called faces
+    # world matrix for obtaining vertex positions in world coorindates
+    world = obj.matrix_world
 
-# iterate through all faces
-for face in bm.faces:
-    #if face.select:
-        #get the location
-        face_location = face.calc_center_median()
-        
+    # find possible faces at the ear channel entrances
+    for face in bm.faces:
 
-        # because of deformed and graded meshes cases have to be handled differently for each side!
-        if "left" in name:
-    	
-	        # finding left ear
-	        if face_location[1]>0: 
-	            
-	            # when it´ getting close
-	            if abs(face_location[0])<0.001 and abs(face_location[2])<0.001:
-	                #y-location
-	                y_loc_l=abs(face_location[1])
-	                #x-z distance sum 
-	                dist_l=abs(face_location[0]) + abs(face_location[2])
-	                
-	                #when it´ getting closer - y-location must be monitored for cases where the y-axis passes through the tragus
-	                if dist_l < dist_l_old and not (y_loc_l > (y_l_old+ y_delta)) or y_loc_l <  (y_l_old - y_delta):
-	                    left_index=face.index
-	                    dist_l_old=dist_l
-	                    y_l_old= y_loc_l
-	   
-	                
-	        # finding graded right ear
-	        if face_location[1]<0: 
-	            
-	            # when it´ getting close
-	            if abs(face_location[0])<0.01 and abs(face_location[2])<0.01:
-	                #y-location
-	                y_loc_r=abs(face_location[1])
-	                #x-z distance sum 
-	                dist_r=abs(face_location[0]) + abs(face_location[2])
-	                
-	                if dist_r < dist_r_old:
-	            
-	                    right_index=face.index
-	                    dist_r_old=dist_r
-	                    y_r_old= y_loc_r
+        # current face location in world coordinates
+        xyz = world @ face.calc_center_median()
+        # distance from y axis, and y-value
+        xy_distance = abs(xyz[0]) + abs(xyz[2])
+        y = xyz[1]
 
-        elif "right" in name:
-    	
-	        # finding graded left  ear 
-	        if face_location[1]>0: 
-	            
-	            # when it´ getting close
-	            if abs(face_location[0])<0.01 and abs(face_location[2])<0.01:
-	                #y-location
-	                y_loc_l=abs(face_location[1])
-	                #x-z distance sum 
-	                dist_l=abs(face_location[0]) + abs(face_location[2])
-	                
-	                
-	                if dist_l < dist_l_old:
-	                    left_index=face.index
-	                    dist_l_old=dist_l
-	                    y_l_old= y_loc_l
-	   
-	                
-	        # finding right ear
-	        if face_location[1]<0: 
-	            
-	            # when it´ getting close
-	            if abs(face_location[0])<0.001 and abs(face_location[2])<0.001:
-	                #y-location
-	                y_loc_r=abs(face_location[1])
-	                #x-z distance sum 
-	                dist_r=abs(face_location[0]) + abs(face_location[2])
-	                
-	                #when it´ getting closer - y-location must be monitored for cases where the y-axis passes through the tragus
-	                if dist_r < dist_r_old and not(y_loc_r > (y_r_old+ y_delta)) or y_loc_r <  (y_r_old - y_delta):
-	            
-	                    right_index=face.index
-	                    dist_r_old=dist_r
-	                    y_r_old= y_loc_r
+        # potential left ear
+        if y > 0 and abs(xyz[0]) < tolerance and abs(xyz[2]) < tolerance:
+            left_indices.append(face.index)
+            left_xy_distance.append(xy_distance)
+            left_y.append(abs(y))
+            if abs(y) < min_y[0]: min_y[0] = abs(y)
+        # potential right ear
+        elif y < 0 and abs(xyz[0]) < tolerance and abs(xyz[2]) < tolerance:
+            right_indices.append(face.index)
+            right_xy_distance.append(xy_distance)
+            right_y.append(abs(y))
+            if abs(y) < min_y[1]: min_y[1] = abs(y)
+
+    # find left ear element and try to exclude faces at the tragus
+    left_index = None
+    min_xy_dist = 1000
+    for n in range(len(left_indices)):
+        if left_y[n] < min_y[0] + tolerance and left_xy_distance[n] < min_xy_dist:
+            min_xy_dist = left_xy_distance[n]
+            left_index = left_indices[n]
+    # find left ear element and try to exclude faces at the tragus
+    right_index = None
+    min_xy_dist = 1000
+    for n in range(len(right_indices)):
+        if right_y[n] < min_y[1] + tolerance and right_xy_distance[n] < min_xy_dist:
+            min_xy_dist = right_xy_distance[n]
+            right_index = right_indices[n]
+
+    return left_index, right_index
 
 
-        else:
-                
-            # finding left ear
-	        if face_location[1]>0: 
-	            
-	            # when it´ getting close
-	            if abs(face_location[0])<0.001 and abs(face_location[2])<0.001:
-	                #y-location
-	                y_loc_l=abs(face_location[1])
-	                #x-z distance sum 
-	                dist_l=abs(face_location[0]) + abs(face_location[2])
-	                
-	                #when it´ getting closer - y-location must be monitored for cases where the y-axis passes through the tragus
-	                if dist_l < dist_l_old and not (y_loc_l > (y_l_old+ y_delta)) or y_loc_l <  (y_l_old - y_delta):
-	                    left_index=face.index
-	                    dist_l_old=dist_l
-	                    y_l_old= y_loc_l    
-    	
+def assign_material(obj, tolerance):
 
-	   
-	                
-	        # finding right ear
-	        if face_location[1]<0: 
-	            
-	            # when it´ getting close
-	            if abs(face_location[0])<0.001 and abs(face_location[2])<0.001:
-	                #y-location
-	                y_loc_r=abs(face_location[1])
-	                #x-z distance sum 
-	                dist_r=abs(face_location[0]) + abs(face_location[2])
-	                
-	                #when it´ getting closer - y-location must be monitored for cases where the y-axis passes through the tragus
-	                if dist_r < dist_r_old and not(y_loc_r > (y_r_old+ y_delta)) or y_loc_r <  (y_r_old - y_delta):
-	            
-	                    right_index=face.index
-	                    dist_r_old=dist_r
-	                    y_r_old= y_loc_r
+    # create materials
+    setup_materials(obj)
 
-#print(f.index)
+    # create mesh from object
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
 
-print(face_location, left_index, right_index)
+    # get indicees
+    print(f"Search tolerance: {tolerance} blender units")
+    left_index, right_index = get_ear_indices(bm, obj, tolerance)
 
-bm.faces[left_index].select = True
-bpy.context.object.active_material_index = 1
-bpy.ops.object.material_slot_assign()
-bm.faces[left_index].select = False
-  
-bm.faces[right_index].select = True 
-bpy.context.object.active_material_index = 2
-bpy.ops.object.material_slot_assign()
-bm.faces[right_index].select = False
+    # assign indicees
+    if left_index is not None:
+        bm.faces[left_index].material_index = 1
+        print(f"Left ear index: {left_index}")
+    if right_index is not None:
+        bm.faces[right_index].material_index = 2
+        print(f"Right ear indexX {right_index}")
+    if left_index is None or right_index is None:
+        print("One or more ears not found. Consider increasing the tolerance \
+            or simulating only one ear.")
 
-# Show the updates in the viewport
-# and recalculate n-gon tessellation.
-#bmesh.update_edit_mesh(me, True)
+    bm.to_mesh(obj.data)
+    bm.free()
 
-bpy.ops.object.editmode_toggle()
-#renaming the object
-head.name="Reference"
+    #renaming the object
+    obj.name="Reference"
+
+
+def register():
+    bpy.utils.register_class(MaterialAssignment)
+
+
+def unregister():
+    bpy.utils.unregister_class(MaterialAssignment)
+
+
+if __name__ == "__main__":
+    register()
+
+
+# for debugging only
+# import MaterialAssignment_OW
+# import importlib
+# import bpy
+#
+# importlib.reload(MaterialAssignment_OW)
+# MaterialAssignment_OW.assign_material(bpy.context.active_object, tolerance=2)
