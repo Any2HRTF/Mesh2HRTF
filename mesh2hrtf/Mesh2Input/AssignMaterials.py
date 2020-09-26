@@ -27,7 +27,7 @@ import math
 from bpy.props import FloatProperty
 
 
-class MaterialAssignment(bpy.types.Operator):
+class AssignMaterials(bpy.types.Operator):
     '''Create and assign skin and ear materials for Mesh2HRTF export.
 
     Actions on currently active object
@@ -62,8 +62,8 @@ class MaterialAssignment(bpy.types.Operator):
 
 
     '''
-    bl_idname = "object.materialassignment"
-    bl_label = "MaterialAssignment"
+    bl_idname = "object.assignmaterials"
+    bl_label = "AssignMaterials"
 
     tolerance: FloatProperty(
         name = "tolerance",
@@ -193,11 +193,11 @@ def assign_material(obj, tolerance):
 
 
 def register():
-    bpy.utils.register_class(MaterialAssignment)
+    bpy.utils.register_class(AssignMaterials)
 
 
 def unregister():
-    bpy.utils.unregister_class(MaterialAssignment)
+    bpy.utils.unregister_class(AssignMaterials)
 
 
 if __name__ == "__main__":
@@ -205,9 +205,9 @@ if __name__ == "__main__":
 
 
 # for debugging only
-# import MaterialAssignment_OW
+# import AssignMaterials
 # import importlib
 # import bpy
 #
-# importlib.reload(MaterialAssignment_OW)
-# MaterialAssignment_OW.assign_material(bpy.context.active_object, tolerance=2)
+# importlib.reload(AssignMaterials)
+# AssignMaterials.assign_material(bpy.context.active_object, tolerance=2)
