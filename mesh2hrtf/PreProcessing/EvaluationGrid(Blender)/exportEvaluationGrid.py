@@ -21,10 +21,10 @@ from bpy_extras.io_utils import ExportHelper
 
 bl_info = {
     "name": "Export Evaluation Grid",
-    "author": "Harald Ziegelwanger",
-    "version": (0, 1, 3),
-    "blender": (2, 76),
-    "location": "File > Import-Export",
+    "author": "The Mesh2HRTF developers",
+    "version": (0, 2, 0),
+    "blender": (2, 80, 0),
+    "location": "File > Export",
     "description": "Export evaluation grid",
     "warning": "",
     "wiki_url": "",
@@ -35,25 +35,26 @@ bl_info = {
 
 class ExportEvaluationgrid(bpy.types.Operator, ExportHelper):
     '''Export a single object as an evaluation grid'''
+
     bl_idname = "export_evaluationgrid.inp"
     bl_label = "Export Evaluation Grid"
 
     filename_ext = ".txt"
-    filter_glob = StringProperty(default="*.txt", options={'HIDDEN'})
+    filter_glob: StringProperty(default="*.txt", options={'HIDDEN'})
 
-    offset = IntProperty(
+    offset: IntProperty(
             name="Offset",
             description="Node and element index offset",
-            default=0,
+            default=200000,
             min=0,
             max=10000000,
             )
-    suffix = StringProperty(
+    suffix: StringProperty(
             name="Element suffix",
             description="Element suffix",
             default=" 2 0 1",
             )
-    unit = EnumProperty(
+    unit: EnumProperty(
             name="Unit",
             description="Unit of the evaluation grid",
             items=[('m', 'm', 'Meter'), ('mm', 'mm', 'Millimeter')],
@@ -72,6 +73,8 @@ class ExportEvaluationgrid(bpy.types.Operator, ExportHelper):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
 
         row = layout.row()
         row.prop(self, "offset")
@@ -110,7 +113,7 @@ class ExportEvaluationgrid(bpy.types.Operator, ExportHelper):
 
 # ----------------------- Write object data ----------------------------------------------
         obj_data = obj.data
-        file = open(("%s/Nodes.txt" % filepath), "w", encoding="utf8", newline="\n")
+        file = open(os.path.join(filepath, "Nodes.txt"), "w", encoding="utf8", newline="\n")
         fw = file.write
         fw("%i\n" % len(obj_data.vertices[:]))
         for ii in range(len(obj_data.vertices[:])):
@@ -118,7 +121,7 @@ class ExportEvaluationgrid(bpy.types.Operator, ExportHelper):
             fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
         file.close
 
-        file = open(("%s/Elements.txt" % filepath), "w", encoding="utf8", newline="\n")
+        file = open(os.path.join(filepath, "Elements.txt"), "w", encoding="utf8", newline="\n")
         fw = file.write
         fw("%i\n" % len(obj_data.polygons[:]))
         if len(obj_data.polygons[0].vertices[:]) == 3:
@@ -142,9 +145,9 @@ def menu_func_export(self, context):
 
 def register():
     bpy.utils.register_class(ExportEvaluationgrid)
-    bpy.types.INFO_MT_file_export.append(menu_func_export)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 
 def unregister():
     bpy.utils.unregister_class(ExportEvaluationgrid)
-    bpy.types.INFO_MT_file_export.remove(menu_func_export)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
