@@ -347,65 +347,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              programPath="",
              ):
 
-        # for calculating the center and area of the receivers in reciprocal mode
-        def calculateReceiverProperties(obj, obj_data, unitFactor):
-
-            # allocate variables
-            earArea = [0., 0.]
-            earCenter = [[[1e6, -1e6],
-                          [1e6, -1e6],
-                          [1e6, -1e6]
-                         ],
-                         [[1e6, -1e6],
-                          [1e6, -1e6],
-                          [1e6, -1e6]
-                         ]]
-
-            # loop elements in obj_data
-            for ii in range(len(obj_data.polygons[:])):
-                if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name or obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
-
-                    # select the ear
-                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
-                        ear = 0
-                    else:
-                        ear = 1
-
-                    # update min and max x,y,z-values
-                    for vertex in range(3):
-                        for coord in range(3):
-                            value = obj_data.vertices[obj_data.polygons[ii].vertices[vertex]].co[coord]
-                            if value < earCenter[ear][coord][0]:
-                                earCenter[ear][coord][0] = value
-                            if value > earCenter[ear][coord][1]:
-                                earCenter[ear][coord][1] = value
-
-                    # to calculate the polygons (triangles) area first calculate the side lengths using euclidean distance and then use Heron´s formula to calculate the area
-                    # side_a = corner 0 to corner 1
-                    side_a = math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)*unitFactor**2)
-
-                    # side_b = corner 1 to corner 2
-                    side_b = math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)*unitFactor**2)
-
-                    # side_c = corner 2 to corner 0
-                    side_c = math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)*unitFactor**2)
-
-                    # increment area using Heron´s formula
-                    earArea[ear] += 0.25 * math.sqrt((side_a+side_b+side_c)
-                                    *(-side_a+side_b+side_c)
-                                    *(side_a-side_b+side_c)
-                                    *(side_a+side_b-side_c))
-
-            # estimate the center from min and max x,y,z-values
-            earCenter = [[(earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,   # left ear center
-                          (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
-                          (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
-                         [(earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,   # right ear center
-                          (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
-                          (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
-
-            return earCenter, earArea
-
         # Switch to object mode to avoid export errors --------------------
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
@@ -826,7 +767,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             # get the receiver/ear centers and areas
             obj = bpy.data.objects['Reference']
             obj_data = obj.data
-            earCenter, earArea = calculateReceiverProperties(obj,obj_data,unitFactor)
+            earCenter, earArea = _calculateReceiverProperties(obj,obj_data,unitFactor)
 
             # write left ear data
             if ear=='Left ear' or ear=='Both ears':
@@ -1094,6 +1035,98 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         return {'FINISHED'}
 
+
+def _calculateReceiverProperties(obj, obj_data, unitFactor):
+    """
+    Calculate center and area of receiver elements in reciprocal simulation.
+
+    """
+
+    # init ear area
+    earArea = [0., 0.]
+    # init min and max xyz coordinates for left and right ear
+    earCenter = [[[1e6, -1e6], [1e6, -1e6], [1e6, -1e6]],
+                 [[1e6, -1e6], [1e6, -1e6], [1e6, -1e6]]]
+
+    # loop elements in obj_data
+    for ii in range(len(obj_data.polygons[:])):
+        if obj.material_slots[obj_data.polygons[ii].material_index].name \
+                == obj.material_slots['Left ear'].name \
+                or obj.material_slots[obj_data.polygons[ii].material_index].name \
+                == obj.material_slots['Right ear'].name:
+
+            # select the ear
+            if obj.material_slots[obj_data.polygons[ii].material_index].name \
+                    == obj.material_slots['Left ear'].name:
+                ear = 0
+            else:
+                ear = 1
+
+            # update min and max x,y,z-values
+            for vertex in range(3):
+                for coord in range(3):
+                    value = obj_data.vertices[obj_data.polygons[ii].vertices[vertex]].co[coord]
+                    if value < earCenter[ear][coord][0]:
+                        earCenter[ear][coord][0] = value
+                    if value > earCenter[ear][coord][1]:
+                        earCenter[ear][coord][1] = value
+
+            # to calculate the polygons (triangles) area first calculate the side lengths using euclidean distance and then use Heron´s formula to calculate the area
+            # side_a = corner 0 to corner 1
+            side_a = math.sqrt(((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2) \
+                * unitFactor**2)
+
+            # side_b = corner 1 to corner 2
+            side_b = math.sqrt(((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2) \
+                * unitFactor**2)
+
+            # side_c = corner 2 to corner 0
+            side_c = math.sqrt(((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2) \
+                *unitFactor**2)
+
+            # increment area using Heron´s formula
+            earArea[ear] += 0.25 * math.sqrt(
+                             (side_a+side_b+side_c)
+                            *(-side_a+side_b+side_c)
+                            *(side_a-side_b+side_c)
+                            *(side_a+side_b-side_c))
+
+    # estimate the center from min and max x,y,z-values
+    earCenter = [
+        [  # left ear center
+        (earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,
+        (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
+        (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
+        [  # right ear center
+        (earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,
+        (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
+        (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
+
+    return earCenter, earArea
 
 # ----------------------- Blender add-on registration --------------------------
 def menu_func_export(self, context):
