@@ -50,9 +50,9 @@ class AssignMaterials(bpy.types.Operator):
     -----
     1. Load the script into blender, e.g., by copying it to scripts/startup
        (https://docs.blender.org/api/current/info_overview.html).
-    2. execute `bpy.ops.object.materialassignment()` in Blenders python
+    2. execute `bpy.ops.object.assignmaterials()` in Blenders python
        terminal or inside a script. Can also called with custom tolerance,
-       e.g., `bpy.ops.object.materialassignment(tolerance=3)`
+       e.g., `bpy.ops.object.assignmaterials(tolerance=3)`
 
     Input
     -----
