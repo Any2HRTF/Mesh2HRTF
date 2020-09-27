@@ -405,6 +405,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                           (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
 
             return earCenter, earArea
+
+        # Switch to object mode to avoid export errors --------------------
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
 # ----------------------- Initialize constants ---------------------------------
         bpy.ops.object.transform_apply(location=True)
         bpy.ops.object.transform_apply(rotation=True)
