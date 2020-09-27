@@ -347,12 +347,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              programPath="",
              ):
 
-        def rvec3d(v):
-            return round(v[0], 6), round(v[1], 6), round(v[2], 6)
-
-        def rvec2d(v):
-            return round(v[0], 6), round(v[1], 6)
-
         # for calculating the center and area of the receivers in reciprocal mode
         def calculateReceiverProperties(obj, obj_data, unitFactor):
 
