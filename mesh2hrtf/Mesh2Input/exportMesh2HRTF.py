@@ -14,8 +14,7 @@
 #   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 #   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 #
-# Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
-# Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)
+# Authors: The Mesh2HRTF developers
 
 import os
 import bpy
@@ -28,10 +27,10 @@ from bpy_extras.io_utils import ExportHelper
 
 bl_info = {
     "name": "Mesh2HRTF input format",
-    "author": "Harald Ziegelwanger",
-    "version": (0, 1, 3),
-    "blender": (2, 76),
-    "location": "File > Import-Export",
+    "author": "The Mesh2HRTF developers",
+    "version": (0, 2, 0),
+    "blender": (2, 80, 0),
+    "location": "File > Export",
     "description": "Export Mesh2HRTF input files",
     "warning": "",
     "wiki_url": "",
@@ -46,54 +45,54 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     bl_label = "Export Mesh2HRTF"
 
     filename_ext = ""
-    filter_glob = StringProperty(default="", options={'HIDDEN'})
+    filter_glob: StringProperty(default="", options={'HIDDEN'})
 
-    title = StringProperty(
+    title: StringProperty(
         name="Title",
         description="Title",
         default="Head-Related Transfer Functions",
         )
-    frequencyStepSize = IntProperty(
+    frequencyStepSize: IntProperty(
         name="Freq step",
         description="Lowest frequency and frequency step-size",
         default=100,
         min=10,
         max=24000,
         )
-    maxFrequency = IntProperty(
+    maxFrequency: IntProperty(
         name="Freq max",
         description="Highest evaluated frequency",
         default=20000,
         min=10,
         max=24000,
         )
-    cpuFirst = IntProperty(
+    cpuFirst: IntProperty(
         name="CPU (first)",
         description="First 'CPU' used",
         default=1,
         min=1,
         max=100,
         )
-    cpuLast = IntProperty(
+    cpuLast: IntProperty(
         name="CPU (last)",
         description="Last 'CPU' used",
         default=10,
         min=1,
         max=100,
         )
-    numCoresPerCPU = IntProperty(
+    numCoresPerCPU: IntProperty(
         name="Num. of used cores",
         description="Number of used cores per CPU",
         default=8,
         min=1,
         max=8,
         )
-    pictures = BoolProperty(
+    pictures: BoolProperty(
         name="Pictures",
         description="Render pictures",
         default=True,
         )
-    ear = EnumProperty(
+    ear: EnumProperty(
         name="Ear",
         description="Selected ear",
         items=[('Left ear', 'left', 'Left ear'),
@@ -102,7 +101,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('None', 'none', 'None')],
         default='Both ears',
         )
-    evaluationGrid1 = EnumProperty(
+    evaluationGrid1: EnumProperty(
         name="Ev.Grid 1",
         description="Selected evaluation grid",
         items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
@@ -119,7 +118,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('None', 'None', 'None')],
         default='3_ARI',
         )
-    evaluationGrid2 = EnumProperty(
+    evaluationGrid2: EnumProperty(
         name="Ev.Grid 2",
         description="Selected evaluation grid",
         items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
@@ -136,7 +135,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('None', 'None', 'None')],
         default='None',
         )
-    evaluationGrid3 = EnumProperty(
+    evaluationGrid3: EnumProperty(
         name="Ev.Grid 3",
         description="Selected evaluation grid",
         items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
@@ -153,7 +152,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('None', 'None', 'None')],
         default='None',
         )
-    evaluationGrid4 = EnumProperty(
+    evaluationGrid4: EnumProperty(
         name="Ev.Grid 4",
         description="Selected evaluation grid",
         items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
@@ -170,7 +169,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('None', 'None', 'None')],
         default='None',
         )
-    evaluationGrid5 = EnumProperty(
+    evaluationGrid5: EnumProperty(
         name="Ev.Grid 5",
         description="Selected evaluation grid",
         items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
@@ -187,7 +186,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('None', 'None', 'None')],
         default='None',
         )
-    method = EnumProperty(
+    method: EnumProperty(
         name="Method",
         description="Choose the calculation method",
         items=[('0', 'BEM', 'Traditional BEM'),
@@ -195,56 +194,56 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('4', 'ML-FMM BEM', 'Multilevel fast-multipole method')],
         default='4',
         )
-    reciprocity = BoolProperty(
-        name="Recip.",
+    reciprocity: BoolProperty(
+        name="Reciprocity",
         description="Calculation with reciprocity",
         default=True,
         )
-    sourceXPosition = StringProperty(
+    sourceXPosition: StringProperty(
         name="Source (x)",
         description="Source Position (X-Coordinate)",
         default="0",
         )
-    sourceYPosition = StringProperty(
+    sourceYPosition: StringProperty(
         name="Source (y)",
         description="Source Position (Y-Coordinate)",
         default="101",
         )
-    sourceZPosition = StringProperty(
+    sourceZPosition: StringProperty(
         name="Source (z)",
         description="Source Position (Z-Coordinate)",
         default="0",
         )
-    speedOfSound = StringProperty(
+    speedOfSound: StringProperty(
         name="c (m/s)",
         description="Speed of sound (m/s)",
         default="346.18",
         )
-    densityOfMedium = StringProperty(
+    densityOfMedium: StringProperty(
         name="rho ()",
         description="Density of air (kg/m^3)",
         default="1.1839",
         )
-    unit = EnumProperty(
+    unit: EnumProperty(
         name="Unit",
         description="Unit of the object",
         items=[('m', 'm', 'Meter'), ('mm', 'mm', 'Millimeter')],
         default='mm',
         )
-    frequencyDependency = BoolProperty(
-        name="Freq.-dep.",
+    frequencyDependency: BoolProperty(
+        name="Frequency dependency",
         description="Use frequency-dependent meshes",
         default=False,
         )
-    nearFieldCalculation = BoolProperty(
-        name="NF-Calc.",
+    nearFieldCalculation: BoolProperty(
+        name="Near-field calculation",
         description="Calculate near-field HRTFs",
         default=False,
         )
-    programPath = StringProperty(
+    programPath: StringProperty(
         name="Mesh2HRTF-path",
-        description="Path to mesh2HRTF",
-        default=r"C:\Users\jkhan\Documents\Mesh2HRTF - Kopie\trunk",
+        description="Path to the mesh2HRTF folder containing the folders 'Mesh2Input', 'NumCalc', etc.",
+        default=r"path/to/mesh2hrtf",
         )
 
     @classmethod
@@ -259,6 +258,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
 
         row = layout.row()
         row.prop(self, "title")
@@ -266,7 +267,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "ear")
         row = layout.row()
         row.prop(self, "pictures")
-        layout.label("Point Source:")
+        layout.label(text="Point Source:")
         row = layout.row()
         row.prop(self, "sourceXPosition")
         row = layout.row()
@@ -275,16 +276,16 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "sourceZPosition")
         row = layout.row()
         row.prop(self, "reciprocity")
-        layout.label("Constants:")
+        layout.label(text="Constants:")
         row = layout.row()
         row.prop(self, "speedOfSound")
         row = layout.row()
         row.prop(self, "densityOfMedium")
-        layout.label("ObjectMeshes:")
+        layout.label(text="ObjectMeshes:")
         row = layout.row()
         row.prop(self, "unit")
         row = layout.row()
-        layout.label("Evaluation Grids:")
+        layout.label(text="Evaluation Grids:")
         row = layout.row()
         row.prop(self, "evaluationGrid1")
         row = layout.row()
@@ -297,7 +298,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "evaluationGrid5")
         row = layout.row()
         row.prop(self, "nearFieldCalculation")
-        layout.label("Frequencies:")
+        layout.label(text="Frequencies:")
         row = layout.row()
         row.prop(self, "frequencyStepSize")
         row = layout.row()
@@ -306,14 +307,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "frequencyDependency")
         row = layout.row()
         row.prop(self, "method")
-        layout.label("Cluster:")
+        layout.label(text="Cluster:")
         row = layout.row()
         row.prop(self, "cpuFirst")
         row = layout.row()
         row.prop(self, "cpuLast")
         row = layout.row()
         row.prop(self, "numCoresPerCPU")
-        layout.label("Mesh2HRTF:")
+        layout.label(text="Mesh2HRTF:")
         row = layout.row()
         row.prop(self, "programPath")
 
@@ -346,66 +347,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              programPath="",
              ):
 
-        def rvec3d(v):
-            return round(v[0], 6), round(v[1], 6), round(v[2], 6)
+        # Switch to object mode to avoid export errors --------------------
+        bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        def rvec2d(v):
-            return round(v[0], 6), round(v[1], 6)
-
-        # for calculating the center and area of the receivers in reciprocal mode
-        def calculateReceiverProperties(obj, obj_data, unitFactor):
-
-            # allocate variables
-            earArea   = [0., 0.]
-            earCenter = [[[1e6,-1e6],
-                          [1e6,-1e6],
-                          [1e6,-1e6]
-                         ],
-                         [[1e6,-1e6],
-                          [1e6,-1e6],
-                          [1e6,-1e6]
-                         ]]
-
-            # loop elements in obj_data
-            for ii in range(len(obj_data.polygons[:])):
-                if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name or obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Right ear'].name:
-
-                    # select the ear
-                    if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots['Left ear'].name:
-                        ear = 0
-                    else:
-                        ear = 1
-
-                    # update min and max x,y,z-values
-                    for vertex in range(3):
-                        for coord in range (3):
-                            value = obj_data.vertices[obj_data.polygons[ii].vertices[vertex]].co[coord]
-                            if value < earCenter[ear][coord][0]: earCenter[ear][coord][0] = value
-                            if value > earCenter[ear][coord][1]: earCenter[ear][coord][1] = value
-
-                    ## to calculate the polygons (triangles) area first calculate the side lengths using euclidean distance and then use Heron´s formula to calculate the area
-                    # side_a = corner 0 to corner 1
-                    side_a=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)*unitFactor**2)
-
-                    # side_b = corner 1 to corner 2
-                    side_b=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)*unitFactor**2)
-
-                    # side_c = corner 2 to corner 0
-                    side_c=math.sqrt(((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)*unitFactor**2 + ((obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2]-obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)*unitFactor**2)
-
-                    # increment area using Heron´s formula
-                    earArea[ear] += 0.25 * math.sqrt((side_a+side_b+side_c)*(-side_a+side_b+side_c)*(side_a-side_b+side_c)*(side_a+side_b-side_c))
-
-            # estimate the center from min and max x,y,z-values
-            earCenter  = [[( earCenter[0][0][0]  + earCenter[0][0][1]  ) / 2 * unitFactor,   # left ear center
-                           ( earCenter[0][1][0]  + earCenter[0][1][1]  ) / 2 * unitFactor,
-                           ( earCenter[0][2][0]  + earCenter[0][2][1]  ) / 2 * unitFactor],
-                          [( earCenter[1][0][0]  + earCenter[1][0][1]  ) / 2 * unitFactor,   # right ear center
-                           ( earCenter[1][1][0]  + earCenter[1][1][1]  ) / 2 * unitFactor,
-                           ( earCenter[1][2][0]  + earCenter[1][2][1]  ) / 2 * unitFactor]]
-
-
-            return earCenter, earArea
 # ----------------------- Initialize constants ---------------------------------
         bpy.ops.object.transform_apply(location=True)
         bpy.ops.object.transform_apply(rotation=True)
@@ -417,37 +361,42 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 #         bpy.data.scenes['Scene'].camera = cam
         cam.data.clip_end = 0.1
         cam.data.clip_end = 1000
-        lamp = bpy.data.objects['Lamp']
-        lampradius = 300
-        lamp.location = (0, lampradius, 0)
-        bpy.data.lamps['Lamp'].energy = 800
-        bpy.data.lamps['Lamp'].distance = 100
-        renderloc = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0.707, 0.707, 0], [-0.707, 0.707, 0], [0.707, -0.707, 0], [-0.707, -0.707, 0]]  # , [0.707, 0, 0.707], [-0.707, 0, 0.707], [0.707, 0,-0.707], [-0.707, 0,-0.707], [0, 0.707, 0.707], [0,-0.707, 0.707], [0, 0.707,-0.707], [0,-0.707,-0.707]]
-        renderrot = [[pi/2, 0, pi/2], [pi/2, 0, 3*pi/2], [pi/2, 0, pi], [3/2*pi, pi, pi], [pi/2, 0, 3/4*pi], [pi/2, 0, 5/4*pi], [pi/2, 0, pi/4], [pi/2, 0, -pi/4]]  # , [pi/4, 0, pi/2], [5/4*pi, pi, pi/2], [3/4*pi, 0, pi/2], [0, 4*5/pi, 0], [pi/4, 0, pi], [pi/4, 0, 0], [3/4*pi, 0, pi], [3/4*pi, 0, 0]]
-        rendernam = [[0, 0], [180, 0], [90, 0], [270, 0], [45, 0], [135, 0], [315, 0], [225, 0]]
+        light = bpy.data.objects['Light']
+        lightradius = 300
+        light.location = (0, lightradius, 0)
+        bpy.data.lights['Light'].energy = 800
+        bpy.data.lights['Light'].distance = 100
+        renderloc = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
+                     [0.707, 0.707, 0], [-0.707, 0.707, 0], [0.707, -0.707, 0],
+                     [-0.707, -0.707, 0]]
+        renderrot = [[pi/2, 0, pi/2], [pi/2, 0, 3*pi/2], [pi/2, 0, pi],
+                     [3/2*pi, pi, pi], [pi/2, 0, 3/4*pi], [pi/2, 0, 5/4*pi],
+                     [pi/2, 0, pi/4], [pi/2, 0, -pi/4]]
+        rendernam = [[0, 0], [180, 0], [90, 0], [270, 0],
+                     [45, 0], [135, 0], [315, 0], [225, 0]]
 
         bpy.data.scenes['Scene'].render.pixel_aspect_x = 1
         bpy.data.scenes['Scene'].render.pixel_aspect_y = 1
         bpy.data.scenes['Scene'].render.resolution_x = 1440
         bpy.data.scenes['Scene'].render.resolution_y = 1920
 
-        tmp = open("%s/VERSION" % programPath)
-        version = tmp.readline()
+        with open(os.path.join(programPath, "..", "VERSION")) as read_version:
+            version = read_version.readline()
 
         objects = ([])
 
         (filepath1, filename1) = os.path.split(filepath)
         filename1 = "NC.inp"
 
-        temp = ("%s/ObjectMeshes/" % filepath1)
+        temp = os.path.join(filepath1, "ObjectMeshes")
         if not os.path.exists(temp):
             os.mkdir(temp)
 
-        temp = ("%s/EvaluationGrids/" % filepath1)
+        temp = os.path.join(filepath1, "EvaluationGrids")
         if not os.path.exists(temp):
             os.mkdir(temp)
 
-        temp = ("%s/NumCalc/" % filepath1)
+        temp = os.path.join(filepath1, "NumCalc")
         if not os.path.exists(temp):
             os.mkdir(temp)
 
@@ -474,12 +423,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 lowFrequency = 0
                 lowFrequencyCores = 0
 
-        evaluationGridPath = ("%s/Mesh2Input/EvaluationGrids" % programPath)
+        evaluationGridPath = os.path.join(programPath,
+            "Mesh2Input", "EvaluationGrids")
 
 # ------------------------ Write object data -----------------------------------
         for obj in bpy.context.scene.objects[:]:
             if obj.type == 'MESH' and not obj.name == 'User':
-                bpy.context.scene.objects.active = obj
+                bpy.context.view_layer.objects.active = obj
                 bpy.ops.object.transform_apply(location=True)
                 bpy.ops.object.transform_apply(rotation=True)
                 bpy.ops.object.transform_apply(scale=True)
@@ -487,11 +437,11 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 obj.hide_render = False
                 obj_data = obj.data
 
-                temp = ("%s/ObjectMeshes/%s/" % (filepath1, obj.name))
+                temp = os.path.join(filepath1, "ObjectMeshes", obj.name)
                 if not os.path.exists(temp):
                     os.mkdir(temp)
 
-                file = open(("%s/ObjectMeshes/%s/Nodes.txt" % (filepath1, obj.name)), "w", encoding="utf8", newline="\n")
+                file = open(os.path.join(filepath1, "ObjectMeshes", obj.name, "Nodes.txt"), "w", encoding="utf8", newline="\n")
                 fw = file.write
                 fw("%i\n" % len(obj_data.vertices[:]))
                 for ii in range(len(obj_data.vertices[:])):
@@ -499,7 +449,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
                 file.close
 
-                file = open(("%s/ObjectMeshes/%s/Elements.txt" % (filepath1, obj.name)), "w", encoding="utf8", newline="\n")
+                file = open(os.path.join(filepath1, "ObjectMeshes", obj.name, "Elements.txt"), "w", encoding="utf8", newline="\n")
                 fw = file.write
                 fw("%i\n" % len(obj_data.polygons[:]))
 
@@ -523,7 +473,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     print('No maximum object frequency found.\nPlease change object names to L{maxobjfq}/R{maxobjfq} e.g. L20000 or R20000.')
         maxObjectFrequency.sort()
 
-        bpy.ops.wm.save_as_mainfile(filepath=("%s/3d Model.blend" % filepath1), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(filepath1, "3d Model.blend"), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
 
 # ------------------------ Write evaluation grid data --------------------------
         if nearFieldCalculation:
@@ -538,11 +488,11 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             NFGrid = bpy.context.active_object
             NFGrid.name = 'NFGrid'
             NFGrid_data = NFGrid.data
-            temp = ("%s/EvaluationGrids/NF_Sphere" % (filepath1))
+            temp = os.path.join(filepath1, "EvaluationGrids", "NF_Sphere")
             if not os.path.exists(temp):
                 os.mkdir(temp)
 
-            file = open(("%s/EvaluationGrids/NF_Sphere/Nodes.txt" % (filepath1)), "w", encoding="utf8", newline="\n")
+            file = open(os.path.join(filepath1, "EvaluationGrids", "NF_Sphere", "Nodes.txt"), "w", encoding="utf8", newline="\n")
             fw = file.write
             fw("%i\n" % len(NFGrid_data.vertices[:]))
             for ii in range(len(NFGrid_data.vertices[:])):
@@ -550,7 +500,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 fw("%.6f %.6f %.6f\n" % (NFGrid_data.vertices[ii].co[0]*unitFactor, NFGrid_data.vertices[ii].co[1]*unitFactor, NFGrid_data.vertices[ii].co[2]*unitFactor))
             file.close
 
-            file = open(("%s/EvaluationGrids/NF_Sphere/Elements.txt" % (filepath1)), "w", encoding="utf8", newline="\n")
+            file = open(os.path.join(filepath1, "EvaluationGrids", "NF_Sphere", "Elements.txt"), "w", encoding="utf8", newline="\n")
             fw = file.write
             fw("%i\n" % len(NFGrid_data.polygons[:]))
             for ii in range(len(NFGrid_data.polygons[:])):
@@ -562,12 +512,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         else:
             if not evaluationGrid1 == 'None':
                 if not evaluationGrid1 == 'User':
-                    temp = ("%s/EvaluationGrids/%s" % (filepath1, evaluationGrid1))
+                    temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid1)
                     if not os.path.exists(temp):
                         os.mkdir(temp)
 
-                    shutil.copyfile(("%s/%s/Nodes.txt" % (evaluationGridPath, evaluationGrid1)), ("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid1)))
-                    shutil.copyfile(("%s/%s/Elements.txt" % (evaluationGridPath, evaluationGrid1)), ("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid1)))
+                    shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
+                    shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Elements.txt"),os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
                 else:
                     obj = bpy.data.objects['User']
                     if obj.type == 'MESH':
@@ -579,11 +529,11 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         obj.hide_render = False
                         obj_data = obj.data
 
-                        temp = ("%s/EvaluationGrids/User/" % filepath1)
+                        temp = os.path.join(filepath1, "EvaluationGrids", "User")
                         if not os.path.exists(temp):
                             os.mkdir(temp)
 
-                        file = open(("%s/EvaluationGrids/User/Nodes.txt" % filepath1), "w", encoding="utf8", newline="\n")
+                        file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Nodes.txt"), "w", encoding="utf8", newline="\n")
                         fw = file.write
                         fw("%i\n" % len(obj_data.vertices[:]))
                         for ii in range(len(obj_data.vertices[:])):
@@ -591,7 +541,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                             fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
                         file.close
 
-                        file = open(("%s/EvaluationGrids/User/Elements.txt" % filepath1), "w", encoding="utf8", newline="\n")
+                        file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Elements.txt"), "w", encoding="utf8", newline="\n")
                         fw = file.write
                         fw("%i\n" % len(obj_data.polygons[:]))
                         if len(obj_data.polygons[0].vertices[:]) == 3:
@@ -605,36 +555,36 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         file.close
 
             if not evaluationGrid2 == 'None':
-                temp = ("%s/EvaluationGrids/%s" % (filepath1, evaluationGrid2))
+                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid2)
                 if not os.path.exists(temp):
                     os.mkdir(temp)
 
-                shutil.copyfile(("%s/%s/Nodes.txt" % (evaluationGridPath, evaluationGrid2)), ("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid2)))
-                shutil.copyfile(("%s/%s/Elements.txt" % (evaluationGridPath, evaluationGrid2)), ("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid2)))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
 
             if not evaluationGrid3 == 'None':
-                temp = ("%s/EvaluationGrids/%s" % (filepath1, evaluationGrid3))
+                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid3)
                 if not os.path.exists(temp):
                     os.mkdir(temp)
 
-                shutil.copyfile(("%s/%s/Nodes.txt" % (evaluationGridPath, evaluationGrid3)), ("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid3)))
-                shutil.copyfile(("%s/%s/Elements.txt" % (evaluationGridPath, evaluationGrid3)), ("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid3)))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
 
             if not evaluationGrid4 == 'None':
-                temp = ("%s/EvaluationGrids/%s" % (filepath1, evaluationGrid4))
+                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid4)
                 if not os.path.exists(temp):
                     os.mkdir(temp)
 
-                shutil.copyfile(("%s/%s/Nodes.txt" % (evaluationGridPath, evaluationGrid4)), ("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid4)))
-                shutil.copyfile(("%s/%s/Elements.txt" % (evaluationGridPath, evaluationGrid4)), ("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid4)))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
 
             if not evaluationGrid5 == 'None':
-                temp = ("%s/EvaluationGrids/%s" % (filepath1, evaluationGrid5))
+                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid5)
                 if not os.path.exists(temp):
                     os.mkdir(temp)
 
-                shutil.copyfile(("%s/%s/Nodes.txt" % (evaluationGridPath, evaluationGrid5)), ("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid5)))
-                shutil.copyfile(("%s/%s/Elements.txt" % (evaluationGridPath, evaluationGrid5)), ("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid5)))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
 
 # ------------------------ Calculate frequency information ---------------------
         frequencySteps = divmod(maxFrequency-lowFrequency, frequencyStepSize)
@@ -681,7 +631,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                                     break
                         frequencies[cpu-1][core-1] = tmp
                         if not frequencies[cpu-1][core-1] == ([]):
-							#case: both ears on one cpu
+							# case: both ears on one cpu
                             if numCPUs == 1 and numEars == 2:
                                 if numCoresPerCPU < 4:
                                     raise Exception('Please use at least 4 cores for calculation of 2 ears')
@@ -693,7 +643,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                                 coresteps += 1
 
                             else:
-                                #general case
+                                # general case
                                 cpusAndCores[cpu-1][core-1] = tmpEar
 
                         if count == numCoresUsedPerEar:
@@ -722,7 +672,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         cpusAndCores[cpu-1][core-1] = tmpEar
 
 # ----------------------- Write general information ----------------------------
-        file = open(("%s/Info.txt" % filepath1), "w", encoding="utf8", newline="\n")
+        file = open(os.path.join(filepath1, "Info.txt"), "w", encoding="utf8", newline="\n")
         fw = file.write
         fw("#####################################\n")
         fw("######## General information ########\n")
@@ -759,7 +709,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         file.close
 
 # ----------------------- Write Output2HRTF.m function -------------------------
-        file = open(("%s/Output2HRTF.m" % filepath1), "w", encoding="utf8", newline="\n")
+        file = open(os.path.join(filepath1, "Output2HRTF.m"), "w", encoding="utf8", newline="\n")
         fw = file.write
         fw("close all\n")
         fw("clear\n")
@@ -815,9 +765,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if reciprocity:
 
             # get the receiver/ear centers and areas
-            obj                = bpy.data.objects['Reference']
-            obj_data           = obj.data
-            earCenter, earArea = calculateReceiverProperties(obj,obj_data,unitFactor)
+            obj = bpy.data.objects['Reference']
+            obj_data = obj.data
+            earCenter, earArea = _calculateReceiverProperties(obj,obj_data,unitFactor)
 
             # write left ear data
             if ear=='Left ear' or ear=='Both ears':
@@ -833,8 +783,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     nn = 2
 
                 fw("% right ear / receiver\n")
-                fw("receiverCenter(%d,1:3) = [%f %f %f];\n" %(nn, earCenter[1][0], earCenter[1][1], earCenter[1][2]))
-                fw("receiverArea(%d,1)     = %g;\n" %(nn, earArea[1]))
+                fw("receiverCenter(%d,1:3) = [%f %f %f];\n" % (nn, earCenter[1][0], earCenter[1][1], earCenter[1][2]))
+                fw("receiverArea(%d,1) = %g;\n" % (nn, earArea[1]))
 
             fw("\n")
         else:
@@ -873,24 +823,24 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             for ii in range(0, len(renderloc)):
                 cam.location = (renderloc[ii][0]*camradius, renderloc[ii][1]*camradius, renderloc[ii][2]*camradius)
                 cam.rotation_euler = (renderrot[ii][0], renderrot[ii][1], renderrot[ii][2])
-                lamp.location = (renderloc[ii][0]*lampradius, renderloc[ii][1]*lampradius, renderloc[ii][2]*lampradius)
+                light.location = (renderloc[ii][0]*lightradius, renderloc[ii][1]*lightradius, renderloc[ii][2]*lightradius)
                 bpy.ops.render.render()
-                temp = ("%s/Pictures/" % filepath1)
+                temp = os.path.join(filepath1, "Pictures")
                 if not os.path.exists(temp):
                     os.mkdir(temp)
                 temp = ("%d-%d" % (rendernam[ii][0], rendernam[ii][1]))
-                bpy.data.images['Render Result'].save_render("%s/Pictures/%s.png" % (filepath1, temp))
+                bpy.data.images['Render Result'].save_render(os.path.join(filepath1, "Pictures", "%s.png" % temp))
 
 # ----------------------- Write NumCalc input files for all CPUs and Cores -----
         for core in range(1, 9):
             for cpu in range(1, 11):
                 if not cpusAndCores[cpu-1][core-1] == 0:
 
-                    filepath2 = ("%s/NumCalc/CPU_%i_Core_%i/" % (filepath1, cpu, core))
+                    filepath2 = os.path.join(filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu, core))
                     if not os.path.exists(filepath2):
                         os.mkdir(filepath2)
 
-                    file = open(("%s%s" % (filepath2, filename1)), "w", encoding="utf8", newline="\n")
+                    file = open(os.path.join(filepath2, filename1), "w", encoding="utf8", newline="\n")
                     fw = file.write
 
                     if frequencyDependency:
@@ -936,23 +886,23 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         numNodes = numNodes+len(NFGrid_data.vertices[:])
                     else:
                         if not evaluationGrid1 == 'None':
-                            nodes = open("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid1))
+                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
                             line = nodes.readline()
                             numNodes = numNodes+int(line)
                         if not evaluationGrid2 == 'None':
-                            nodes = open("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid2))
+                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
                             line = nodes.readline()
                             numNodes = numNodes+int(line)
                         if not evaluationGrid3 == 'None':
-                            nodes = open("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid3))
+                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
                             line = nodes.readline()
                             numNodes = numNodes+int(line)
                         if not evaluationGrid4 == 'None':
-                            nodes = open("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid4))
+                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
                             line = nodes.readline()
                             numNodes = numNodes+int(line)
                         if not evaluationGrid5 == 'None':
-                            nodes = open("%s/EvaluationGrids/%s/Nodes.txt" % (filepath1, evaluationGrid5))
+                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
                             line = nodes.readline()
                             numNodes = numNodes+int(line)
                     numElements = 0
@@ -960,23 +910,23 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         numElements = numElements+len(NFGrid_data.polygons[:])
                     else:
                         if not evaluationGrid1 == 'None':
-                            elements = open("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid1))
+                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
                             line = elements.readline()
                             numElements = numElements+int(line)
                         if not evaluationGrid2 == 'None':
-                            elements = open("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid2))
+                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
                             line = elements.readline()
                             numElements = numElements+int(line)
                         if not evaluationGrid3 == 'None':
-                            elements = open("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid3))
+                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
                             line = elements.readline()
                             numElements = numElements+int(line)
                         if not evaluationGrid4 == 'None':
-                            elements = open("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid4))
+                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
                             line = elements.readline()
                             numElements = numElements+int(line)
                         if not evaluationGrid5 == 'None':
-                            elements = open("%s/EvaluationGrids/%s/Elements.txt" % (filepath1, evaluationGrid5))
+                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
                             line = elements.readline()
                             numElements = numElements+int(line)
                     fw("2 %d " % (len(obj_data.polygons[:])+numElements))
@@ -1078,24 +1028,114 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     file.close()
 
         for obj in bpy.context.scene.objects[:]:
-            bpy.data.objects[obj.name].select = False
+            bpy.data.objects[obj.name].select_set(False)
         if nearFieldCalculation:
-            bpy.data.objects['NFGrid'].select = True
+            bpy.data.objects['NFGrid'].select_set(True)
             bpy.ops.object.delete()
 
         return {'FINISHED'}
 
 
+def _calculateReceiverProperties(obj, obj_data, unitFactor):
+    """
+    Calculate center and area of receiver elements in reciprocal simulation.
+
+    """
+
+    # init ear area
+    earArea = [0., 0.]
+    # init min and max xyz coordinates for left and right ear
+    earCenter = [[[1e6, -1e6], [1e6, -1e6], [1e6, -1e6]],
+                 [[1e6, -1e6], [1e6, -1e6], [1e6, -1e6]]]
+
+    # loop elements in obj_data
+    for ii in range(len(obj_data.polygons[:])):
+        if obj.material_slots[obj_data.polygons[ii].material_index].name \
+                == obj.material_slots['Left ear'].name \
+                or obj.material_slots[obj_data.polygons[ii].material_index].name \
+                == obj.material_slots['Right ear'].name:
+
+            # select the ear
+            if obj.material_slots[obj_data.polygons[ii].material_index].name \
+                    == obj.material_slots['Left ear'].name:
+                ear = 0
+            else:
+                ear = 1
+
+            # update min and max x,y,z-values
+            for vertex in range(3):
+                for coord in range(3):
+                    value = obj_data.vertices[obj_data.polygons[ii].vertices[vertex]].co[coord]
+                    if value < earCenter[ear][coord][0]:
+                        earCenter[ear][coord][0] = value
+                    if value > earCenter[ear][coord][1]:
+                        earCenter[ear][coord][1] = value
+
+            # to calculate the polygons (triangles) area first calculate the side lengths using euclidean distance and then use Heron´s formula to calculate the area
+            # side_a = corner 0 to corner 1
+            side_a = math.sqrt(((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2) \
+                * unitFactor**2)
+
+            # side_b = corner 1 to corner 2
+            side_b = math.sqrt(((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2) \
+                * unitFactor**2)
+
+            # side_c = corner 2 to corner 0
+            side_c = math.sqrt(((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2) \
+                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2] - \
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2) \
+                *unitFactor**2)
+
+            # increment area using Heron´s formula
+            earArea[ear] += 0.25 * math.sqrt(
+                             (side_a+side_b+side_c)
+                            *(-side_a+side_b+side_c)
+                            *(side_a-side_b+side_c)
+                            *(side_a+side_b-side_c))
+
+    # estimate the center from min and max x,y,z-values
+    earCenter = [
+        [  # left ear center
+        (earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,
+        (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
+        (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
+        [  # right ear center
+        (earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,
+        (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
+        (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
+
+    return earCenter, earArea
+
 # ----------------------- Blender add-on registration --------------------------
 def menu_func_export(self, context):
     self.layout.operator(ExportMesh2HRTF.bl_idname, text="Mesh2HRTF")
 
-
 def register():
     bpy.utils.register_class(ExportMesh2HRTF)
-    bpy.types.INFO_MT_file_export.append(menu_func_export)
-
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 def unregister():
     bpy.utils.unregister_class(ExportMesh2HRTF)
-    bpy.types.INFO_MT_file_export.remove(menu_func_export)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
