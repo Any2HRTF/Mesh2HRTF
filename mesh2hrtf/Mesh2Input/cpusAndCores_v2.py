@@ -32,11 +32,11 @@ maxCPUs  = 10
 maxCores = 8
 
 
-# %% original script at line 454
+# %% original script at line 454 (now 403)
 numCPUs = cpuLast-cpuFirst+1
 
 
-# %% original script lines 464-475
+# %% original script lines 464-475 (now 413-425)
 
 # remove this block in the script
 
@@ -44,7 +44,7 @@ numCPUs = cpuLast-cpuFirst+1
 # %% original block starting at 639
 
 # number of cores per ear and in total
-numCoresUsedPerEar    = numCPUs*numCoresPerCPU//numEars
+numCoresUsedPerEar = numCPUs*numCoresPerCPU//numEars
 if not numCoresUsedPerEar:
     raise Exception("At least two cores must be available for calculating both ears, i.e., two CPUs with one core each or one CPU with two cores.")
 
