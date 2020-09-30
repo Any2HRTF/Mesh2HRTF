@@ -621,21 +621,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("];\n")
         fw("\n")
 
-        fw("objectMeshes={")
-        for cpu in range(1, 11):
-            for core in range(1, 9):
-                if not cpusAndCores[cpu-1][core-1] == 0:
-                    obj_name = "Reference"
-                else:
-                    obj_name = ""
-                fw("'%s'" % obj_name)
-                if core < 8:
-                    fw(" ")
-            if cpu < 10:
-                fw("; ...\n")
-        fw("};\n")
-        fw("\n")
-
         fw("reciprocity=")
         if reciprocity:
             fw("1")
@@ -684,7 +669,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
         fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
-        fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir);")
+        fw("Output2HRTF_Main(cpusAndCores,reciprocity,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------

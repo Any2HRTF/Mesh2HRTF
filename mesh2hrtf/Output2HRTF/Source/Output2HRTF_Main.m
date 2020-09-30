@@ -17,7 +17,7 @@
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir)
+function Output2HRTF_Main(cpusAndCores,reciprocity,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
 %   receiverPositions,receiverArea,reference,speedOfSound,densityOfAir) calculates
@@ -25,8 +25,6 @@ function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverCent
 %
 %   Input:
 %       cpusAndCores:
-%
-%       objectMeshesUsed:
 % 
 %       reciprocity:
 %
