@@ -22,7 +22,8 @@ import datetime
 import math
 import shutil
 from math import pi
-from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, \
+    IntProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper
 
 bl_info = {
@@ -52,7 +53,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Title",
         default="Head-Related Transfer Functions",
         )
-    minFrequency: IntProperty(
+    minFrequency: FloatProperty(
         name="Minimum frequency",
         description=("Minimum frequency to be simulated. Can be 0 for "
             "constructing single sided spectra. But the 0 will not be"
@@ -61,14 +62,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         min=0,
         max=24000,
         )
-    maxFrequency: IntProperty(
+    maxFrequency: FloatProperty(
         name="Maximum frequency",
         description="Maximum frequency to be simulated",
         default=20000,
         min=1,
         max=24000,
         )
-    frequencyStepSize: IntProperty(
+    frequencyStepSize: FloatProperty(
         name="Frequency step size",
         description=("Simulate frequencies between the minimum and maximum "
             "frequency with this step size. Either this or the number of "
@@ -632,8 +633,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("#####################################\n")
         fw("####### Frequency information #######\n")
         fw("#####################################\n\n")
-        fw("Minimum evaluated Frequency: %d\n" % freqs[0])
-        fw("Highest evaluated Frequency: %d\n" % freqs[-1])
+        fw("Minimum evaluated Frequency: %f\n" % freqs[0])
+        fw("Highest evaluated Frequency: %f\n" % freqs[-1])
         fw("Frequency Stepsize: %f\n" % frequencyStepSize)
         fw("Frequency Steps: %d\n" % numFrequencySteps)
         fw("Frequency steps per Core: %d\n\n" % frequencyStepsPerCore)
@@ -648,7 +649,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             for cpu in range(1, 11):
                 fw("CPU_%d (Core %d):\n" % (cpu, core))
                 for ii in range(0, len(frequencies[cpu-1][core-1])):
-                    fw("    %d\n" % frequencies[cpu-1][core-1][ii])
+                    fw("    %f\n" % frequencies[cpu-1][core-1][ii])
             fw("\n")
         file.close
 
