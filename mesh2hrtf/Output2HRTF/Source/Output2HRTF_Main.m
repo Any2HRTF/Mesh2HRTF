@@ -17,10 +17,10 @@
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverCenter,frequencyDependency,nearFieldCalculation,receiverArea,reference,speedOfSound,densityOfAir)
+function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverCenter,frequencyDependency,receiverArea,reference,speedOfSound,densityOfAir)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
-%   receiverPositions,frequencyDependency,nearFieldCalculation) calculates
+%   receiverPositions,frequencyDependency,receiverArea,reference,speedOfSound,densityOfAir) calculates
 %   all relevant data after the NumCalc calculation and saves the results.
 %
 %   Input:
@@ -33,8 +33,6 @@ function Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,receiverCent
 %       receiverPositions:
 %
 %       frequencyDependency:
-% 
-%       nearFieldCalculation:
 %
 %       microphoneArea: are of the mesh elements that were used as sound
 %       source in reciprocal calculation in square meters

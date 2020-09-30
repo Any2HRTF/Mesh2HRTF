@@ -255,11 +255,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Use frequency-dependent meshes",
         default=False,
         )
-    nearFieldCalculation: BoolProperty(
-        name="Near-field calculation",
-        description="Calculate near-field HRTFs",
-        default=False,
-        )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
         description="Path to the mesh2HRTF folder containing the folders 'Mesh2Input', 'NumCalc', etc.",
@@ -316,8 +311,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "evaluationGrid4")
         row = layout.row()
         row.prop(self, "evaluationGrid5")
-        row = layout.row()
-        row.prop(self, "nearFieldCalculation")
         layout.label(text="Frequencies:")
         row = layout.row()
         row.prop(self, "minFrequency")
@@ -369,7 +362,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              densityOfMedium='1.1839',
              unit='mm',
              frequencyDependency=False,
-             nearFieldCalculation=False,
              programPath="",
              ):
 
@@ -487,115 +479,81 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(filepath1, "3d Model.blend"), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
 
 # ------------------------ Write evaluation grid data --------------------------
-        if nearFieldCalculation:
-            radius = 0.0
-            for ii in range(len(obj_data.vertices[:])):
-                tmp = math.sqrt(math.pow(obj_data.vertices[ii].co[0], 2)+math.pow(obj_data.vertices[ii].co[1], 2)+math.pow(obj_data.vertices[ii].co[2], 2))
-                if tmp > radius:
-                    radius = tmp
-            # bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=5, size=radius+5, location=(0,0,0), rotation=(0, 0, 0))
-            bpy.context.scene.cursor_location = (0.0, 0.0, 0.0)
-            bpy.ops.mesh.primitive_hyper_add(orderN=46, size=(radius*unitFactor)+0.005)
-            NFGrid = bpy.context.active_object
-            NFGrid.name = 'NFGrid'
-            NFGrid_data = NFGrid.data
-            temp = os.path.join(filepath1, "EvaluationGrids", "NF_Sphere")
-            if not os.path.exists(temp):
-                os.mkdir(temp)
+        if not evaluationGrid1 == 'None':
+            if not evaluationGrid1 == 'User':
+                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid1)
+                if not os.path.exists(temp):
+                    os.mkdir(temp)
 
-            file = open(os.path.join(filepath1, "EvaluationGrids", "NF_Sphere", "Nodes.txt"), "w", encoding="utf8", newline="\n")
-            fw = file.write
-            fw("%i\n" % len(NFGrid_data.vertices[:]))
-            for ii in range(len(NFGrid_data.vertices[:])):
-                fw("%i " % (ii+200000))
-                fw("%.6f %.6f %.6f\n" % (NFGrid_data.vertices[ii].co[0]*unitFactor, NFGrid_data.vertices[ii].co[1]*unitFactor, NFGrid_data.vertices[ii].co[2]*unitFactor))
-            file.close
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
+                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Elements.txt"),os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
+            else:
+                obj = bpy.data.objects['User']
+                if obj.type == 'MESH':
+                    bpy.context.scene.objects.active = obj
+                    bpy.ops.object.transform_apply(location=True)
+                    bpy.ops.object.transform_apply(rotation=True)
+                    bpy.ops.object.transform_apply(scale=True)
+                    obj = context.active_object
+                    obj.hide_render = False
+                    obj_data = obj.data
 
-            file = open(os.path.join(filepath1, "EvaluationGrids", "NF_Sphere", "Elements.txt"), "w", encoding="utf8", newline="\n")
-            fw = file.write
-            fw("%i\n" % len(NFGrid_data.polygons[:]))
-            for ii in range(len(NFGrid_data.polygons[:])):
-                fw("%i " % (ii+200000))
-                fw("%d %d %d" % (NFGrid_data.polygons[ii].vertices[0]+200000, NFGrid_data.polygons[ii].vertices[1]+200000, NFGrid_data.polygons[ii].vertices[2]+200000))
-                fw(" 2 0 1\n")
-            file.close
-
-        else:
-            if not evaluationGrid1 == 'None':
-                if not evaluationGrid1 == 'User':
-                    temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid1)
+                    temp = os.path.join(filepath1, "EvaluationGrids", "User")
                     if not os.path.exists(temp):
                         os.mkdir(temp)
 
-                    shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
-                    shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Elements.txt"),os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
-                else:
-                    obj = bpy.data.objects['User']
-                    if obj.type == 'MESH':
-                        bpy.context.scene.objects.active = obj
-                        bpy.ops.object.transform_apply(location=True)
-                        bpy.ops.object.transform_apply(rotation=True)
-                        bpy.ops.object.transform_apply(scale=True)
-                        obj = context.active_object
-                        obj.hide_render = False
-                        obj_data = obj.data
+                    file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Nodes.txt"), "w", encoding="utf8", newline="\n")
+                    fw = file.write
+                    fw("%i\n" % len(obj_data.vertices[:]))
+                    for ii in range(len(obj_data.vertices[:])):
+                        fw("%i " % (ii+350000))
+                        fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
+                    file.close
 
-                        temp = os.path.join(filepath1, "EvaluationGrids", "User")
-                        if not os.path.exists(temp):
-                            os.mkdir(temp)
-
-                        file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Nodes.txt"), "w", encoding="utf8", newline="\n")
-                        fw = file.write
-                        fw("%i\n" % len(obj_data.vertices[:]))
-                        for ii in range(len(obj_data.vertices[:])):
+                    file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Elements.txt"), "w", encoding="utf8", newline="\n")
+                    fw = file.write
+                    fw("%i\n" % len(obj_data.polygons[:]))
+                    if len(obj_data.polygons[0].vertices[:]) == 3:
+                        for ii in range(len(obj_data.polygons[:])):
                             fw("%i " % (ii+350000))
-                            fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
-                        file.close
+                            fw("%d %d %d 2 0 1\n" % (obj_data.polygons[ii].vertices[0]+350000, obj_data.polygons[ii].vertices[1]+350000, obj_data.polygons[ii].vertices[2]+350000))
+                    else:
+                        for ii in range(len(obj_data.polygons[:])):
+                            fw("%i " % (ii+350000))
+                            fw("%d %d %d %d 2 0 1\n" % (obj_data.polygons[ii].vertices[0]+350000, obj_data.polygons[ii].vertices[1]+350000, obj_data.polygons[ii].vertices[2]+350000, obj_data.polygons[ii].vertices[3]+350000))
+                    file.close
 
-                        file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Elements.txt"), "w", encoding="utf8", newline="\n")
-                        fw = file.write
-                        fw("%i\n" % len(obj_data.polygons[:]))
-                        if len(obj_data.polygons[0].vertices[:]) == 3:
-                            for ii in range(len(obj_data.polygons[:])):
-                                fw("%i " % (ii+350000))
-                                fw("%d %d %d 2 0 1\n" % (obj_data.polygons[ii].vertices[0]+350000, obj_data.polygons[ii].vertices[1]+350000, obj_data.polygons[ii].vertices[2]+350000))
-                        else:
-                            for ii in range(len(obj_data.polygons[:])):
-                                fw("%i " % (ii+350000))
-                                fw("%d %d %d %d 2 0 1\n" % (obj_data.polygons[ii].vertices[0]+350000, obj_data.polygons[ii].vertices[1]+350000, obj_data.polygons[ii].vertices[2]+350000, obj_data.polygons[ii].vertices[3]+350000))
-                        file.close
+        if not evaluationGrid2 == 'None':
+            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid2)
+            if not os.path.exists(temp):
+                os.mkdir(temp)
 
-            if not evaluationGrid2 == 'None':
-                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid2)
-                if not os.path.exists(temp):
-                    os.mkdir(temp)
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
 
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
+        if not evaluationGrid3 == 'None':
+            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid3)
+            if not os.path.exists(temp):
+                os.mkdir(temp)
 
-            if not evaluationGrid3 == 'None':
-                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid3)
-                if not os.path.exists(temp):
-                    os.mkdir(temp)
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
 
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
+        if not evaluationGrid4 == 'None':
+            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid4)
+            if not os.path.exists(temp):
+                os.mkdir(temp)
 
-            if not evaluationGrid4 == 'None':
-                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid4)
-                if not os.path.exists(temp):
-                    os.mkdir(temp)
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
 
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
+        if not evaluationGrid5 == 'None':
+            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid5)
+            if not os.path.exists(temp):
+                os.mkdir(temp)
 
-            if not evaluationGrid5 == 'None':
-                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid5)
-                if not os.path.exists(temp):
-                    os.mkdir(temp)
-
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
+            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
 
 # ------------------------ Calculate frequency information ---------------------
         # maximum number of cpus. Still hard coded but might be:
@@ -744,14 +702,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         else:
             fw("0")
         fw(";\n")
-        fw("\n")
 
-        fw("nearFieldCalculation=")
-        if nearFieldCalculation:
-            fw("1")
-        else:
-            fw("0")
-        fw(";\n")
         fw("\n")
 
         fw("% Reference to a point source in the origin\n")
@@ -760,7 +711,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
         fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
-        fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,receiverCenter,frequencyDependency,nearFieldCalculation,receiverArea,reference,speedOfSound,densityOfAir);")
+        fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,receiverCenter,frequencyDependency,receiverArea,reference,speedOfSound,densityOfAir);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------
@@ -827,53 +778,47 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     fw("##\n")
                     fw("## 1. Main Parameters I\n")
                     numNodes = 0
-                    if nearFieldCalculation:
-                        numNodes = numNodes+len(NFGrid_data.vertices[:])
-                    else:
-                        if not evaluationGrid1 == 'None':
-                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
-                            line = nodes.readline()
-                            numNodes = numNodes+int(line)
-                        if not evaluationGrid2 == 'None':
-                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
-                            line = nodes.readline()
-                            numNodes = numNodes+int(line)
-                        if not evaluationGrid3 == 'None':
-                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
-                            line = nodes.readline()
-                            numNodes = numNodes+int(line)
-                        if not evaluationGrid4 == 'None':
-                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
-                            line = nodes.readline()
-                            numNodes = numNodes+int(line)
-                        if not evaluationGrid5 == 'None':
-                            nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
-                            line = nodes.readline()
-                            numNodes = numNodes+int(line)
+                    if not evaluationGrid1 == 'None':
+                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
+                        line = nodes.readline()
+                        numNodes = numNodes+int(line)
+                    if not evaluationGrid2 == 'None':
+                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
+                        line = nodes.readline()
+                        numNodes = numNodes+int(line)
+                    if not evaluationGrid3 == 'None':
+                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
+                        line = nodes.readline()
+                        numNodes = numNodes+int(line)
+                    if not evaluationGrid4 == 'None':
+                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
+                        line = nodes.readline()
+                        numNodes = numNodes+int(line)
+                    if not evaluationGrid5 == 'None':
+                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
+                        line = nodes.readline()
+                        numNodes = numNodes+int(line)
                     numElements = 0
-                    if nearFieldCalculation:
-                        numElements = numElements+len(NFGrid_data.polygons[:])
-                    else:
-                        if not evaluationGrid1 == 'None':
-                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
-                            line = elements.readline()
-                            numElements = numElements+int(line)
-                        if not evaluationGrid2 == 'None':
-                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
-                            line = elements.readline()
-                            numElements = numElements+int(line)
-                        if not evaluationGrid3 == 'None':
-                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
-                            line = elements.readline()
-                            numElements = numElements+int(line)
-                        if not evaluationGrid4 == 'None':
-                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
-                            line = elements.readline()
-                            numElements = numElements+int(line)
-                        if not evaluationGrid5 == 'None':
-                            elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
-                            line = elements.readline()
-                            numElements = numElements+int(line)
+                    if not evaluationGrid1 == 'None':
+                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
+                        line = elements.readline()
+                        numElements = numElements+int(line)
+                    if not evaluationGrid2 == 'None':
+                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
+                        line = elements.readline()
+                        numElements = numElements+int(line)
+                    if not evaluationGrid3 == 'None':
+                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
+                        line = elements.readline()
+                        numElements = numElements+int(line)
+                    if not evaluationGrid4 == 'None':
+                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
+                        line = elements.readline()
+                        numElements = numElements+int(line)
+                    if not evaluationGrid5 == 'None':
+                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
+                        line = elements.readline()
+                        numElements = numElements+int(line)
                     fw("2 %d " % (len(obj_data.polygons[:])+numElements))
                     fw("%d 0 " % (len(obj_data.vertices[:])+numNodes))
                     fw("0")
@@ -898,38 +843,32 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         fw("../../ObjectMeshes/Reference/Nodes.txt\n")
                     else:
                         fw("../../ObjectMeshes/%s/Nodes.txt\n" % obj_name)
-                    if nearFieldCalculation:
-                        fw("../../EvaluationGrids/NF_Sphere/Nodes.txt\n")
-                    else:
-                        # alphabetically sorted list of used evaluation grids
-                        evaluationGrids = []
-                        if not evaluationGrid1 == 'None':
-                            evaluationGrids.append(evaluationGrid1)
-                        if not evaluationGrid2 == 'None':
-                            evaluationGrids.append(evaluationGrid2)
-                        if not evaluationGrid3 == 'None':
-                            evaluationGrids.append(evaluationGrid3)
-                        if not evaluationGrid4 == 'None':
-                            evaluationGrids.append(evaluationGrid4)
-                        if not evaluationGrid5 == 'None':
-                            evaluationGrids.append(evaluationGrid5)
-                        evaluationGrids.sort()
+                    # alphabetically sorted list of used evaluation grids
+                    evaluationGrids = []
+                    if not evaluationGrid1 == 'None':
+                        evaluationGrids.append(evaluationGrid1)
+                    if not evaluationGrid2 == 'None':
+                        evaluationGrids.append(evaluationGrid2)
+                    if not evaluationGrid3 == 'None':
+                        evaluationGrids.append(evaluationGrid3)
+                    if not evaluationGrid4 == 'None':
+                        evaluationGrids.append(evaluationGrid4)
+                    if not evaluationGrid5 == 'None':
+                        evaluationGrids.append(evaluationGrid5)
+                    evaluationGrids.sort()
 
-                        # write file path of nodes to input file
-                        for grid in evaluationGrids:
-                            fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
+                    # write file path of nodes to input file
+                    for grid in evaluationGrids:
+                        fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
                     fw("##\n")
                     fw("ELEMENTS\n")
                     if not frequencyDependency:
                         fw("../../ObjectMeshes/Reference/Elements.txt\n")
                     else:
                         fw("../../ObjectMeshes/%s/Elements.txt\n" % obj_name)
-                    if nearFieldCalculation:
-                        fw("../../EvaluationGrids/NF_Sphere/Elements.txt\n")
-                    else:
-                        # write file path of elements to input file
-                        for grid in evaluationGrids:
-                            fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
+                    # write file path of elements to input file
+                    for grid in evaluationGrids:
+                        fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
                     fw("##\n")
                     fw("# SYMMETRY\n")
                     fw("# 0 0 0\n")
@@ -974,9 +913,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         for obj in bpy.context.scene.objects[:]:
             bpy.data.objects[obj.name].select_set(False)
-        if nearFieldCalculation:
-            bpy.data.objects['NFGrid'].select_set(True)
-            bpy.ops.object.delete()
 
         return {'FINISHED'}
 
