@@ -52,18 +52,37 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Title",
         default="Head-Related Transfer Functions",
         )
-    frequencyStepSize: IntProperty(
-        name="Freq step",
-        description="Lowest frequency and frequency step-size",
+    minFrequency: IntProperty(
+        name="Minimum frequency",
+        description=("Minimum frequency to be simulated. Can be 0 for "
+            "constructing single sided spectra. But the 0 will not be"
+            "simulated."),
         default=100,
-        min=10,
+        min=0,
         max=24000,
         )
     maxFrequency: IntProperty(
-        name="Freq max",
-        description="Highest evaluated frequency",
+        name="Maximum frequency",
+        description="Maximum frequency to be simulated",
         default=20000,
-        min=10,
+        min=1,
+        max=24000,
+        )
+    frequencyStepSize: IntProperty(
+        name="Frequency step size",
+        description=("Simulate frequencies between the minimum and maximum "
+            "frequency with this step size. Either this or the number of "
+            "frequency steps must be zero."),
+        default=100,
+        min=0,
+        max=24000,
+        )
+    numFrequencySteps: IntProperty(
+        name="Number of frequencies",
+        description=("Simulate N frequencies between the minimum and maximum "
+            "frequency. Either this or the frequency step size must be zero."),
+        default=0,
+        min=1,
         max=24000,
         )
     cpuFirst: IntProperty(
@@ -300,9 +319,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "nearFieldCalculation")
         layout.label(text="Frequencies:")
         row = layout.row()
-        row.prop(self, "frequencyStepSize")
+        row.prop(self, "minFrequency")
         row = layout.row()
         row.prop(self, "maxFrequency")
+        row = layout.row()
+        row.prop(self, "frequencyStepSize")
+        row = layout.row()
+        row.prop(self, "numFrequencySteps")
         row = layout.row()
         row.prop(self, "frequencyDependency")
         row = layout.row()
@@ -322,8 +345,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              context,
              filepath="",
              title="head-related transfer functions",
-             frequencyStepSize=100,
+             minFrequency=100,
              maxFrequency=20000,
+             frequencyStepSize=100,
+             numFrequencySteps=0,
              cpuFirst=1,
              cpuLast=10,
              numCoresPerCPU=8,
@@ -400,8 +425,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if not os.path.exists(temp):
             os.mkdir(temp)
 
-        numCPUs = cpuLast-cpuFirst+1
-
         numEars = 1
         if ear == 'Both ears':
             numEars = 2
@@ -409,19 +432,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         unitFactor = 1
         if unit == 'mm':
             unitFactor = 0.001
-
-        lowFrequency = 0
-        lowFrequencyCores = 0
-        if not frequencyDependency:
-            obj = bpy.data.objects["Reference"]
-            obj.hide_render = False
-            obj_data = obj.data
-            if len(obj_data.vertices[:]) > 40000 and numCPUs/numEars > 1:
-                lowFrequency = frequencyStepSize*10
-                lowFrequencyCores = 1
-            else:
-                lowFrequency = 0
-                lowFrequencyCores = 0
 
         evaluationGridPath = os.path.join(programPath,
             "Mesh2Input", "EvaluationGrids")
@@ -587,89 +597,22 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
 
 # ------------------------ Calculate frequency information ---------------------
-        frequencySteps = divmod(maxFrequency-lowFrequency, frequencyStepSize)
-        if not frequencySteps[1] == 0:
-            raise Exception("Error, frequencyStepSize is not a divisor of maxFrequency-lowFrequency")
+        # maximum number of cpus. Still hard coded but might be:
+        # `maxCPUs = max(10, cpuLast)` if it works with the rest of Mesh2HRTF
+        maxCPUs = 10
 
-        numCoresAvailable = (cpuLast-cpuFirst+1-lowFrequencyCores)*numCoresPerCPU
-        numCoresUsedPerEar = int((cpuLast-cpuFirst+1-lowFrequencyCores*numEars)*numCoresPerCPU/numEars)
-        frequencyStepsPerCore = divmod(frequencySteps[0], numCoresUsedPerEar)
+        # maximum number of cores. Still hard coded but might be:
+        # maxCores = max(8, numCoresPerCPU) if it works with the rest of
+        # Mesh2HRTF
+        maxCores = 8
 
-        cpusAndCores = ([])
-        tmp = ([])
-        for core in range(1, 9):
-            tmp.append(0)
-        for cpu in range(1, 11):
-            cpusAndCores.append(tmp[:])
-
-        frequencies = ([])
-        tmp = ([])
-        for core in range(1, 9):
-            tmp.append([])
-        for cpu in range(1, 11):
-            frequencies.append(tmp[:])
-
-        if not frequencyDependency:
-            coresteps = 0
-            for tmpEar in range(1, numEars+1):
-                count = 0
-                for core in range(1, numCoresPerCPU+1):
-                    if tmpEar == 2 and numCPUs == 1:
-                        core += numCoresUsedPerEar
-                    for cpu in range(cpuFirst+(int(numCPUs/2)*(tmpEar-1))*(numEars-1), cpuLast-(int(numCPUs/2)*(-(tmpEar-2)))*(numEars-1)+1):
-                        tmp = ([])
-                        if lowFrequencyCores > 0 and cpu == cpuFirst+(int(numCPUs/2)*(tmpEar-1))*(numEars-1):
-                            if core < 3:
-                                for ii in range(1, 6):
-                                    tmp.append(frequencyStepSize*ii+lowFrequency/2*(core-1))
-                        else:
-                            count = count + 1
-                            for ii in range(0, frequencyStepsPerCore[0]+1):
-                                if ((frequencyStepSize*count+frequencyStepSize*numCoresUsedPerEar*ii)+lowFrequency) <= maxFrequency:
-                                    tmp.append((frequencyStepSize*count+frequencyStepSize*numCoresUsedPerEar*ii)+lowFrequency)
-                                else:
-                                    break
-                        frequencies[cpu-1][core-1] = tmp
-                        if not frequencies[cpu-1][core-1] == ([]):
-							# case: both ears on one cpu
-                            if numCPUs == 1 and numEars == 2:
-                                if numCoresPerCPU < 4:
-                                    raise Exception('Please use at least 4 cores for calculation of 2 ears')
-                                for temp_ear in range(0, numCoresUsedPerEar):
-                                    if int((temp_ear+coresteps)/2) >= numCoresUsedPerEar:
-                                        break
-                                    else:
-                                        cpusAndCores[cpu-1][temp_ear+coresteps] = tmpEar
-                                coresteps += 1
-
-                            else:
-                                # general case
-                                cpusAndCores[cpu-1][core-1] = tmpEar
-
-                        if count == numCoresUsedPerEar:
-                            break
-                    if count == numCoresUsedPerEar:
-                        break
-        else:
-            for tmpEar in range(1, numEars+1):
-                countFreq = 0
-                countCores = 0
-                for core in range(1, numCoresPerCPU+1):
-                    for cpu in range(cpuFirst+(int(numCPUs/2)*(tmpEar-1))*(numEars-1), cpuLast-(int(numCPUs/2)*(-(tmpEar-2)))*(numEars-1)+1):
-                        countCores = countCores+1
-                        tmp = ([])
-                        if countCores <= frequencyStepsPerCore[1]:
-                            tmpNumFrequencies = frequencyStepsPerCore[0]+1
-                        else:
-                            tmpNumFrequencies = frequencyStepsPerCore[0]
-                        for ii in range(0, tmpNumFrequencies):
-                            if (frequencyStepSize*countFreq) <= maxFrequency:
-                                countFreq = countFreq + 1
-                                tmp.append(frequencyStepSize*countFreq)
-                            else:
-                                break
-                        frequencies[cpu-1][core-1] = tmp
-                        cpusAndCores[cpu-1][core-1] = tmpEar
+        cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, \
+            freqs, frequencyStepSize, numFrequencySteps = \
+            _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
+                                    numCoresPerCPU, maxCores,
+                                    numEars,
+                                    minFrequency, maxFrequency,
+                                    frequencyStepSize, numFrequencySteps)
 
 # ----------------------- Write general information ----------------------------
         file = open(os.path.join(filepath1, "Info.txt"), "w", encoding="utf8", newline="\n")
@@ -689,10 +632,11 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("#####################################\n")
         fw("####### Frequency information #######\n")
         fw("#####################################\n\n")
-        fw("Highest evaluated Frequency: %d\n" % maxFrequency)
-        fw("Frequency Stepsize: %d\n" % frequencyStepSize)
-        fw("Frequency Steps: %d\n" % frequencySteps[0])
-        fw("Frequency steps per Core: %d\n\n" % frequencyStepsPerCore[0])
+        fw("Minimum evaluated Frequency: %d\n" % freqs[0])
+        fw("Highest evaluated Frequency: %d\n" % freqs[-1])
+        fw("Frequency Stepsize: %f\n" % frequencyStepSize)
+        fw("Frequency Steps: %d\n" % numFrequencySteps)
+        fw("Frequency steps per Core: %d\n\n" % frequencyStepsPerCore)
         fw("#####################################\n")
         fw("######## Cluster information ########\n")
         fw("#####################################\n\n")
@@ -1128,7 +1072,127 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
 
     return earCenter, earArea
 
-# ----------------------- Blender add-on registration --------------------------
+
+def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
+                            numCoresPerCPU, maxCores,
+                            numEars,
+                            minFrequency, maxFrequency,
+                            frequencyStepSize, numFrequencySteps):
+    """Calculate list of frequencies and distribute across cores and CPUs.
+
+    Returns
+    -------
+
+    cpusAndCores: list
+        Nested list that indicates which cpu and core is used to calculate data
+        for which ear (e.g. cpuAndCores[0][1] holds the entry for the second
+        core on the first cpu). Entries: 0=idle, 1=leftEar/right ear if
+        calculating one ear, 2=rightEar if calculating two ears.
+    frequencies: list
+        Nested list that holds the frequencies that are calculated by each
+        cpu/core (e.g. frequencies[0][1] holds a list of frequencies calculated
+        by the second core on the first cpu.
+    frequencyStepsPerCore: int
+        The number of frequency steps calculated per core (written to
+        Info.txt).
+    numCoresAvailable: int
+        The number of cores used for the computation (written to Info.txt).
+    f: list
+        A simple list of the frequencies to be simulated (for debugging).
+    frequencyStepSize: float
+        Step size between sucsessive frequncies (written to Info.txt). This is
+        returned because it might be zero during the function call.
+    numFrequencySteps: int
+        Number of frequncies to be simulated (written to Info.txt). This is
+        returned because it might be zero during the function call.
+
+    """
+
+    # number of CPUs used
+    numCPUs = cpuLast-cpuFirst+1
+
+    # number of cores per ear
+    numCoresUsedPerEar = numCPUs*numCoresPerCPU//numEars
+    if not numCoresUsedPerEar:
+        raise Exception("At least two cores must be available for calculating \
+                        both ears, i.e., two CPUs with one core each or one \
+                        CPU with two cores.")
+
+    # check input
+    if (numFrequencySteps == 0 and frequencyStepSize == 0) \
+            or (numFrequencySteps != 0 and frequencyStepSize != 0):
+        raise Exception("Either 'frequencyStepSize' or 'numFrequencySteps' \
+                        must be zero while the other must not.")
+
+    # Calculate Number of frequencies and frequency step size
+    if minFrequency == maxFrequency:
+        frequencySteps = (1, 0)
+        frequencyStepSize = 0
+    elif frequencyStepSize:
+        frequencySteps = divmod(
+            maxFrequency - minFrequency + frequencyStepSize, frequencyStepSize)
+    else:
+        if numFrequencySteps < 2:
+            raise Exception("'numFrequencySteps' must be at least 2.")
+        frequencySteps = (numFrequencySteps, 0)
+        frequencyStepSize = (maxFrequency-minFrequency)/(numFrequencySteps-1)
+
+    if not frequencySteps[1] == 0:
+        raise Exception("Error, frequencyStepSize is not a divisor of \
+                        maxFrequency-minFrequency")
+
+    # get all frequencies to be calculated
+    f = [ff*frequencyStepSize+minFrequency for ff in range(frequencySteps[0])]
+
+    # remove 0 Hz if included in the list
+    if f[0] == 0:
+        f.pop(0)
+        frequencySteps = (frequencySteps[0]-1, 0)
+        print('Warning: 0 Hz can not be calculated and was removed from the \
+              list of frequencies.')
+
+    if not len(f):
+        raise ValueError("No frequncies to be calulated. \
+                         Check the input parameters.")
+
+    # check number of cores and frequencies
+    if len(f) < numCoresUsedPerEar:
+        raise Exception("More cores than frequencies, i.e., \
+                        numCPUs*numCoresPerCPU//numEars < numFrequencies.")
+
+    # distribution of frequencies across numCoresUsedPerEar
+    F = [[] for ff in range(numCoresUsedPerEar)]
+    for nn, ff in enumerate(f):
+        F[nn % numCoresUsedPerEar].append(ff)
+
+    # Initialize cpusAndCores:
+    cpusAndCores = [[0]*maxCores for cc in range(maxCPUs)]
+
+    # Initialize frequencies:
+    freqs = [[] for cc in range(maxCores)]
+    frequencies = [freqs.copy() for cc in range(maxCPUs)]
+
+    # distribute ears and frequencies across cpus and cores.
+    # Left ear is calculated on cpus 0 to numCoresUsedPerEar-1
+    # Right ear is calculated on cpus numCoresUsedPerEar to numCoresAvailable
+    for count in range(numCoresUsedPerEar*numEars):
+        cpu, core = divmod(count + (cpuFirst-1)*numCoresPerCPU, numCoresPerCPU)
+        cpusAndCores[cpu][core] = count//numCoresUsedPerEar + 1
+        frequencies[cpu][core] = F[count % len(F)]
+        # output for debugging
+        # print(f"CPU {cpu+1:2d}, core {core+1}, \
+        #       ear {count//numCoresUsedPerEar + 1}, \
+        #       freqList {count%len(F)}")
+
+    # meta data for Info.txt
+    frequencyStepsPerCore = len(f)//numCoresUsedPerEar
+    numCoresAvailable = numCoresUsedPerEar*numEars
+
+    return cpusAndCores, frequencies, \
+        frequencyStepsPerCore, numCoresAvailable, \
+        f, frequencyStepSize, numFrequencySteps
+
+# ----------------------- Blender add-on registration -------------------------
 def menu_func_export(self, context):
     self.layout.operator(ExportMesh2HRTF.bl_idname, text="Mesh2HRTF")
 
