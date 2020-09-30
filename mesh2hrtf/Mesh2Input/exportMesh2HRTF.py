@@ -48,14 +48,177 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     filename_ext = ""
     filter_glob: StringProperty(default="", options={'HIDDEN'})
 
+    # general settings --------------------------------------------------------
     title: StringProperty(
         name="Title",
-        description="Title",
+        description="Title of the project",
         default="Head-Related Transfer Functions",
         )
+    ear: EnumProperty(
+        name="Ear",
+        description="Selected ear(s) for simulation",
+        items=[('Left ear', 'left', 'Left ear'),
+               ('Right ear', 'right', 'Right ear'),
+               ('Both ears', 'both', 'Both ears'),
+               ('None', 'none', 'None')],
+        default='Both ears',
+        )
+    method: EnumProperty(
+        name="BEM method",
+        description="Method for numerical simulation",
+        items=[('0', 'BEM', 'Traditional BEM'),
+               ('1', 'SL-FMM BEM', 'Singlelevel fast-multipole method BEM'),
+               ('4', 'ML-FMM BEM', 'Multilevel fast-multipole method BEM')],
+        default='4',
+        )
+    programPath: StringProperty(
+        name="Mesh2HRTF-path",
+        description="Path to folder containing 'Mesh2Input', 'NumCalc', etc.",
+        default=r"path/to/mesh2hrtf",
+        )
+    pictures: BoolProperty(
+        name="Pictures",
+        description="Render pictures of the 3D mesh",
+        default=True,
+        )
+    # source type -------------------------------------------------------------
+    reciprocity: BoolProperty(
+        name="Reciprocity",
+        description=("Calculation with reciprocity. i.e., with vibrating "
+            "elements as the source. (This disables the point source mode, "
+            "i.e. the x, y, and z coordinate below"),
+        default=True,
+        )
+    reference: BoolProperty(
+        name="Reference",
+        description=("Reference HRTF to the center of the head according to "
+            "the classic HRTF definition. Only applicable if using "
+            "reciprocity. For the HRTF definition see"
+            "https://doi.org/10.1016/0003-682X(92)90046-U"),
+        default=False,
+        )
+    sourceXPosition: StringProperty(
+        name="Source (x)",
+        description="Point source Position x-coordinate (according to units)",
+        default="0",
+        )
+    sourceYPosition: StringProperty(
+        name="Source (y)",
+        description="Point source Position y-coordinate (according to units)",
+        default="101",
+        )
+    sourceZPosition: StringProperty(
+        name="Source (z)",
+        description="Point source Position z-coordinate (according to units)",
+        default="0",
+        )
+    # constants ---------------------------------------------------------------
+    unit: EnumProperty(
+        name="Unit",
+        description="Unit of the 3D mesh",
+        items=[('m', 'm', 'Meter'), ('mm', 'mm', 'Millimeter')],
+        default='mm',
+        )
+    speedOfSound: StringProperty(
+        name="c (m/s)",
+        description="Speed of sound (m/s)",
+        default="346.18",
+        )
+    densityOfMedium: StringProperty(
+        name="rho ()",
+        description="Density of air (kg/m^3)",
+        default="1.1839",
+        )
+    # evaluation grids --------------------------------------------------------
+    evaluationGrid1: EnumProperty(
+        name="Grid 1",
+        description="Selected evaluation grid",
+        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
+               ('22_FF', 'FF', 'FF HYPER (N=46)'),
+               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
+               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
+               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
+               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
+               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
+               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
+               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
+               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
+               ('None', 'None', 'None')],
+        default='3_ARI',
+        )
+    evaluationGrid2: EnumProperty(
+        name="Grid 2",
+        description="Selected evaluation grid",
+        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
+               ('22_FF', 'FF', 'FF HYPER (N=46)'),
+               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
+               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
+               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
+               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
+               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
+               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
+               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
+               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
+               ('None', 'None', 'None')],
+        default='None',
+        )
+    evaluationGrid3: EnumProperty(
+        name="Grid 3",
+        description="Selected evaluation grid",
+        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
+               ('22_FF', 'FF', 'FF HYPER (N=46)'),
+               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
+               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
+               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
+               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
+               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
+               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
+               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
+               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
+               ('None', 'None', 'None')],
+        default='None',
+        )
+    evaluationGrid4: EnumProperty(
+        name="Grid 4",
+        description="Selected evaluation grid",
+        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
+               ('22_FF', 'FF', 'FF HYPER (N=46)'),
+               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
+               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
+               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
+               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
+               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
+               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
+               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
+               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
+               ('None', 'None', 'None')],
+        default='None',
+        )
+    evaluationGrid5: EnumProperty(
+        name="Grid 5",
+        description="Selected evaluation grid",
+        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
+               ('22_FF', 'FF', 'FF HYPER (N=46)'),
+               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
+               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
+               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
+               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
+               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
+               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
+               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
+               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
+               ('Custom', 'Custom', 'User defined evaluation grid'),
+               ('None', 'None', 'None')],
+        default='None',
+        )
+    # Frequency selection -----------------------------------------------------
     minFrequency: FloatProperty(
-        name="Minimum frequency",
-        description=("Minimum frequency to be simulated. Can be 0 for "
+        name="Min. frequency",
+        description=("Minimum frequency in Hz to be simulated. Can be 0 for "
             "constructing single sided spectra. But the 0 will not be"
             "simulated."),
         default=100,
@@ -63,29 +226,30 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         max=24000,
         )
     maxFrequency: FloatProperty(
-        name="Maximum frequency",
-        description="Maximum frequency to be simulated",
+        name="Max. frequency",
+        description="Maximum frequency in Hz to be simulated",
         default=20000,
         min=1,
         max=24000,
         )
     frequencyStepSize: FloatProperty(
-        name="Frequency step size",
+        name="Step size",
         description=("Simulate frequencies between the minimum and maximum "
-            "frequency with this step size. Either this or the number of "
-            "frequency steps must be zero."),
+            "frequency with this step size in Hz. Either this or the 'Steps' "
+            "below must be zero."),
         default=100,
         min=0,
         max=24000,
         )
     numFrequencySteps: IntProperty(
-        name="Number of frequencies",
+        name="Steps",
         description=("Simulate N frequencies between the minimum and maximum "
-            "frequency. Either this or the frequency step size must be zero."),
+            "frequency. Either this or the 'Step size' above must be zero."),
         default=0,
-        min=1,
+        min=0,
         max=24000,
         )
+    # Job distribution --------------------------------------------------------
     cpuFirst: IntProperty(
         name="CPU (first)",
         description="First 'CPU' used",
@@ -107,162 +271,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         min=1,
         max=8,
         )
-    pictures: BoolProperty(
-        name="Pictures",
-        description="Render pictures",
-        default=True,
-        )
-    ear: EnumProperty(
-        name="Ear",
-        description="Selected ear",
-        items=[('Left ear', 'left', 'Left ear'),
-               ('Right ear', 'right', 'Right ear'),
-               ('Both ears', 'both', 'Both ears'),
-               ('None', 'none', 'None')],
-        default='Both ears',
-        )
-    evaluationGrid1: EnumProperty(
-        name="Ev.Grid 1",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='3_ARI',
-        )
-    evaluationGrid2: EnumProperty(
-        name="Ev.Grid 2",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
-        )
-    evaluationGrid3: EnumProperty(
-        name="Ev.Grid 3",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
-        )
-    evaluationGrid4: EnumProperty(
-        name="Ev.Grid 4",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
-        )
-    evaluationGrid5: EnumProperty(
-        name="Ev.Grid 5",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
-        )
-    method: EnumProperty(
-        name="Method",
-        description="Choose the calculation method",
-        items=[('0', 'BEM', 'Traditional BEM'),
-               ('1', 'SL-FMM BEM', 'Singlelevel fast-multipole method'),
-               ('4', 'ML-FMM BEM', 'Multilevel fast-multipole method')],
-        default='4',
-        )
-    reciprocity: BoolProperty(
-        name="Reciprocity",
-        description="Calculation with reciprocity",
-        default=True,
-        )
-    reference: BoolProperty(
-        name="Reference",
-        description=("Reference HRTF to the center of the head according to "
-            "the classic HRTF definition. Only applicable if using "
-            "reciprocity. For the HRTF definition see"
-            "https://doi.org/10.1016/0003-682X(92)90046-U"),
-        default=False,
-        )
-    sourceXPosition: StringProperty(
-        name="Source (x)",
-        description="Source Position (X-Coordinate)",
-        default="0",
-        )
-    sourceYPosition: StringProperty(
-        name="Source (y)",
-        description="Source Position (Y-Coordinate)",
-        default="101",
-        )
-    sourceZPosition: StringProperty(
-        name="Source (z)",
-        description="Source Position (Z-Coordinate)",
-        default="0",
-        )
-    speedOfSound: StringProperty(
-        name="c (m/s)",
-        description="Speed of sound (m/s)",
-        default="346.18",
-        )
-    densityOfMedium: StringProperty(
-        name="rho ()",
-        description="Density of air (kg/m^3)",
-        default="1.1839",
-        )
-    unit: EnumProperty(
-        name="Unit",
-        description="Unit of the object",
-        items=[('m', 'm', 'Meter'), ('mm', 'mm', 'Millimeter')],
-        default='mm',
-        )
-    programPath: StringProperty(
-        name="Mesh2HRTF-path",
-        description="Path to the mesh2HRTF folder containing the folders 'Mesh2Input', 'NumCalc', etc.",
-        default=r"path/to/mesh2hrtf",
-        )
 
     @classmethod
     def poll(cls, context):
@@ -279,32 +287,40 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
+        # general settings
+        layout.label(text="General:")
         row = layout.row()
         row.prop(self, "title")
         row = layout.row()
         row.prop(self, "ear")
         row = layout.row()
+        row.prop(self, "method")
+        row = layout.row()
+        row.prop(self, "programPath")
+        row = layout.row()
         row.prop(self, "pictures")
-        layout.label(text="Point Source:")
+        # source type
+        layout.label(text="Source type:")
+        row = layout.row()
+        row.prop(self, "reciprocity")
+        row = layout.row()
+        row.prop(self, "reference")
         row = layout.row()
         row.prop(self, "sourceXPosition")
         row = layout.row()
         row.prop(self, "sourceYPosition")
         row = layout.row()
         row.prop(self, "sourceZPosition")
-        row = layout.row()
-        row.prop(self, "reciprocity")
-        row = layout.row()
-        row.prop(self, "reference")
+        # constants
         layout.label(text="Constants:")
+        row = layout.row()
+        row.prop(self, "unit")
         row = layout.row()
         row.prop(self, "speedOfSound")
         row = layout.row()
         row.prop(self, "densityOfMedium")
-        layout.label(text="ObjectMeshes:")
         row = layout.row()
-        row.prop(self, "unit")
-        row = layout.row()
+        # evaluation grids
         layout.label(text="Evaluation Grids:")
         row = layout.row()
         row.prop(self, "evaluationGrid1")
@@ -316,7 +332,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "evaluationGrid4")
         row = layout.row()
         row.prop(self, "evaluationGrid5")
-        layout.label(text="Frequencies:")
+        # frequency distribution
+        layout.label(text="Frequency distribution:")
         row = layout.row()
         row.prop(self, "minFrequency")
         row = layout.row()
@@ -325,18 +342,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "frequencyStepSize")
         row = layout.row()
         row.prop(self, "numFrequencySteps")
-        row = layout.row()
-        row.prop(self, "method")
-        layout.label(text="Cluster:")
+        # job distribution
+        layout.label(text="Job distribution:")
         row = layout.row()
         row.prop(self, "cpuFirst")
         row = layout.row()
         row.prop(self, "cpuLast")
         row = layout.row()
         row.prop(self, "numCoresPerCPU")
-        layout.label(text="Mesh2HRTF:")
-        row = layout.row()
-        row.prop(self, "programPath")
 
     def save(operator,
              context,
