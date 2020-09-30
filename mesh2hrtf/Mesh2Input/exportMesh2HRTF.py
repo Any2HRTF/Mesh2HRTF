@@ -219,6 +219,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Calculation with reciprocity",
         default=True,
         )
+    reference: BoolProperty(
+        name="Reference",
+        description=("Reference HRTF to the center of the head according to "
+            "the classic HRTF definition. Only applicable if using "
+            "reciprocity. For the HRTF definition see"
+            "https://doi.org/10.1016/0003-682X(92)90046-U"),
+        default=False,
+        )
     sourceXPosition: StringProperty(
         name="Source (x)",
         description="Source Position (X-Coordinate)",
@@ -286,6 +294,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "sourceZPosition")
         row = layout.row()
         row.prop(self, "reciprocity")
+        row = layout.row()
+        row.prop(self, "reference")
         layout.label(text="Constants:")
         row = layout.row()
         row.prop(self, "speedOfSound")
@@ -348,6 +358,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              evaluationGrid5='None',
              method='4',
              reciprocity=True,
+             reference=False,
              sourceXPosition='0',
              sourceYPosition='101',
              sourceZPosition='0',
@@ -665,7 +676,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         fw("% Reference to a point source in the origin\n")
         fw("% accoring to the classical HRTF definition\n")
-        fw("reference    = false;\n")
+        fw("% (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
+        fw("reference = ")
+        if reference:
+            fw("true;\n")
+        else:
+            fw("false;\n")
         fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
         fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
