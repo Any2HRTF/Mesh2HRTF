@@ -130,90 +130,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         default="1.1839",
         )
     # evaluation grids --------------------------------------------------------
-    evaluationGrid1: EnumProperty(
-        name="Grid 1",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='3_ARI',
-        )
-    evaluationGrid2: EnumProperty(
-        name="Grid 2",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
-        )
-    evaluationGrid3: EnumProperty(
-        name="Grid 3",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
-        )
-    evaluationGrid4: EnumProperty(
-        name="Grid 4",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
-        )
-    evaluationGrid5: EnumProperty(
-        name="Grid 5",
-        description="Selected evaluation grid",
-        items=[('21_NF', 'NF', 'NF HYPER (N=46)'),
-               ('22_FF', 'FF', 'FF HYPER (N=46)'),
-               ('3_ARI', 'ARI', 'Same as acoustical ARI HRTF measurement (1550)'),
-               ('4_Low_ICO', 'Low ICO', 'Low spatial resolution (ICO ~2000)'),
-               ('4_Low_UV', 'Low UV', 'Low spatial resolution (UV ~5000)'),
-               ('5_High_ICO', 'High ICO', 'High spatial resolution (2°x2°)'),
-               ('5_High_UV', 'High UV', 'High spatial resolution (2°x2°)'),
-               ('7_SPlane', 'SPlane', 'Sagittal plane (???)'),
-               ('8_HPlane', 'HPlane', 'Horizontal plane (???)'),
-               ('9_FPlane', 'FPlane', 'Frontal plane (???)'),
-               ('Custom', 'Custom', 'User defined evaluation grid'),
-               ('None', 'None', 'None')],
-        default='None',
+    evaluationGrids: StringProperty(
+        name="Name",
+        description=("Name of evalation grid inside "
+            "Mesh2Input/EvaluationsGrids or absolute path to user grid. "
+            "Multiple grids can be separated by semicolons (;)."),
+        default='ARI',
         )
     # Frequency selection -----------------------------------------------------
     minFrequency: FloatProperty(
@@ -323,15 +245,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # evaluation grids
         layout.label(text="Evaluation Grids:")
         row = layout.row()
-        row.prop(self, "evaluationGrid1")
-        row = layout.row()
-        row.prop(self, "evaluationGrid2")
-        row = layout.row()
-        row.prop(self, "evaluationGrid3")
-        row = layout.row()
-        row.prop(self, "evaluationGrid4")
-        row = layout.row()
-        row.prop(self, "evaluationGrid5")
+        row.prop(self, "evaluationGrids")
         # frequency distribution
         layout.label(text="Frequency distribution:")
         row = layout.row()
@@ -364,11 +278,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              numCoresPerCPU=8,
              pictures=True,
              ear='Both ears',
-             evaluationGrid1='3_ARI',
-             evaluationGrid2='None',
-             evaluationGrid3='None',
-             evaluationGrid4='None',
-             evaluationGrid5='None',
+             evaluationGrids='ARI',
              method='4',
              reciprocity=True,
              reference=False,
@@ -442,8 +352,20 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if unit == 'mm':
             unitFactor = 0.001
 
-        evaluationGridPath = os.path.join(programPath,
-            "Mesh2Input", "EvaluationGrids")
+        # split and sort evaluation grids and get absolute paths
+        evaluationGrids, evalGridPaths = \
+            _split_and_sort_evaluation_grids(evaluationGrids, programPath)
+
+        # check if the evaluation grids exists
+        for n, _ in enumerate(evaluationGrids):
+            if not os.path.isfile(
+                    os.path.join(evalGridPaths[n], 'Nodes.txt')) \
+                    or not \
+                    os.path.isfile(
+                    os.path.join(evalGridPaths[n], 'Elements.txt')):
+                raise ValueError(
+                    f"Evalution grid {evalGridPaths[n]} not found.")
+
 
 # ------------------------ Write object data -----------------------------------
         for obj in bpy.context.scene.objects[:]:
@@ -495,81 +417,20 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(filepath1, "3d Model.blend"), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
 
 # ------------------------ Write evaluation grid data --------------------------
-        if not evaluationGrid1 == 'None':
-            if not evaluationGrid1 == 'User':
-                temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid1)
-                if not os.path.exists(temp):
-                    os.mkdir(temp)
+        for n, _ in enumerate(evaluationGrids):
 
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
-                shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid1, "Elements.txt"),os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
-            else:
-                obj = bpy.data.objects['User']
-                if obj.type == 'MESH':
-                    bpy.context.scene.objects.active = obj
-                    bpy.ops.object.transform_apply(location=True)
-                    bpy.ops.object.transform_apply(rotation=True)
-                    bpy.ops.object.transform_apply(scale=True)
-                    obj = context.active_object
-                    obj.hide_render = False
-                    obj_data = obj.data
+            # check if the save directory exists
+            savepath = os.path.join(
+                filepath1, "EvaluationGrids", evaluationGrids[n])
+            if not os.path.exists(savepath):
+                os.mkdir(savepath)
 
-                    temp = os.path.join(filepath1, "EvaluationGrids", "User")
-                    if not os.path.exists(temp):
-                        os.mkdir(temp)
+            # copy the data
+            shutil.copyfile(os.path.join(evalGridPaths[n], "Nodes.txt"),
+                            os.path.join(savepath, "Nodes.txt"))
+            shutil.copyfile(os.path.join(evalGridPaths[n], "Elements.txt"),
+                            os.path.join(savepath, "Elements.txt"))
 
-                    file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Nodes.txt"), "w", encoding="utf8", newline="\n")
-                    fw = file.write
-                    fw("%i\n" % len(obj_data.vertices[:]))
-                    for ii in range(len(obj_data.vertices[:])):
-                        fw("%i " % (ii+350000))
-                        fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
-                    file.close
-
-                    file = open(os.path.join(filepath1, "EvaluationGrids", "User", "Elements.txt"), "w", encoding="utf8", newline="\n")
-                    fw = file.write
-                    fw("%i\n" % len(obj_data.polygons[:]))
-                    if len(obj_data.polygons[0].vertices[:]) == 3:
-                        for ii in range(len(obj_data.polygons[:])):
-                            fw("%i " % (ii+350000))
-                            fw("%d %d %d 2 0 1\n" % (obj_data.polygons[ii].vertices[0]+350000, obj_data.polygons[ii].vertices[1]+350000, obj_data.polygons[ii].vertices[2]+350000))
-                    else:
-                        for ii in range(len(obj_data.polygons[:])):
-                            fw("%i " % (ii+350000))
-                            fw("%d %d %d %d 2 0 1\n" % (obj_data.polygons[ii].vertices[0]+350000, obj_data.polygons[ii].vertices[1]+350000, obj_data.polygons[ii].vertices[2]+350000, obj_data.polygons[ii].vertices[3]+350000))
-                    file.close
-
-        if not evaluationGrid2 == 'None':
-            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid2)
-            if not os.path.exists(temp):
-                os.mkdir(temp)
-
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid2, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
-
-        if not evaluationGrid3 == 'None':
-            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid3)
-            if not os.path.exists(temp):
-                os.mkdir(temp)
-
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid3, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
-
-        if not evaluationGrid4 == 'None':
-            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid4)
-            if not os.path.exists(temp):
-                os.mkdir(temp)
-
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid4, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
-
-        if not evaluationGrid5 == 'None':
-            temp = os.path.join(filepath1, "EvaluationGrids", evaluationGrid5)
-            if not os.path.exists(temp):
-                os.mkdir(temp)
-
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Nodes.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
-            shutil.copyfile(os.path.join(evaluationGridPath, evaluationGrid5, "Elements.txt"), os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
 
 # ------------------------ Calculate frequency information ---------------------
         # maximum number of cpus. Still hard coded but might be:
@@ -599,11 +460,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("Title: %s\n" % title)
         fw("Ear: %s\n" % ear)
         fw("Evaluation Grids:\n")
-        fw("    %s\n" % evaluationGrid1)
-        fw("    %s\n" % evaluationGrid2)
-        fw("    %s\n" % evaluationGrid3)
-        fw("    %s\n" % evaluationGrid4)
-        fw("    %s\n\n" % evaluationGrid5)
+        for evaluationGrid in evaluationGrids:
+            fw("    %s\n" % evaluationGrid)
+        fw("\n")
         fw("#####################################\n")
         fw("####### Frequency information #######\n")
         fw("#####################################\n\n")
@@ -753,45 +612,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     fw("##\n")
                     fw("## 1. Main Parameters I\n")
                     numNodes = 0
-                    if not evaluationGrid1 == 'None':
-                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Nodes.txt"))
-                        line = nodes.readline()
-                        numNodes = numNodes+int(line)
-                    if not evaluationGrid2 == 'None':
-                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Nodes.txt"))
-                        line = nodes.readline()
-                        numNodes = numNodes+int(line)
-                    if not evaluationGrid3 == 'None':
-                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Nodes.txt"))
-                        line = nodes.readline()
-                        numNodes = numNodes+int(line)
-                    if not evaluationGrid4 == 'None':
-                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Nodes.txt"))
-                        line = nodes.readline()
-                        numNodes = numNodes+int(line)
-                    if not evaluationGrid5 == 'None':
-                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Nodes.txt"))
-                        line = nodes.readline()
-                        numNodes = numNodes+int(line)
                     numElements = 0
-                    if not evaluationGrid1 == 'None':
-                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid1, "Elements.txt"))
-                        line = elements.readline()
-                        numElements = numElements+int(line)
-                    if not evaluationGrid2 == 'None':
-                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid2, "Elements.txt"))
-                        line = elements.readline()
-                        numElements = numElements+int(line)
-                    if not evaluationGrid3 == 'None':
-                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid3, "Elements.txt"))
-                        line = elements.readline()
-                        numElements = numElements+int(line)
-                    if not evaluationGrid4 == 'None':
-                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid4, "Elements.txt"))
-                        line = elements.readline()
-                        numElements = numElements+int(line)
-                    if not evaluationGrid5 == 'None':
-                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid5, "Elements.txt"))
+                    for evaluationGrid in evaluationGrids:
+                        # read number of nodes
+                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid, "Nodes.txt"))
+                        line = nodes.readline()
+                        numNodes = numNodes+int(line)
+                        # read number of elements
+                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid, "Elements.txt"))
                         line = elements.readline()
                         numElements = numElements+int(line)
                     fw("2 %d " % (len(obj_data.polygons[:])+numElements))
@@ -815,19 +643,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     fw("##\n")
                     fw("NODES\n")
                     fw("../../ObjectMeshes/Reference/Nodes.txt\n")
-                    # alphabetically sorted list of used evaluation grids
-                    evaluationGrids = []
-                    if not evaluationGrid1 == 'None':
-                        evaluationGrids.append(evaluationGrid1)
-                    if not evaluationGrid2 == 'None':
-                        evaluationGrids.append(evaluationGrid2)
-                    if not evaluationGrid3 == 'None':
-                        evaluationGrids.append(evaluationGrid3)
-                    if not evaluationGrid4 == 'None':
-                        evaluationGrids.append(evaluationGrid4)
-                    if not evaluationGrid5 == 'None':
-                        evaluationGrids.append(evaluationGrid5)
-                    evaluationGrids.sort()
 
                     # write file path of nodes to input file
                     for grid in evaluationGrids:
@@ -885,6 +700,40 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             bpy.data.objects[obj.name].select_set(False)
 
         return {'FINISHED'}
+
+
+def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
+    if not len(evaluationGrids):
+        raise ValueError("At least one evaluation grid mast be defines.")
+
+    # split evaluationGrids and remove leading/trailing white spaces
+    grids = evaluationGrids.split(';')
+    grids = [eg.strip() for eg in grids]
+
+    # default path for evaluation grids
+    evaluationGridPath = os.path.join(
+        programPath, "Mesh2Input", "EvaluationGrids")
+
+    # construct full paths and names
+    evalGridPaths = []
+    evalGrids =[]
+    for eg in grids:
+        # complete grids given by name to default path
+        if not os.path.sep in eg:
+            evalGridPaths.append(os.path.join(evaluationGridPath, eg))
+            evalGrids.append(eg)
+        else:
+            evalGridPaths.append(eg)
+            evalGrids.append(os.path.basename(os.path.normpath(eg)))
+
+    # alphabetically sort according to evalGrids
+    idx = sorted(range(len(evalGrids)), key=evalGrids.__getitem__)
+    unsrt = evalGrids
+    evaluationGrids = [unsrt[i] for i in idx]
+    unsrt = evalGridPaths
+    evalGridPaths = [unsrt[i] for i in idx]
+
+    return evaluationGrids, evalGridPaths
 
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):

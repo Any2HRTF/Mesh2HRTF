@@ -89,7 +89,7 @@ nodes(:,1) = nodes(:,1) - nodes(1,1)+1;
 % plot if desired
 if doPlot
     
-    figure
+    AKf(15)
     set(gcf,'Color',[1 1 1]);
     trisurf(elems(:,2:4),nodes(:,2),nodes(:,3),nodes(:,4), 'FaceColor', [.8 .8 .8], 'faceAlpha', 1, 'EdgeColor', 'none')
     hold on
