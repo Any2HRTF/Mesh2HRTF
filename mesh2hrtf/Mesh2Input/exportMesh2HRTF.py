@@ -250,11 +250,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         items=[('m', 'm', 'Meter'), ('mm', 'mm', 'Millimeter')],
         default='mm',
         )
-    frequencyDependency: BoolProperty(
-        name="Frequency dependency",
-        description="Use frequency-dependent meshes",
-        default=False,
-        )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
         description="Path to the mesh2HRTF folder containing the folders 'Mesh2Input', 'NumCalc', etc.",
@@ -321,8 +316,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row = layout.row()
         row.prop(self, "numFrequencySteps")
         row = layout.row()
-        row.prop(self, "frequencyDependency")
-        row = layout.row()
         row.prop(self, "method")
         layout.label(text="Cluster:")
         row = layout.row()
@@ -361,7 +354,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
-             frequencyDependency=False,
              programPath="",
              ):
 
@@ -633,19 +625,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         for cpu in range(1, 11):
             for core in range(1, 9):
                 if not cpusAndCores[cpu-1][core-1] == 0:
-                    if frequencyDependency:
-                        if cpusAndCores[cpu-1][core-1] == 1:
-                            tmpEar = "L"
-                        if cpusAndCores[cpu-1][core-1] == 2:
-                            tmpEar = "R"
-                        tmpfmax = max(frequencies[cpu-1][core-1])
-                        tmpfdiff = 24000
-                        for ff in maxObjectFrequency:
-                            if (ff-tmpfmax) >= 0 and (ff-tmpfmax) < tmpfdiff:
-                                obj_name = ("%s%i" % (tmpEar, ff))
-                                tmpfdiff = ff-tmpfmax
-                    else:
-                        obj_name = "Reference"
+                    obj_name = "Reference"
                 else:
                     obj_name = ""
                 fw("'%s'" % obj_name)
@@ -696,13 +676,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             fw("receiverCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition, sourceYPosition, sourceZPosition))
             fw("receiverArea(1,1)     = 1;\n")
 
-        fw("frequencyDependency=")
-        if frequencyDependency:
-            fw("1")
-        else:
-            fw("0")
-        fw(";\n")
-
         fw("\n")
 
         fw("% Reference to a point source in the origin\n")
@@ -711,7 +684,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
         fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
-        fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,receiverCenter,frequencyDependency,receiverArea,reference,speedOfSound,densityOfAir);")
+        fw("Output2HRTF_Main(cpusAndCores,objectMeshes,reciprocity,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir);")
         file.close
 
 # ----------------------- Render pictures of the model -------------------------
@@ -739,19 +712,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     file = open(os.path.join(filepath2, filename1), "w", encoding="utf8", newline="\n")
                     fw = file.write
 
-                    if frequencyDependency:
-                        if cpusAndCores[cpu-1][core-1] == 1:
-                            tmpEar = "L"
-                        if cpusAndCores[cpu-1][core-1] == 2:
-                            tmpEar = "R"
-                        tmpfmax = max(frequencies[cpu-1][core-1])
-                        tmpfdiff = 24000
-                        for ff in maxObjectFrequency:
-                            if (ff-tmpfmax) >= 0 and (ff-tmpfmax) < tmpfdiff:
-                                obj_name = ("%s%i" % (tmpEar, ff))
-                                tmpfdiff = ff-tmpfmax
-                    else:
-                        obj_name = "Reference"
+                    obj_name = "Reference"
 
                     obj = bpy.data.objects[obj_name]
                     obj_data = obj.data
@@ -839,10 +800,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     fw("%s %se+00 1.0 0.0e+00 0.0 e+00 0.0e+00 0.0e+00\n" % (speedOfSound, densityOfMedium))
                     fw("##\n")
                     fw("NODES\n")
-                    if not frequencyDependency:
-                        fw("../../ObjectMeshes/Reference/Nodes.txt\n")
-                    else:
-                        fw("../../ObjectMeshes/%s/Nodes.txt\n" % obj_name)
+                    fw("../../ObjectMeshes/Reference/Nodes.txt\n")
                     # alphabetically sorted list of used evaluation grids
                     evaluationGrids = []
                     if not evaluationGrid1 == 'None':
@@ -862,10 +820,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                         fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
                     fw("##\n")
                     fw("ELEMENTS\n")
-                    if not frequencyDependency:
-                        fw("../../ObjectMeshes/Reference/Elements.txt\n")
-                    else:
-                        fw("../../ObjectMeshes/%s/Elements.txt\n" % obj_name)
+                    fw("../../ObjectMeshes/Reference/Elements.txt\n")
+
                     # write file path of elements to input file
                     for grid in evaluationGrids:
                         fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
