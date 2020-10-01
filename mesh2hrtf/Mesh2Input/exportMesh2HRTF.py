@@ -302,8 +302,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             version = read_version.readline()
 
         # Export path and export directory handling
-        (filepath1, filename1) = os.path.split(filepath)
-        filename1 = "NC.inp"
+        filepath1, _ = os.path.split(filepath)
 
         temp = os.path.join(filepath1, "ObjectMeshes")
         if not os.path.exists(temp):
@@ -416,129 +415,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if pictures:
             _render_pictures(filepath1, unitFactor)
 
-# ----------------------- Write NumCalc input files for all CPUs and Cores -----
-        for core in range(1, 9):
-            for cpu in range(1, 11):
-                if not cpusAndCores[cpu-1][core-1] == 0:
 
-                    filepath2 = os.path.join(filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu, core))
-                    if not os.path.exists(filepath2):
-                        os.mkdir(filepath2)
+# Write NumCalc input files for all CPUs and Cores (NC.inp) -------------------
+        _write_nc_inp(filepath1, version, title, ear, speedOfSound,
+                      densityOfMedium, frequencies, cpusAndCores,
+                      evaluationGrids, method, reciprocity,
+                      sourceXPosition, sourceYPosition, sourceZPosition)
 
-                    file = open(os.path.join(filepath2, filename1), "w", encoding="utf8", newline="\n")
-                    fw = file.write
-
-                    obj_name = "Reference"
-
-                    obj = bpy.data.objects[obj_name]
-                    obj_data = obj.data
-
-                    fw("##-------------------------------------------\n")
-                    fw("## This file was created by export_mesh2hrtf\n")
-                    fw("## Date: %s\n" % datetime.date.today())
-                    fw("##-------------------------------------------\n")
-                    fw("Mesh2HRTF %s\n" % version)
-                    fw("##\n")
-                    fw("%s\n" % title)
-                    fw("##\n")
-                    fw("## Controlparameter I\n")
-                    fw("0 0 0 0 7 0\n")
-                    fw("##\n")
-                    fw("## Controlparameter II\n")
-                    fw("1 %d %fe+00 0.00e+00 1 0 0\n" % (len(frequencies[cpu-1][core-1]), 1/(len(frequencies[cpu-1][core-1]))))
-                    fw("##\n")
-                    fw("## Load Frequency Curve \n")
-                    fw("0 %d\n" % (len(frequencies[cpu-1][core-1])+1))
-                    fw("0.000000e+00 0.000000e+00 0.0\n")
-                    for ii in range(0, len(frequencies[cpu-1][core-1])):
-                        fw("%fe+00 %fe+04 0.0\n" % (1/(len(frequencies[cpu-1][core-1]))*(ii+1), frequencies[cpu-1][core-1][ii]/10000))
-                    fw("##\n")
-                    fw("## 1. Main Parameters I\n")
-                    numNodes = 0
-                    numElements = 0
-                    for evaluationGrid in evaluationGrids:
-                        # read number of nodes
-                        nodes = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid, "Nodes.txt"))
-                        line = nodes.readline()
-                        numNodes = numNodes+int(line)
-                        # read number of elements
-                        elements = open(os.path.join(filepath1, "EvaluationGrids", evaluationGrid, "Elements.txt"))
-                        line = elements.readline()
-                        numElements = numElements+int(line)
-                    fw("2 %d " % (len(obj_data.polygons[:])+numElements))
-                    fw("%d 0 " % (len(obj_data.vertices[:])+numNodes))
-                    fw("0")
-                    fw(" 2 1 %s 0\n" % (method))
-                    fw("##\n")
-                    fw("## 2. Main Parameters II\n")
-                    fw("0 ")
-                    if reciprocity:
-                        fw("0 ")
-                    else:
-                        fw("1 ")
-                    fw("0 0.0000e+00 0 0 0\n")
-                    fw("##\n")
-                    fw("## 3. Main Parameters III\n")
-                    fw("0 0 0 0\n")
-                    fw("##\n")
-                    fw("## 4. Main Parameters IV\n")
-                    fw("%s %se+00 1.0 0.0e+00 0.0 e+00 0.0e+00 0.0e+00\n" % (speedOfSound, densityOfMedium))
-                    fw("##\n")
-                    fw("NODES\n")
-                    fw("../../ObjectMeshes/Reference/Nodes.txt\n")
-
-                    # write file path of nodes to input file
-                    for grid in evaluationGrids:
-                        fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
-                    fw("##\n")
-                    fw("ELEMENTS\n")
-                    fw("../../ObjectMeshes/Reference/Elements.txt\n")
-
-                    # write file path of elements to input file
-                    for grid in evaluationGrids:
-                        fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
-                    fw("##\n")
-                    fw("# SYMMETRY\n")
-                    fw("# 0 0 0\n")
-                    fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
-                    fw("##\n")
-                    if reciprocity:
-                        if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
-                            tmpEar='Left ear'
-                        else:
-                            tmpEar='Right ear'
-
-                        fw("BOUNDARY\n")
-                        for ii in range(len(obj_data.polygons[:])):
-                            if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots[tmpEar].name:
-                                fw("ELEM %i TO %i VELO 0.1 IMAG 0.0\n" % (ii, ii))
-                        fw("RETU\n")
-                    else:
-                        fw("BOUNDARY\n")
-                        fw("# ELEM 0 TO 0 VELO 0.1 IMAG 0.0\n")
-                        fw("RETU\n")
-                    fw("##\n")
-                    fw("# PLANE WAVES\n")
-                    fw("# 0 0.0000e+00 -1.0000e+00 0.0000e+00 1.0000e-6 -1 0.0000e+00 -1\n")
-                    fw("##\n")
-                    if reciprocity:
-                        fw("# POINT SOURCES\n")
-                        if cpusAndCores[cpu-1][core-1] == 1:
-                            fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
-                        if cpusAndCores[cpu-1][core-1] == 2:
-                            fw("# 0 0.0 -0.101 0.0 0.1 -1 0.0 -1\n")
-                    else:
-                        fw("POINT SOURCES\n")
-                        fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (sourceXPosition, sourceYPosition, sourceZPosition))
-                    fw("##\n")
-                    fw("# CURVES\n")
-                    fw("# Frequency Factor 0.0\n")
-                    fw("##\n")
-                    fw("POST PROCESS\n")
-                    fw("##\n")
-                    fw("END\n")
-                    file.close()
-
+# Finish ----------------------------------------------------------------------
         for obj in bpy.context.scene.objects[:]:
             bpy.data.objects[obj.name].select_set(False)
 
@@ -631,7 +515,7 @@ def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
 
     # construct full paths and names
     evalGridPaths = []
-    evalGrids =[]
+    evalGrids = []
     for eg in grids:
         # complete grids given by name to default path
         if not os.path.sep in eg:
@@ -1054,11 +938,11 @@ def _render_pictures(filepath1, unitFactor):
 
     # camera positions, rotations, and azimuth angles
     renderloc = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
-                    [0.707, 0.707, 0], [-0.707, 0.707, 0], [0.707, -0.707, 0],
-                    [-0.707, -0.707, 0]]
+                 [0.707, 0.707, 0], [-0.707, 0.707, 0], [0.707, -0.707, 0],
+                 [-0.707, -0.707, 0]]
     renderrot = [[pi/2, 0, pi/2], [pi/2, 0, 3*pi/2], [pi/2, 0, pi],
-                    [3/2*pi, pi, pi], [pi/2, 0, 3/4*pi], [pi/2, 0, 5/4*pi],
-                    [pi/2, 0, pi/4], [pi/2, 0, -pi/4]]
+                 [3/2*pi, pi, pi], [pi/2, 0, 3/4*pi], [pi/2, 0, 5/4*pi],
+                 [pi/2, 0, pi/4], [pi/2, 0, -pi/4]]
     azim = [0, 180, 90, 270, 45, 135, 315, 225]
 
     # general rendering settings
@@ -1085,6 +969,172 @@ def _render_pictures(filepath1, unitFactor):
         nameRender = ("%d_deg_azimuth" % azim[ii])
         bpy.data.images['Render Result'].save_render(
             os.path.join(dirRender, "%s.png" % nameRender))
+
+
+def _write_nc_inp(filepath1, version, title, ear,
+                  speedOfSound, densityOfMedium, frequencies, cpusAndCores,
+                  evaluationGrids, method, reciprocity,
+                  sourceXPosition, sourceYPosition, sourceZPosition):
+    for core in range(1, 9):
+        for cpu in range(1, 11):
+            if not cpusAndCores[cpu-1][core-1] == 0:
+
+                # create directoy
+                filepath2 = os.path.join(
+                    filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu, core))
+                if not os.path.exists(filepath2):
+                    os.mkdir(filepath2)
+
+                # write NC.inp
+                file = open(os.path.join(filepath2, "NC.inp"), "w",
+                            encoding="utf8", newline="\n")
+                fw = file.write
+
+                obj_name = "Reference"
+
+                obj = bpy.data.objects[obj_name]
+                obj_data = obj.data
+
+                # header ------------------------------------------------------
+                fw("##-------------------------------------------\n")
+                fw("## This file was created by export_mesh2hrtf\n")
+                fw("## Date: %s\n" % datetime.date.today())
+                fw("##-------------------------------------------\n")
+                fw("Mesh2HRTF %s\n" % version)
+                fw("##\n")
+                fw("%s\n" % title)
+                fw("##\n")
+
+                # control parameter I (hard coded, not documented) ------------
+                fw("## Controlparameter I\n")
+                fw("0 0 0 0 7 0\n")
+                fw("##\n")
+
+                # control parameter II ----------------------------------------
+                fw("## Controlparameter II\n")
+                fw("1 %d %fe+00 0.00e+00 1 0 0\n" % (
+                    len(frequencies[cpu-1][core-1]),
+                    1 / (len(frequencies[cpu-1][core-1]))))
+                fw("##\n")
+                fw("## Load Frequency Curve \n")
+                fw("0 %d\n" % (len(frequencies[cpu-1][core-1])+1))
+                fw("0.000000e+00 0.000000e+00 0.0\n")
+                for ii in range(0, len(frequencies[cpu-1][core-1])):
+                    fw("%fe+00 %fe+04 0.0\n" % (
+                        1 / (len(frequencies[cpu-1][core-1]))*(ii+1),
+                        frequencies[cpu-1][core-1][ii] / 10000))
+                fw("##\n")
+
+                # main parameters I -------------------------------------------
+                fw("## 1. Main Parameters I\n")
+                numNodes = 0
+                numElements = 0
+                for evaluationGrid in evaluationGrids:
+                    # read number of nodes
+                    nodes = open(os.path.join(
+                        filepath1, "EvaluationGrids", evaluationGrid,
+                        "Nodes.txt"))
+                    line = nodes.readline()
+                    numNodes = numNodes+int(line)
+                    # read number of elements
+                    elements = open(os.path.join(
+                        filepath1, "EvaluationGrids", evaluationGrid,
+                        "Elements.txt"))
+                    line = elements.readline()
+                    numElements = numElements+int(line)
+                fw("2 %d " % (len(obj_data.polygons[:])+numElements))
+                fw("%d 0 " % (len(obj_data.vertices[:])+numNodes))
+                fw("0")
+                fw(" 2 1 %s 0\n" % (method))
+                fw("##\n")
+
+                # main parameters II ------------------------------------------
+                fw("## 2. Main Parameters II\n")
+                fw("0 ")
+                if reciprocity:
+                    fw("0 ")
+                else:
+                    fw("1 ")
+                fw("0 0.0000e+00 0 0 0\n")
+                fw("##\n")
+
+                # main parameters III -----------------------------------------
+                fw("## 3. Main Parameters III\n")
+                fw("0 0 0 0\n")
+                fw("##\n")
+
+                # main parameters IV ------------------------------------------
+                fw("## 4. Main Parameters IV\n")
+                fw("%s %se+00 1.0 0.0e+00 0.0 e+00 0.0e+00 0.0e+00\n" % (
+                    speedOfSound, densityOfMedium))
+                fw("##\n")
+
+                # nodes -------------------------------------------------------
+                fw("NODES\n")
+                fw("../../ObjectMeshes/Reference/Nodes.txt\n")
+                # write file path of nodes to input file
+                for grid in evaluationGrids:
+                    fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
+                fw("##\n")
+                fw("ELEMENTS\n")
+                fw("../../ObjectMeshes/Reference/Elements.txt\n")
+                # write file path of elements to input file
+                for grid in evaluationGrids:
+                    fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
+                fw("##\n")
+
+                # SYMMETRY ----------------------------------------------------
+                fw("# SYMMETRY\n")
+                fw("# 0 0 0\n")
+                fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
+                fw("##\n")
+
+                # source information: reciprocal ------------------------------
+                if reciprocity:
+                    if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
+                        tmpEar='Left ear'
+                    else:
+                        tmpEar='Right ear'
+
+                    fw("BOUNDARY\n")
+                    for ii in range(len(obj_data.polygons[:])):
+                        if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots[tmpEar].name:
+                            fw("ELEM %i TO %i VELO 0.1 IMAG 0.0\n" % (ii, ii))
+                    fw("RETU\n")
+                else:
+                    fw("BOUNDARY\n")
+                    fw("# ELEM 0 TO 0 VELO 0.1 IMAG 0.0\n")
+                    fw("RETU\n")
+                fw("##\n")
+
+                # source information: plane wave ------------------------------
+                fw("# PLANE WAVES\n")
+                fw("# 0 0.0000e+00 -1.0000e+00 0.0000e+00 1.0000e-6 -1 0.0000e+00 -1\n")
+                fw("##\n")
+
+                # source information: point source ----------------------------
+                if reciprocity:
+                    fw("# POINT SOURCES\n")
+                    if cpusAndCores[cpu-1][core-1] == 1:
+                        fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
+                    if cpusAndCores[cpu-1][core-1] == 2:
+                        fw("# 0 0.0 -0.101 0.0 0.1 -1 0.0 -1\n")
+                else:
+                    fw("POINT SOURCES\n")
+                    fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (
+                        sourceXPosition, sourceYPosition, sourceZPosition))
+                fw("##\n")
+
+                # curves ------------------------------------------------------
+                fw("# CURVES\n")
+                fw("# Frequency Factor 0.0\n")
+                fw("##\n")
+
+                # post process ------------------------------------------------
+                fw("POST PROCESS\n")
+                fw("##\n")
+                fw("END\n")
+                file.close()
 
 # ----------------------- Blender add-on registration -------------------------
 def menu_func_export(self, context):
