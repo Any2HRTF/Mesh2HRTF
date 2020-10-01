@@ -129,17 +129,6 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
         f, frequencyStepSize, numFrequencySteps
 
 
-# %% random debugging
-cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, f, *_ = \
-    _distribute_frequencies(
-        1, 1, 10,  # cpuFirst, cpuLast, maxCPUs
-        1, 8,    # numCoresPerCPU, maxCores
-        1,              # numEars
-        250, 16000,       # minFrequency, maxFrequency
-        250, 0)         # frequencyStepSize, numFrequencySteps
-
-print(f[0], f[-1])
-
 # %%
 # export variables - try different parameters and see if everything works as
 # expected
@@ -203,3 +192,14 @@ cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, f, *_ = \
         0, 22000,       # minFrequency, maxFrequency
         100, 0)         # frequencyStepSize, numFrequencySteps
 
+
+# %% random debugging
+cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, f, *_ = \
+    _distribute_frequencies(
+        1, 1, maxCPUs,  # cpuFirst, cpuLast, maxCPUs
+        1, maxCores,    # numCoresPerCPU, maxCores
+        1,              # numEars
+        100, 100,       # minFrequency, maxFrequency
+        0, 129)         # frequencyStepSize, numFrequencySteps
+
+print(f[0], f[-1])
