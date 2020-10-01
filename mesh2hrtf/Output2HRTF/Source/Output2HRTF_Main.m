@@ -39,20 +39,6 @@ function Output2HRTF_Main(cpusAndCores,reciprocity,receiverCenter,receiverArea,r
 %       by pressure at the center of the head with the head being absent)
 
 ears=max(unique(cpusAndCores));
-%% --------------------------default parameter-----------------------------
-if ~exist('receiverArea', 'var')
-    receiverArea = [1 1];
-end
-if ~exist('reference', 'var')
-    reference = false;
-end
-if ~exist('speedOfSound', 'var')
-    speedOfSound = 346.18;
-end
-if ~exist('densityOfAir', 'var')
-    densityOfAir = 1.1839;
-end
-
 %% ----------------------------load meta data------------------------------
 temp=dir('EvaluationGrids');
 evaluationGrids={};
