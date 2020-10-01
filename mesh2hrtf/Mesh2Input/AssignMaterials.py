@@ -96,7 +96,7 @@ def setup_materials(obj):
     # remove existing materials
     for i in range(len(bpy.context.object.material_slots)):
         bpy.context.object.active_material_index = 0
-        bpy.ops.object.material_slot_remove()
+        bpy.ops.object.material_slot_remove({'object': obj})
 
     # assign materials required for Mesh2HRTF
     for idx, (name, color) in enumerate(zip(
@@ -176,6 +176,9 @@ def get_ear_indices(bm, obj, tolerance):
 
 
 def assign_material(obj, tolerance):
+
+    # Switch to object mode to avoid export errors
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
     # create materials
     setup_materials(obj)
