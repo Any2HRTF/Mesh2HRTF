@@ -291,10 +291,44 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              programPath="",
              ):
 
-        # Switch to object mode to avoid export errors --------------------
+        # General handling and constants --------------------------------------
+
+        # Switch to object mode to avoid export errors
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-# ----------------------- Initialize constants ---------------------------------
+        # get Mesh2HRTF version
+        with open(os.path.join(programPath, "..", "VERSION")) as read_version:
+            version = read_version.readline()
+
+        # Export path and export directory handling
+        (filepath1, filename1) = os.path.split(filepath)
+        filename1 = "NC.inp"
+
+        temp = os.path.join(filepath1, "ObjectMeshes")
+        if not os.path.exists(temp):
+            os.mkdir(temp)
+
+        temp = os.path.join(filepath1, "EvaluationGrids")
+        if not os.path.exists(temp):
+            os.mkdir(temp)
+
+        temp = os.path.join(filepath1, "NumCalc")
+        if not os.path.exists(temp):
+            os.mkdir(temp)
+
+        # check input and assign numEars
+        if ear not in ["Left ear", "Right ear", "Both ears"]:
+            raise ValueError("`ear` must be 'Left ear', 'Right ear' or "
+                             "'Both ears' (case sensitive).")
+        numEars = 1 if ear == 'Both ears' else 2
+
+        # check input and assign unitFactor
+        if unit not in ["mm", "m"]:
+            raise ValueError("`unit` must be 'mm', 'm' "
+                             "(case sensitive).")
+        unitFactor = 1 if unit == 'm' else .001
+
+        # camera settings for rending pictures
         bpy.ops.object.transform_apply(location=True)
         bpy.ops.object.transform_apply(rotation=True)
         bpy.ops.object.transform_apply(scale=True)
@@ -302,7 +336,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         camradius = 400
         cam.location = (0, camradius, 0)
         cam.rotation_euler = (pi/2, 0, pi)
-#         bpy.data.scenes['Scene'].camera = cam
         cam.data.clip_end = 0.1
         cam.data.clip_end = 1000
         light = bpy.data.objects['Light']
@@ -324,34 +357,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         bpy.data.scenes['Scene'].render.resolution_x = 1440
         bpy.data.scenes['Scene'].render.resolution_y = 1920
 
-        with open(os.path.join(programPath, "..", "VERSION")) as read_version:
-            version = read_version.readline()
-
+        # empty list for saving objects
         objects = ([])
-
-        (filepath1, filename1) = os.path.split(filepath)
-        filename1 = "NC.inp"
-
-        temp = os.path.join(filepath1, "ObjectMeshes")
-        if not os.path.exists(temp):
-            os.mkdir(temp)
-
-        temp = os.path.join(filepath1, "EvaluationGrids")
-        if not os.path.exists(temp):
-            os.mkdir(temp)
-
-        temp = os.path.join(filepath1, "NumCalc")
-        if not os.path.exists(temp):
-            os.mkdir(temp)
-
-        numEars = 1
-        if ear == 'Both ears':
-            numEars = 2
-
-        unitFactor = 1
-        if unit == 'mm':
-            unitFactor = 0.001
-
 
 # ------------------------ Write object data -----------------------------------
         for obj in bpy.context.scene.objects[:]:
