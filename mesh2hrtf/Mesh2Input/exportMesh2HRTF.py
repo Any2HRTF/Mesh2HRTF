@@ -308,6 +308,18 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # Switch to object mode to avoid export errors
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
+        # check if 'Reference' object exists and select it
+        referenceExist = False
+        for obj in bpy.context.scene.objects[:]:
+            if obj.type == 'MESH' and obj.name == 'Reference':
+                referenceExist = True
+
+        if referenceExist:
+            bpy.data.objects['Reference'].select_set(True)
+        else:
+            raise ValueError("Did not find the 3D Mesh. It must be named"
+                             "'Reference' (case sensitive).")
+
         # get Mesh2HRTF version
         with open(os.path.join(programPath, "..", "VERSION")) as read_version:
             version = read_version.readline()
