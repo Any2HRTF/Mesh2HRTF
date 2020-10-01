@@ -343,7 +343,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if ear not in ["Left ear", "Right ear", "Both ears"]:
             raise ValueError("`ear` must be 'Left ear', 'Right ear' or "
                              "'Both ears' (case sensitive).")
-        numEars = 1 if ear == 'Both ears' else 2
+        numEars = 2 if ear == 'Both ears' else 1
 
         # check input and assign unitFactor
         if unit not in ["mm", "m"]:
