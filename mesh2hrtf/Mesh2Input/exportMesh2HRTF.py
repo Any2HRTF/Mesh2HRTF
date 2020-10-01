@@ -360,54 +360,20 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # empty list for saving objects
         objects = ([])
 
-# ------------------------ Write object data -----------------------------------
+        # Write object data ---------------------------------------------------
         for obj in bpy.context.scene.objects[:]:
-            if obj.type == 'MESH' and not obj.name == 'User':
-                bpy.context.view_layer.objects.active = obj
-                bpy.ops.object.transform_apply(location=True)
-                bpy.ops.object.transform_apply(rotation=True)
-                bpy.ops.object.transform_apply(scale=True)
-                obj = context.active_object
-                obj.hide_render = False
-                obj_data = obj.data
+            if obj.type == 'MESH' and obj.name == 'Reference':
+                objects = _write_object_data(obj, objects, unitFactor,
+                                             context, filepath1)
 
-                temp = os.path.join(filepath1, "ObjectMeshes", obj.name)
-                if not os.path.exists(temp):
-                    os.mkdir(temp)
-
-                file = open(os.path.join(filepath1, "ObjectMeshes", obj.name, "Nodes.txt"), "w", encoding="utf8", newline="\n")
-                fw = file.write
-                fw("%i\n" % len(obj_data.vertices[:]))
-                for ii in range(len(obj_data.vertices[:])):
-                    fw("%i " % ii)
-                    fw("%.6f %.6f %.6f\n" % (obj_data.vertices[ii].co[0]*unitFactor, obj_data.vertices[ii].co[1]*unitFactor, obj_data.vertices[ii].co[2]*unitFactor))
-                file.close
-
-                file = open(os.path.join(filepath1, "ObjectMeshes", obj.name, "Elements.txt"), "w", encoding="utf8", newline="\n")
-                fw = file.write
-                fw("%i\n" % len(obj_data.polygons[:]))
-
-                for ii in range(len(obj_data.polygons[:])):
-                    fw("%i " % ii)
-                    if len(obj_data.polygons[ii].vertices[:]) == 3:
-                        fw("%d %d %d 0 0 0\n" % tuple(obj_data.polygons[ii].vertices[:]))
-                    else:
-                        fw("%d %d %d %d 0 0 0\n" % tuple(obj_data.polygons[ii].vertices[:]))
-                file.close
-
-                objects.append(obj.name)
-
-        maxObjectFrequency = ([])
-        for ii in range(0, len(objects)):
-            if not objects[ii] == 'Reference' and not objects[ii] == 'User':
-                try:
-                    if maxObjectFrequency.count(int(objects[ii][1:len(objects[ii]):1])) == 0:
-                        maxObjectFrequency.append(int(objects[ii][1:len(objects[ii]):1]))
-                except:
-                    print('No maximum object frequency found.\nPlease change object names to L{maxobjfq}/R{maxobjfq} e.g. L20000 or R20000.')
-        maxObjectFrequency.sort()
-
-        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(filepath1, "3d Model.blend"), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
+        # save Blender project for documentation ------------------------------
+        bpy.ops.wm.save_as_mainfile(
+            filepath=os.path.join(filepath1, "3d Model.blend"),
+            check_existing=False, filter_blender=True, filter_image=False,
+            filter_movie=False, filter_python=False, filter_font=False,
+            filter_sound=False, filter_text=False, filter_btx=False,
+            filter_collada=False, filter_folder=True, filemode=8,
+            compress=False, relative_remap=True, copy=False)
 
 # ------------------------ Write evaluation grid data --------------------------
         # split and sort evaluation grids and get absolute paths
@@ -701,6 +667,66 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             bpy.data.objects[obj.name].select_set(False)
 
         return {'FINISHED'}
+
+
+def _write_object_data(obj, objects, unitFactor, context, filepath1):
+    """Write object information to Nodes.txt and Elements.txt.
+
+    Returns:
+    objects: list
+        Original list with name of the current object appended.
+
+    """
+    # apply transformations and activate
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=True)
+    bpy.ops.object.transform_apply(rotation=True)
+    bpy.ops.object.transform_apply(scale=True)
+    obj = context.active_object
+    obj.hide_render = False
+    obj_data = obj.data
+
+    # create target directory
+    dirObject = os.path.join(filepath1, "ObjectMeshes", obj.name)
+    if not os.path.exists(dirObject):
+        os.mkdir(dirObject)
+
+    # write object nodes
+    file = open(os.path.join(dirObject, "Nodes.txt"), "w",
+                encoding="utf8", newline="\n")
+    fw = file.write
+    # number of nodes
+    fw("%i\n" % len(obj_data.vertices[:]))
+    # coordinate of nodes (vertices)
+    for ii in range(len(obj_data.vertices[:])):
+        fw("%i " % ii)
+        fw("%.6f %.6f %.6f\n" %
+            (obj_data.vertices[ii].co[0] * unitFactor,
+             obj_data.vertices[ii].co[1] * unitFactor,
+             obj_data.vertices[ii].co[2] * unitFactor))
+    file.close
+
+    # write object elements
+    file = open(os.path.join(dirObject, "Elements.txt"), "w",
+                encoding="utf8", newline="\n")
+    fw = file.write
+    # number of faces (polygons)
+    fw("%i\n" % len(obj_data.polygons[:]))
+    # node (vertice) indicees
+    for ii in range(len(obj_data.polygons[:])):
+        fw("%i " % ii)
+        if len(obj_data.polygons[ii].vertices[:]) == 3:
+            fw("%d %d %d 0 0 0\n" %
+               tuple(obj_data.polygons[ii].vertices[:]))
+        else:
+            fw("%d %d %d %d 0 0 0\n" %
+               tuple(obj_data.polygons[ii].vertices[:]))
+    file.close
+
+    # add object to list
+    objects.append(obj.name)
+
+    return objects
 
 
 def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
