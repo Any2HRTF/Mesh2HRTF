@@ -64,39 +64,12 @@ end
 objectMeshNodes={};
 objectMeshElements={};
 objectMeshMaxFrequency={};
-countL=0; countR=0; count=0;
 for ii=1:length(objectMeshes)
     if exist(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],'file')
-        switch objectMeshes{ii}(1)
-            case 'L'
-                idxEar=1;
-                countL=countL+1;
-                count=countL;
-            case 'R'
-                switch objectMeshes{ii}(2)
-                    case 'e'
-                        idxEar=3;
-                        count=1;
-                    otherwise
-                        idxEar=2;
-                        countR=countR+1;
-                        count=countR;
-                    end
-            otherwise
-                idxEar=0;
-        end
-        if objectMeshes{ii}(1)~='R'
-            idxEar=0;
-        end
-        if idxEar~=0
-            tmpNodes=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],' ',1);
-            tmpElements=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Elements.txt'],' ',1);
-            objectMeshNodes{count,idxEar}=tmpNodes.data;
-            objectMeshElements{count,idxEar}=tmpElements.data(:,1:end-3);
-            if idxEar~=3
-                objectMeshMaxFrequency{count,idxEar}=str2double(objectMeshes{ii}(2:end));
-            end
-        end
+        tmpNodes=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],' ',1);
+        tmpElements=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Elements.txt'],' ',1);
+        objectMeshNodes{1,3}=tmpNodes.data;
+        objectMeshElements{1,3}=tmpElements.data(:,1:end-3);
     end
 end
 if isempty(objectMeshNodes{1,1}) && isempty(objectMeshElements{1,1}) && isempty(objectMeshNodes{1,2}) && isempty(objectMeshElements{1,2})
