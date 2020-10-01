@@ -360,11 +360,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # empty list for saving objects
         objects = ([])
 
+
         # Write object data ---------------------------------------------------
         for obj in bpy.context.scene.objects[:]:
             if obj.type == 'MESH' and obj.name == 'Reference':
                 objects = _write_object_data(obj, objects, unitFactor,
                                              context, filepath1)
+
 
         # save Blender project for documentation ------------------------------
         bpy.ops.wm.save_as_mainfile(
@@ -375,7 +377,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             filter_collada=False, filter_folder=True, filemode=8,
             compress=False, relative_remap=True, copy=False)
 
-# ------------------------ Write evaluation grid data --------------------------
+
+        # Write evaluation grid data ------------------------------------------
         # split and sort evaluation grids and get absolute paths
         evaluationGrids, evalGridPaths = \
             _split_and_sort_evaluation_grids(evaluationGrids, programPath)
@@ -383,7 +386,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # check if the evaluation grids exists
         _check_evaluation_grid_exists(evaluationGrids, evalGridPaths)
 
-        # write data to export directory
+        # copy data to export directory
         for n, _ in enumerate(evaluationGrids):
 
             # create target directory
