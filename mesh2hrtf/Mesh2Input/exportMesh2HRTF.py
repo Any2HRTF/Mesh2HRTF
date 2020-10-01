@@ -631,21 +631,15 @@ def _write_output2HRTF_m(filepath1, version,
 
     # header
     fw("% Collect the data simulated by NumCalc and save to project folder.\n")
-    fw(f"% Mesh2HRTF Version {version}\n")
     fw("close all; clear\n\n")
+
+    # Mesh2HRTF version
+    fw(f"Mesh2HRTF_version = '{version}';\n\n")
 
     # general information
     fw("% Constants\n")
     fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
     fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
-
-    fw("% Reciprocal simulation\n")
-    fw("reciprocity = ")
-    if reciprocity:
-        fw("1")
-    else:
-        fw("0")
-    fw(";\n\n")
 
     fw("% Reference to a point source in the origin\n")
     fw("% accoring to the classical HRTF definition\n")
@@ -712,9 +706,9 @@ def _write_output2HRTF_m(filepath1, version,
     fw("];\n\n")
 
     fw("% Collect the data simulated by NumCalc\n")
-    fw("Output2HRTF_Main(cpusAndCores,reciprocity, ...\n")
-    fw("                 receiverCenter,receiverArea,reference, ...\n")
-    fw("                 speedOfSound,densityOfAir);\n")
+    fw("Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, ...\n")
+    fw("                 receiverCenter, receiverArea, ...\n")
+    fw("                 reference, speedOfSound,densityOfAir);\n")
     file.close
 
 

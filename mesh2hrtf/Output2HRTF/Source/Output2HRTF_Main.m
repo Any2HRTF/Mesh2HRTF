@@ -17,7 +17,7 @@
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(cpusAndCores,reciprocity,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir)
+function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
 %   receiverPositions,receiverArea,reference,speedOfSound,densityOfAir) calculates
@@ -68,15 +68,9 @@ for ii=1:length(objectMeshes)
     if exist(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],'file')
         tmpNodes=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],' ',1);
         tmpElements=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Elements.txt'],' ',1);
-        objectMeshNodes{1,3}=tmpNodes.data;
-        objectMeshElements{1,3}=tmpElements.data(:,1:end-3);
+        objectMeshNodes{1}=tmpNodes.data;
+        objectMeshElements{1}=tmpElements.data(:,1:end-3);
     end
-end
-if isempty(objectMeshNodes{1,1}) && isempty(objectMeshElements{1,1}) && isempty(objectMeshNodes{1,2}) && isempty(objectMeshElements{1,2})
-    objectMeshNodes{1,1}=objectMeshNodes{1,3};
-    objectMeshElements{1,1}=objectMeshElements{1,3};
-    objectMeshNodes{1,2}=objectMeshNodes{1,3};
-    objectMeshElements{1,2}=objectMeshElements{1,3};
 end
 
 %% Read computational effort
@@ -206,176 +200,44 @@ if reference
 end
 % end of added Fabian Brinkmann
 
-%% save EvaluaitonGrid data for visualization
-fprintf('\nSave EvaluationGrid data ...');
-if ~isempty(evaluationGrids)
-    %save results in the sagittal plane
-    if sum(evaluationGridNodes(:,1)>=700000 & evaluationGridNodes(:,1)<=799999)~=0
-        idx=evaluationGridElements(:,1)>=700000 & evaluationGridElements(:,1)<=799999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=700000 & evaluationGridNodes(:,1)<=799999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_SAGPLANE.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
+%% Save data as SOFA file
+fprintf('\nSaving complex pressure to SOFA file ...\n')
+SOFAstart;
 
-    %save results in the horizontal plane
-    if sum(evaluationGridNodes(:,1)>=800000 & evaluationGridNodes(:,1)<=899999)~=0
-        idx=evaluationGridElements(:,1)>=800000 & evaluationGridElements(:,1)<=899999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=800000 & evaluationGridNodes(:,1)<=899999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_HORPLANE.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-
-    %save results in the frontal plane
-    if sum(evaluationGridNodes(:,1)>=900000 & evaluationGridNodes(:,1)<=999999)~=0
-        idx=evaluationGridElements(:,1)>=900000 & evaluationGridElements(:,1)<=999999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=900000 & evaluationGridNodes(:,1)<=999999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_FRTPLANE.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-end
-    
-if ~isempty(evaluationGrids)
-    if sum(evaluationGridNodes(:,1)>=210000 & evaluationGridNodes(:,1)<=219999)~=0
-        idx=evaluationGridElements(:,1)>=210000 & evaluationGridElements(:,1)<=219999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=210000 & evaluationGridNodes(:,1)<=219999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_NF.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-    if sum(evaluationGridNodes(:,1)>=220000 & evaluationGridNodes(:,1)<=229999)~=0
-        idx=evaluationGridElements(:,1)>=220000 & evaluationGridElements(:,1)<=229999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=220000 & evaluationGridNodes(:,1)<=229999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_FF.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-    if sum(evaluationGridNodes(:,1)>=300000 & evaluationGridNodes(:,1)<=349999)~=0
-        idx=evaluationGridElements(:,1)>=300000 & evaluationGridElements(:,1)<=349999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=300000 & evaluationGridNodes(:,1)<=349999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_ARI.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-    if sum(evaluationGridNodes(:,1)>=350000 & evaluationGridNodes(:,1)<=399999)~=0
-        idx=evaluationGridElements(:,1)>=350000 & evaluationGridElements(:,1)<=399999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=350000 & evaluationGridNodes(:,1)<=399999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_User.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-    if sum(evaluationGridNodes(:,1)>=400000 & evaluationGridNodes(:,1)<=499999)~=0
-        idx=evaluationGridElements(:,1)>=400000 & evaluationGridElements(:,1)<=499999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=400000 & evaluationGridNodes(:,1)<=499999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_LOW.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-    if sum(evaluationGridNodes(:,1)>=500000 & evaluationGridNodes(:,1)<=599999)~=0
-        idx=evaluationGridElements(:,1)>=500000 & evaluationGridElements(:,1)<=599999;
-        elements=evaluationGridElements(idx,:)-min(min(evaluationGridElements(idx,:)));
-        idx=evaluationGridNodes(:,1)>=500000 & evaluationGridNodes(:,1)<=599999;
-        nodes=evaluationGridNodes(idx,:);
-        nodes(:,1)=nodes(:,1)-min(nodes(:,1));
-        node_data=pressure(:,idx,:);
-        save('EvaluationGrid_HIGH.mat','nodes','elements','frequencies','node_data');
-        clear nodes elements idx node_data
-    end
-end
-    
-%% Save HRTFs as SOFA file
-if reciprocity
-
-	SOFAstart;
-    
-    % prepare pressure to be size of MRN when R=2
-    pressure = shiftdim(pressure, 1);
-    % prepare pressure to be size of MRN when R=1
-    if size(pressure, 3) == 1
-        pressure = reshape(pressure, size(pressure,1), 1, size(pressure, 2));
-    end
-    
-    % Save as GeneralTF
-    Obj = SOFAgetConventions('GeneralTF');
-
-    Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
-    Obj.GLOBAL_ApplicationVersion = '0.1.1';
-    Obj.GLOBAL_Organization = '';
-    Obj.GLOBAL_Title = '';
-    Obj.GLOBAL_DateCreated = date;
-    Obj.GLOBAL_AuthorContact = '';
-
-    Obj.ReceiverPosition=receiverCenter;
-    Obj.N=frequencies;
-
-    %add division G([0,0,0],evaluationGrid)
-    Obj.Data.Real=real(pressure);
-    Obj.Data.Imag=imag(pressure);
-    Obj.Data.Real_LongName='pressure';
-    Obj.Data.Real_Units='pascal';
-    Obj.Data.Imag_LongName='pressure';
-    Obj.Data.Imag_Units='pascal';
-
-    Obj.ListenerPosition = [0 0 0];
-    Obj.SourcePosition_Type='cartesian';
-    Obj.SourcePosition_Units='meter';
-    Obj.SourcePosition=evaluationGridNodes(:,2:4);
-
-    Obj=SOFAupdateDimensions(Obj);
-    SOFAsave('EvaluationGrid_GeneralTF.sofa',Obj);
-	
-	% Save as SimpleFreeFieldTF
-	Obj=SOFAgetConventions('SimpleFreeFieldTF');
-    Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
-    Obj.GLOBAL_ApplicationVersion = '0.1.1';	% Todo: apply the correct version automatically
-    Obj.GLOBAL_Organization = '';				% Todo: Organization, Title, Authorcontact: ask for the data and apply
-    Obj.GLOBAL_Title = '';
-    Obj.GLOBAL_DateCreated = date;
-    Obj.GLOBAL_AuthorContact = '';
-
-    Obj.ReceiverPosition=receiverCenter;
-    Obj.N=frequencies;
-
-    Obj.Data.Real=real(pressure);
-    Obj.Data.Imag=imag(pressure);
-    Obj.Data.Real_LongName='pressure';
-    Obj.Data.Real_Units='pascal';
-    Obj.Data.Imag_LongName='pressure';
-    Obj.Data.Imag_Units='pascal';
-
-    Obj.SourcePosition_Type='cartesian';
-    Obj.SourcePosition_Units='meter';
-    Obj.SourcePosition=evaluationGridNodes(:,2:4);
-
-    Obj=SOFAupdateDimensions(Obj);
-    SOFAsave('EvaluationGrid.sofa',Obj);
-	
+% prepare pressure to be size of MRN when R=2
+pressure = shiftdim(pressure, 1);
+% prepare pressure to be size of MRN when R=1
+if size(pressure, 3) == 1
+    pressure = reshape(pressure, size(pressure,1), 1, size(pressure, 2));
 end
 
-end %of function
+% Save as GeneralTF
+Obj = SOFAgetConventions('GeneralTF');
+
+Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
+Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
+Obj.GLOBAL_Organization = '';
+Obj.GLOBAL_Title = '';
+Obj.GLOBAL_DateCreated = date;
+Obj.GLOBAL_AuthorContact = '';
+
+Obj.ReceiverPosition=receiverCenter;
+Obj.N=frequencies;
+
+%add division G([0,0,0],evaluationGrid)
+Obj.Data.Real=real(pressure);
+Obj.Data.Imag=imag(pressure);
+Obj.Data.Real_LongName='pressure';
+Obj.Data.Real_Units='pascal';
+Obj.Data.Imag_LongName='pressure';
+Obj.Data.Imag_Units='pascal';
+
+Obj.ListenerPosition = [0 0 0];
+Obj.SourcePosition_Type='cartesian';
+Obj.SourcePosition_Units='meter';
+Obj.SourcePosition=evaluationGridNodes(:,2:4);
+
+Obj=SOFAupdateDimensions(Obj);
+SOFAsave('EvaluationGrid_GeneralTF.sofa',Obj);
+
+fprintf('Done\n')
