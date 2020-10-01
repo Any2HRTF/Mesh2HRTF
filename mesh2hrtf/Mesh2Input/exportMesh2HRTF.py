@@ -352,20 +352,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if unit == 'mm':
             unitFactor = 0.001
 
-        # split and sort evaluation grids and get absolute paths
-        evaluationGrids, evalGridPaths = \
-            _split_and_sort_evaluation_grids(evaluationGrids, programPath)
-
-        # check if the evaluation grids exists
-        for n, _ in enumerate(evaluationGrids):
-            if not os.path.isfile(
-                    os.path.join(evalGridPaths[n], 'Nodes.txt')) \
-                    or not \
-                    os.path.isfile(
-                    os.path.join(evalGridPaths[n], 'Elements.txt')):
-                raise ValueError(
-                    f"Evalution grid {evalGridPaths[n]} not found.")
-
 
 # ------------------------ Write object data -----------------------------------
         for obj in bpy.context.scene.objects[:]:
@@ -417,9 +403,17 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(filepath1, "3d Model.blend"), check_existing=False, filter_blender=True, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filemode=8, compress=False, relative_remap=True, copy=False)
 
 # ------------------------ Write evaluation grid data --------------------------
+        # split and sort evaluation grids and get absolute paths
+        evaluationGrids, evalGridPaths = \
+            _split_and_sort_evaluation_grids(evaluationGrids, programPath)
+
+        # check if the evaluation grids exists
+        _check_evaluation_grid_exists(evaluationGrids, evalGridPaths)
+
+        # write data to export directory
         for n, _ in enumerate(evaluationGrids):
 
-            # check if the save directory exists
+            # create target directory
             savepath = os.path.join(
                 filepath1, "EvaluationGrids", evaluationGrids[n])
             if not os.path.exists(savepath):
@@ -703,6 +697,18 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
+    """Split and sort evaluation grids.
+
+    Returns
+    -------
+    evaluationGrids: list
+        Alphabetically sorted list of the evaluation grid names
+        (case sensitive).
+    evaluationGridPaths: list
+        Full paths of the folders containing the evaluation grids in order of
+        `evaluationGrids`.
+
+    """
     if not len(evaluationGrids):
         raise ValueError("At least one evaluation grid mast be defines.")
 
@@ -734,6 +740,25 @@ def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
     evalGridPaths = [unsrt[i] for i in idx]
 
     return evaluationGrids, evalGridPaths
+
+
+def _check_evaluation_grid_exists(evaluationGrids, evalGridPaths):
+    """Check if evaluation grid exists.
+
+    Raises
+    ------
+    ValueError if the folder or neccessary files do not exist.
+    """
+    for n, _ in enumerate(evaluationGrids):
+        if not os.path.isfile(
+                os.path.join(evalGridPaths[n], 'Nodes.txt')) \
+                or not \
+                os.path.isfile(
+                os.path.join(evalGridPaths[n], 'Elements.txt')):
+            raise ValueError(
+                f"Evalution grid folder {evalGridPaths[n]} does not exist "
+                "or one of the files 'Nodes.txt' and 'Elements.txt' is "
+                "missing.")
 
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
