@@ -8,6 +8,7 @@ Created on Mon May  4 16:12:36 2020
 
 # %% test
 
+
 def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
                             numCoresPerCPU, maxCores,
                             numEars,
@@ -49,9 +50,9 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     # number of cores per ear
     numCoresUsedPerEar = numCPUs*numCoresPerCPU//numEars
     if not numCoresUsedPerEar:
-        raise Exception("At least two cores must be available for calculating \
-                        both ears, i.e., two CPUs with one core each or one \
-                        CPU with two cores.")
+        raise Exception("At least two cores must be available for calculating "
+                        "both ears, i.e., two CPUs with one core each or one "
+                        "CPU with two cores.")
 
     # check input
     if (numFrequencySteps == 0 and frequencyStepSize == 0) \
@@ -128,6 +129,17 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
         f, frequencyStepSize, numFrequencySteps
 
 
+# %% random debugging
+cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, f, *_ = \
+    _distribute_frequencies(
+        1, 1, 10,  # cpuFirst, cpuLast, maxCPUs
+        1, 8,    # numCoresPerCPU, maxCores
+        1,              # numEars
+        250, 16000,       # minFrequency, maxFrequency
+        250, 0)         # frequencyStepSize, numFrequencySteps
+
+print(f[0], f[-1])
+
 # %%
 # export variables - try different parameters and see if everything works as
 # expected
@@ -191,14 +203,3 @@ cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, f, *_ = \
         0, 22000,       # minFrequency, maxFrequency
         100, 0)         # frequencyStepSize, numFrequencySteps
 
-
-# %% test single sided spectrum by frequencyStepSize
-cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, f, *_ = \
-    _distribute_frequencies(
-        1, 1, maxCPUs,  # cpuFirst, cpuLast, maxCPUs
-        1, maxCores,    # numCoresPerCPU, maxCores
-        1,              # numEars
-        100, 100,       # minFrequency, maxFrequency
-        0, 129)         # frequencyStepSize, numFrequencySteps
-
-print(f[0], f[-1])

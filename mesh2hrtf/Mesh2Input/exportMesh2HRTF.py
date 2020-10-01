@@ -890,7 +890,8 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
                         maxFrequency-minFrequency")
 
     # get all frequencies to be calculated
-    f = [ff*frequencyStepSize+minFrequency for ff in range(frequencySteps[0])]
+    f = [ff*frequencyStepSize+minFrequency
+            for ff in range(int(frequencySteps[0]))]
 
     # remove 0 Hz if included in the list
     if f[0] == 0:
