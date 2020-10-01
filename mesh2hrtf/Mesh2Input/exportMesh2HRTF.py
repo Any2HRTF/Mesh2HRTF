@@ -423,7 +423,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Write Info.txt (feedback for user, not used by NumCalc) ---------------------
-        _write_info_txt(evalGridPaths, title, ear, filepath1,
+        _write_info_txt(evalGridPaths, title, ear, filepath1, version,
                         cpuFirst, cpuLast, numCoresAvailable,
                         frequencyStepsPerCore, frequencies, freqs,
                         frequencyStepSize, numFrequencySteps)
@@ -703,16 +703,17 @@ def _check_evaluation_grid_exists(evaluationGrids, evalGridPaths):
                 "missing.")
 
 
-def _write_info_txt(evalGridPaths, title, ear, filepath1, cpuFirst, cpuLast,
-                    numCoresAvailable, frequencyStepsPerCore,
-                    frequencies, freqs, frequencyStepSize, numFrequencySteps):
+def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
+                    cpuFirst, cpuLast, numCoresAvailable,
+                    frequencyStepsPerCore, frequencies, freqs,
+                    frequencyStepSize, numFrequencySteps):
     file = open(os.path.join(filepath1, "Info.txt"), "w",
                 encoding="utf8", newline="\n")
     fw = file.write
     fw("#####################################\n")
     fw("######## General information ########\n")
     fw("#####################################\n\n")
-    fw("Program: Mesh2HRTF\n")
+    fw(f"Program: Mesh2HRTF {version}\n")
     fw("Title: %s\n" % title)
     fw("Ear: %s\n" % ear)
     fw("Evaluation Grids:\n")
