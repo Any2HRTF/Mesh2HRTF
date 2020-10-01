@@ -290,9 +290,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              unit='mm',
              programPath="",
              ):
+        """Export Mesh2HRTF project."""
 
-        # General handling and constants --------------------------------------
 
+# General handling and constants ----------------------------------------------
         # Switch to object mode to avoid export errors
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
@@ -361,14 +362,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         objects = ([])
 
 
-        # Write object data ---------------------------------------------------
+# Write object data -----------------------------------------------------------
         for obj in bpy.context.scene.objects[:]:
             if obj.type == 'MESH' and obj.name == 'Reference':
                 objects = _write_object_data(obj, objects, unitFactor,
                                              context, filepath1)
 
 
-        # save Blender project for documentation ------------------------------
+# save Blender project for documentation --------------------------------------
         bpy.ops.wm.save_as_mainfile(
             filepath=os.path.join(filepath1, "3d Model.blend"),
             check_existing=False, filter_blender=True, filter_image=False,
@@ -378,7 +379,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             compress=False, relative_remap=True, copy=False)
 
 
-        # Write evaluation grid data ------------------------------------------
+# Write evaluation grid data --------------------------------------------------
         # split and sort evaluation grids and get absolute paths
         evaluationGrids, evalGridPaths = \
             _split_and_sort_evaluation_grids(evaluationGrids, programPath)
@@ -402,7 +403,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                             os.path.join(savepath, "Elements.txt"))
 
 
-        # Calculate frequency information -------------------------------------
+# Calculate frequency information ---------------------------------------------
         # maximum number of cpus. Still hard coded but might be:
         # `maxCPUs = max(10, cpuLast)` if it works with the rest of Mesh2HRTF
         maxCPUs = 10
@@ -420,41 +421,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                                     minFrequency, maxFrequency,
                                     frequencyStepSize, numFrequencySteps)
 
-# ----------------------- Write general information ----------------------------
-        file = open(os.path.join(filepath1, "Info.txt"), "w", encoding="utf8", newline="\n")
-        fw = file.write
-        fw("#####################################\n")
-        fw("######## General information ########\n")
-        fw("#####################################\n\n")
-        fw("Program: Mesh2HRTF\n")
-        fw("Title: %s\n" % title)
-        fw("Ear: %s\n" % ear)
-        fw("Evaluation Grids:\n")
-        for evaluationGrid in evaluationGrids:
-            fw("    %s\n" % evaluationGrid)
-        fw("\n")
-        fw("#####################################\n")
-        fw("####### Frequency information #######\n")
-        fw("#####################################\n\n")
-        fw("Minimum evaluated Frequency: %f\n" % freqs[0])
-        fw("Highest evaluated Frequency: %f\n" % freqs[-1])
-        fw("Frequency Stepsize: %f\n" % frequencyStepSize)
-        fw("Frequency Steps: %d\n" % numFrequencySteps)
-        fw("Frequency steps per Core: %d\n\n" % frequencyStepsPerCore)
-        fw("#####################################\n")
-        fw("######## Cluster information ########\n")
-        fw("#####################################\n\n")
-        fw("Number of CPUs: %d\n" % (cpuLast-cpuFirst+1))
-        fw("First CPU: 'CPU_%d'\n" % cpuFirst)
-        fw("Last CPU: 'CPU_%d'\n" % cpuLast)
-        fw("Number of Cores (available): %d\n" % numCoresAvailable)
-        for core in range(1, 9):
-            for cpu in range(1, 11):
-                fw("CPU_%d (Core %d):\n" % (cpu, core))
-                for ii in range(0, len(frequencies[cpu-1][core-1])):
-                    fw("    %f\n" % frequencies[cpu-1][core-1][ii])
-            fw("\n")
-        file.close
+
+# Write Info.txt (feedback for user, not used by NumCalc) ---------------------
+        _write_info_txt(evalGridPaths, title, ear, filepath1,
+                        cpuFirst, cpuLast, numCoresAvailable,
+                        frequencyStepsPerCore, frequencies, freqs,
+                        frequencyStepSize, numFrequencySteps)
+
 
 # ----------------------- Write Output2HRTF.m function -------------------------
         file = open(os.path.join(filepath1, "Output2HRTF.m"), "w", encoding="utf8", newline="\n")
@@ -795,6 +768,46 @@ def _check_evaluation_grid_exists(evaluationGrids, evalGridPaths):
                 f"Evalution grid folder {evalGridPaths[n]} does not exist "
                 "or one of the files 'Nodes.txt' and 'Elements.txt' is "
                 "missing.")
+
+
+def _write_info_txt(evalGridPaths, title, ear, filepath1, cpuFirst, cpuLast,
+                    numCoresAvailable, frequencyStepsPerCore,
+                    frequencies, freqs, frequencyStepSize, numFrequencySteps):
+    file = open(os.path.join(filepath1, "Info.txt"), "w",
+                encoding="utf8", newline="\n")
+    fw = file.write
+    fw("#####################################\n")
+    fw("######## General information ########\n")
+    fw("#####################################\n\n")
+    fw("Program: Mesh2HRTF\n")
+    fw("Title: %s\n" % title)
+    fw("Ear: %s\n" % ear)
+    fw("Evaluation Grids:\n")
+    for evaluationGrid in evalGridPaths:
+        fw("    %s\n" % evaluationGrid)
+    fw("\n")
+    fw("#####################################\n")
+    fw("####### Frequency information #######\n")
+    fw("#####################################\n\n")
+    fw("Minimum evaluated Frequency: %f\n" % freqs[0])
+    fw("Highest evaluated Frequency: %f\n" % freqs[-1])
+    fw("Frequency Stepsize: %f\n" % frequencyStepSize)
+    fw("Frequency Steps: %d\n" % numFrequencySteps)
+    fw("Frequency steps per Core: %d\n\n" % frequencyStepsPerCore)
+    fw("#####################################\n")
+    fw("######## Cluster information ########\n")
+    fw("#####################################\n\n")
+    fw("Number of CPUs: %d\n" % (cpuLast-cpuFirst+1))
+    fw("First CPU: 'CPU_%d'\n" % cpuFirst)
+    fw("Last CPU: 'CPU_%d'\n" % cpuLast)
+    fw("Number of Cores (available): %d\n" % numCoresAvailable)
+    for core in range(1, 9):
+        for cpu in range(1, 11):
+            fw("CPU_%d (Core %d):\n" % (cpu, core))
+            for ii in range(0, len(frequencies[cpu-1][core-1])):
+                fw("    %f\n" % frequencies[cpu-1][core-1][ii])
+        fw("\n")
+    file.close
 
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
