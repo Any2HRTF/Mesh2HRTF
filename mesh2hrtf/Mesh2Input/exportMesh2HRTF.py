@@ -402,7 +402,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                             os.path.join(savepath, "Elements.txt"))
 
 
-# ------------------------ Calculate frequency information ---------------------
+        # Calculate frequency information -------------------------------------
         # maximum number of cpus. Still hard coded but might be:
         # `maxCPUs = max(10, cpuLast)` if it works with the rest of Mesh2HRTF
         maxCPUs = 10
