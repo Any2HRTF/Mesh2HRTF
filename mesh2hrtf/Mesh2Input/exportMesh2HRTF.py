@@ -329,34 +329,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                              "(case sensitive).")
         unitFactor = 1 if unit == 'm' else .001
 
-        # camera settings for rending pictures
+        # apply transforms
         bpy.ops.object.transform_apply(location=True)
         bpy.ops.object.transform_apply(rotation=True)
         bpy.ops.object.transform_apply(scale=True)
-        cam = bpy.data.objects['Camera']
-        camradius = 400
-        cam.location = (0, camradius, 0)
-        cam.rotation_euler = (pi/2, 0, pi)
-        cam.data.clip_end = 0.1
-        cam.data.clip_end = 1000
-        light = bpy.data.objects['Light']
-        lightradius = 300
-        light.location = (0, lightradius, 0)
-        bpy.data.lights['Light'].energy = 800
-        bpy.data.lights['Light'].distance = 100
-        renderloc = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
-                     [0.707, 0.707, 0], [-0.707, 0.707, 0], [0.707, -0.707, 0],
-                     [-0.707, -0.707, 0]]
-        renderrot = [[pi/2, 0, pi/2], [pi/2, 0, 3*pi/2], [pi/2, 0, pi],
-                     [3/2*pi, pi, pi], [pi/2, 0, 3/4*pi], [pi/2, 0, 5/4*pi],
-                     [pi/2, 0, pi/4], [pi/2, 0, -pi/4]]
-        rendernam = [[0, 0], [180, 0], [90, 0], [270, 0],
-                     [45, 0], [135, 0], [315, 0], [225, 0]]
-
-        bpy.data.scenes['Scene'].render.pixel_aspect_x = 1
-        bpy.data.scenes['Scene'].render.pixel_aspect_y = 1
-        bpy.data.scenes['Scene'].render.resolution_x = 1440
-        bpy.data.scenes['Scene'].render.resolution_y = 1920
 
         # empty list for saving objects
         objects = ([])
@@ -436,18 +412,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                              sourceXPosition, sourceYPosition, sourceZPosition)
 
 
-# ----------------------- Render pictures of the model -------------------------
+# Render pictures of the model ------------------------------------------------
         if pictures:
-            for ii in range(0, len(renderloc)):
-                cam.location = (renderloc[ii][0]*camradius, renderloc[ii][1]*camradius, renderloc[ii][2]*camradius)
-                cam.rotation_euler = (renderrot[ii][0], renderrot[ii][1], renderrot[ii][2])
-                light.location = (renderloc[ii][0]*lightradius, renderloc[ii][1]*lightradius, renderloc[ii][2]*lightradius)
-                bpy.ops.render.render()
-                temp = os.path.join(filepath1, "Pictures")
-                if not os.path.exists(temp):
-                    os.mkdir(temp)
-                temp = ("%d-%d" % (rendernam[ii][0], rendernam[ii][1]))
-                bpy.data.images['Render Result'].save_render(os.path.join(filepath1, "Pictures", "%s.png" % temp))
+            _render_pictures(filepath1, unitFactor)
 
 # ----------------------- Write NumCalc input files for all CPUs and Cores -----
         for core in range(1, 9):
@@ -1055,6 +1022,69 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     return cpusAndCores, frequencies, \
         frequencyStepsPerCore, numCoresAvailable, \
         f, frequencyStepSize, numFrequencySteps
+
+
+def _render_pictures(filepath1, unitFactor):
+    """Render pictures of the 3D mesh and save to export folder."""
+
+    # create directoy
+    dirRender = os.path.join(filepath1, "Pictures")
+    if not os.path.exists(dirRender):
+        os.mkdir(dirRender)
+
+    # general camera settings
+    cam = bpy.data.objects['Camera']
+    camdistance = .6 / unitFactor
+    cam.data.clip_start = 0.001 / unitFactor
+    cam.data.clip_end = 1 / unitFactor
+    bpy.data.cameras['Camera'].lens_unit = 'MILLIMETERS'
+    bpy.data.cameras['Camera'].lens = 50
+    bpy.data.cameras['Camera'].clip_start = .01 / unitFactor
+    bpy.data.cameras['Camera'].clip_end = 1 / unitFactor
+
+    # general light settings
+    light = bpy.data.objects['Light']
+    lightradius = 5 / unitFactor
+    bpy.data.lights['Light'].use_custom_distance = False
+    bpy.data.lights['Light'].energy = 800 / unitFactor** 2
+    bpy.data.lights['Light'].shadow_soft_size = .1 / unitFactor
+    bpy.data.lights['Light'].cutoff_distance = 10 / unitFactor
+    bpy.data.lights['Light'].shadow_buffer_clip_start = .05 / unitFactor
+    bpy.data.lights['Light'].shadow_buffer_bias = 1 / unitFactor
+
+    # camera positions, rotations, and azimuth angles
+    renderloc = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
+                    [0.707, 0.707, 0], [-0.707, 0.707, 0], [0.707, -0.707, 0],
+                    [-0.707, -0.707, 0]]
+    renderrot = [[pi/2, 0, pi/2], [pi/2, 0, 3*pi/2], [pi/2, 0, pi],
+                    [3/2*pi, pi, pi], [pi/2, 0, 3/4*pi], [pi/2, 0, 5/4*pi],
+                    [pi/2, 0, pi/4], [pi/2, 0, -pi/4]]
+    azim = [0, 180, 90, 270, 45, 135, 315, 225]
+
+    # general rendering settings
+    bpy.data.scenes['Scene'].render.pixel_aspect_x = 1
+    bpy.data.scenes['Scene'].render.pixel_aspect_y = 1
+    bpy.data.scenes['Scene'].render.resolution_x = 1440
+    bpy.data.scenes['Scene'].render.resolution_y = 1920
+
+    # render the images
+    for ii in range(len(renderloc)):
+        # set the camera and light
+        cam.location = (renderloc[ii][0] * camdistance,
+                        renderloc[ii][1] * camdistance,
+                        renderloc[ii][2] * camdistance)
+        cam.rotation_euler = (renderrot[ii][0],
+                              renderrot[ii][1],
+                              renderrot[ii][2])
+        light.location = (renderloc[ii][0] * lightradius,
+                          renderloc[ii][1] * lightradius,
+                          renderloc[ii][2] * lightradius)
+        # render
+        bpy.ops.render.render()
+        # save
+        nameRender = ("%d_deg_azimuth" % azim[ii])
+        bpy.data.images['Render Result'].save_render(
+            os.path.join(dirRender, "%s.png" % nameRender))
 
 # ----------------------- Blender add-on registration -------------------------
 def menu_func_export(self, context):

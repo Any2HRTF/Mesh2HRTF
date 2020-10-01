@@ -10,16 +10,27 @@
 #        Acoustics Research Institute, Austrian Academy of Sciences
 #                        mesh2hrtf.sourceforge.net
 #
-# Mesh2HRTF is licensed under the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# Mesh2HRTF is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-# You should have received a copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not, see <http://www.gnu.org/licenses/lgpl.html>.
+# Mesh2HRTF is licensed under the GNU Lesser General Public License as
+# published by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version. Mesh2HRTF is distributed in the hope
+# that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details. You should have received a
+# copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not,
+# see <http://www.gnu.org/licenses/lgpl.html>.
 #
 # If you use Mesh2HRTF:
 # - Provide credits:
 #   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
 # - In your publication, cite both articles:
-#   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
-#   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+#   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF:
+#       Open-source software package for the numerical calculation of head-
+#       related transfer functions," in Proceedings of the 22nd ICSV,
+#       Florence, IT.
+#   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical
+#       calculation of listener-specific head-related transfer functions and
+#       sound localization: Microphone model and mesh discretization," The
+#       Journal of the Acoustical Society of America, 138, 208-222.
 
 import bpy
 import bmesh
@@ -95,8 +106,9 @@ def setup_materials(obj):
         # Create the material
         material = bpy.data.materials.new(name=name)
         # Assign Colour
-        material.diffuse_color=color
-        #Create new amterial slot
+        material.diffuse_color = color
+        material.specular_intensity = .1
+        # Create new amterial slot
         obj.data.materials.append(material)
         # override false names, such as Skin.001 etc
         bpy.context.object.active_material_index = idx
@@ -147,14 +159,16 @@ def get_ear_indices(bm, obj, tolerance):
     left_index = None
     min_xy_dist = 1000
     for n in range(len(left_indices)):
-        if left_y[n] < min_y[0] + tolerance and left_xy_distance[n] < min_xy_dist:
+        if left_y[n] < min_y[0] + tolerance and left_xy_distance[n] < \
+                min_xy_dist:
             min_xy_dist = left_xy_distance[n]
             left_index = left_indices[n]
     # find left ear element and try to exclude faces at the tragus
     right_index = None
     min_xy_dist = 1000
     for n in range(len(right_indices)):
-        if right_y[n] < min_y[1] + tolerance and right_xy_distance[n] < min_xy_dist:
+        if right_y[n] < min_y[1] + tolerance and right_xy_distance[n] < \
+                min_xy_dist:
             min_xy_dist = right_xy_distance[n]
             right_index = right_indices[n]
 
