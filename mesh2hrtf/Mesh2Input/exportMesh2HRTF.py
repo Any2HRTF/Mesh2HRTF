@@ -1,20 +1,31 @@
+# Authors: The Mesh2HRTF developers
+#
 #                                Mesh2HRTF
 #                Copyright (C) 2015 by Harald Ziegelwanger,
 #        Acoustics Research Institute, Austrian Academy of Sciences
 #                        mesh2hrtf.sourceforge.net
 #
-# Mesh2HRTF is licensed under the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# Mesh2HRTF is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-# You should have received a copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not, see <http://www.gnu.org/licenses/lgpl.html>.
+# Mesh2HRTF is licensed under the GNU Lesser General Public License as
+# published by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version. Mesh2HRTF is distributed in the hope
+# that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details. You should have received a
+# copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not,
+# see <http://www.gnu.org/licenses/lgpl.html>.
 #
 # If you use Mesh2HRTF:
 # - Provide credits:
 #   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
 # - In your publication, cite both articles:
-#   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
-#   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
-#
-# Authors: The Mesh2HRTF developers
+#   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF:
+#       Open-source software package for the numerical calculation of head-
+#       related transfer functions," in Proceedings of the 22nd ICSV,
+#       Florence, IT.
+#   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical
+#       calculation of listener-specific head-related transfer functions and
+#       sound localization: Microphone model and mesh discretization," The
+#       Journal of the Acoustical Society of America, 138, 208-222.
 
 import os
 import bpy
@@ -518,7 +529,7 @@ def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
     evalGrids = []
     for eg in grids:
         # complete grids given by name to default path
-        if not os.path.sep in eg:
+        if os.path.sep not in eg:
             evalGridPaths.append(os.path.join(evaluationGridPath, eg))
             evalGrids.append(eg)
         else:
@@ -640,10 +651,10 @@ def _write_output2HRTF_m(filepath1, version,
         obj = bpy.data.objects['Reference']
         obj_data = obj.data
         earCenter, earArea = _calculateReceiverProperties(
-            obj,obj_data,unitFactor)
+            obj, obj_data, unitFactor)
 
         # write left ear data
-        if ear=='Left ear' or ear=='Both ears':
+        if ear == 'Left ear' or ear == 'Both ears':
             fw("% left ear / receiver\n")
             fw("receiverCenter(1,1:3)=[%f %f %f];\n" % (earCenter[0][0],
                                                         earCenter[0][1],
@@ -651,10 +662,10 @@ def _write_output2HRTF_m(filepath1, version,
             fw("receiverArea(1,1)    =%g;\n" % earArea[0])
 
         # write right ear data
-        if ear=='Right ear' or ear=='Both ears':
-            if ear=='Right ear':
+        if ear == 'Right ear' or ear == 'Both ears':
+            if ear == 'Right ear':
                 nn = 1
-            if ear=='Both ears':
+            if ear == 'Both ears':
                 nn = 2
 
             fw("% right ear / receiver\n")
@@ -711,7 +722,8 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
     for ii in range(len(obj_data.polygons[:])):
         if obj.material_slots[obj_data.polygons[ii].material_index].name \
                 == obj.material_slots['Left ear'].name \
-                or obj.material_slots[obj_data.polygons[ii].material_index].name \
+                or \
+                obj.material_slots[obj_data.polygons[ii].material_index].name \
                 == obj.material_slots['Right ear'].name:
 
             # select the ear
@@ -724,47 +736,56 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
             # update min and max x,y,z-values
             for vertex in range(3):
                 for coord in range(3):
-                    value = obj_data.vertices[obj_data.polygons[ii].vertices[vertex]].co[coord]
+                    value = obj_data.vertices[obj_data.polygons[ii].
+                                              vertices[vertex]].co[coord]
                     if value < earCenter[ear][coord][0]:
                         earCenter[ear][coord][0] = value
                     if value > earCenter[ear][coord][1]:
                         earCenter[ear][coord][1] = value
 
-            # to calculate the polygons (triangles) area first calculate the side lengths using euclidean distance and then use Heron´s formula to calculate the area
+            # to calculate the polygons (triangles) area first calculate the
+            # side lengths using euclidean distance and then use Heron´s
+            # formula to calculate the area
             # side_a = corner 0 to corner 1
             side_a = math.sqrt(((
-                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0] - \
-                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2) \
-                * unitFactor**2 + ((
-                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] - \
-                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2) \
-                * unitFactor**2 + ((
-                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2] - \
-                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2) \
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0])**2)
+                * unitFactor**2
+                + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1])**2)
+                * unitFactor**2
+                + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2])**2)
                 * unitFactor**2)
 
             # side_b = corner 1 to corner 2
             side_b = math.sqrt(((
-                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0] - \
-                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2) \
-                * unitFactor**2 + ((
-                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] - \
-                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2) \
-                * unitFactor**2 + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[0] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0])**2)
+                * unitFactor**2
+                + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[1] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1])**2)
+                * unitFactor**2
+                + ((
                 obj_data.vertices[obj_data.polygons[ii].vertices[1]].co[2] -
-                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2) \
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2])**2)
                 * unitFactor**2)
 
             # side_c = corner 2 to corner 0
             side_c = math.sqrt(((
                 obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[0] -
-                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2) \
-                * unitFactor**2 + ((
-                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] - \
-                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2) \
-                * unitFactor**2 + ((
-                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2] - \
-                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2) \
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[0])**2)
+                * unitFactor**2
+                + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[1] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[1])**2)
+                * unitFactor**2
+                + ((
+                obj_data.vertices[obj_data.polygons[ii].vertices[2]].co[2] -
+                obj_data.vertices[obj_data.polygons[ii].vertices[0]].co[2])**2)
                 *unitFactor**2)
 
             # increment area using Heron´s formula
