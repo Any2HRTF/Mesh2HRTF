@@ -895,9 +895,9 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     # number of cores per ear
     numCoresUsedPerEar = numCPUs*numCoresPerCPU//numEars
     if not numCoresUsedPerEar:
-        raise Exception("At least two cores must be available for calculating \
-                        both ears, i.e., two CPUs with one core each or one \
-                        CPU with two cores.")
+        raise Exception("At least two cores must be available for calculating "
+                        "both ears, i.e., two CPUs with one core each or one "
+                        "CPU with two cores.")
 
     # check input
     if (numFrequencySteps == 0 and frequencyStepSize == 0) \
