@@ -17,7 +17,10 @@
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, sourceType, sourceCenter,sourceArea,reference,speedOfSound,densityOfAir)
+function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, ...
+                          sourceType, sourceCenter, sourceArea, ...
+                          reference, computeHRIRs, ...
+                          speedOfSound, densityOfAir)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
 %   receiverPositions,receiverArea,reference,speedOfSound,densityOfAir) calculates
@@ -264,7 +267,6 @@ for ii = 1:numel(evaluationGrids)
     Obj.ReceiverPosition=sourceCenter;
     Obj.N=frequencies;
     
-    %add division G([0,0,0],evaluationGrid)
     Obj.Data.Real=real(pressure);
     Obj.Data.Imag=imag(pressure);
     Obj.Data.Real_LongName='pressure';
@@ -278,7 +280,79 @@ for ii = 1:numel(evaluationGrids)
     Obj.SourcePosition=xyz(:,2:4);
     
     Obj=SOFAupdateDimensions(Obj);
-    SOFAsave(fullfile('Output2HRTF', ['EvaluationGrid_' evaluationGrids(ii).name '.sofa']),Obj);
+    SOFAsave(fullfile('Output2HRTF', ['EvaluationGridTF_' evaluationGrids(ii).name '.sofa']),Obj);
+end
+
+clear Obj ii xyz pressure
+
+
+%% Save time data data as SOFA file
+if computeHRIRs
+    
+    fprintf('\nSaving time data to SOFA file ...\n')
+    
+    for ii = 1:numel(evaluationGrids)
+        
+        % check if the frequency vector has the correct format
+        if ~abs(frequencies(1) - diff(frequencies)) < .01
+            error('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
+        end
+        
+        if ~reference
+            error('HRIRs can only be computet if refernce=true')
+        end
+        
+        xyz = evaluationGrids(ii).nodes;
+        pressure = evaluationGrids(ii).pressure;
+        fs = 2*frequencies(end);
+        
+        % add 0 Hz bin
+        pressure = [ones(1, size(pressure,2), size(pressure,3));
+                    pressure];
+        % make fs/2 real
+        pressure(end,:,:) = abs(pressure(end,:,:));
+        % mirror the spectrum
+        pressure = [pressure; flipud(pressure(2:end-1,:,:))];
+        % ifft (take complex conjugate because sign conventions differ)
+        hrir = ifft(conj(pressure), 'symmetric');
+        
+        % shift 30 cm to make causal
+        % (path differences between the origin and the ear are usually
+        % smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
+        n_shift = round(.30 / (1/fs * speedOfSound));
+        hrir = circshift(hrir, n_shift);
+        
+        
+        % prepare pressure to be size of MRN when R=2
+        hrir = shiftdim(hrir, 1);
+        % prepare pressure to be size of MRN when R=1
+        if size(hrir, 3) == 1
+            hrir = reshape(hrir, size(hrir,1), 1, size(hrir, 2));
+        end
+        
+        % Save as GeneralTF
+        Obj = SOFAgetConventions('GeneralFIR', 'm');
+        
+        Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
+        Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
+        Obj.GLOBAL_Organization = '';
+        Obj.GLOBAL_Title = '';
+        Obj.GLOBAL_DateCreated = date;
+        Obj.GLOBAL_AuthorContact = '';
+        
+        Obj.ReceiverPosition=sourceCenter;
+        
+        Obj.Data.IR=hrir;
+        Obj.Data.SamplingRate=fs;
+        
+        Obj.ListenerPosition = [0 0 0];
+        Obj.SourcePosition_Type='cartesian';
+        Obj.SourcePosition_Units='meter';
+        Obj.SourcePosition=xyz(:,2:4);
+        
+        Obj=SOFAupdateDimensions(Obj);
+        SOFAsave(fullfile('Output2HRTF', ['EvaluationGridFIR_' evaluationGrids(ii).name '.sofa']),Obj);
+    end
 end
 
 clear Obj ii xyz pressure

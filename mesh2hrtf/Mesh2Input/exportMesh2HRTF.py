@@ -93,13 +93,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('Both ears', 'both', 'Both ears')],
         default='Both ears',
         )
-    reference: BoolProperty(
-        name="Reference",
-        description=("Reference HRTF to the center of the head according to "
-                     "the classic HRTF definition. For the HRTF definition see"
-                     "https://doi.org/10.1016/0003-682X(92)90046-U"),
-        default=False,
-        )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
         description="Path to folder containing 'Mesh2Input', 'NumCalc', etc..",
@@ -109,6 +102,22 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Pictures",
         description="Render pictures of the 3D mesh",
         default=True,
+        )
+    # post-processing ---------------------------------------------------------
+    reference: BoolProperty(
+        name="Reference",
+        description=("Reference HRTF to the center of the head according to "
+                     "the classic HRTF definition. For the HRTF definition see"
+                     "https://doi.org/10.1016/0003-682X(92)90046-U"),
+        default=False,
+        )
+    computeHRIRs: BoolProperty(
+        name="Compute HRIRs",
+        description=("Compute HRIRs by inverse Fourier Transform. This "
+                     "requires referencing (see above) and frequencies "
+                     "between a and fs/2 in steps of a, with a>0 and fs the "
+                     "sampling frequency"),
+        default=False,
         )
     # constants ---------------------------------------------------------------
     unit: EnumProperty(
@@ -218,11 +227,15 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row = layout.row()
         row.prop(self, "ear")
         row = layout.row()
-        row.prop(self, "reference")
+        row.prop(self, "programPath")
         row = layout.row()
         row.prop(self, "pictures")
+        # post-processing
+        layout.label(text="Post-processing:")
         row = layout.row()
-        row.prop(self, "programPath")
+        row.prop(self, "reference")
+        row = layout.row()
+        row.prop(self, "computeHRIRs")
         row = layout.row()
         # constants
         layout.label(text="Constants:")
@@ -272,6 +285,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              evaluationGrids='ARI',
              method='4',
              reference=False,
+             computeHRIRs=False,
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
@@ -417,7 +431,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 # Write Output2HRTF.m function ------------------------------------------------
         _write_output2HRTF_m(filepath1, version, sourceType, ear, unitFactor,
-                             reference, speedOfSound, densityOfMedium,
+                             reference, computeHRIRs,
+                             speedOfSound, densityOfMedium,
                              cpusAndCores, maxCPUs, maxCores,
                              sourceXPosition, sourceYPosition, sourceZPosition)
 
@@ -625,7 +640,7 @@ def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
 
 
 def _write_output2HRTF_m(filepath1, version,
-                         sourceType, ear, unitFactor, reference,
+                         sourceType, ear, unitFactor, reference, computeHRIRs,
                          speedOfSound, densityOfMedium,
                          cpusAndCores, maxCPUs, maxCores,
                          sourceXPosition, sourceYPosition, sourceZPosition):
@@ -693,6 +708,16 @@ def _write_output2HRTF_m(filepath1, version,
     else:
         fw("false;\n\n")
 
+    # compute HRIRs
+    fw("% Compute HRIRs via the inverse Fourier transfrom.\n")
+    fw("% This will add data at 0 Hz, mirror the single sided spectrum, and\n")
+    fw("% shift the HRIRs in time. Requires reference = true.\n")
+    fw("computeHRIRs = ")
+    if computeHRIRs:
+        fw("true;\n\n")
+    else:
+        fw("false;\n\n")
+
     # constants
     fw("% Constants\n")
     fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
@@ -715,7 +740,8 @@ def _write_output2HRTF_m(filepath1, version,
     fw("% Collect the data simulated by NumCalc\n")
     fw("Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, ...\n")
     fw("                 sourceType, sourceCenter, sourceArea, ...\n")
-    fw("                 reference, speedOfSound,densityOfAir);\n")
+    fw("                 reference, computeHRIRs, ...\n")
+    fw("                 speedOfSound,densityOfAir);\n")
     file.close
 
 
