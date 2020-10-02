@@ -17,7 +17,7 @@
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
 
-function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores,receiverCenter,receiverArea,reference,speedOfSound,densityOfAir)
+function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, sourceType, sourceCenter,sourceArea,reference,speedOfSound,densityOfAir)
 %OUTPUT2HRTF_MAIN
 %   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
 %   receiverPositions,receiverArea,reference,speedOfSound,densityOfAir) calculates
@@ -51,9 +51,6 @@ ears=max(unique(cpusAndCores));
 evaluationGrids = dir('EvaluationGrids');
 evaluationGrids = evaluationGrids(~ismember({evaluationGrids.name},{'.','..'}));
 
-% evaluationGridNodes=[];
-% evaluationGridElements=[];
-
 evaltionGridsNumNodes = 0;
 for ii=1:length(evaluationGrids)
     tmpNodes=importdata(fullfile('EvaluationGrids', evaluationGrids(ii).name, 'Nodes.txt'),' ',1);
@@ -63,23 +60,6 @@ for ii=1:length(evaluationGrids)
     evaluationGrids(ii).num_nodes = size(tmpNodes.data, 1);
     evaltionGridsNumNodes = evaltionGridsNumNodes + evaluationGrids(ii).num_nodes;
 end
-
-% names of the used evaluation grids
-% temp=dir('EvaluationGrids');
-% evaluationGrids={};
-% for ii=3:length(temp)
-%     evaluationGrids{ii-2}=temp(ii).name;
-% end
-% evaluationGridNodes=[];
-% evaluationGridElements=[];
-% for ii=1:length(evaluationGrids)
-%     if exist(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Nodes.txt'],'file')
-%         tmpNodes=importdata(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Nodes.txt'],' ',1);
-%         tmpElements=importdata(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Elements.txt'],' ',1);
-%         evaluationGridNodes=[evaluationGridNodes; tmpNodes.data];
-%         evaluationGridElements=[evaluationGridElements; tmpElements.data(:,1:end-3)];
-%     end
-% end
 
 % get the object mesh
 objectMeshes = dir('ObjectMeshes');
@@ -97,23 +77,6 @@ for ii=1:length(objectMeshes)
     objectMeshes(ii).num_nodes = size(tmpNodes.data, 1);
     objectMeshesNumNodes = objectMeshesNumNodes + objectMeshes(ii).num_nodes;
 end
-
-% temp=dir('ObjectMeshes');
-% objectMeshes={};
-% for ii=3:length(temp)
-%     objectMeshes{ii-2}=temp(ii).name;
-% end
-% objectMeshNodes={};
-% objectMeshElements={};
-% objectMeshMaxFrequency={};
-% for ii=1:length(objectMeshes)
-%     if exist(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],'file')
-%         tmpNodes=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],' ',1);
-%         tmpElements=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Elements.txt'],' ',1);
-%         objectMeshNodes{1}=tmpNodes.data;
-%         objectMeshElements{1}=tmpElements.data(:,1:end-3);
-%     end
-% end
 
 clear ii tmpNodes tmpElements
 
@@ -230,6 +193,9 @@ if reference
     % this might be a parameter in the function call
     refMode = 1;    % 1: reference to only one radius (the smallest found)
                     % 2: reference to all indivudal radii
+    if ~strcmp(sourceType, 'vibratingElement')
+        error('Referencing is currently only implemented for sourceType=''vibratingElement''.')
+    end
     
     for ii = 1:numel(evaluationGrids)
         
@@ -240,10 +206,10 @@ if reference
         % (HRTF definition). We do it reciprocal for ease of computation.
         
         volumeFlow = .1 * ones(size(pressure));
-        if exist('receiverArea', 'var')
+        if exist('sourceArea', 'var')
             %has to be fixed for both ears....
-            for nn = 1:numel(receiverArea)
-                volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * receiverArea(nn);
+            for nn = 1:numel(sourceArea)
+                volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * sourceArea(nn);
             end
         end
         
@@ -295,7 +261,7 @@ for ii = 1:numel(evaluationGrids)
     Obj.GLOBAL_DateCreated = date;
     Obj.GLOBAL_AuthorContact = '';
     
-    Obj.ReceiverPosition=receiverCenter;
+    Obj.ReceiverPosition=sourceCenter;
     Obj.N=frequencies;
     
     %add division G([0,0,0],evaluationGrid)

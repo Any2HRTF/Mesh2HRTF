@@ -65,15 +65,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Title of the project",
         default="Head-Related Transfer Functions",
         )
-    ear: EnumProperty(
-        name="Ear",
-        description="Selected ear(s) for simulation",
-        items=[('Left ear', 'left', 'Left ear'),
-               ('Right ear', 'right', 'Right ear'),
-               ('Both ears', 'both', 'Both ears'),
-               ('None', 'none', 'None')],
-        default='Both ears',
-        )
     method: EnumProperty(
         name="BEM method",
         description="Method for numerical simulation",
@@ -82,9 +73,36 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('4', 'ML-FMM BEM', 'Multilevel fast-multipole method BEM')],
         default='4',
         )
+    sourceType: EnumProperty(
+        name="Source type",
+        description="Method for numerical simulation",
+        items=[('0', 'Vibrating element', ("Mesh elements with user assigned "
+                                           "materials 'Left ear' and 'Right "
+                                           "ear'")),
+               ('1', 'Point source', ("Analytical point source. Coordinates "
+                                      "taken from user placed point light "
+                                      "named 'Point'"))],
+        default='0',
+        )
+    ear: EnumProperty(
+        name="Ear",
+        description=("Selected ear(s) for simulation. Only required if using "
+                     "vibrating elements as the source type"),
+        items=[('Left ear', 'left', 'Left ear'),
+               ('Right ear', 'right', 'Right ear'),
+               ('Both ears', 'both', 'Both ears')],
+        default='Both ears',
+        )
+    reference: BoolProperty(
+        name="Reference",
+        description=("Reference HRTF to the center of the head according to "
+                     "the classic HRTF definition. For the HRTF definition see"
+                     "https://doi.org/10.1016/0003-682X(92)90046-U"),
+        default=False,
+        )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
-        description="Path to folder containing 'Mesh2Input', 'NumCalc', etc.",
+        description="Path to folder containing 'Mesh2Input', 'NumCalc', etc..",
         default=r"path/to/mesh2hrtf",
         )
     pictures: BoolProperty(
@@ -92,41 +110,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Render pictures of the 3D mesh",
         default=True,
         )
-    # source type -------------------------------------------------------------
-    reciprocity: BoolProperty(
-        name="Reciprocity",
-        description=("Calculation with reciprocity. i.e., with vibrating "
-            "elements as the source. (This disables the point source mode, "
-            "i.e. the x, y, and z coordinate below"),
-        default=True,
-        )
-    reference: BoolProperty(
-        name="Reference",
-        description=("Reference HRTF to the center of the head according to "
-            "the classic HRTF definition. Only applicable if using "
-            "reciprocity. For the HRTF definition see"
-            "https://doi.org/10.1016/0003-682X(92)90046-U"),
-        default=False,
-        )
-    sourceXPosition: StringProperty(
-        name="Source (x)",
-        description="Point source Position x-coordinate (according to units)",
-        default="0",
-        )
-    sourceYPosition: StringProperty(
-        name="Source (y)",
-        description="Point source Position y-coordinate (according to units)",
-        default="101",
-        )
-    sourceZPosition: StringProperty(
-        name="Source (z)",
-        description="Point source Position z-coordinate (according to units)",
-        default="0",
-        )
     # constants ---------------------------------------------------------------
     unit: EnumProperty(
         name="Unit",
-        description="Unit of the 3D mesh",
+        description="Unit of the 3D scene.",
         items=[('m', 'm', 'Meter'), ('mm', 'mm', 'Millimeter')],
         default='mm',
         )
@@ -145,7 +132,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Name",
         description=("Name of evalation grid inside "
             "Mesh2Input/EvaluationsGrids or absolute path to user grid. "
-            "Multiple grids can be separated by semicolons (;)."),
+            "Multiple grids can be separated by semicolons (;)"),
         default='ARI',
         )
     # Frequency selection -----------------------------------------------------
@@ -153,7 +140,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Min. frequency",
         description=("Minimum frequency in Hz to be simulated. Can be 0 for "
             "constructing single sided spectra. But the 0 will not be"
-            "simulated."),
+            "simulated"),
         default=100,
         min=0,
         max=24000,
@@ -225,25 +212,18 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row = layout.row()
         row.prop(self, "title")
         row = layout.row()
-        row.prop(self, "ear")
-        row = layout.row()
         row.prop(self, "method")
         row = layout.row()
-        row.prop(self, "programPath")
+        row.prop(self, "sourceType")
         row = layout.row()
-        row.prop(self, "pictures")
-        # source type
-        layout.label(text="Source type:")
-        row = layout.row()
-        row.prop(self, "reciprocity")
+        row.prop(self, "ear")
         row = layout.row()
         row.prop(self, "reference")
         row = layout.row()
-        row.prop(self, "sourceXPosition")
+        row.prop(self, "pictures")
         row = layout.row()
-        row.prop(self, "sourceYPosition")
+        row.prop(self, "programPath")
         row = layout.row()
-        row.prop(self, "sourceZPosition")
         # constants
         layout.label(text="Constants:")
         row = layout.row()
@@ -291,15 +271,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              ear='Both ears',
              evaluationGrids='ARI',
              method='4',
-             reciprocity=True,
              reference=False,
-             sourceXPosition='0',
-             sourceYPosition='101',
-             sourceZPosition='0',
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
              programPath="",
+             sourceType=0
              ):
         """Export Mesh2HRTF project."""
 
@@ -358,6 +335,17 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         # empty list for saving objects
         objects = ([])
+
+
+# Get point source position ---------------------------------------------------
+        sourceType = int(sourceType)
+        if sourceType == 1:
+            sourceXPosition, sourceYPosition, sourceZPosition = \
+                _get_point_source_position(unitFactor)
+        else:
+            sourceXPosition = None
+            sourceYPosition = None
+            sourceZPosition = None
 
 
 # Write object data -----------------------------------------------------------
@@ -428,7 +416,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Write Output2HRTF.m function ------------------------------------------------
-        _write_output2HRTF_m(filepath1, version, reciprocity, ear, unitFactor,
+        _write_output2HRTF_m(filepath1, version, sourceType, ear, unitFactor,
                              reference, speedOfSound, densityOfMedium,
                              cpusAndCores, maxCPUs, maxCores,
                              sourceXPosition, sourceYPosition, sourceZPosition)
@@ -442,7 +430,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # Write NumCalc input files for all CPUs and Cores (NC.inp) -------------------
         _write_nc_inp(filepath1, version, title, ear, speedOfSound,
                       densityOfMedium, frequencies, cpusAndCores,
-                      evaluationGrids, method, reciprocity,
+                      evaluationGrids, method, sourceType,
                       sourceXPosition, sourceYPosition, sourceZPosition)
 
 # Finish ----------------------------------------------------------------------
@@ -450,6 +438,24 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             bpy.data.objects[obj.name].select_set(False)
 
         return {'FINISHED'}
+
+
+def _get_point_source_position(unitFactor):
+    # check if 'Reference' object exists and select it
+    pointSourceExist = False
+    for obj in bpy.context.scene.objects[:]:
+        if obj.type == 'LIGHT' and obj.name == 'Point':
+            pointSourceExist = True
+
+    if not pointSourceExist:
+        raise ValueError("Did not find the point source. It must be 'Point'"
+                         "light object named 'Point' (case sensitive).")
+
+    sourceXPosition = bpy.data.objects["Point"].location[0] * unitFactor
+    sourceYPosition = bpy.data.objects["Point"].location[1] * unitFactor
+    sourceZPosition = bpy.data.objects["Point"].location[2] * unitFactor
+
+    return sourceXPosition, sourceYPosition, sourceZPosition
 
 
 def _write_object_data(obj, objects, unitFactor, context, filepath1):
@@ -619,7 +625,7 @@ def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
 
 
 def _write_output2HRTF_m(filepath1, version,
-                         reciprocity, ear, unitFactor, reference,
+                         sourceType, ear, unitFactor, reference,
                          speedOfSound, densityOfMedium,
                          cpusAndCores, maxCPUs, maxCores,
                          sourceXPosition, sourceYPosition, sourceZPosition):
@@ -636,22 +642,10 @@ def _write_output2HRTF_m(filepath1, version,
     # Mesh2HRTF version
     fw(f"Mesh2HRTF_version = '{version}';\n\n")
 
-    # general information
-    fw("% Constants\n")
-    fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
-    fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
-
-    fw("% Reference to a point source in the origin\n")
-    fw("% accoring to the classical HRTF definition\n")
-    fw("% (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
-    fw("reference = ")
-    if reference:
-        fw("true;\n\n")
-    else:
-        fw("false;\n\n")
-
-    # add information about the reciever/point source
-    if reciprocity:
+    # add information about the source
+    if sourceType == 0:
+        fw("% source information\n")
+        fw("sourceType = 'vibratingElement';\n")
 
         # get the receiver/ear centers and areas
         obj = bpy.data.objects['Reference']
@@ -661,11 +655,10 @@ def _write_output2HRTF_m(filepath1, version,
 
         # write left ear data
         if ear == 'Left ear' or ear == 'Both ears':
-            fw("% left ear / receiver\n")
-            fw("receiverCenter(1,1:3)=[%f %f %f];\n" % (earCenter[0][0],
+            fw("sourceCenter(1,1:3) = [%f %f %f];\n" % (earCenter[0][0],
                                                         earCenter[0][1],
                                                         earCenter[0][2]))
-            fw("receiverArea(1,1)    =%g;\n" % earArea[0])
+            fw("sourceArea(1,1) = %g;\n" % earArea[0])
 
         # write right ear data
         if ear == 'Right ear' or ear == 'Both ears':
@@ -674,22 +667,36 @@ def _write_output2HRTF_m(filepath1, version,
             if ear == 'Both ears':
                 nn = 2
 
-            fw("% right ear / receiver\n")
-            fw("receiverCenter(%d,1:3) = [%f %f %f];\n" % (nn,
-                                                           earCenter[1][0],
-                                                           earCenter[1][1],
-                                                           earCenter[1][2]))
-            fw("receiverArea(%d,1) = %g;\n" % (nn, earArea[1]))
+            fw("sourceCenter(%d,1:3) = [%f %f %f];\n" % (nn,
+                                                         earCenter[1][0],
+                                                         earCenter[1][1],
+                                                         earCenter[1][2]))
+            fw("sourceArea(%d,1) = %g;\n" % (nn, earArea[1]))
 
         fw("\n")
     else:
 
-        fw("% point source / receiver\n")
-        fw("receiverCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition,
+        fw("% source information\n")
+        fw("sourceType = 'pointSource';\n")
+        fw("sourceCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition,
                                                       sourceYPosition,
                                                       sourceZPosition))
-        fw("receiverArea(1,1)     = 1;\n")
-    fw("\n")
+        fw("sourceArea(1,1)     = 1;\n")
+
+    # referencing
+    fw("% Reference to a point source in the origin\n")
+    fw("% accoring to the classical HRTF definition\n")
+    fw("% (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
+    fw("reference = ")
+    if reference:
+        fw("true;\n\n")
+    else:
+        fw("false;\n\n")
+
+    # constants
+    fw("% Constants\n")
+    fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
+    fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
     # write CPUs and Cores
     fw("% Distribution of ears across CPUs and cores.\n")
@@ -707,7 +714,7 @@ def _write_output2HRTF_m(filepath1, version,
 
     fw("% Collect the data simulated by NumCalc\n")
     fw("Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, ...\n")
-    fw("                 receiverCenter, receiverArea, ...\n")
+    fw("                 sourceType, sourceCenter, sourceArea, ...\n")
     fw("                 reference, speedOfSound,densityOfAir);\n")
     file.close
 
@@ -1001,7 +1008,7 @@ def _render_pictures(filepath1, unitFactor):
 
 def _write_nc_inp(filepath1, version, title, ear,
                   speedOfSound, densityOfMedium, frequencies, cpusAndCores,
-                  evaluationGrids, method, reciprocity,
+                  evaluationGrids, method, sourceType,
                   sourceXPosition, sourceYPosition, sourceZPosition):
     for core in range(1, 9):
         for cpu in range(1, 11):
@@ -1079,7 +1086,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # main parameters II ------------------------------------------
                 fw("## 2. Main Parameters II\n")
                 fw("0 ")
-                if reciprocity:
+                if sourceType==0:
                     fw("0 ")
                 else:
                     fw("1 ")
@@ -1118,7 +1125,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("##\n")
 
                 # source information: reciprocal ------------------------------
-                if reciprocity:
+                if sourceType==0:
                     if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
                         tmpEar='Left ear'
                     else:
@@ -1141,7 +1148,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("##\n")
 
                 # source information: point source ----------------------------
-                if reciprocity:
+                if sourceType==0:
                     fw("# POINT SOURCES\n")
                     if cpusAndCores[cpu-1][core-1] == 1:
                         fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
