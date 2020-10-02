@@ -38,8 +38,15 @@ function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores,receiverCenter,receive
 %       This is the calssical HRTF definition (pressure st the ear divided
 %       by pressure at the center of the head with the head being absent)
 
-ears=max(unique(cpusAndCores));
 %% ----------------------------load meta data------------------------------
+% output directory
+if ~exist('Output2HRTF', 'dir')
+    mkdir('Output2HRTF')
+end
+
+% number of ears
+ears=max(unique(cpusAndCores));
+
 temp=dir('EvaluationGrids');
 evaluationGrids={};
 for ii=3:length(temp)
@@ -92,7 +99,7 @@ for ch=1:ears
     end
 end
 description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total'};
-save('computationTime.mat','description','computationTime','-v6');
+save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computationTime', '-v6');
 clear description computationTime
 
 %% Calculate ObjectMesh data
@@ -127,7 +134,7 @@ fprintf('\nSave ObjectMesh data ...');
 element_data=pressure;
 nodes=objectMeshNodes;
 elements=objectMeshElements;
-save('ObjectMesh.mat','nodes','elements','frequencies','element_data');
+save(fullfile('Output2HRTF', 'ObjectMesh.mat'),'nodes','elements','frequencies','element_data');
 
 clear pressure nodes elements frequencies
 
@@ -238,6 +245,6 @@ Obj.SourcePosition_Units='meter';
 Obj.SourcePosition=evaluationGridNodes(:,2:4);
 
 Obj=SOFAupdateDimensions(Obj);
-SOFAsave('EvaluationGrid_GeneralTF.sofa',Obj);
+SOFAsave(fullfile('Output2HRTF', 'EvaluationGrid_GeneralTF.sofa'),Obj);
 
 fprintf('Done\n')
