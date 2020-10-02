@@ -679,8 +679,8 @@ def _write_output2HRTF_m(filepath1, version,
         fw("% source information\n")
         fw("sourceType = 'pointSource';\n")
         fw("sourceCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition,
-                                                      sourceYPosition,
-                                                      sourceZPosition))
+                                                    sourceYPosition,
+                                                    sourceZPosition))
         fw("sourceArea(1,1)     = 1;\n")
 
     # referencing
@@ -804,9 +804,9 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
             # increment area using Heron´s formula
             earArea[ear] += 0.25 * math.sqrt(
                              (side_a+side_b+side_c)
-                            *(-side_a+side_b+side_c)
-                            *(side_a-side_b+side_c)
-                            *(side_a+side_b-side_c))
+                             * (-side_a+side_b+side_c)
+                             * (side_a-side_b+side_c)
+                             * (side_a+side_b-side_c))
 
     # estimate the center from min and max x,y,z-values
     earCenter = [
