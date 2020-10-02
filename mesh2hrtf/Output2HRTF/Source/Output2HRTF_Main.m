@@ -47,38 +47,75 @@ end
 % number of ears
 ears=max(unique(cpusAndCores));
 
-temp=dir('EvaluationGrids');
-evaluationGrids={};
-for ii=3:length(temp)
-    evaluationGrids{ii-2}=temp(ii).name;
-end
-evaluationGridNodes=[];
-evaluationGridElements=[];
+% get the evaluation grids
+evaluationGrids = dir('EvaluationGrids');
+evaluationGrids = evaluationGrids(~ismember({evaluationGrids.name},{'.','..'}));
+
+% evaluationGridNodes=[];
+% evaluationGridElements=[];
+
+evaltionGridsNumNodes = 0;
 for ii=1:length(evaluationGrids)
-    if exist(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Nodes.txt'],'file')
-        tmpNodes=importdata(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Nodes.txt'],' ',1);
-        tmpElements=importdata(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Elements.txt'],' ',1);
-        evaluationGridNodes=[evaluationGridNodes; tmpNodes.data];
-        evaluationGridElements=[evaluationGridElements; tmpElements.data(:,1:end-3)];
-    end
+    tmpNodes=importdata(fullfile('EvaluationGrids', evaluationGrids(ii).name, 'Nodes.txt'),' ',1);
+    tmpElements=importdata(fullfile('EvaluationGrids', evaluationGrids(ii).name, 'Elements.txt'),' ',1);
+    evaluationGrids(ii).nodes = tmpNodes.data;
+    evaluationGrids(ii).elements = tmpElements.data;
+    evaluationGrids(ii).num_nodes = size(tmpNodes.data, 1);
+    evaltionGridsNumNodes = evaltionGridsNumNodes + evaluationGrids(ii).num_nodes;
 end
 
-temp=dir('ObjectMeshes');
-objectMeshes={};
-for ii=3:length(temp)
-    objectMeshes{ii-2}=temp(ii).name;
-end
-objectMeshNodes={};
-objectMeshElements={};
-objectMeshMaxFrequency={};
+% names of the used evaluation grids
+% temp=dir('EvaluationGrids');
+% evaluationGrids={};
+% for ii=3:length(temp)
+%     evaluationGrids{ii-2}=temp(ii).name;
+% end
+% evaluationGridNodes=[];
+% evaluationGridElements=[];
+% for ii=1:length(evaluationGrids)
+%     if exist(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Nodes.txt'],'file')
+%         tmpNodes=importdata(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Nodes.txt'],' ',1);
+%         tmpElements=importdata(['EvaluationGrids' filesep evaluationGrids{ii} filesep 'Elements.txt'],' ',1);
+%         evaluationGridNodes=[evaluationGridNodes; tmpNodes.data];
+%         evaluationGridElements=[evaluationGridElements; tmpElements.data(:,1:end-3)];
+%     end
+% end
+
+% get the object mesh
+objectMeshes = dir('ObjectMeshes');
+objectMeshes = objectMeshes(~ismember({objectMeshes.name},{'.','..'}));
+
+% evaluationGridNodes=[];
+% evaluationGridElements=[];
+
+objectMeshesNumNodes = 0;
 for ii=1:length(objectMeshes)
-    if exist(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],'file')
-        tmpNodes=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],' ',1);
-        tmpElements=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Elements.txt'],' ',1);
-        objectMeshNodes{1}=tmpNodes.data;
-        objectMeshElements{1}=tmpElements.data(:,1:end-3);
-    end
+    tmpNodes=importdata(fullfile('ObjectMeshes', objectMeshes(ii).name, 'Nodes.txt'),' ',1);
+    tmpElements=importdata(fullfile('ObjectMeshes', objectMeshes(ii).name, 'Elements.txt'),' ',1);
+    objectMeshes(ii).nodes = tmpNodes.data;
+    objectMeshes(ii).elements = tmpElements.data;
+    objectMeshes(ii).num_nodes = size(tmpNodes.data, 1);
+    objectMeshesNumNodes = objectMeshesNumNodes + objectMeshes(ii).num_nodes;
 end
+
+% temp=dir('ObjectMeshes');
+% objectMeshes={};
+% for ii=3:length(temp)
+%     objectMeshes{ii-2}=temp(ii).name;
+% end
+% objectMeshNodes={};
+% objectMeshElements={};
+% objectMeshMaxFrequency={};
+% for ii=1:length(objectMeshes)
+%     if exist(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],'file')
+%         tmpNodes=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Nodes.txt'],' ',1);
+%         tmpElements=importdata(['ObjectMeshes' filesep objectMeshes{ii} filesep 'Elements.txt'],' ',1);
+%         objectMeshNodes{1}=tmpNodes.data;
+%         objectMeshElements{1}=tmpElements.data(:,1:end-3);
+%     end
+% end
+
+clear ii tmpNodes tmpElements
 
 %% Read computational effort
 fprintf('\nLoading computational effort data ...');
@@ -98,11 +135,12 @@ for ch=1:ears
         fprintf('...');
     end
 end
+
 description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total'};
 save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computationTime', '-v6');
-clear description computationTime
+clear ch ii jj description computationTime
 
-%% Calculate ObjectMesh data
+%% Load ObjectMesh data
 fprintf('\nLoading ObjectMesh data ...');
 for ch=1:ears
     fprintf(['\n    Ear ' num2str(ch) ' ...'])
@@ -131,14 +169,22 @@ for ch=1:ears
 end
 
 fprintf('\nSave ObjectMesh data ...');
-element_data=pressure;
-nodes=objectMeshNodes;
-elements=objectMeshElements;
-save(fullfile('Output2HRTF', 'ObjectMesh.mat'),'nodes','elements','frequencies','element_data');
+cnt = 0;
+for ii = 1:numel(objectMeshes)
+    nodes=objectMeshes(ii).nodes;
+    elements=objectMeshes(ii).elements;
+    element_data=pressure;
+    for jj = 1:numel(pressure)
+        element_data{jj} = element_data{jj}(:, cnt+1:cnt+size(elements,1));
+    end
+    save(fullfile('Output2HRTF', ['ObjectMesh_' objectMeshes(ii).name '.mat']), ...
+        'nodes','elements','frequencies','element_data');
+    cnt = cnt + size(elements,1);
+end
 
-clear pressure nodes elements frequencies
+clear pressure nodes elements frequencies ii jj cnt ch idx element_data
 
-%% Calculate EvaluationGrid data
+%% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
     fprintf('\nLoading data for the evaluation grids ...');
     for ch=1:ears
@@ -168,83 +214,107 @@ if ~isempty(evaluationGrids)
     pressure=pressure(idx,:,:);
 end
 
-% added Fabian Brinkmann
+% save to struct
+cnt = 0;
+for ii = 1:numel(evaluationGrids)
+    evaluationGrids(ii).pressure = pressure(:, cnt+1:cnt+evaluationGrids(ii).num_nodes, :);
+    cnt = cnt + evaluationGrids(ii).num_nodes;
+end
+
+
+clear ch ii jj tmpData tmpFrequencies tmpPressure pressure cnt idx
+
+
 if reference
     
     % this might be a parameter in the function call
     refMode = 1;    % 1: reference to only one radius (the smallest found)
                     % 2: reference to all indivudal radii
     
-    % reference to pressure in the middle of the head with the head absent
-    % (HRTF definition). We do it reciprocal for ease of computation.
-    
-    volumeFlow = .1 * ones(size(pressure));
-    if exist('receiverArea', 'var')
-        %has to be fixed for both ears....
-        for nn = 1:numel(receiverArea)
-            volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * receiverArea(nn);
-        end       
+    for ii = 1:numel(evaluationGrids)
+        
+        xyz = evaluationGrids(ii).nodes;
+        pressure = evaluationGrids(ii).pressure;
+        
+        % reference to pressure in the middle of the head with the head absent
+        % (HRTF definition). We do it reciprocal for ease of computation.
+        
+        volumeFlow = .1 * ones(size(pressure));
+        if exist('receiverArea', 'var')
+            %has to be fixed for both ears....
+            for nn = 1:numel(receiverArea)
+                volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * receiverArea(nn);
+            end
+        end
+        
+        % distance of source positions from the origin
+        if refMode == 1
+            r = min(sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2));
+            r = repmat(r, [size(pressure,1) size(pressure, 2) size(pressure, 3)]);
+        else
+            r = sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2);
+            r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
+        end
+        
+        % point source in the origin evaluated at r
+        % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
+        freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
+        ps   = -1j * densityOfAir * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
+            exp(1j * 2*pi*freqMatrix/speedOfSound .* r) ./ r;
+        % here we go...
+        evaluationGrids(ii).pressure = pressure ./ ps;
+        
     end
     
-    % distance of source positions from the origin
-    if refMode == 1
-        r = min(sqrt(evaluationGridNodes(:,2).^2 + evaluationGridNodes(:,3).^2 + evaluationGridNodes(:,4).^2));
-        r = repmat(r, [size(pressure,1) size(pressure, 2) size(pressure, 3)]);
-    else
-        r = sqrt(evaluationGridNodes(:,2).^2 + evaluationGridNodes(:,3).^2 + evaluationGridNodes(:,4).^2);
-        r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
-    end
-
-    % point source in the origin evaluated at r
-    % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-    freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
-    ps   = -1j * densityOfAir * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
-           exp(1j * 2*pi*freqMatrix/speedOfSound .* r) ./ r;
-    % here we go...
-    pressure = pressure ./ ps;
-    
-    clear Areceiver r freqMatrix ps
+    clear Areceiver r freqMatrix ps ii
 end
-% end of added Fabian Brinkmann
 
 %% Save data as SOFA file
 fprintf('\nSaving complex pressure to SOFA file ...\n')
 SOFAstart;
 
-% prepare pressure to be size of MRN when R=2
-pressure = shiftdim(pressure, 1);
-% prepare pressure to be size of MRN when R=1
-if size(pressure, 3) == 1
-    pressure = reshape(pressure, size(pressure,1), 1, size(pressure, 2));
+for ii = 1:numel(evaluationGrids)
+    
+    xyz = evaluationGrids(ii).nodes;
+    pressure = evaluationGrids(ii).pressure;
+    
+    % prepare pressure to be size of MRN when R=2
+    pressure = shiftdim(pressure, 1);
+    % prepare pressure to be size of MRN when R=1
+    if size(pressure, 3) == 1
+        pressure = reshape(pressure, size(pressure,1), 1, size(pressure, 2));
+    end
+    
+    % Save as GeneralTF
+    Obj = SOFAgetConventions('GeneralTF');
+    
+    Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
+    Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
+    Obj.GLOBAL_Organization = '';
+    Obj.GLOBAL_Title = '';
+    Obj.GLOBAL_DateCreated = date;
+    Obj.GLOBAL_AuthorContact = '';
+    
+    Obj.ReceiverPosition=receiverCenter;
+    Obj.N=frequencies;
+    
+    %add division G([0,0,0],evaluationGrid)
+    Obj.Data.Real=real(pressure);
+    Obj.Data.Imag=imag(pressure);
+    Obj.Data.Real_LongName='pressure';
+    Obj.Data.Real_Units='pascal';
+    Obj.Data.Imag_LongName='pressure';
+    Obj.Data.Imag_Units='pascal';
+    
+    Obj.ListenerPosition = [0 0 0];
+    Obj.SourcePosition_Type='cartesian';
+    Obj.SourcePosition_Units='meter';
+    Obj.SourcePosition=xyz(:,2:4);
+    
+    Obj=SOFAupdateDimensions(Obj);
+    SOFAsave(fullfile('Output2HRTF', ['EvaluationGrid_' evaluationGrids(ii).name '.sofa']),Obj);
 end
 
-% Save as GeneralTF
-Obj = SOFAgetConventions('GeneralTF');
-
-Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
-Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
-Obj.GLOBAL_Organization = '';
-Obj.GLOBAL_Title = '';
-Obj.GLOBAL_DateCreated = date;
-Obj.GLOBAL_AuthorContact = '';
-
-Obj.ReceiverPosition=receiverCenter;
-Obj.N=frequencies;
-
-%add division G([0,0,0],evaluationGrid)
-Obj.Data.Real=real(pressure);
-Obj.Data.Imag=imag(pressure);
-Obj.Data.Real_LongName='pressure';
-Obj.Data.Real_Units='pascal';
-Obj.Data.Imag_LongName='pressure';
-Obj.Data.Imag_Units='pascal';
-
-Obj.ListenerPosition = [0 0 0];
-Obj.SourcePosition_Type='cartesian';
-Obj.SourcePosition_Units='meter';
-Obj.SourcePosition=evaluationGridNodes(:,2:4);
-
-Obj=SOFAupdateDimensions(Obj);
-SOFAsave(fullfile('Output2HRTF', 'EvaluationGrid_GeneralTF.sofa'),Obj);
+clear Obj ii xyz pressure
 
 fprintf('Done\n')
