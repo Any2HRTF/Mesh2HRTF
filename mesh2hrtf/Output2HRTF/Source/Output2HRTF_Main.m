@@ -191,30 +191,19 @@ end
 clear ch ii jj tmpData tmpFrequencies tmpPressure pressure cnt idx
 
 
+% reference to pressure in the middle of the head with the head absent
+% according to the HRTF definition.
 if reference
     
     % this might be a parameter in the function call
     refMode = 1;    % 1: reference to only one radius (the smallest found)
                     % 2: reference to all indivudal radii
-    if ~strcmp(sourceType, 'vibratingElement')
-        error('Referencing is currently only implemented for sourceType=''vibratingElement''.')
-    end
     
     for ii = 1:numel(evaluationGrids)
         
         xyz = evaluationGrids(ii).nodes;
         pressure = evaluationGrids(ii).pressure;
-        
-        % reference to pressure in the middle of the head with the head absent
-        % (HRTF definition). We do it reciprocal for ease of computation.
-        
-        volumeFlow = .1 * ones(size(pressure));
-        if exist('sourceArea', 'var')
-            %has to be fixed for both ears....
-            for nn = 1:numel(sourceArea)
-                volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * sourceArea(nn);
-            end
-        end
+        freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
         
         % distance of source positions from the origin
         if refMode == 1
@@ -225,11 +214,30 @@ if reference
             r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
         end
         
-        % point source in the origin evaluated at r
-        % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-        freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
-        ps   = -1j * densityOfAir * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
-            exp(1j * 2*pi*freqMatrix/speedOfSound .* r) ./ r;
+        if strcmp(sourceType, 'vibratingElement')
+            
+            volumeFlow = .1 * ones(size(pressure));
+            if exist('sourceArea', 'var')
+                %has to be fixed for both ears....
+                for nn = 1:numel(sourceArea)
+                    volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * sourceArea(nn);
+                end
+            end
+            
+            % point source in the origin evaluated at r
+            % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
+            ps   = -1j * densityOfAir * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
+                exp(1j * 2*pi*freqMatrix/speedOfSound .* r) ./ r;
+            
+        elseif strcmp(sourceType, 'pointSource')
+            
+            amplitude = .1; % hard coded in Mesh2HRTF
+            ps = amplitude * exp(-1j * 2*pi*freqMatrix/speedOfSound .*r) ./ (4 * pi * r);
+            
+        else
+            error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.')
+        end
+        
         % here we go...
         evaluationGrids(ii).pressure = pressure ./ ps;
         

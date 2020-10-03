@@ -78,7 +78,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Method for numerical simulation",
         items=[('0', 'Vibrating element', ("Mesh elements with user assigned "
                                            "materials 'Left ear' and 'Right "
-                                           "ear'")),
+                                           "ear' act as the source")),
                ('1', 'Point source', ("Analytical point source. Coordinates "
                                       "taken from user placed point light "
                                       "named 'Point'"))],
@@ -107,15 +107,15 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     reference: BoolProperty(
         name="Reference",
         description=("Reference HRTF to the center of the head according to "
-                     "the classic HRTF definition. For the HRTF definition see"
-                     "https://doi.org/10.1016/0003-682X(92)90046-U"),
+                     "the classic HRTF definition. For the HRTF definition "
+                     "see https://doi.org/10.1016/0003-682X(92)90046-U"),
         default=False,
         )
     computeHRIRs: BoolProperty(
         name="Compute HRIRs",
         description=("Compute HRIRs by inverse Fourier Transform. This "
                      "requires referencing (see above) and frequencies "
-                     "between a and fs/2 in steps of a, with a>0 and fs the "
+                     "between f and fs/2 in steps of f, with f>0 and fs the "
                      "sampling frequency"),
         default=False,
         )
