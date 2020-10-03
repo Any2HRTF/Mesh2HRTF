@@ -302,7 +302,7 @@ if computeHRIRs
     for ii = 1:numel(evaluationGrids)
         
         % check if the frequency vector has the correct format
-        if ~abs(frequencies(1) - diff(frequencies)) < .01
+        if ~abs(frequencies(1) - diff(frequencies)) < .1
             error('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
         end
         
