@@ -338,7 +338,7 @@ if computeHRIRs
             hrir = reshape(hrir, size(hrir,1), 1, size(hrir, 2));
         end
         
-        % Save as GeneralTF
+        % Save as GeneralFIR
         Obj = SOFAgetConventions('GeneralFIR', 'm');
         
         Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
