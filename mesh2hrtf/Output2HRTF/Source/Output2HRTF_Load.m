@@ -2,11 +2,11 @@
 %                Copyright (C) 2015 by Harald Ziegelwanger,
 %        Acoustics Research Institute, Austrian Academy of Sciences
 %                        mesh2hrtf.sourceforge.net
-% 
+%
 % Mesh2HRTF is licensed under the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 % Mesh2HRTF is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 % You should have received a copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not, see <http://www.gnu.org/licenses/lgpl.html>.
-% 
+%
 % If you use Mesh2HRTF:
 % - Provide credits:
 %   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
@@ -64,9 +64,9 @@ for ii=1:numFrequencies
     tmpData = importdata([foldername 'be.' num2str(ii) '/' filename], ' ', numHeaderlines_BE);
     if ~isempty(tmpData)
         tmpFrequency = importdata([foldername '..' filesep 'fe.out' filesep 'fe.' num2str(ii) '/load'], ' ', 2);
-    
+
         data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
-        frequency(ii,1)=int32(round(tmpFrequency.data(1,1)));
+        frequency(ii,1)=tmpFrequency.data(1,1);
     else
         data(ii,:)      = NaN;
         frequency(ii,1) = NaN;
