@@ -1,32 +1,56 @@
-*************************************************************
+*******************************************************************************
 *** History of Mesh2HRTF
-*** Acoustics Research Institute, Austrian Academy of Sciences, Vienna
-*** Project leader: Piotr Majdak, piotr@majdak.com
 *** Contributors:
+***     Piotr Majdak, ARI
 ***		Wolfgang Kreuzer, ARI
 ***		Harald Ziegelwanger, ARI
 *** 	Michael Kalcher, ARI
-***     Fabian Brinkmann, TU-Berlin
-***		Robert Pelzer, TU-Berlin
+***     Fabian Brinkmann, AC-TUB
+***		Robert Pelzer, AC-TUB
 ***		Junaid Khan, FH Technikum Wien
-***     Oliver Weissbarth, TU Berlin
-*************************************************************
+***     Oliver Weissbarth, CG-TUB
+*** Institutions
+***		ARI: Austrian Research Institute, Austian Academy of Sciences, Vienna
+***     AC-TUB: Audio Communication Group, Technical University of Berlin
+***     CG-TUB: Computer Graphics Group, Technical University of Berlin
+***     FH Technikum Wien: University of Applied Sciences, Technikum Wien
+*******************************************************************************
 
 *** DEVELOPMENT STATUS *** 
 
-*** v0.5.0 alpha
+*** v0.5.0 alpha (Fabian Brinkmann)
 - bumped all python sckripts to Blender >= 2.80.0
+- changed layout of the export GUI to be more clear and less prone to user input errors
+	- The source type is now defined by a single drop down menue
+	- The point source coordinates are obtained from a user placed object in the scene
+	- Referencing the HRTF spectra to the center of the head now also supported for point sources
+	- Referencing can now be selected in the GUI
+	- Enabeled the computation of HRIRs from complete, single sided, equidistant HRTF spectra from the GUI
+	- More flexible selection of the frequneucies that are simulated
+	- Evaluation grids are now specified by strings. This allows to use evaluation grids outside the Mesh2HRTF path
+- Improved structure of the output data created by Output2HRTF
+	- Data is now stored in a separate folder
+	- Data is named according to the evaluation girds, object meshes
+	- Data for multiple evaluation grids is now stored in separate files
+	- Frequncies in SOFA files now contain decimal values
+- Removed incomplete, buggy, and undcumented features
+	- removed the handling frequency dependent meshes in exportMesh2HRTF.py. Skripting in Blender can do the job and is more flexible
+	- removed near field calculation. This generated a hard coded extremal sampling grid of spherical harmonics order 46 but was not documented
+	- a separate core was assigned to the simulation of low frequencies. This was not documented and buggy in certain cases
+- General
+	- soft pep8 styling of Python code
+	- modularization of Python code as a preparation to introduce unit tests
 
-*** v0.4.0
+*** v0.4.0 (Fabian Brinkmann)
 - this will be the last release supporting Blender < 3.8
 - new directory structure
 
-*** v0.3.2
+*** v0.3.2 (Fabian Brinkmann)
 - big fix and improvements in PreProcessing/MeshGrading (ticket #25, commit r38)
 - bug fix in ExportMesh2HRTF.py (Tickets #13, #15, and #23 on sourcefourge)
 - fixed a bug Output2HRTF_Main.m. Now the low frequency HRTF should at 0 dB if using reciprocal simulation and if setting reference = true in Output2HRTF.m, which is auto-generated when exporting from blender.
 
-*** v0.3.1 
+*** v0.3.1 (Wolfgang Kreuzer)
 - bug fix in NumCalc
 
 *** v0.3.0 (28.05.2019, Junaid Khan)
