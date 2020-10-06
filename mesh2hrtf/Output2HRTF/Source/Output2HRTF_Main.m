@@ -288,7 +288,7 @@ for ii = 1:numel(evaluationGrids)
     Obj.SourcePosition=xyz(:,2:4);
     
     Obj=SOFAupdateDimensions(Obj);
-    SOFAsave(fullfile('Output2HRTF', ['EvaluationGridTF_' evaluationGrids(ii).name '.sofa']),Obj);
+    SOFAsave(fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']),Obj);
 end
 
 clear Obj ii xyz pressure
@@ -302,7 +302,7 @@ if computeHRIRs
     for ii = 1:numel(evaluationGrids)
         
         % check if the frequency vector has the correct format
-        if ~abs(frequencies(1) - diff(frequencies)) < .1
+        if ~all(abs(frequencies(1) - diff(frequencies)) < .1)
             error('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
         end
         
@@ -359,7 +359,7 @@ if computeHRIRs
         Obj.SourcePosition=xyz(:,2:4);
         
         Obj=SOFAupdateDimensions(Obj);
-        SOFAsave(fullfile('Output2HRTF', ['EvaluationGridFIR_' evaluationGrids(ii).name '.sofa']),Obj);
+        SOFAsave(fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
     end
 end
 
