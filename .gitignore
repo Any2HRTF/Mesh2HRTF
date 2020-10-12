@@ -1,2 +1,4 @@
 .vscode
 *.asv
+mesh2hrtf/NumCalc/Source/*.o
+mesh2hrtf/NumCalc/Source/NumCalc

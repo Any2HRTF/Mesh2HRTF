@@ -99,7 +99,7 @@ void NC_Read
 	// create the arrays
 	extNumbersOfNodes = new int[numNodes_];
 	isNodeMeshOrEvalNode = new int[numNodes_];
-	extNumbersOfElements = new int[numElements_]; 
+	extNumbersOfElements = new int[numElements_];
 
 	nodesCoordinates = new double*[numNodes_];
 	for(i=0; i<numNodes_; i++) nodesCoordinates[i] = new double[NDIM];
@@ -188,12 +188,12 @@ void NC_ReadBasicParametersA
 )
 {
     int i, nterms, j, j1;
-    
+
     // version number
     nterms = 0;
     while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
     if(chterms[0].compare("Mesh2HRTF")) NC_Error_Exit_0(NCout, "Key word Mesh2HRTF expected!");
-    
+
     j1 = 0;
     for(j=0; j<(int)chterms[0].length(); j++) versionNumber_[j1++] = chterms[0][j];
     for(i=1; i<nterms; i++)
@@ -202,7 +202,7 @@ void NC_ReadBasicParametersA
         j1++;
         for(j=0; j<(int)chterms[i].length(); j++) versionNumber_[j1++] = chterms[i][j];
     }
-    
+
     // job title
     nterms = 0;
     while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
@@ -214,12 +214,12 @@ void NC_ReadBasicParametersA
         j1++;
         for(j=0; j<(int)chterms[i].length(); j++) jobTitle_[j1++] = chterms[i][j];
     }
-    
+
     cout << "Job title: " << jobTitle_ << endl;
-    
+
     // Kontrollparameter I: analysis type, unit system
     while(!NC_GetLine(inputFile_, chinpline, chterms));
-    
+
     // Kontrollparameter II
     while(!NC_GetLine(inputFile_, chinpline, chterms));
     numFrequencies_ = NC_String2Integer(chterms[1]);
@@ -270,7 +270,7 @@ void NC_ReadBasicParametersB
 	methodBEM_ = NC_String2Integer(chterms[7]);
 	methodSolver_ = NC_String2Integer(chterms[8]);
 
-	if(numElements_ < 1) NC_Error_Exit_1(NCout, "Number of elements must > 0!", 
+	if(numElements_ < 1) NC_Error_Exit_1(NCout, "Number of elements must > 0!",
 		"Number of elements = ", numElements_);
 
 	if(numNodes_ < 1) NC_Error_Exit_1(NCout, "Number of nodes must > 0!", "Number of nodes = ", numNodes_);
@@ -280,13 +280,13 @@ void NC_ReadBasicParametersB
 		NC_Error_Exit_1(NCout, "minExpansionTermsFMM_  must be in [5 10]!", "minExpansionTermsFMM_ = ", minExpansionTermsFMM_);
     }
 
-	if(numSymmetricPlanes_ < 0 || numSymmetricPlanes_ > 3) 
+	if(numSymmetricPlanes_ < 0 || numSymmetricPlanes_ > 3)
 		NC_Error_Exit_1(NCout, "Number of symmetry planes must be in [0 3]!",
 		"Number of symmetry planes = ", numSymmetricPlanes_);
 
-	if(methodSolver_ < 0 || methodSolver_ > 4) 
+	if(methodSolver_ < 0 || methodSolver_ > 4)
         NC_Error_Exit_1(NCout, "ISOLVER must be 0 or 4!", "ISOLVER = ", methodSolver_);
-    
+
     if(methodSolver_ > 0 && methodSolver_ < 4)
         NC_Error_Exit_1(NCout, "ISOLVER must be 0 or 4!", "ISOLVER = ", methodSolver_);
 
@@ -319,9 +319,9 @@ void NC_ReadBasicParametersB
 		"Number of the incident plane waves = ", numIncidentPlaneWaves_);
 	if(numPointSources_ < -1) NC_Error_Exit_1(NCout, "Number of the point sources must >= -1!",
 		"Number of the point sources = ", numIncidentPlaneWaves_);
-	if(isInternalProblem_ != 0 && isInternalProblem_ != 1) 
+	if(isInternalProblem_ != 0 && isInternalProblem_ != 1)
 		NC_Error_Exit_1(NCout, "IFINTE must = 0 or 1!", "IFINTE = ", isInternalProblem_);
-	if(methodPreconditioner_ < -3 || methodPreconditioner_ > 2) 
+	if(methodPreconditioner_ < -3 || methodPreconditioner_ > 2)
 		NC_Error_Exit_1(NCout, "IPRECOND must be in [-3 2]!", "IPRECOND = ", methodPreconditioner_);
 
 	if(methodPreconditioner_ <= -3) {
@@ -336,9 +336,9 @@ void NC_ReadBasicParametersB
 	} else {
 		scanningDegreeLU_ = 0;
 	}
-		
+
 	// if the direct method is used, no preconditioner
-	if(methodSolver_ == 4) methodPreconditioner_ = 2; 
+	if(methodSolver_ == 4) methodPreconditioner_ = 2;
 
 	// BEM Main Parameters III
 	while(!NC_GetLine(inputFile_, chinpline, chterms));
@@ -379,7 +379,7 @@ void NC_ReadMesh
 	// read the key word NODES
 	while(!NC_GetLine(inputFile_, chinpline, chterms));
 	if(chterms[0].compare("NODES")) NC_Error_Exit_0(NCout, "Key word NODES expected!");
-    
+
     i=0;
     while(i<numNodes_)
     {
@@ -405,11 +405,11 @@ void NC_ReadMesh
             NCout << "No Nodes file found!" << endl;
         }
     }
-        
-	// read the key word ELEMENTS 
+
+	// read the key word ELEMENTS
 	while(!NC_GetLine(inputFile_, chinpline, chterms));
 	if(chterms[0].compare("ELEMENTS")) NC_Error_Exit_0(NCout, "Key word ELEMENTS expected!");
-    
+
     i=0;
     while(i<numElements_)
     {
@@ -419,17 +419,17 @@ void NC_ReadMesh
         {
             while(!NC_GetLine(tmpFile_, chinpline, chterms));
             int tmpFileLength = NC_String2Integer(chterms[0]);
-            
+
             for(int jj=0; jj<tmpFileLength; jj++)
             {
                 nterms = 0;
                 while(!nterms){nterms = NC_GetLine(tmpFile_, chinpline, chterms);}
-                
+
                 if(nterms < 7 || nterms > 8) NC_Error_Exit_2(NCout,
                                                         "number of entris of a input line must be 7 or 8!",
                                                         "number of the element under the key word ELEMENTS = ", NC_String2Integer(chterms[0]),
                                                         "number of entrie of the line = ", nterms);
-                
+
                 extNumbersOfElements[i] = NC_String2Integer(chterms[0]);
                 listNumberNodesPerElement[i] = nterms - 4;
                 for(j=0; j<listNumberNodesPerElement[i]; j++) elementsConnectivity[i][j] = NC_String2Integer(chterms[j + 1]);
@@ -509,11 +509,11 @@ void NC_ReadMesh
 				listSymmetryPlanes[i] = -2;
 				break;
 			default:
-				NC_Error_Exit_2(NCout, "listSymmetryPlanes[i] must be equal to 0, 1, 2, 3, or 4!", 
+				NC_Error_Exit_2(NCout, "listSymmetryPlanes[i] must be equal to 0, 1, 2, 3, or 4!",
 					"i = ", i, "listSymmetryPlanes[i] = ", listSymmetryPlanes[i]);
 			}
 		}
-		if(j != numSymmetricPlanes_) NC_Error_Exit_2(NCout, "j must equal to numSymmetricPlanes_", "j = ", j, 
+		if(j != numSymmetricPlanes_) NC_Error_Exit_2(NCout, "j must equal to numSymmetricPlanes_", "j = ", j,
 			"numSymmetricPlanes_ = ", numSymmetricPlanes_);
 	}
 
@@ -600,7 +600,7 @@ outofloopk_cc:
 
 		for(j=0; j<inode; j++)
 		{
-			if(inode == NETYP3) 
+			if(inode == NETYP3)
 			{
 				s = CSI6[j];
 				t = ETA6[j];
@@ -653,12 +653,12 @@ outofloopk_cc:
 	}
 
 	numNodesOfBoundaryMesh_ = numNodesOfEvaluationMesh_ = 0;
-	for(i=0; i<numNodes_; i++) 
+	for(i=0; i<numNodes_; i++)
 	{
-		if(isNodeMeshOrEvalNode[i] == 1) 
+		if(isNodeMeshOrEvalNode[i] == 1)
 		{
 			isNodeMeshOrEvalNode[i] = numNodesOfBoundaryMesh_;
-			numNodesOfBoundaryMesh_++;   
+			numNodesOfBoundaryMesh_++;
 		}
 		else if(isNodeMeshOrEvalNode[i] == -1)
 		{
@@ -672,18 +672,18 @@ outofloopk_cc:
 		}
 	}
 
-	if(numNodesOfBoundaryMesh_ == 0) 
+	if(numNodesOfBoundaryMesh_ == 0)
 		NC_Error_Exit_0(NCout, "Number of boundary elements is zero!");
 
 	// compute the dimension of the box including all boundary elements
 	double crdmaxmin[3][2], dtl = sqrt(averageElementArea_)/100.0;
 
-	for(j=0; j<NDIM; j++) 
+	for(j=0; j<NDIM; j++)
 	{
 		crdmaxmin[j][0] = -9.9e20;
 		crdmaxmin[j][1] = 9.9e20;
 	}
-	for(i=0; i<numNodes_; i++) 
+	for(i=0; i<numNodes_; i++)
 	{
 		if(isNodeMeshOrEvalNode[i] < 0) continue;
 		for(j=0; j<NDIM; j++)
@@ -706,9 +706,9 @@ outofloopk_cc:
 					crdmaxmin[j][0] = 2.0*(listSymmetryPlanesCoordinates[j] - crdmaxmin[j][1]);
 				} else {
 					NC_Error_Warning_1(NCout, "", "Number of the symmetric plane = ", j);
-					NC_Error_Exit_2(NCout, 
-						"All BE nodes must be located on the same side of a symmetric plane!", 
-						"crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j] = ", crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j], 
+					NC_Error_Exit_2(NCout,
+						"All BE nodes must be located on the same side of a symmetric plane!",
+						"crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j] = ", crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j],
 						"crdmaxmin[j][1] - listSymmetryPlanesCoordinates[j] =  = ", crdmaxmin[j][1] - listSymmetryPlanesCoordinates[j]);
 				}
 			} else {
@@ -725,7 +725,7 @@ outofloopk_cc:
 	int ielgrp = 0;
 	for(i=0; i<numElements_; i++)
 	{
-		for(j=0; j<ielgrp; j++) 
+		for(j=0; j<ielgrp; j++)
 		{
 			if(listElementsElementGroup[i] == indexOfElementGroup[j]) goto EndOfLoopI_Elgr;
 		}
@@ -736,7 +736,7 @@ EndOfLoopI_Elgr: continue;
 	}
 
 	if(ielgrp < numElementGroups_) numElementGroups_ = ielgrp;
-	else if(ielgrp > numElementGroups_) 
+	else if(ielgrp > numElementGroups_)
 		NC_Error_Exit_2(NCout, "ielgrp must be less than or equal to nelgrp", "ielgrp = ",
 		ielgrp, "nelgrp = ", numElementGroups_);
 
@@ -744,7 +744,7 @@ EndOfLoopI_Elgr: continue;
 	for(j=0; j<numElementGroups_; j++) numberOfElementsInGroup[j] = 0;
 	for(i=0; i<numElements_; i++)
 	{
-		for(j=0; j<numElementGroups_; j++) 
+		for(j=0; j<numElementGroups_; j++)
 		{
 			if(listElementsElementGroup[i] == indexOfElementGroup[j])
 			{
@@ -768,37 +768,134 @@ void NC_ReadBoundaryConditions
 )
 {
     int i, j, nterms, j_imag_p, j_imag_n, j_nega;
-    
+
     // read the key word
     while(!NC_GetLine(inputFile_, chinpline, chterms));
     if(chterms[0].compare("BOUNDARY")) NC_Error_Exit_0(NCout, "Key word BOUNDARY expected!");
-    
+
     // read the input lines
     nbcline = -1;
     for(i=0; i<maxbcline; i++)
     {
         nterms = 0;
         while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
-        
+
         if(!chterms[0].compare("RETU"))
         {
             nbcline = i;
             break;
         }
         else
-        {
+        {	// chterms contains:
+			// 0: ELEM (Keyword)
+			// 1: Index of first element
+			// 2: TO (Keyword)
+			// 3: Index of last element
+			// 4: Boundary condition (ADMI, IMPE, PRES, VELO)
+			// 5: real value of boundary condition
+			// 6: Curve id to defines the real part or -1 (no curve used)
+			// 7: imaginary value of boundary condition
+			// 8: Curve id to defines the imaginary part or -1 (no curve used)
+			// Indicees of elements to which the boundary condition applies
             if(nterms < 6) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
                                            "Number of the input line = ", i);
             if(chterms[0].compare("ELEM")) NC_Error_Exit_0(NCout, "Key word ELEM expected!");
             bouconlin[i].nLow = NC_String2Integer(chterms[1]);
             if(chterms[2].compare("TO")) NC_Error_Exit_0(NCout, "Key word TO expected!");
             bouconlin[i].nHigh = NC_String2Integer(chterms[3]);
+
+			// Type of boundary condition
             bouconlin[i].sKeyword = chterms[4];
-            
+
+			// read data for real part
+			if (chterms[6] == "-1"){
+				// do not use frequency curve
+				bouconlin[i].bRef = false;
+            	bouconlin[i].dReal = NC_String2Double(chterms[5]);
+			} else {
+				// use frequency curve
+				bouconlin[i].bRef = true;
+                bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
+			}
+			// read data for negative part
+			if (chterms[8] == "-1"){
+				// do not use frequency curve
+				bouconlin[i].bRef = false;
+            	bouconlin[i].dImag = NC_String2Double(chterms[7]);
+			} else {
+				// use frequency curve
+				bouconlin[i].bRef = true;
+                bouconlin[i].nImagRef = NC_String2Integer(chterms[8]);
+			}
+			// flag for defining infinitly thin elements that is not contained
+			// in Mesh2HRTF
+			bouconlin[i].bNega = false;
+
+        } // ELSE
+    } // loop I
+
+    if(nbcline == -1) NC_Error_Exit_0(NCout, "Key word RETU expected!");
+}
+/* // dperecated version that did not read the data correct because it was
+// looking for keywords 'IMAG' and 'NEGA'
+void NC_ReadBoundaryConditions
+(
+	ofstream& NCout,
+	FILE* inputFile_,				// input file
+	char* chinpline,			// input line
+	string chterms[NTRM],		// entries in the input line
+	int& maxbcline,			//I: maximum number of input lines
+	int& nbcline,				//O: actual number of input lines
+	inputLineBoundaryCondition *bouconlin	//O: array to store the input lines
+)
+{
+    int i, j, nterms, j_imag_p, j_imag_n, j_nega;
+
+    // read the key word
+    while(!NC_GetLine(inputFile_, chinpline, chterms));
+    if(chterms[0].compare("BOUNDARY")) NC_Error_Exit_0(NCout, "Key word BOUNDARY expected!");
+
+    // read the input lines
+    nbcline = -1;
+    for(i=0; i<maxbcline; i++)
+    {
+        nterms = 0;
+        while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
+
+        if(!chterms[0].compare("RETU"))
+        {
+            nbcline = i;
+            break;
+        }
+        else
+        {	// chterms contains:
+			// 0: ELEM (Keyword)
+			// 1: Index of first element
+			// 2: TO (Keyword)
+			// 3: Index of last element
+			// 4: Boundary condition (ADMI, IMPE, PRES, VELO)
+			// 5: real value of boundary condition
+			// 6: Curve id to defines the real part or -1 (no curve used)
+			// 7: imaginary value of boundary condition
+			// 8: Curve id to defines the imaginary part or -1 (no curve used)
+			// Indicees of elements to which the boundary condition applies
+            if(nterms < 6) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
+                                           "Number of the input line = ", i);
+            if(chterms[0].compare("ELEM")) NC_Error_Exit_0(NCout, "Key word ELEM expected!");
+            bouconlin[i].nLow = NC_String2Integer(chterms[1]);
+            if(chterms[2].compare("TO")) NC_Error_Exit_0(NCout, "Key word TO expected!");
+            bouconlin[i].nHigh = NC_String2Integer(chterms[3]);
+
+			// Type of boundary condition
+            bouconlin[i].sKeyword = chterms[4];
+
             bouconlin[i].bRef = false;
             bouconlin[i].dReal = NC_String2Double(chterms[5]);
-            
-            j_imag_p = j_imag_n = j_nega = -1;
+
+            j_imag_p = -1;  // flag to check if imaginary part is specified
+			j_nega = -1;    // flag to check if negative side is specified
+			j_imag_n = -1;  // flag to check if imaginary part of negative side
+			                // is specified
             for(j=6; j<nterms; j++)
             {
                 if(!chterms[j].compare("NEGA")) j_nega = j;
@@ -812,13 +909,14 @@ void NC_ReadBoundaryConditions
             {
                 for(j=6; j<nterms; j++) if(!chterms[j].compare("IMAG")) j_imag_p = j;
             }
-            
+
+			// Use a frequency curve for the real part
             if(j_imag_p == 7 || j_nega == 7 || nterms == 7)
             {
                 bouconlin[i].bRef = true;
                 bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
             }
-            
+
             if(j_imag_p > 0) // there is a imaginary part
             {
                 bouconlin[i].dImag = NC_String2Double(chterms[j_imag_p + 1]);
@@ -829,7 +927,7 @@ void NC_ReadBoundaryConditions
                 }
             }
             else bouconlin[i].dImag = 0.0;
-            
+
             if(j_nega > 0) // there is a negative side
             {
                 bouconlin[i].bNega = true;
@@ -839,7 +937,7 @@ void NC_ReadBoundaryConditions
                     bouconlin[i].bRef = true;
                     bouconlin[i].nNegRealRef = NC_String2Integer(chterms[j_nega + 2]);
                 }
-                
+
                 if(j_imag_n > 0) // there is a imaginary part
                 {
                     bouconlin[i].dNegImag = NC_String2Double(chterms[j_imag_n + 1]);
@@ -854,9 +952,9 @@ void NC_ReadBoundaryConditions
             else bouconlin[i].bNega = false;
         } // ELSE
     } // loop I
-    
+
     if(nbcline == -1) NC_Error_Exit_0(NCout, "Key word RETU expected!");
-}
+}*/
 
 // read the incident waves
 void NC_ReadSoundSources
@@ -884,7 +982,7 @@ void NC_ReadSoundSources
 			if(nterms != 8)
 				NC_Error_Exit_2(NCout,
 				"Number of terms of an input line for plane wave must be 8!",
-				"Number of terms = ", nterms, 
+				"Number of terms = ", nterms,
 				"Number of the input line under the key word PLANE WAVE = ", i+1);
 
 			numinw[i] = NC_String2Integer(chterms[0]);
@@ -913,7 +1011,7 @@ void NC_ReadSoundSources
 			if(nterms != 8)
 				NC_Error_Exit_2(NCout,
 				"Number of terms of an input line for pont source must be 8!",
-				"Number of terms = ", nterms, 
+				"Number of terms = ", nterms,
 				"Number of the input line under the key word POINT SOURCE = ", i+1);
 
 			numposo[i] = NC_String2Integer(chterms[0]);
@@ -940,12 +1038,12 @@ void NC_ReadFrequencyCurves
 {
     int i, j, nterms, mpcurv;
     bool bifrdcurv = false;
-    
+
     // create and initilize the array IBVCURV
     ibvcurv = new int*[numElements_];
     for(i=0; i<numElements_; i++) ibvcurv[i] = new int[6];
     for(i=0; i<numElements_; i++) for(j=0; j<6; j++) ibvcurv[i][j] = -1;
-    
+
     // read the key word
     while(!NC_GetLine(inputFile_, chinpline, chterms));
     if(!chterms[0].compare("CURVES"))
@@ -956,14 +1054,14 @@ void NC_ReadFrequencyCurves
     {
         NC_Error_Exit_0(NCout, "Key word CURVES or POST PROCESS expected!");
     }
-    
+
     // read number of curves and the maximun point number
     numCurvesFrequency_ = mpcurv = 0;
     if(bifrdcurv)
     {
         nterms = 0;
         while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
-        
+
         if(nterms != 2) NC_Error_Exit_1(NCout,
                                         "Number of terms of the input line direct under the key word CURVE must be 2!",
                                         "Number of terms = ", nterms);
@@ -972,7 +1070,7 @@ void NC_ReadFrequencyCurves
     }
     if(numCurvesFrequency_ < 0) numCurvesFrequency_ = 0;
     if(mpcurv < 0) mpcurv = 0;
-    
+
     // create the arrays to store the frequency curves
     nucurv = new int[numCurvesFrequency_];
     npcurv = new int[numCurvesFrequency_];
@@ -980,7 +1078,7 @@ void NC_ReadFrequencyCurves
     for(i=0; i<numCurvesFrequency_; i++) frqcurv[i] = new double[mpcurv];
     faccurv = new double*[numCurvesFrequency_];
     for(i=0; i<numCurvesFrequency_; i++) faccurv[i] = new double[mpcurv];
-    
+
     // read the curves
     if(bifrdcurv)
     {
@@ -988,13 +1086,13 @@ void NC_ReadFrequencyCurves
         {
             nterms = 0;
             while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
-            
+
             if(nterms != 2) NC_Error_Exit_2(NCout,
                                             "Number of terms of the firs input line for a curve must be 2!",
                                             "Number of terms = ", nterms, "number of the curve = ", i);
             nucurv[i] = NC_String2Integer(chterms[0]);
             npcurv[i] = NC_String2Integer(chterms[1]);
-            
+
             for(j=0; j<npcurv[i]; j++)
             {
                 while(!NC_GetLine(inputFile_, chinpline, chterms));
@@ -1003,14 +1101,14 @@ void NC_ReadFrequencyCurves
             }
         }
     }
-    
+
     // read the key word POST PROCESS
     if(bifrdcurv)
     {
         while(!NC_GetLine(inputFile_, chinpline, chterms));
         if(chterms[0].compare("POST")) NC_Error_Exit_0(NCout, "Key word POST PROCESS expected!");
     }
-    
+
     // read the remainder input lines up to the key word END
     nterms = 0;
     while(nterms == 0 || nterms > 1 || (nterms == 1 && chterms[0].compare("END")))
@@ -1038,8 +1136,8 @@ void NC_StoreBoundaryConditions
     Vector<int> ifimpecurve(numCurvesFrequency_);
     if(numCurvesFrequency_ > 0) for(i=0; i<numCurvesFrequency_; i++) ifimpecurve[i] = 0;
     int *ElGlobToLoca;
-    
-    
+
+
     // compute the vector indicating for each global element number the corresponding local number
     for(i=0; i<numElements_; i++) if(extNumbersOfElements[i] > maxnuel) maxnuel = extNumbersOfElements[i];
     if(maxnuel > 10000000)
@@ -1052,11 +1150,11 @@ void NC_StoreBoundaryConditions
     maxnuel++;
     ElGlobToLoca = new int[maxnuel];
     for(i=0; i<maxnuel; i++) ElGlobToLoca[i] = -1;
-    
+
     for(i=0; i<numElements_; i++)
     {
         if(listElementProperty[i] == 2) continue;
-        
+
         i1 = extNumbersOfElements[i];
         for(j=0; j<numElements_; j++)
         {
@@ -1068,7 +1166,7 @@ void NC_StoreBoundaryConditions
             }
         }
     }
-    
+
     // initialize the arrays
     for(i=0; i<numElements_; i++)
     {
@@ -1077,13 +1175,13 @@ void NC_StoreBoundaryConditions
         zbvao1[i].set(0.0, 0.0);
         zbvao2[i].set(0.0, 0.0);
     }
-    
+
     // loop over the input lines
     for(i=0; i<nbcline; i++)
     {
         keywd = bouconlin[i].sKeyword;
         ifimpe = false;
-        
+
         if(keywd == "VELO")
         {
             nbtyp = 0;
@@ -1119,7 +1217,7 @@ void NC_StoreBoundaryConditions
             NC_Error_Exit_1(NCout, "False key word in a input line for boundary conditions!",
                             "Input line number = ", i + 1);
         }
-        
+
         // shorthands of the structure entries
         ifref = bouconlin[i].bRef;
         ifnega = bouconlin[i].bNega;
@@ -1152,7 +1250,7 @@ void NC_StoreBoundaryConditions
                 nimgrefn = bouconlin[i].nNegImagRef;
             }
         }
-        
+
         // loop over the elements
         for(j=bouconlin[i].nLow; j<=bouconlin[i].nHigh; j++)
         {
@@ -1216,7 +1314,7 @@ void NC_StoreBoundaryConditions
                     break;
             }
         } // end of loop J
-        
+
         // update the array IFIMPECURVE
         if(ifimpe  && ifref)
         {
@@ -1229,7 +1327,7 @@ void NC_StoreBoundaryConditions
             }
         }
     } // end of loop I
-    
+
     // convert the factors for impedance into that for admittance
     for(i=0; i<numCurvesFrequency_; i++)
     {
@@ -1248,7 +1346,7 @@ void NC_StoreBoundaryConditions
             }
         }
     }
-    
+
     delete [] ElGlobToLoca;
 }
 
@@ -1262,18 +1360,18 @@ void NC_WriteParameters
     int i, j, j1, k, k1, numFrequencies_ori = numFrequencies_;
     double freq_max, dmesh_ave= 0.0, dmesh_eqi = 0.0, dmesh_max = 0, dmesh_min = 1.0e20,
     dist, dis_ref;
-    
+
     // compute the maximum, minimum and average distance between two neighbouring nodes
     k1 = 0;
     for(i=0; i<numElements_; i++)
     {
         j1 = listNumberNodesPerElement[i];
-        
+
         if(j1 != NETYP3 && j1 != NETYP4) NC_Error_Exit_1(NCout, "An element must have 3 or 4 nodes!",
                                                          "Number of the false element = ", extNumbersOfElements[i]);
-        
+
         if(listElementProperty[i] == 2) continue;
-        
+
         if(j1 > NETYP4) j1 /= 2;
         if(areael[i] < 0.0) NC_Error_Exit_2(NCout, "Element with negative area is found!",
                                             "external elemen number = ", extNumbersOfElements[i], "internal element number = ", i);
@@ -1299,24 +1397,24 @@ void NC_WriteParameters
     }
     dmesh_ave /= (double)k1;
     dmesh_eqi /= (double)k1;
-    
+
     delta_ = dmesh_min/100.0;
-    
+
     // check the frequncies: the frequecies higher than the highst allowable frequency are ignored
-    
+
     double ele_leng = dmesh_eqi, elnumperwve;
-    
+
     elnumperwve = 6;
-    
+
     freq_max = speedOfSound_/(elnumperwve*ele_leng);
-    
+
     for(i=0; i<numFrequencies_; i++)
     {
         if(Freqs[i] > freq_max) break;
     }
-    
+
     //if(i < numFrequencies_) numFrequencies_ = i; Changed by Harald Ziegelwanger to calculate all frequencies
-    
+
     //if(numFrequencies_ori > numFrequencies_)
     if(numFrequencies_ori > i)
     {
@@ -1325,23 +1423,23 @@ void NC_WriteParameters
                            "Number of ignored frequencies = ", numFrequencies_ori - numFrequencies_,
                            "The highst allowable frequency = ", freq_max);
     }
-    
+
     // output the results
     NCout << versionNumber_ << endl;
     NCout << jobTitle_ << endl;
-    
+
     NCout << endl;
     NCout << "Number of frequency steps ................... = " << numFrequencies_ << endl;
-    
+
     NCout << endl;
     NCout << "First step .................................. = " << firstFrequencyStep_ << endl;
     NCout << "Number of steps ............................. = " << numFrequencies_ << endl;
     NCout << "Step increment .............................. = " << frequencyStepIncrement_ << endl;
     NCout << "Highst allowable frequency .................. = " << freq_max << endl;
-    
+
     // write the basic BEM parameters
     NCout << "\n\n\n>> B A S I C   P A R A M E T E R S   F O R   B E M <<\n" << endl;
-    
+
     NCout << "Number of element groups .................... = " << numElementGroups_ << endl;
     NCout << "Total number of elements .................... = " << numElements_ << endl;
     NCout << "Number of boundary elements ................. = " << numElementsOfBoundaryMesh_ << endl;
@@ -1349,38 +1447,38 @@ void NC_WriteParameters
     NCout << "Maximum edge length of boundary elements .... = " << dmesh_max << endl;
     NCout << "Average edge length of boundary elements .... = " << dmesh_ave << endl;
     NCout << "Minimum edge length of boundary elements .... = " << dmesh_min << endl;
-    
+
     NCout << endl;
     NCout << "Total number of nodes ....................... = " << numNodes_ << endl;
     NCout << "Number of nodes of the boundary elements .... = " << numNodesOfBoundaryMesh_ << endl;
     NCout << "Number of nodes of the evaluation elements .. = " << numNodesOfEvaluationMesh_ << endl;
-    
+
     NCout << endl;
     NCout << "Number of symmetric planes .................. = " << numSymmetricPlanes_ << endl;
-    
+
     NCout << endl;
     NCout << "Number of incident plane waves .............. = " << numIncidentPlaneWaves_ << endl;
     NCout << "Number of incident spharic waves ............ = " << numPointSources_ << endl;
-    
+
     NCout << endl;
     NCout << "Sound speed ................................. = " << speedOfSound_ << endl;
     NCout << "Density of the medium ....................... = " << densityOfMedium_ <<
     endl;
-    
+
     NCout << endl;
     NCout << "Diameter of the BE-mesh ..................... = " << diameterBE_ << endl;
-    
+
     if(methodBEM_ > 0) {
         NCout << endl;
         NCout << "Minimum number of terms in the FMM expansion. = " << minExpansionTermsFMM_
         << endl;
     }
-    
+
     NCout << endl;
-    
+
     if(isInternalProblem_ == 0) NCout << "Exterior domain problem" << endl;
     if(isInternalProblem_ == 1) NCout << "Interior domain problem" << endl;
-    
+
     NCout << endl;
     if(harmonicTimeFactor_ == 1.0)
     {
@@ -1390,9 +1488,9 @@ void NC_WriteParameters
     {
         NCout << "Harmonic time factor = EXP(i*omega*t)" << endl;
     }
-    
+
     NCout << endl;
-    
+
     switch(methodSolver_)
     {
         case 0:
@@ -1422,13 +1520,13 @@ void NC_WriteParameters
                 NC_Error_Exit_0(NCout, "methodPreconditioner_ must be equal to 0, 1 or 2!");
         }
     }
-    
+
     // write the frequency informations
     double ell = sqrt(averageElementArea_);
-    
+
     NCout << endl;
     NCout << " No.   Freq.   Lambda/L_BE_Mesh  Lambda/L_Element" << endl;
-    
+
     for(i=0; i<numFrequencies_; i++)
     {
         double wavl = speedOfSound_/Freqs[i];
@@ -1451,7 +1549,7 @@ int NC_GetLine
 
 	if(fgets(chinpline, SIZE, inputFile_)==NULL) cout << "\nError parsing the input file";
 	string inpline(chinpline);
-	
+
 	nn=0,ss=0,ii=0;
 	len = (int)inpline.length()-1;
 	while (nn < len)
@@ -1564,7 +1662,7 @@ void NC_ComputeFrequencies
 		}
 		else if(j1 < npoicurv)
 		{
-			Freqs[i] = p_dcurvfrq[j1 - 1] + 
+			Freqs[i] = p_dcurvfrq[j1 - 1] +
 				(t - p_dcurvtime[j1 - 1])*(p_dcurvfrq[j1] - p_dcurvfrq[j1 - 1])/
 				(p_dcurvtime[j1] - p_dcurvtime[j1 - 1]);
 		}
