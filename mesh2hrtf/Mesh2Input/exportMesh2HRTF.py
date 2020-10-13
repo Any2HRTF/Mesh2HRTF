@@ -144,6 +144,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             "Multiple grids can be separated by semicolons (;)"),
         default='ARI',
         )
+    # material seach paths ----------------------------------------------------
+    materialSearchPaths: StringProperty(
+        name="Path(s)",
+        description=("Absolute path(s) to folders that contain material data. "
+            "Multiple paths can be separated by semicolons (;). The "
+            "Mesh2HRTF path is added by default to the end of the list"),
+        default='None',
+        )
     # Frequency selection -----------------------------------------------------
     minFrequency: FloatProperty(
         name="Min. frequency",
@@ -250,6 +258,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         layout.label(text="Evaluation Grids:")
         row = layout.row()
         row.prop(self, "evaluationGrids")
+        # material search paths
+        layout.label(text="Materials:")
+        row = layout.row()
+        row.prop(self, "materialSearchPaths")
         # frequency distribution
         layout.label(text="Frequency distribution:")
         row = layout.row()
@@ -283,6 +295,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              pictures=True,
              ear='Both ears',
              evaluationGrids='ARI',
+             materialSearchPaths='None',
              method='4',
              reference=False,
              computeHRIRs=False,
@@ -401,6 +414,24 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                             os.path.join(savepath, "Nodes.txt"))
             shutil.copyfile(os.path.join(evalGridPaths[n], "Elements.txt"),
                             os.path.join(savepath, "Elements.txt"))
+
+# Read material data ----------------------------------------------------------
+
+        # fake names of materials for testing
+        materials = ['Skin', 'Left ear', 'Right ear', 'SimpleAdmittance']
+
+        # add the default search path
+        defaultPath = os.path.join(programPath, 'Mesh2Input', 'Materials')
+        materialSearchPaths += f";  {defaultPath}"
+
+        # get full path of material files
+        materialNames, materialPaths = _get_material_paths(
+            materials, materialSearchPaths)
+
+        # read the material data
+        materialData = {}
+        for materialName, materialPath in zip(materialNames, materialPaths):
+            materialData[materialName] = _read_material_data(materialPath)
 
 
 # Calculate frequency information ---------------------------------------------
@@ -596,6 +627,96 @@ def _check_evaluation_grid_exists(evaluationGrids, evalGridPaths):
                 f"Evalution grid folder {evalGridPaths[n]} does not exist "
                 "or one of the files 'Nodes.txt' and 'Elements.txt' is "
                 "missing.")
+
+
+def _get_material_paths(materials, materialSearchPaths):
+    """Check if material files exists and return full paths as a list."""
+
+    # split search paths and remove leading/trailing white spaces
+    paths = materialSearchPaths.split(';')
+    paths = [path.strip() for path in paths]
+
+    # remove default value if user path is not passed
+    if paths[0] == "None":
+        paths.pop(0)
+
+    # check if paths exist
+    for path in paths:
+        if not os.path.isdir(path):
+            raise ValueError(f"Material search path '{path}' does not exist.")
+
+    # search material in path
+    materialPaths = []
+    materialNames = []
+    for n, material in enumerate(materials):
+        materialFound = False
+        for path in paths:
+            if os.path.isfile(os.path.join(path, f"{material}.csv")):
+                materialFound = True
+
+        # save full path of material
+        if materialFound:
+            materialPaths.append(os.path.join(path, f"{material}.csv"))
+            materialNames.append(material)
+        # throw error if the material is not found
+        if not materialFound \
+           and material not in ['Skin', 'Left ear', 'Right ear']:
+            raise ValueError(f"Material file '{material}.csv' not found.")
+
+    return materialNames, materialPaths
+
+
+def _read_material_data(materialPath):
+
+    # initilize data
+    boundary = None
+    freqs = []
+    real = []
+    imag = []
+
+    # read the csv material file
+    with open(materialPath, 'r') as m:
+        lines = m.readlines()
+
+    # parse the file
+    for line in lines:
+        line = line.strip('\n')
+        # skip empty lines and comments
+        if not len(line):
+            continue
+        if line[0] == '#':
+            continue
+
+        # detect boundary keyword
+        if line in ['ADMI', 'IMPE', 'VELO', 'PRES']:
+            boundary = line
+        # read curve value
+        else:
+            line = line.split(',')
+            if not len(line) == 3:
+                raise ValueError((f'Expected three values in {materialPath} '
+                                  f'definition but found {len(line)}'))
+            freqs.append(line[0].strip())
+            real.append(line[1].strip())
+            imag.append(line[2].strip())
+
+    # check if boundary keyword was found
+    if 'boundary' is None:
+        raise ValueError(("No boundary definition found in {materialPath}. "
+                         "Must be 'ADMI', 'IMPE', 'VELO', or 'PRES'"))
+    # check if frequency vector is valud
+    for i in range(len(freqs)-1):
+        if freqs[i+1] <= freqs[i]:
+            raise ValueError(
+                f'Frequencies in {materialPath} do not increase monotonously')
+
+    # create output
+    material = {'boundary': boundary,
+                'freqs': freqs,
+                'real': real,
+                'imag': imag}
+
+    return material
 
 
 def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
