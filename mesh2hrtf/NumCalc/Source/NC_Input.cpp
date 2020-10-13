@@ -817,32 +817,24 @@ void NC_ReadBoundaryConditions
 			}
 
 			// read data for real part
+			bouconlin[i].dReal = NC_String2Double(chterms[5]);
 			if (chterms[6] == "-1"){
 				// do not use frequency curve
 				bouconlin[i].bRef = false;
-            	bouconlin[i].dReal = NC_String2Double(chterms[5]);
 			} else {
 				// use frequency curve
 				bouconlin[i].bRef = true;
 				bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
-				// the final value is later obtained by
-				// bouconlin[i].dReal * valueOfFrequencyCurve
-				// thus:
-				bouconlin[i].dReal = 1.0;
 			}
 			// read data for negative part
+			bouconlin[i].dImag = NC_String2Double(chterms[7]);
 			if (chterms[8] == "-1"){
 				// do not use frequency curve
 				bouconlin[i].bRef = false;
-            	bouconlin[i].dImag = NC_String2Double(chterms[7]);
 			} else {
 				// use frequency curve
 				bouconlin[i].bRef = true;
                 bouconlin[i].nImagRef = NC_String2Integer(chterms[8]);
-				// the final value is later obtained by
-				// bouconlin[i].dReal * valueOfFrequencyCurve
-				// thus:
-				bouconlin[i].dImag = 1.0;
 			}
 			// flag for defining infinitly thin elements that is not contained
 			// in Mesh2HRTF
