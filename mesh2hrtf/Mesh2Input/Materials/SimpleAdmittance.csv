@@ -1,5 +1,5 @@
-# simple material for testing where the admittance increases linearly
-# with frequency from admittance=0 at 0 Hz to admittance=100 at 20 kHz
+# simple material for testing: Admittance increases linearly with
+# frequency from admittance=0 at 0 Hz to admittance=100 at 20 kHz
 ADMI
 0, 0, 0
 20e3, 100, 0
