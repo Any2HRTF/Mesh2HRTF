@@ -799,13 +799,22 @@ void NC_ReadBoundaryConditions
 			// Indicees of elements to which the boundary condition applies
             if(nterms < 6) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
                                            "Number of the input line = ", i);
-            if(chterms[0].compare("ELEM")) NC_Error_Exit_0(NCout, "Key word ELEM expected!");
+            if(chterms[0].compare("ELEM"))
             bouconlin[i].nLow = NC_String2Integer(chterms[1]);
             if(chterms[2].compare("TO")) NC_Error_Exit_0(NCout, "Key word TO expected!");
             bouconlin[i].nHigh = NC_String2Integer(chterms[3]);
 
 			// Type of boundary condition
             bouconlin[i].sKeyword = chterms[4];
+
+			// check if a curve is defined for both parts
+			if ( (chterms[6] == "-1" && chterms[8] != "-1") ||
+			     (chterms[6] != "-1" && chterms[8] == "-1")){
+				NC_Error_Exit_0(NCout,
+					"ERROR: Curves have to be specified for all parts of a "
+					"Boundary or Source. I.e., ALL curve numbers in one line "
+					"must be -1 or ALL curve numbers must not be -1");
+			}
 
 			// read data for real part
 			if (chterms[6] == "-1"){
@@ -815,7 +824,11 @@ void NC_ReadBoundaryConditions
 			} else {
 				// use frequency curve
 				bouconlin[i].bRef = true;
-                bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
+				bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
+				// the final value is later obtained by
+				// bouconlin[i].dReal * valueOfFrequencyCurve
+				// thus:
+				bouconlin[i].dReal = 1.0;
 			}
 			// read data for negative part
 			if (chterms[8] == "-1"){
@@ -826,6 +839,10 @@ void NC_ReadBoundaryConditions
 				// use frequency curve
 				bouconlin[i].bRef = true;
                 bouconlin[i].nImagRef = NC_String2Integer(chterms[8]);
+				// the final value is later obtained by
+				// bouconlin[i].dReal * valueOfFrequencyCurve
+				// thus:
+				bouconlin[i].dImag = 1.0;
 			}
 			// flag for defining infinitly thin elements that is not contained
 			// in Mesh2HRTF
