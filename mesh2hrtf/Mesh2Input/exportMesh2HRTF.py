@@ -1036,6 +1036,12 @@ def _write_nc_inp(filepath1, version, title, ear,
                   speedOfSound, densityOfMedium, frequencies, cpusAndCores,
                   evaluationGrids, method, sourceType,
                   sourceXPosition, sourceYPosition, sourceZPosition):
+    """Write NC.inp file that is read by NumCalc to start the simulation.
+
+    The file format is documented at:
+    https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp/
+    """
+
     for core in range(1, 9):
         for cpu in range(1, 11):
             if not cpusAndCores[cpu-1][core-1] == 0:
@@ -1073,16 +1079,15 @@ def _write_nc_inp(filepath1, version, title, ear,
 
                 # control parameter II ----------------------------------------
                 fw("## Controlparameter II\n")
-                fw("1 %d %fe+00 0.00e+00 1 0 0\n" % (
-                    len(frequencies[cpu-1][core-1]),
-                    1 / (len(frequencies[cpu-1][core-1]))))
+                fw("1 %d 0.000001 0.00e+00 1 0 0\n" % (
+                    len(frequencies[cpu-1][core-1])))
                 fw("##\n")
                 fw("## Load Frequency Curve \n")
                 fw("0 %d\n" % (len(frequencies[cpu-1][core-1])+1))
-                fw("0.000000e+00 0.000000e+00 0.0\n")
+                fw("0.000000 0.000000e+00 0.0\n")
                 for ii in range(0, len(frequencies[cpu-1][core-1])):
-                    fw("%fe+00 %fe+04 0.0\n" % (
-                        1 / (len(frequencies[cpu-1][core-1]))*(ii+1),
+                    fw("%f %fe+04 0.0\n" % (
+                        0.000001*(ii+1),
                         frequencies[cpu-1][core-1][ii] / 10000))
                 fw("##\n")
 
