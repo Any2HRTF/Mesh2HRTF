@@ -29,6 +29,7 @@
 
 import os
 import bpy
+import bmesh
 import datetime
 import math
 import shutil
@@ -309,6 +310,11 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # General handling and constants ----------------------------------------------
+        # purge unused data
+        ret = bpy.ops.outliner.orphans_purge()
+        while ret != {'CANCELLED'}:
+            ret = bpy.ops.outliner.orphans_purge()
+
         # Switch to object mode to avoid export errors
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
@@ -417,21 +423,18 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 # Read material data ----------------------------------------------------------
 
-        # fake names of materials for testing
-        materials = ['Skin', 'Left ear', 'Right ear', 'SimpleAdmittance']
-
-        # add the default search path
+        # add the default mesh2hrtf path to the material search path
         defaultPath = os.path.join(programPath, 'Mesh2Input', 'Materials')
         materialSearchPaths += f";  {defaultPath}"
 
-        # get full path of material files
-        materialNames, materialPaths = _get_material_paths(
-            materials, materialSearchPaths)
+        # get used materials as dictionary
+        materials = _get_materials(bpy.data.objects['Reference'])
 
-        # read the material data
-        materialData = {}
-        for materialName, materialPath in zip(materialNames, materialPaths):
-            materialData[materialName] = _read_material_data(materialPath)
+        # add full path of material files to the dictionary
+        materials = _get_material_files(materials, materialSearchPaths)
+
+        # read the material data and add it to the dictionary
+        materials = _read_material_data(materials)
 
 
 # Calculate frequency information ---------------------------------------------
@@ -476,7 +479,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # Write NumCalc input files for all CPUs and Cores (NC.inp) -------------------
         _write_nc_inp(filepath1, version, title, ear, speedOfSound,
                       densityOfMedium, frequencies, cpusAndCores,
-                      evaluationGrids, method, sourceType,
+                      evaluationGrids, materials, method, sourceType,
                       sourceXPosition, sourceYPosition, sourceZPosition)
 
 # Finish ----------------------------------------------------------------------
@@ -629,7 +632,45 @@ def _check_evaluation_grid_exists(evaluationGrids, evalGridPaths):
                 "missing.")
 
 
-def _get_material_paths(materials, materialSearchPaths):
+def _get_materials(obj):
+
+    # enforce object mode and select the object
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+    obj.select_set(True)
+
+    # sort mesh if required
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.sort_elements(type='MATERIAL', elements={'FACE'})
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
+    # loop faces and log assigned materials
+    materials = dict()
+
+    for face in obj.data.polygons:
+        # name of material of current face
+        material = obj.material_slots[face.material_index].material.name
+
+        # add material if it does not exist
+        if material not in materials.keys():
+            materials[material] = dict()
+            materials[material]["is_used"] = True
+            materials[material]["index_start"] = face.index
+            materials[material]["index_end"] = face.index
+        # update index_end if it does exist
+        else:
+            materials[material]["index_end"] = face.index
+
+    # add default materials if missing
+    for material in ["Skin", "Left ear", "Right ear"]:
+        if material not in materials.keys():
+            materials[material] = dict()
+            materials[material]["is_used"] = False
+
+    return materials
+
+
+def _get_material_files(materials, materialSearchPaths):
     """Check if material files exists and return full paths as a list."""
 
     # split search paths and remove leading/trailing white spaces
@@ -646,77 +687,86 @@ def _get_material_paths(materials, materialSearchPaths):
             raise ValueError(f"Material search path '{path}' does not exist.")
 
     # search material in path
-    materialPaths = []
-    materialNames = []
-    for n, material in enumerate(materials):
+    for material in materials:
         materialFound = False
         for path in paths:
             if os.path.isfile(os.path.join(path, f"{material}.csv")):
                 materialFound = True
+                break
 
         # save full path of material
         if materialFound:
-            materialPaths.append(os.path.join(path, f"{material}.csv"))
-            materialNames.append(material)
+            materials[material]["path"] = os.path.join(path, f"{material}.csv")
+        else:
+            materials[material]["path"] = None
         # throw error if the material is not found
         if not materialFound \
            and material not in ['Skin', 'Left ear', 'Right ear']:
             raise ValueError(f"Material file '{material}.csv' not found.")
 
-    return materialNames, materialPaths
+    return materials
 
 
-def _read_material_data(materialPath):
+def _read_material_data(materials):
 
-    # initilize data
-    boundary = None
-    freqs = []
-    real = []
-    imag = []
-
-    # read the csv material file
-    with open(materialPath, 'r') as m:
-        lines = m.readlines()
-
-    # parse the file
-    for line in lines:
-        line = line.strip('\n')
-        # skip empty lines and comments
-        if not len(line):
-            continue
-        if line[0] == '#':
+    for material in materials:
+        # current material file
+        file = materials[material]["path"]
+        # check if the file exists
+        if file is None:
             continue
 
-        # detect boundary keyword
-        if line in ['ADMI', 'IMPE', 'VELO', 'PRES']:
-            boundary = line
-        # read curve value
-        else:
-            line = line.split(',')
-            if not len(line) == 3:
-                raise ValueError((f'Expected three values in {materialPath} '
-                                  f'definition but found {len(line)}'))
-            freqs.append(line[0].strip())
-            real.append(line[1].strip())
-            imag.append(line[2].strip())
+        # initilize data
+        boundary = None
+        freqs = []
+        real = []
+        imag = []
 
-    # check if boundary keyword was found
-    if 'boundary' is None:
-        raise ValueError(("No boundary definition found in {materialPath}. "
-                         "Must be 'ADMI', 'IMPE', 'VELO', or 'PRES'"))
-    # check if frequency vector is valud
-    for i in range(len(freqs)-1):
-        if freqs[i+1] <= freqs[i]:
+        # read the csv material file
+        with open(file, 'r') as m:
+            lines = m.readlines()
+
+        # parse the file
+        for line in lines:
+            line = line.strip('\n')
+            # skip empty lines and comments
+            if not len(line):
+                continue
+            if line[0] == '#':
+                continue
+
+            # detect boundary keyword
+            if line in ['ADMI', 'IMPE', 'VELO', 'PRES']:
+                boundary = line
+            # read curve value
+            else:
+                line = line.split(',')
+                if not len(line) == 3:
+                    raise ValueError(
+                        (f'Expected three values in {file} '
+                         f'definition but found {len(line)}'))
+                freqs.append(line[0].strip())
+                real.append(line[1].strip())
+                imag.append(line[2].strip())
+
+        # check if boundary keyword was found
+        if boundary is None:
             raise ValueError(
-                f'Frequencies in {materialPath} do not increase monotonously')
+                (f"No boundary definition found in {file}. "
+                 "Must be 'ADMI', 'IMPE', 'VELO', or 'PRES'"))
+        # check if frequency vector is valud
+        for i in range(len(freqs)-1):
+            if freqs[i+1] <= freqs[i]:
+                raise ValueError((f'Frequencies in {file} '
+                                  'do not increase monotonously'))
 
-    # create output
-    material = {'boundary': boundary,
-                'freqs': freqs,
-                'real': real,
-                'imag': imag}
+        # create output
+        materials[material]['boundary'] = boundary
+        materials[material]['freqs'] = freqs
+        materials[material]['real'] = real
+        materials[material]['imag'] = imag
 
-    return material
+    return materials
 
 
 def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
@@ -1155,7 +1205,7 @@ def _render_pictures(filepath1, unitFactor):
 
 def _write_nc_inp(filepath1, version, title, ear,
                   speedOfSound, densityOfMedium, frequencies, cpusAndCores,
-                  evaluationGrids, method, sourceType,
+                  evaluationGrids, materials, method, sourceType,
                   sourceXPosition, sourceYPosition, sourceZPosition):
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
@@ -1276,22 +1326,37 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
                 fw("##\n")
 
-                # source information: reciprocal ------------------------------
+                # boundary information ----------------------------------------
+                fw("BOUNDARY\n")
+                # write velocity condition for the ears if using vibrating
+                # elements as the sound source
                 if sourceType==0:
                     if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
                         tmpEar='Left ear'
                     else:
                         tmpEar='Right ear'
+                    fw(f"# {tmpEar} velocity source\n")
+                    fw("ELEM %i TO %i VELO 0.1 -1 0.0 -1\n" % (
+                        materials[tmpEar]["index_start"],
+                        materials[tmpEar]["index_end"]))
+                # remaining conditions defined by frequency curves
+                curves = 0
+                steps = 0
+                for m in materials:
+                    if materials[m]["path"] is None:
+                        continue
+                    # write information
+                    fw(f"# Material: {m}\n")
+                    fw("ELEM %i TO %i %s 1.0 %i 1.0 %i\n" % (
+                        materials[m]["index_start"],
+                        materials[m]["index_end"],
+                        materials[m]["boundary"],
+                        curves + 1, curves + 2))
+                    # update metadata
+                    steps = max(steps, len(materials[m]["freqs"]))
+                    curves += 2
 
-                    fw("BOUNDARY\n")
-                    for ii in range(len(obj_data.polygons[:])):
-                        if obj.material_slots[obj_data.polygons[ii].material_index].name == obj.material_slots[tmpEar].name:
-                            fw("ELEM %i TO %i VELO 0.1 IMAG 0.0\n" % (ii, ii))
-                    fw("RETU\n")
-                else:
-                    fw("BOUNDARY\n")
-                    fw("# ELEM 0 TO 0 VELO 0.1 IMAG 0.0\n")
-                    fw("RETU\n")
+                fw("RETU\n")
                 fw("##\n")
 
                 # source information: plane wave ------------------------------
@@ -1313,8 +1378,29 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("##\n")
 
                 # curves ------------------------------------------------------
-                fw("# CURVES\n")
-                fw("# Frequency Factor 0.0\n")
+                if curves > 0:
+                    fw("CURVES\n")
+                    # number of curves and maximum number of steps
+                    fw(f"{curves} {steps}\n")
+                    curves = 0
+                    for m in materials:
+                        if materials[m]["path"] is None:
+                            continue
+                        # write curve for real values
+                        curves += 1
+                        fw(f"{curves} {len(materials[m]['freqs'])}\n")
+                        for f, v in zip(materials[m]['freqs'],
+                                        materials[m]['real']):
+                            fw(f"{f} {v} 0.0\n")
+                        # write curve for imaginary values
+                        curves += 1
+                        fw(f"{curves} {len(materials[m]['freqs'])}\n")
+                        for f, v in zip(materials[m]['freqs'],
+                                        materials[m]['imag']):
+                            fw(f"{f} {v} 0.0\n")
+
+                else:
+                    fw("# CURVES\n")
                 fw("##\n")
 
                 # post process ------------------------------------------------
