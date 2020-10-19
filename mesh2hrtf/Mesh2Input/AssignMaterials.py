@@ -147,13 +147,15 @@ def get_ear_indices(bm, obj, tolerance):
             left_indices.append(face.index)
             left_xy_distance.append(xy_distance)
             left_y.append(abs(y))
-            if abs(y) < min_y[0]: min_y[0] = abs(y)
+            if abs(y) < min_y[0]:
+                min_y[0] = abs(y)
         # potential right ear
         elif y < 0 and abs(xyz[0]) < tolerance and abs(xyz[2]) < tolerance:
             right_indices.append(face.index)
             right_xy_distance.append(xy_distance)
             right_y.append(abs(y))
-            if abs(y) < min_y[1]: min_y[1] = abs(y)
+            if abs(y) < min_y[1]:
+                min_y[1] = abs(y)
 
     # find left ear element and try to exclude faces at the tragus
     left_index = None
@@ -205,8 +207,8 @@ def assign_material(obj, tolerance):
     bm.to_mesh(obj.data)
     bm.free()
 
-    #renaming the object
-    obj.name="Reference"
+    # renaming the object
+    obj.name = "Reference"
 
 
 def register():
