@@ -9,17 +9,18 @@
 ***		Robert Pelzer, AC-TUB
 ***		Junaid Khan, FH Technikum Wien
 ***     Oliver Weissbarth, CG-TUB
-***     Slim Ghorbal, IETR/CentraleSupélec
+***     Slim Ghorbal, IETR/CentraleSupélec, Mimi
 *** Institutions
 ***		ARI: Austrian Research Institute, Austian Academy of Sciences, Vienna
 ***     AC-TUB: Audio Communication Group, Technical University of Berlin
 ***     CG-TUB: Computer Graphics Group, Technical University of Berlin
 ***     FH Technikum Wien: University of Applied Sciences, Technikum Wien
+***     Mimi: Mimi Hearing Technologies, Berlin, Germany
 *******************************************************************************
 
 *** DEVELOPMENT STATUS ***
 
-*** v0.5.0 alpha (Fabian Brinkmann)
+*** v0.5.0 alpha (Fabian Brinkmann, Wolfgang Kreuzer)
 - bumped all python sckripts to Blender >= 2.80.0
 - changed layout of the export GUI to be more clear and less prone to user input errors
 	- added handling of frequency dependent boundary conditions
@@ -35,7 +36,7 @@
 	- Data is named according to the evaluation girds, object meshes
 	- Data for multiple evaluation grids is now stored in separate files
 	- Frequncies in SOFA files now contain decimal values
-- Removed incomplete, buggy, and undcumented features
+- Removed incomplete, buggy, and undocumented features
 	- removed the handling frequency dependent meshes in exportMesh2HRTF.py. Skripting in Blender can do the job and is more flexible
 	- removed near field calculation. This generated a hard coded extremal sampling grid of spherical harmonics order 46 but was not documented
 	- a separate core was assigned to the simulation of low frequencies. This was not documented and buggy in certain cases
