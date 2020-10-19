@@ -799,7 +799,7 @@ void NC_ReadBoundaryConditions
 			// Indicees of elements to which the boundary condition applies
             if(nterms < 6) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
                                            "Number of the input line = ", i);
-            if(chterms[0].compare("ELEM"))
+            if(chterms[0].compare("ELEM")) NC_Error_Exit_0(NCout, "Key word ELEM expected!");
             bouconlin[i].nLow = NC_String2Integer(chterms[1]);
             if(chterms[2].compare("TO")) NC_Error_Exit_0(NCout, "Key word TO expected!");
             bouconlin[i].nHigh = NC_String2Integer(chterms[3]);
