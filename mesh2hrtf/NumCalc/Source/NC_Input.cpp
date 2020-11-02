@@ -787,7 +787,6 @@ void NC_ReadBoundaryConditions
         }
         else
         {	// chterms contains:
-			// Current definition ---------------------------------------------
 			// 0: ELEM (Keyword)
 			// 1: Index of first element
 			// 2: TO (Keyword)
@@ -797,16 +796,97 @@ void NC_ReadBoundaryConditions
 			// 6: Curve id to defines the real part or -1 (no curve used)
 			// 7: imaginary value of boundary condition
 			// 8: Curve id to defines the imaginary part or -1 (no curve used)
-			// Legacy definition ----------------------------------------------
+			// Indicees of elements to which the boundary condition applies
+            if(nterms < 6) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
+                                           "Number of the input line = ", i);
+            if(chterms[0].compare("ELEM"))
+            bouconlin[i].nLow = NC_String2Integer(chterms[1]);
+            if(chterms[2].compare("TO")) NC_Error_Exit_0(NCout, "Key word TO expected!");
+            bouconlin[i].nHigh = NC_String2Integer(chterms[3]);
+
+			// Type of boundary condition
+            bouconlin[i].sKeyword = chterms[4];
+
+			// check if a curve is defined for both parts
+			if ( (chterms[6] == "-1" && chterms[8] != "-1") ||
+			     (chterms[6] != "-1" && chterms[8] == "-1")){
+				NC_Error_Exit_0(NCout,
+					"ERROR: Curves have to be specified for all parts of a "
+					"Boundary or Source. I.e., ALL curve numbers in one line "
+					"must be -1 or ALL curve numbers must not be -1");
+			}
+
+			// read data for real part
+			bouconlin[i].dReal = NC_String2Double(chterms[5]);
+			if (chterms[6] == "-1"){
+				// do not use frequency curve
+				bouconlin[i].bRef = false;
+			} else {
+				// use frequency curve
+				bouconlin[i].bRef = true;
+				bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
+			}
+			// read data for negative part
+			bouconlin[i].dImag = NC_String2Double(chterms[7]);
+			if (chterms[8] == "-1"){
+				// do not use frequency curve
+				bouconlin[i].bRef = false;
+			} else {
+				// use frequency curve
+				bouconlin[i].bRef = true;
+                bouconlin[i].nImagRef = NC_String2Integer(chterms[8]);
+			}
+			// flag for defining infinitly thin elements that is not contained
+			// in Mesh2HRTF
+			bouconlin[i].bNega = false;
+
+        } // ELSE
+    } // loop I
+
+    if(nbcline == -1) NC_Error_Exit_0(NCout, "Key word RETU expected!");
+}
+/* // dperecated version that did not read the data correct because it was
+// looking for keywords 'IMAG' and 'NEGA'
+void NC_ReadBoundaryConditions
+(
+	ofstream& NCout,
+	FILE* inputFile_,				// input file
+	char* chinpline,			// input line
+	string chterms[NTRM],		// entries in the input line
+	int& maxbcline,			//I: maximum number of input lines
+	int& nbcline,				//O: actual number of input lines
+	inputLineBoundaryCondition *bouconlin	//O: array to store the input lines
+)
+{
+    int i, j, nterms, j_imag_p, j_imag_n, j_nega;
+
+    // read the key word
+    while(!NC_GetLine(inputFile_, chinpline, chterms));
+    if(chterms[0].compare("BOUNDARY")) NC_Error_Exit_0(NCout, "Key word BOUNDARY expected!");
+
+    // read the input lines
+    nbcline = -1;
+    for(i=0; i<maxbcline; i++)
+    {
+        nterms = 0;
+        while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
+
+        if(!chterms[0].compare("RETU"))
+        {
+            nbcline = i;
+            break;
+        }
+        else
+        {	// chterms contains:
 			// 0: ELEM (Keyword)
 			// 1: Index of first element
 			// 2: TO (Keyword)
 			// 3: Index of last element
 			// 4: Boundary condition (ADMI, IMPE, PRES, VELO)
 			// 5: real value of boundary condition
-			// 6: IMAG (Keyword, optional)
-			// 7: imaginary value of boundary condition (optional)
-
+			// 6: Curve id to defines the real part or -1 (no curve used)
+			// 7: imaginary value of boundary condition
+			// 8: Curve id to defines the imaginary part or -1 (no curve used)
 			// Indicees of elements to which the boundary condition applies
             if(nterms < 6) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
                                            "Number of the input line = ", i);
@@ -818,112 +898,72 @@ void NC_ReadBoundaryConditions
 			// Type of boundary condition
             bouconlin[i].sKeyword = chterms[4];
 
-			// Parse according to current boundary definition
-			if(chterms[6] != "IMAG"){
-				// check if a curve is defined for both parts
-				if ( (chterms[6] == "-1" && chterms[8] != "-1") ||
-					(chterms[6] != "-1" && chterms[8] == "-1")){
-					NC_Error_Exit_0(NCout,
-						"ERROR: Curves have to be specified for all parts of a "
-						"Boundary or Source. I.e., ALL curve numbers in one line "
-						"must be -1 or ALL curve numbers must not be -1");
-				}
+            bouconlin[i].bRef = false;
+            bouconlin[i].dReal = NC_String2Double(chterms[5]);
 
-				// read data for real part
-				bouconlin[i].dReal = NC_String2Double(chterms[5]);
-				if (chterms[6] == "-1"){
-					// do not use frequency curve
-					bouconlin[i].bRef = false;
-				} else {
-					// use frequency curve
-					bouconlin[i].bRef = true;
-					bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
-				}
-				// read data for negative part
-				bouconlin[i].dImag = NC_String2Double(chterms[7]);
-				if (chterms[8] == "-1"){
-					// do not use frequency curve
-					bouconlin[i].bRef = false;
-				} else {
-					// use frequency curve
-					bouconlin[i].bRef = true;
-					bouconlin[i].nImagRef = NC_String2Integer(chterms[8]);
-				}
-				// flag for defining infinitly thin elements that is not
-				// contained in Mesh2HRTF
-				bouconlin[i].bNega = false;
+            j_imag_p = -1;  // flag to check if imaginary part is specified
+			j_nega = -1;    // flag to check if negative side is specified
+			j_imag_n = -1;  // flag to check if imaginary part of negative side
+			                // is specified
+            for(j=6; j<nterms; j++)
+            {
+                if(!chterms[j].compare("NEGA")) j_nega = j;
+            }
+            if(j_nega > 0)
+            {
+                for(j=6; j<j_nega; j++) if(!chterms[j].compare("IMAG")) j_imag_p = j;
+                for(j=j_nega+1; j<nterms; j++) if(!chterms[j].compare("IMAG")) j_imag_n = j;
+            }
+            else
+            {
+                for(j=6; j<nterms; j++) if(!chterms[j].compare("IMAG")) j_imag_p = j;
+            }
 
-			// Parse according to legacy boundary definition
-			} else {
-				bouconlin[i].bRef = false;
-				bouconlin[i].dReal = NC_String2Double(chterms[5]);
+			// Use a frequency curve for the real part
+            if(j_imag_p == 7 || j_nega == 7 || nterms == 7)
+            {
+                bouconlin[i].bRef = true;
+                bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
+            }
 
-				j_imag_p = -1;  // flag to check if imaginary part is specified
-				j_nega = -1;    // flag to check if negative side is specified
-				j_imag_n = -1;  // flag to check if imaginary part of negative side
-								// is specified
-				for(j=6; j<nterms; j++)
-				{
-					if(!chterms[j].compare("NEGA")) j_nega = j;
-				}
-				if(j_nega > 0)
-				{
-					for(j=6; j<j_nega; j++) if(!chterms[j].compare("IMAG")) j_imag_p = j;
-					for(j=j_nega+1; j<nterms; j++) if(!chterms[j].compare("IMAG")) j_imag_n = j;
-				}
-				else
-				{
-					for(j=6; j<nterms; j++) if(!chterms[j].compare("IMAG")) j_imag_p = j;
-				}
+            if(j_imag_p > 0) // there is a imaginary part
+            {
+                bouconlin[i].dImag = NC_String2Double(chterms[j_imag_p + 1]);
+                if(j_nega == j_imag_p + 3 || nterms == j_imag_p + 3)
+                {
+                    bouconlin[i].bRef = true;
+                    bouconlin[i].nImagRef = NC_String2Integer(chterms[j_imag_p + 2]);
+                }
+            }
+            else bouconlin[i].dImag = 0.0;
 
-				// Use a frequency curve for the real part
-				if(j_imag_p == 7 || j_nega == 7 || nterms == 7)
-				{
-					bouconlin[i].bRef = true;
-					bouconlin[i].nRealRef = NC_String2Integer(chterms[6]);
-				}
+            if(j_nega > 0) // there is a negative side
+            {
+                bouconlin[i].bNega = true;
+                bouconlin[i].dNegReal = NC_String2Double(chterms[j_nega + 1]);
+                if(j_imag_n == j_nega + 3 || nterms == j_nega + 3)
+                {
+                    bouconlin[i].bRef = true;
+                    bouconlin[i].nNegRealRef = NC_String2Integer(chterms[j_nega + 2]);
+                }
 
-				if(j_imag_p > 0) // there is a imaginary part
-				{
-					bouconlin[i].dImag = NC_String2Double(chterms[j_imag_p + 1]);
-					if(j_nega == j_imag_p + 3 || nterms == j_imag_p + 3)
-					{
-						bouconlin[i].bRef = true;
-						bouconlin[i].nImagRef = NC_String2Integer(chterms[j_imag_p + 2]);
-					}
-				}
-				else bouconlin[i].dImag = 0.0;
-
-				if(j_nega > 0) // there is a negative side
-				{
-					bouconlin[i].bNega = true;
-					bouconlin[i].dNegReal = NC_String2Double(chterms[j_nega + 1]);
-					if(j_imag_n == j_nega + 3 || nterms == j_nega + 3)
-					{
-						bouconlin[i].bRef = true;
-						bouconlin[i].nNegRealRef = NC_String2Integer(chterms[j_nega + 2]);
-					}
-
-					if(j_imag_n > 0) // there is a imaginary part
-					{
-						bouconlin[i].dNegImag = NC_String2Double(chterms[j_imag_n + 1]);
-						if(nterms == j_imag_n + 3)
-						{
-							bouconlin[i].bRef = true;
-							bouconlin[i].nNegImagRef =  NC_String2Integer(chterms[j_imag_n + 2]);
-						}
-					}
-					else bouconlin[i].dNegImag = 0.0;
-				}
-				else bouconlin[i].bNega = false;
-			}
-
+                if(j_imag_n > 0) // there is a imaginary part
+                {
+                    bouconlin[i].dNegImag = NC_String2Double(chterms[j_imag_n + 1]);
+                    if(nterms == j_imag_n + 3)
+                    {
+                        bouconlin[i].bRef = true;
+                        bouconlin[i].nNegImagRef =  NC_String2Integer(chterms[j_imag_n + 2]);
+                    }
+                }
+                else bouconlin[i].dNegImag = 0.0;
+            }
+            else bouconlin[i].bNega = false;
         } // ELSE
     } // loop I
 
     if(nbcline == -1) NC_Error_Exit_0(NCout, "Key word RETU expected!");
-}
-
+}*/
 
 // read the incident waves
 void NC_ReadSoundSources
@@ -1192,6 +1232,19 @@ void NC_StoreBoundaryConditions
         ifnega = bouconlin[i].bNega;
         reap = bouconlin[i].dReal;
         imgp = bouconlin[i].dImag;
+
+	if(ifimpe) {
+	  if(reap == 0 && imgp == 0) {
+	    ifimpe = false;
+	    nbtyp = 1;  // sound soft PRES condition
+	  }
+	}
+
+	if(ifref && ifimpe) {
+	  cerr << "Sorry Impedance boundary conditions in CURVES is not implemented yet. Please use ADMI conditions. They work with CURVES. Sorry for the inconvinience.\n";
+	  exit(-1);
+	}
+	
         if(ifimpe)
         {
             dwk = reap*reap + imgp*imgp;

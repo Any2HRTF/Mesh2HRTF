@@ -380,8 +380,20 @@ void NC_ContributionTvecFMM
             dw1 = (Scprod_dim3_(elnorv, uvshp[jgp]))*waveNumbers_;
             zH = zG*(dw1*wga);
             zG.mul_i(wga*harmonicTimeFactor_);
-            
-            zTele[jgp] += zH*zpote0 - zG*zbgao_0;
+
+	    /* kreiza
+	       here we have 2 problems:
+	       a) Chen forgot the PRES version
+	       b) BLeldat gives either the velocity potential or the particle velocity but not both
+	       and I don't like to change that, because it might be needed somewhere for the admittance
+	    */
+	    if(ibval[nelj] == 1) {// PRES  kreiza that may be a bit tricky
+	      zbgao_0 = zbvao0[nelj][0];
+	      zbgao_0.div_i(rpfact_);
+	      zTele[jgp] += zH*zbgao_0 - zG*zveloj[0];  
+	    }
+	    else
+	      zTele[jgp] += zH*zpote0 - zG*zbgao_0;
         } // end of loop JGP
     } // end of loop IGP
     
