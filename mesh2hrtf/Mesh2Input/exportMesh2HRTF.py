@@ -431,7 +431,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         bpy.data.scenes['Scene'].render.resolution_x = 1440
         bpy.data.scenes['Scene'].render.resolution_y = 1920
 
-        tmp = open("%s/VERSION" % programPath)
+        tmp = open("%s/../VERSION" % programPath)
         version = tmp.readline()
 
         objects = ([])
