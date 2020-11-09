@@ -756,7 +756,7 @@ def _read_material_data(materials):
                  "Must be 'ADMI', 'IMPE', 'VELO', or 'PRES'"))
         # check if frequency vector is valud
         for i in range(len(freqs)-1):
-            if freqs[i+1] <= freqs[i]:
+            if float(freqs[i+1]) <= float(freqs[i]):
                 raise ValueError((f'Frequencies in {file} '
                                   'do not increase monotonously'))
 
