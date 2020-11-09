@@ -335,6 +335,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             version = read_version.readline()
 
         # Export path and export directory handling
+        if not filepath.endswith(os.path.sep):
+            filepath += os.path.sep
         filepath1, _ = os.path.split(filepath)
 
         temp = os.path.join(filepath1, "ObjectMeshes")
