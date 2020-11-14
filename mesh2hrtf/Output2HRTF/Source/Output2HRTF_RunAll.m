@@ -161,3 +161,5 @@ end
 
 % return to start directory
 cd(current_dir)
+% get rid of global variables
+clear global
