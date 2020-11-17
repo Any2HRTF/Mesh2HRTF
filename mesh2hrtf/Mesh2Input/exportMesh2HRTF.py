@@ -157,7 +157,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     minFrequency: FloatProperty(
         name="Min. frequency",
         description=("Minimum frequency in Hz to be simulated. Can be 0 for "
-            "constructing single sided spectra. But the 0 will not be"
+            "constructing the frequency vector. But the 0 will not be "
             "simulated"),
         default=100,
         min=0,
@@ -170,42 +170,50 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         min=1,
         max=24000,
         )
-    frequencyStepSize: FloatProperty(
-        name="Step size",
-        description=("Simulate frequencies between the minimum and maximum "
-            "frequency with this step size in Hz. Either this or the 'Steps' "
-            "below must be zero."),
-        default=100,
-        min=0,
-        max=24000,
+    frequencyVectorType: EnumProperty(
+        name="Frequencies",
+        description=("Select how the frequencies are distributed between min. "
+                     "and max. frequency with the paramter 'Value' (below)."),
+        items=[('0', 'Step size',
+                    ("Simulate frequencies between the min. and max. "
+                     "with a fixed step size.")),
+               ('1', 'Num steps',
+                    "Simulate N frequencies the min. and max. frequency.")],
+        default='0',
         )
-    numFrequencySteps: IntProperty(
-        name="Steps",
-        description=("Simulate N frequencies between the minimum and maximum "
-            "frequency. Either this or the 'Step size' above must be zero."),
-        default=0,
+    frequencyVectorValue: FloatProperty(
+        name="Value",
+        description=("Value for distributing the frequencies according to the "
+                     "parameter 'Frequencies' (above)."),
+        default=100,
         min=0,
         max=24000,
         )
     # Job distribution --------------------------------------------------------
     cpuFirst: IntProperty(
         name="CPU (first)",
-        description="First 'CPU' used",
+        description=("The different frequencies can be simulated on separate "
+                     "CPUs and cores. A separate output folder will be created"
+                     " inside ProjectFolder/NumCalc for each CPU and core."),
         default=1,
         min=1,
         max=100,
         )
     cpuLast: IntProperty(
         name="CPU (last)",
-        description="Last 'CPU' used",
-        default=10,
+        description=("The different frequencies can be simulated on separate "
+                     "CPUs and cores. A separate output folder will be created"
+                     " inside ProjectFolder/NumCalc for each CPU and core."),
+        default=1,
         min=1,
         max=100,
         )
     numCoresPerCPU: IntProperty(
-        name="Num. of used cores",
-        description="Number of used cores per CPU",
-        default=8,
+        name="Cores per CPU",
+        description=("The different frequencies can be simulated on separate "
+                     "CPUs and cores. A separate output folder will be created"
+                     " inside ProjectFolder/NumCalc for each CPU and core."),
+        default=1,
         min=1,
         max=8,
         )
@@ -270,9 +278,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row = layout.row()
         row.prop(self, "maxFrequency")
         row = layout.row()
-        row.prop(self, "frequencyStepSize")
+        row.prop(self, "frequencyVectorType")
         row = layout.row()
-        row.prop(self, "numFrequencySteps")
+        row.prop(self, "frequencyVectorValue")
         # job distribution
         layout.label(text="Job distribution:")
         row = layout.row()
@@ -288,8 +296,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              title="head-related transfer functions",
              minFrequency=100,
              maxFrequency=20000,
-             frequencyStepSize=100,
-             numFrequencySteps=0,
+             frequencyVectorType='0',
+             frequencyVectorValue=100,
              cpuFirst=1,
              cpuLast=10,
              numCoresPerCPU=8,
@@ -304,7 +312,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              densityOfMedium='1.1839',
              unit='mm',
              programPath="",
-             sourceType=0
+             sourceType='0'
              ):
         """Export Mesh2HRTF project."""
 
@@ -448,6 +456,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # maxCores = max(8, numCoresPerCPU) if it works with the rest of
         # Mesh2HRTF
         maxCores = 8
+
+        # check how the frequency vector is defined
+        if frequencyVectorType == '0':
+            frequencyStepSize = frequencyVectorValue
+            numFrequencySteps = 0
+        else:
+            frequencyStepSize = 0
+            numFrequencySteps = int(frequencyVectorValue)
 
         cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, \
             freqs, frequencyStepSize, numFrequencySteps = \
