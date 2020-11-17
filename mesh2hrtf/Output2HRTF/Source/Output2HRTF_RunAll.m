@@ -99,11 +99,12 @@ for nn = 1:numel(result_dirs)
     disp(['processing: ' name])
     disp('---------------------------------------------------------------')
     
+    cd(folder)
+    
     % run Output2HRTF in subfolder
     if (exist(fullfile(folder, 'Output2HRTF'), 'dir') && overwrite) || ...
        ~exist(fullfile(folder, 'Output2HRTF'), 'dir')
    
-        cd(folder)
         Output2HRTF
     else
         disp('Output data already exists')
@@ -152,6 +153,7 @@ for nn = 1:numel(result_dirs)
     end
     
     if purge_compressed
+        fprintf('\npurging compressed simulation results ... ')
         delete(fullfile(folder, 'Output2HRTF', 'ObjectMesh_*.mat'))
     end
     
