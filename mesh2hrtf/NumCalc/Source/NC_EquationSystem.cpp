@@ -1157,6 +1157,35 @@ void NC_RHSvecTofMLFMM
 }
 
 // compute the contribution of a surface element to the T-matrix and the T-vector
+/* kreiza: okay this is a bit tricky, because 
+   a) Chen uses a negative sign for everything, so he looks at
+      -(u+\beta v)/2 + \int (H + \beta E)u - \int (G + \beta H')v = -u_i - \beta v_i
+
+   b)  G = (k I)/(4\pi) e_y M_L e_x, with e_y = exp(I k (z_1 - y) and e_x = exp(Ik (x - z_2)
+
+   The T matrix covers everything with respect to y, thus the integral over \Gamma and the matrix parts
+   For a velo b.c. we need 
+         H + beta E as the matrix 
+         G + beta H' as rhs vector
+   thus
+         ik/(4pi) (-ik (n_y.s) e_y M_L (1 + beta (n_x.s) e_x
+	 ik/(4pi) z0(ey M_L (1 + beta ik (n_x.s))e_x)
+
+   For a pres b.c. we need 
+         -(G + beta H') as a matrix and 
+         - (H + beta E) as rhs
+   thus
+        ik/(4pi) ( - e_y M_L (1 + beta ik n_x.s)e_x)
+        ik/(4pi) (e_y (n_y.s) ik (1 + beta ik nx.s)e_x
+
+   chen has written the code for VELO b.c. and forgot about the rest so the
+   the I is never explicitely used because H and E have an I factor and the 
+   kI/4pi has an I factor, thus we need only to multiply with -1, and additional
+   -1 comes from the derivative with respect to y
+   for the pres condition this does not work anymore, thus we currently multiply  with -I in the PRES part, which looks weird, but provides the right matrix
+   
+   for the vector Chen multiplies with ik/4pi thus we have to rethink again
+ */
 void NC_ComputeEntriesTforFMM
 (
 	ofstream& NCout,
@@ -1214,19 +1243,29 @@ void NC_ComputeEntriesTforFMM
                     zw1.set(dw1 - harmonicTimeFactor_*Admia3.im(), harmonicTimeFactor_*Admia3.re());
                     zresu *= (zw1*wga);
                 }
+		// so zresu is now: k (n_y.s) e_y, so the -i factor is not used yet
             }
             if(Ibvj_03 == 1) {  // pressure b.c.
                 zresu *= wga;
-                // set the tvector part, remember for the pressure
-                // b.c. the rhs contribution is
-                // -\int H - E, thus we need the derivative w.r.t
-                // to n_y, the rest is done in the calculation of
-                // S, the sign should be okay, because for the S
-                // we also have a minus, and minus times minus is
-                // plus
+                /* set the tvector part, remember for the pressure
+		   b.c. the rhs contribution is
+		   -\int H - E, thus we need the derivative w.r.t
+		   to n_y, the rest is done in the calculation of
+		   S, the sign should be okay, because for the S
+		   we also have a minus, and minus times minus is
+		   plus
+		   
+		   below is a multiplication with
+		   k/4pi, thus the i is missing, additionally we
+		   the matrix is -(G+H')v, thus the negative sign
+
+		*/
+		zresu.mul_i(-1.0);
+
+		
                 if(ifvcj) {
                     dw1 = (Scprod_dim3_(elnorv, uvsph[jgp]))*waveNumbers_*Tao_;
-                    TVele[jgp] += zresu*zbgao_0*dw1;
+                    TVele[jgp] -= zresu*zbgao_0*dw1;
                 }
             }
             TMele[jgp] += zresu;

@@ -1887,7 +1887,9 @@ void NC_AllocateNmtx
     for(i=0; i<numOriginalReflectedClusters_; i++)
     {
         nel0 = ClustArray[i].NumsOfEl[0];
-        if(ClustArray[i].listElementPropertyEl == 0 && (ibval[nel0] == 0 || ibval[nel0] == 2))
+	// changed by kreiza, include also the PRES condition
+	//        if(ClustArray[i].listElementPropertyEl == 0 && (ibval[nel0] == 0 || ibval[nel0] == 2))
+	if( ClustArray[i].listElementPropertyEl == 0 && (ibval[nel0] < 3 ) )
         {
             boolComputeTVector_ = true;
             break;
