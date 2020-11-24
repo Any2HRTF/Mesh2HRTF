@@ -359,11 +359,20 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if not os.path.exists(temp):
             os.mkdir(temp)
 
-        # check input and assign numEars
+        # convert to int
+        sourceType = int(sourceType)
+
+        # assign numSources is used during assigning frequencies to cores. If
+        # the simulation does not use a velocity source, numSources must be one
+        # otherwise it is determined by the ears to be simulated
         if ear not in ["Left ear", "Right ear", "Both ears"]:
             raise ValueError("`ear` must be 'Left ear', 'Right ear' or "
                              "'Both ears' (case sensitive).")
-        numEars = 2 if ear == 'Both ears' else 1
+
+        if sourceType != 0:
+            numSources = 1
+        else:
+            numSources = 2 if ear == 'Both ears' else 1
 
         # check input and assign unitFactor
         if unit not in ["mm", "m"]:
@@ -381,7 +390,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Get point source position ---------------------------------------------------
-        sourceType = int(sourceType)
         if sourceType == 1:
             sourceXPosition, sourceYPosition, sourceZPosition = \
                 _get_point_source_position(unitFactor)
@@ -440,11 +448,17 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # get used materials as dictionary
         materials = _get_materials(bpy.data.objects['Reference'])
 
-        # add full path of material files to the dictionary
-        materials = _get_material_files(materials, materialSearchPaths)
+        if materials is None:
+            if sourceType == 0:
+                raise ValueError(
+                    ("Material 'Left ear' and/or 'Right ear' "
+                     "must be defined for reciprocal simulations."))
+        else:
+            # add full path of material files to the dictionary
+            materials = _get_material_files(materials, materialSearchPaths)
 
-        # read the material data and add it to the dictionary
-        materials = _read_material_data(materials)
+            # read the material data and add it to the dictionary
+            materials = _read_material_data(materials)
 
 
 # Calculate frequency information ---------------------------------------------
@@ -469,7 +483,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             freqs, frequencyStepSize, numFrequencySteps = \
             _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
                                     numCoresPerCPU, maxCores,
-                                    numEars,
+                                    numSources,
                                     minFrequency, maxFrequency,
                                     frequencyStepSize, numFrequencySteps)
 
@@ -667,7 +681,10 @@ def _get_materials(obj):
 
     for face in obj.data.polygons:
         # name of material of current face
-        material = obj.material_slots[face.material_index].material.name
+        try:
+            material = obj.material_slots[face.material_index].material.name
+        except IndexError:
+            return None
 
         # add material if it does not exist
         if material not in materials.keys():
@@ -1039,7 +1056,7 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
 
 def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
                             numCoresPerCPU, maxCores,
-                            numEars,
+                            numSources,
                             minFrequency, maxFrequency,
                             frequencyStepSize, numFrequencySteps):
     """Calculate list of frequencies and distribute across cores and CPUs.
@@ -1076,7 +1093,7 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     numCPUs = cpuLast-cpuFirst+1
 
     # number of cores per ear
-    numCoresUsedPerEar = numCPUs*numCoresPerCPU//numEars
+    numCoresUsedPerEar = numCPUs*numCoresPerCPU//numSources
     if not numCoresUsedPerEar:
         raise Exception("At least two cores must be available for calculating "
                         "both ears, i.e., two CPUs with one core each or one "
@@ -1123,7 +1140,7 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     # check number of cores and frequencies
     if len(f) < numCoresUsedPerEar:
         raise Exception("More cores than frequencies, i.e., \
-                        numCPUs*numCoresPerCPU//numEars < numFrequencies.")
+                        numCPUs*numCoresPerCPU//numSources < numFrequencies.")
 
     # distribution of frequencies across numCoresUsedPerEar
     F = [[] for ff in range(numCoresUsedPerEar)]
@@ -1140,7 +1157,7 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     # distribute ears and frequencies across cpus and cores.
     # Left ear is calculated on cpus 0 to numCoresUsedPerEar-1
     # Right ear is calculated on cpus numCoresUsedPerEar to numCoresAvailable
-    for count in range(numCoresUsedPerEar*numEars):
+    for count in range(numCoresUsedPerEar*numSources):
         cpu, core = divmod(count + (cpuFirst-1)*numCoresPerCPU, numCoresPerCPU)
         cpusAndCores[cpu][core] = count//numCoresUsedPerEar + 1
         frequencies[cpu][core] = F[count % len(F)]
@@ -1151,7 +1168,7 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
 
     # meta data for Info.txt
     frequencyStepsPerCore = len(f)//numCoresUsedPerEar
-    numCoresAvailable = numCoresUsedPerEar*numEars
+    numCoresAvailable = numCoresUsedPerEar*numSources
 
     return cpusAndCores, frequencies, \
         frequencyStepsPerCore, numCoresAvailable, \
@@ -1360,19 +1377,20 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # remaining conditions defined by frequency curves
                 curves = 0
                 steps = 0
-                for m in materials:
-                    if materials[m]["path"] is None:
-                        continue
-                    # write information
-                    fw(f"# Material: {m}\n")
-                    fw("ELEM %i TO %i %s 1.0 %i 1.0 %i\n" % (
-                        materials[m]["index_start"],
-                        materials[m]["index_end"],
-                        materials[m]["boundary"],
-                        curves + 1, curves + 2))
-                    # update metadata
-                    steps = max(steps, len(materials[m]["freqs"]))
-                    curves += 2
+                if materials is not None:
+                    for m in materials:
+                        if materials[m]["path"] is None:
+                            continue
+                        # write information
+                        fw(f"# Material: {m}\n")
+                        fw("ELEM %i TO %i %s 1.0 %i 1.0 %i\n" % (
+                            materials[m]["index_start"],
+                            materials[m]["index_end"],
+                            materials[m]["boundary"],
+                            curves + 1, curves + 2))
+                        # update metadata
+                        steps = max(steps, len(materials[m]["freqs"]))
+                        curves += 2
 
                 fw("RETU\n")
                 fw("##\n")
