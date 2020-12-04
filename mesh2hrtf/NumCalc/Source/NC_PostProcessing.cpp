@@ -511,13 +511,14 @@ void NC_WriteResultsObjectMesh
     fprintf(Lu_pBoundary, "%5d\n", numElementGroups_);
     fprintf(Lu_vBoundary, "%5d\n", numElementGroups_);
 
-	// compute and output the velocity potentials, normal velocities and energy ientensitie at the nodes for each element group
+	// compute and output the velocity potentials, normal velocities and energy ientensitie at the nodes for each element group, the way is already paved for middle face elements, but forget the 2 sides for now
 	Matrix<Complex> zpregrp(numNodes_, 2); // pressures at both sides
-	Vector<Complex> zvelgrp(numNodes_);    // velocities at the middle face
+	Vector<Complex> zvelgrp(numNodes_);    // velocities at the middle face in normal direction
 	Matrix<double> enegrp(numNodes_, 2);   // energy intensities at both sides
 
 	for(igr=0; igr<numElementGroups_; igr++)
 	{
+	  /* thingrp denotes the element type of the group if it is -1 we have a eval element */
 		if(ndgrp[igr] == 0 || thingrp[igr] == -1) continue;
 		for(j=0; j<numNodes_; j++)
 		{
@@ -533,7 +534,11 @@ void NC_WriteResultsObjectMesh
 		}
 		for(iel=0; iel<numElements_; iel++)
 		{
-			if(listElementProperty[iel] == 2 || indexOfElementGroup[igr] != listElementsElementGroup[iel]) continue; 
+		  /* again if eval element ignore the element*/
+			if(listElementProperty[iel] == 2 || indexOfElementGroup[igr] != listElementsElementGroup[iel]) continue;
+			/* we are here at the node level for each element, 
+			   before we looked at the collocation node level = elem midpoint level
+			*/
 			for(j=0; j<listNumberNodesPerElement[iel]; j++)
 			{
 				k = elementsConnectivity[iel][j];
@@ -563,13 +568,18 @@ void NC_WriteResultsObjectMesh
         for(iel=0; iel<numElements_; iel++)
         {
             if(listElementProperty[iel] == 2 || indexOfElementGroup[igr] != listElementsElementGroup[iel]) continue;
+	    /* 
+	       currently we just write the output at the collocnodes, if you want the values for the
+	       element nodes use the values calculated above
+	    */
             Complex tmp;
             tmp=cVpotele(iel, 0);
             tmp.mul_i(rpfact_);
             fprintf(Lu_pBoundary, "%5d % E % E\n", extNumbersOfElements[iel], tmp.re(), tmp.im());
-            tmp=cVeloelo(iel, 0);
+            tmp=cVeloele(iel, 0);
             fprintf(Lu_vBoundary, "%5d % E % E\n", extNumbersOfElements[iel], tmp.re(), tmp.im());
         }
+	/* if you want dB values write Vmagdbph to a file */
 
 		int j0 = -1;
 		for(j=0; j<numNodes_; j++)
@@ -606,8 +616,8 @@ void NC_WriteResultsObjectMesh
 void NC_WriteResultsEvaluationGrid
 (
 	ofstream& NCout,
-	Matrix<Complex>& cVpotele,
-	Matrix<Complex>& cVeloele  
+	Matrix<Complex>& cVpotele,  // velocity potential at collocnodes
+	Matrix<Complex>& cVeloele   // particle velocity at collocnodes
 )
 {
 	Complex zfacsourel, zquelinten, zprefree;
@@ -689,6 +699,11 @@ void NC_WriteResultsEvaluationGrid
 		} // end of loop INP
 	} // end of ELSE
 
+	/* 
+	   zprint contains the pressure at the evalnode, zveint the components of the particle
+           velocity
+	*/
+	
 	// group number of the evaluation mesh
 	int nugrinme = -1;
 	for(i=0; i<numElements_; i++) if(listElementProperty[i] == 2)
@@ -721,22 +736,23 @@ void NC_WriteResultsEvaluationGrid
 			veip[j] = Vmagdbph_v_3d[1];
 		}
 
-		// resultant of the velocity
+		// norm of the velocity
 		z1.set(0.0, 0.0);
 		for(j=0; j<NDIM; j++) z1 += zveint(inp, j)*zveint(inp, j);
 		z1 = BLzsqrt(z1);
+		/* in dB */
 		NC_Magnitude2dBdeg(Vmagdbph_v_3d, z1, 1);
         
         fprintf(lu_vEvalGrid, "%5d % E % E\n", ndip, z1.re(), z1.im());
 
 	} // end of loop INP
     
-    fprintf(lu_pEvalGrid, "%5d\n", ngrp);
+	fprintf(lu_pEvalGrid, "%5d\n", ngrp);
 	if(numNodesOfEvaluationMesh_ > 0)
-    {
-        fprintf(lu_pEvalGrid, "%5d %5d\n", nugrinme, numNodesOfEvaluationMesh_);
-	}
-
+	  {
+	    fprintf(lu_pEvalGrid, "%5d %5d\n", nugrinme, numNodesOfEvaluationMesh_);
+	  }
+	
 	// loop over nodes of the evaluation mesh
 	for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
 	{
@@ -748,9 +764,9 @@ void NC_WriteResultsEvaluationGrid
 		zprip = zprint[inp];
 		zprip.mul_i(rpfact_);
         
-        NC_Magnitude2dBdeg(Vmagdbph_pp_3d, zprip, 0);
-        
-        fprintf(lu_pEvalGrid, "%5d % E % E\n", ndip, zprip.re(), zprip.im());
+		NC_Magnitude2dBdeg(Vmagdbph_pp_3d, zprip, 0);
+		
+		fprintf(lu_pEvalGrid, "%5d % E % E\n", ndip, zprip.re(), zprip.im());
 	} // end of loop INP
 
 	// loop over nodes of the evaluation mesh
