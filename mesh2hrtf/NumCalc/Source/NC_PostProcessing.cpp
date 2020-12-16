@@ -620,6 +620,12 @@ void NC_WriteResultsEvaluationGrid
 	Matrix<Complex>& cVeloele   // particle velocity at collocnodes
 )
 {
+
+  /* 11.12.2020
+     kreiza: changed output of velocity to contain the velocitycomponent
+     for each direction in 3D, at the evalgrid there is not obvious normal
+     vector, thus the particle velocity is a vector of dimension 3
+  */
 	Complex zfacsourel, zquelinten, zprefree;
     FILE *lu_pEvalGrid, *lu_vEvalGrid;
 
@@ -723,28 +729,36 @@ void NC_WriteResultsEvaluationGrid
 
 	// loop over nodes of the evaluation mesh
 	for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
-	{
-		// external nodal number of the current node
-		ndip = extNumbersOfNodes[nuinnode[inp]];
-
-		// components of velocity
-		for(j=0; j<NDIM; j++)
-		{
-			NC_Magnitude2dBdeg(
-				Vmagdbph_v_3d, zveint(inp, j), 1
-				);
-			veip[j] = Vmagdbph_v_3d[1];
-		}
-
+	  {
+	    // external nodal number of the current node
+	    ndip = extNumbersOfNodes[nuinnode[inp]];
+	    
+	    // components of velocity
+	    for(j=0; j<NDIM; j++)
+	      {
+		NC_Magnitude2dBdeg(
+				   Vmagdbph_v_3d, zveint(inp, j), 1
+				   );
+		veip[j] = Vmagdbph_v_3d[1];
+	      }
+	    
 		// norm of the velocity
-		z1.set(0.0, 0.0);
-		for(j=0; j<NDIM; j++) z1 += zveint(inp, j)*zveint(inp, j);
-		z1 = BLzsqrt(z1);
-		/* in dB */
-		NC_Magnitude2dBdeg(Vmagdbph_v_3d, z1, 1);
-        
-        fprintf(lu_vEvalGrid, "%5d % E % E\n", ndip, z1.re(), z1.im());
-
+	    /*  changed by kreiza
+	    z1.set(0.0, 0.0);
+	    for(j=0; j<NDIM; j++) z1 += zveint(inp, j)*zveint(inp, j);
+	    z1 = BLzsqrt(z1);
+	    */
+	    /* in dB */
+	    /*  commented by kreiza dec 2020
+	      NC_Magnitude2dBdeg(Vmagdbph_v_3d, z1, 1); 
+	    
+	      fprintf(lu_vEvalGrid, "%5d % E % E\n", ndip, z1.re(), z1.im());
+	    */
+	    fprintf(lu_vEvalGrid,"%5d %E %E %E %E %E %E\n", ndip,
+		    zveint(inp,0).re(), zveint(inp,0).im(),
+		    zveint(inp,1).re(), zveint(inp,1).im(),
+		    zveint(inp,2).re(), zveint(inp,2).im());
+	    
 	} // end of loop INP
     
 	fprintf(lu_pEvalGrid, "%5d\n", ngrp);
