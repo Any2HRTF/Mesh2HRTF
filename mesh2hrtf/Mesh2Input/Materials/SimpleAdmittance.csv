@@ -1,20 +1,21 @@
 # Info:
-# simple material for testing: Admittance increases linearly with frequency from
-# admittance*rho*c=0 at 0 Hz to admittance*rho*c=100 at 20 kHz (see note below).
+# Simple example material.
+# Admittance increases linearly with frequency from admittance/(rho*c)=0 at 0 Hz
+# to admittance/(rho*c)=100 at 20 kHz (see note below).
 #
 # Keyword to define the boundary condition:
-# ADMI: Admittance boundary condition
-# IMPE: Impedance boundary condition
+# ADMI: Normalized admittance boundary condition
 # PRES: Pressure boundary condition
 # VELO: Velocity boundary condition
-# NOTE: Mesh2HRTF expects normalized admittances and impedances, i.e.,
-#       admittance*rho*c and impedance/rho/c, where rho is the density of air
-#       and c the speed of sound. The normalization is beneficial because a
-#       single material file can be used for simulations with differing speed of
-#       sound and density of air.
+# NOTE: Mesh2HRTF expects normalized admittances, i.e., admittance/(rho*c).
+#       rho is the density of air and c the speed of sound. The normalization is
+#       beneficial because a single material file can be used for simulations
+#       with differing speed of sound and density of air.
 ADMI
 #
 # Frequency curve:
 # Frequency in Hz, real value, imaginary value
+# NOTE: Mesh2HRTF interpolates the specified values to the frequencies that are
+#       simulated. E.g., a normalized admittance of 50 would be used at 10 kHz.
 0, 0, 0
 20e3, 100, 0
