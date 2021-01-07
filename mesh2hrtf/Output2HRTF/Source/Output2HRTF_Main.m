@@ -43,7 +43,7 @@ function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, ...
 
 %% ----------------------------load meta data------------------------------
 % output directory
-if ~exist('Output2HRTF', 'dir')
+if ~exist(fullfile(pwd, 'Output2HRTF'), 'dir')
     mkdir(fullfile(pwd, 'Output2HRTF'))
 end
 
