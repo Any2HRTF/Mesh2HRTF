@@ -347,16 +347,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             filepath += os.path.sep
         filepath1, _ = os.path.split(filepath)
 
-        temp = os.path.join(filepath1, "ObjectMeshes")
-        if not os.path.exists(temp):
-            os.mkdir(temp)
-
-        temp = os.path.join(filepath1, "EvaluationGrids")
-        if not os.path.exists(temp):
-            os.mkdir(temp)
-
-        temp = os.path.join(filepath1, "NumCalc")
-        if not os.path.exists(temp):
+        subfolders = ["ObjectMeshes", "EvaluationGrids", "NumCalc"]
+        for subfolder in subfolders:
+            temp = os.path.join(filepath1, subfolder)
+            # delete subfolder if it exists to ensure data consitency
+            if os.path.exists(temp):
+                shutil.rmtree(temp)
+            # make subfolder
             os.mkdir(temp)
 
         # convert to int
