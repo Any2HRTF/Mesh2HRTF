@@ -44,7 +44,7 @@ function Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, ...
 %% ----------------------------load meta data------------------------------
 % output directory
 if ~exist('Output2HRTF', 'dir')
-    mkdir('Output2HRTF')
+    mkdir(fullfile(pwd, 'Output2HRTF'))
 end
 
 % number of ears
