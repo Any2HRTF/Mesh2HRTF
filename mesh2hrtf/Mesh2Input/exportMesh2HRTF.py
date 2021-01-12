@@ -97,7 +97,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     programPath: StringProperty(
         name="Mesh2HRTF-path",
         description="Path to folder containing 'Mesh2Input', 'NumCalc', etc..",
-        default=r"/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
+        default=r"path/to/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -311,7 +311,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
-             programPath="/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
+             programPath="path/to/mesh2hrtf",
              sourceType='0'
              ):
         """Export Mesh2HRTF project."""
@@ -966,15 +966,15 @@ def _write_output2VTK_m(filepath1, version):
     fw(f"Mesh2HRTF_version = '{version}';\n\n")
 
     # create missing directories
-    fw("if ~exist('Visualization','dir')\n")
-    fw("    mkdir('Visualization');\n")
+    fw("if ~exist(fullfile(pwd, 'Visualization'),'dir')\n")
+    fw("    mkdir(fullfile(pwd, 'Visualization'));\n")
     fw("end\n")
-    fw("if ~exist(['Visualization' filesep 'ObjectMesh'],'dir')\n")
-    fw("    mkdir(['Visualization' filesep 'ObjectMesh'])\n")
+    fw("if ~exist(fullfile(pwd, 'Visualization', 'ObjectMesh'),'dir')\n")
+    fw("    mkdir(fullfile(pwd, 'Visualization', 'ObjectMesh'))\n")
     fw("end\n\n")
 
     # load data struct created by Output2HRTF.m
-    fw("load('Output2HRTF/ObjectMesh_Reference.mat')\n\n")
+    fw("load(fullfile(pwd, 'Output2HRTF', 'ObjectMesh_Reference.mat'))\n\n")
 
     # export the sound pressure distribution as dB SPL in VTK-files
     fw("EvalToolsExport2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes(:,2:end),elements(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')\n")
