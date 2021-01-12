@@ -97,7 +97,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     programPath: StringProperty(
         name="Mesh2HRTF-path",
         description="Path to folder containing 'Mesh2Input', 'NumCalc', etc..",
-        default=r"path/to/mesh2hrtf",
+        default=r"/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -311,7 +311,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
-             programPath="",
+             programPath="/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
              sourceType='0'
              ):
         """Export Mesh2HRTF project."""
@@ -498,6 +498,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                              speedOfSound, densityOfMedium,
                              cpusAndCores, maxCPUs, maxCores,
                              sourceXPosition, sourceYPosition, sourceZPosition)
+
+# Write Output2VTK.m function ------------------------------------------------
+        _write_output2VTK_m(filepath1, version)
 
 
 # Render pictures of the model ------------------------------------------------
@@ -947,6 +950,35 @@ def _write_output2HRTF_m(filepath1, version,
     fw("                 speedOfSound,densityOfAir);\n")
     file.close
 
+def _write_output2VTK_m(filepath1, version):
+
+    # file handling
+    file = open(os.path.join(filepath1, "Output2VTK.m"), "w",
+                encoding="utf8", newline="\n")
+    fw = file.write
+
+    # header
+    fw("% Export the sound pressure files genereated by Output2HRTF.m as SPL to VTK-Files for visualization in Paraview.\n\n")
+
+    fw("close all; clear\n\n")
+
+    # Mesh2HRTF version
+    fw(f"Mesh2HRTF_version = '{version}';\n\n")
+
+    # create missing directories
+    fw("if ~exist('Visualization','dir')\n")
+    fw("    mkdir('Visualization');\n")
+    fw("end\n")
+    fw("if ~exist(['Visualization' filesep 'ObjectMesh'],'dir')\n")
+    fw("    mkdir(['Visualization' filesep 'ObjectMesh'])\n")
+    fw("end\n\n")
+
+    # load data struct created by Output2HRTF.m
+    fw("load('Output2HRTF/ObjectMesh_Reference.mat')\n\n")
+
+    # export the sound pressure distribution as dB SPL in VTK-files
+    fw("EvalToolsExport2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes(:,2:end),elements(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')\n")
+    file.close
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
     """
