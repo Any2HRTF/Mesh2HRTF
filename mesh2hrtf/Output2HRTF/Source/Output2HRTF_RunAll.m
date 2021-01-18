@@ -130,7 +130,13 @@ for nn = 1:numel(result_dirs)
             continue
         end
         
-        % enter results directory
+        % remove entire folder ...
+        if purge_obj && purge_eval
+            rmdir(fullfile(core, 'be.out'), 's')
+            continue
+        end
+        
+        % or ... enter results directory and remove separate files
         cd(fullfile(core, 'be.out'))
         
         % loop over frequencies
@@ -146,7 +152,7 @@ for nn = 1:numel(result_dirs)
                 delete(fullfile(freq, '*Boundary'))
             end
             if purge_eval
-                delete(fullfile(freq, '*Eval'))
+                delete(fullfile(freq, '*EvalGrid'))
             end
             
         end
