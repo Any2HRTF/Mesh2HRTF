@@ -71,7 +71,7 @@ clear simulations_dir overwrite_data purge_object_mesh_data purge_eval_grid_data
 
 % ask if data should really, really, be deleted
 if (purge_obj || purge_eval) && ~assume_yes
-    disp('You are about to delete uncompressed simulates results.')
+    disp('You are about to delete the raw simulation results after processing them.')
     yes = input('Continue (y/n)?: ', 's');
     if ~strcmpi(yes, 'y')
         error('Aborted purging data')
