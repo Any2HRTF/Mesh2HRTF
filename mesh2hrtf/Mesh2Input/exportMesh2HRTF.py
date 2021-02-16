@@ -131,12 +131,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         )
     speedOfSound: StringProperty(
         name="c (m/s)",
-        description="Speed of sound (m/s)",
+        description=("Speed of sound in m/s "
+                     "(Pass value as a string to avoid rounding errors)"),
         default="346.18",
         )
     densityOfMedium: StringProperty(
-        name="rho ()",
-        description="Density of air (kg/m^3)",
+        name="rho (kg/m^3)",
+        description=("Density of air in kg/m^3 "
+                     "(Pass value as a string to avoid rounding errors)"),
         default="1.1839",
         )
     # evaluation grids --------------------------------------------------------
