@@ -178,12 +178,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Frequencies",
         description=("Select how the frequencies are distributed between min. "
                      "and max. frequency with the paramter 'Value' (below)."),
-        items=[('0', 'Step size',
+        items=[('Step size', 'Step size',
                     ("Simulate frequencies between the min. and max. "
                      "with a fixed step size.")),
-               ('1', 'Num steps',
+               ('Num steps', 'Num steps',
                     "Simulate N frequencies the min. and max. frequency.")],
-        default='0',
+        default='Step size',
         )
     frequencyVectorValue: FloatProperty(
         name="Value",
@@ -300,7 +300,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              title="head-related transfer functions",
              minFrequency=100,
              maxFrequency=20000,
-             frequencyVectorType='0',
+             frequencyVectorType='Step size',
              frequencyVectorValue=100,
              cpuFirst=1,
              cpuLast=1,
@@ -479,7 +479,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         maxCores = 8
 
         # check how the frequency vector is defined
-        if frequencyVectorType == '0':
+        if frequencyVectorType == 'Step size':
             frequencyStepSize = frequencyVectorValue
             numFrequencySteps = 0
         else:
