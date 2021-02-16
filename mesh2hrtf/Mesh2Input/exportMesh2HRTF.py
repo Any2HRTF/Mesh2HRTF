@@ -69,10 +69,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     method: EnumProperty(
         name="BEM method",
         description="Method for numerical simulation",
-        items=[('0', 'BEM', 'Traditional BEM'),
-               ('1', 'SL-FMM BEM', 'Singlelevel fast-multipole method BEM'),
-               ('4', 'ML-FMM BEM', 'Multilevel fast-multipole method BEM')],
-        default='4',
+        items=[('BEM', 'BEM', 'Traditional BEM'),
+               ('SL-FMM BEM', 'SL-FMM BEM',
+                'Singlelevel fast-multipole method BEM'),
+               ('ML-FMM BEM', 'ML-FMM BEM',
+                'Multilevel fast-multipole method BEM')],
+        default='ML-FMM BEM',
         )
     sourceType: EnumProperty(
         name="Source type",
@@ -305,7 +307,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              ear='Both ears',
              evaluationGrids='ARI',
              materialSearchPaths='None',
-             method='4',
+             method='ML-FMM BEM',
              reference=False,
              computeHRIRs=False,
              speedOfSound='346.18',
@@ -1277,6 +1279,17 @@ def _write_nc_inp(filepath1, version, title, ear,
     https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp/
     """
 
+    # check the BEM method
+    if method == 'BEM':
+        method_id = 0
+    elif method == 'SL-FMM BEM':
+        method_id = 1
+    elif method == 'ML-FMM BEM':
+        method_id = 4
+    else:
+        ValueError(
+            f"Method must be BEM, SL-FMM BEM or ML-FMM BEM but is {method}")
+
     for core in range(1, 9):
         for cpu in range(1, 11):
             if not cpusAndCores[cpu-1][core-1] == 0:
@@ -1346,7 +1359,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("2 %d " % (len(obj_data.polygons[:])+numElements))
                 fw("%d 0 " % (len(obj_data.vertices[:])+numNodes))
                 fw("0")
-                fw(" 2 1 %s 0\n" % (method))
+                fw(" 2 1 %s 0\n" % (method_id))
                 fw("##\n")
 
                 # main parameters II ------------------------------------------
