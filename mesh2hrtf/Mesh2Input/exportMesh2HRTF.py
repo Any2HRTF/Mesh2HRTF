@@ -89,9 +89,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Ear",
         description=("Selected ear(s) for simulation. Only required if using "
                      "vibrating elements as the source type"),
-        items=[('Left ear', 'left', 'Left ear'),
-               ('Right ear', 'right', 'Right ear'),
-               ('Both ears', 'both', 'Both ears')],
+        items=[('Left ear', 'Left ear', 'Calculate left ear HRTFs only'),
+               ('Right ear', 'Right ear', 'Calculate right ear HRTFs only'),
+               ('Both ears', 'Both ears', 'Calculate HRTFs for both ears')],
         default='Both ears',
         )
     programPath: StringProperty(
