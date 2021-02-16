@@ -79,13 +79,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     sourceType: EnumProperty(
         name="Source type",
         description="Method for numerical simulation",
-        items=[('0', 'Vibrating element', ("Mesh elements with user assigned "
-                                           "materials 'Left ear' and 'Right "
-                                           "ear' act as the source")),
-               ('1', 'Point source', ("Analytical point source. Coordinates "
-                                      "taken from user placed point light "
-                                      "named 'Point'"))],
-        default='0',
+        items=[('Vibrating element', 'Vibrating element',
+                    ("Mesh elements with user assigned materials 'Left ear' "
+                     "and 'Right ear' act as the source")),
+               ('Point source', 'Point source',
+                    ("Analytical point source. Coordinates taken from user "
+                     "placed point light named 'Point'"))],
+        default='Vibrating element',
         )
     ear: EnumProperty(
         name="Ear",
@@ -314,7 +314,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              densityOfMedium='1.1839',
              unit='mm',
              programPath="path/to/mesh2hrtf",
-             sourceType='0'
+             sourceType='Vibrating element'
              ):
         """Export Mesh2HRTF project."""
 
@@ -359,7 +359,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             os.mkdir(temp)
 
         # convert to int
-        sourceType = int(sourceType)
+        if sourceType == 'Vibrating element':
+            sourceType_id = int(0)
+        elif sourceType == 'Point source':
+            sourceType_id = int(1)
+        else:
+            ValueError(("Source type must be 'Vibrating element' or "
+                        f"'Point source' but is {sourceType}"))
 
         # assign numSources is used during assigning frequencies to cores. If
         # the simulation does not use a velocity source, numSources must be one
@@ -368,7 +374,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             raise ValueError("`ear` must be 'Left ear', 'Right ear' or "
                              "'Both ears' (case sensitive).")
 
-        if sourceType != 0:
+        if sourceType_id != 0:
             numSources = 1
         else:
             numSources = 2 if ear == 'Both ears' else 1
@@ -389,7 +395,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Get point source position ---------------------------------------------------
-        if sourceType == 1:
+        if sourceType_id == 1:
             sourceXPosition, sourceYPosition, sourceZPosition = \
                 _get_point_source_position(unitFactor)
         else:
@@ -448,7 +454,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         materials = _get_materials(bpy.data.objects['Reference'])
 
         if materials is None:
-            if sourceType == 0:
+            if sourceType_id == 0:
                 raise ValueError(
                     ("Material 'Left ear' and/or 'Right ear' "
                      "must be defined for reciprocal simulations."))
@@ -495,7 +501,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Write Output2HRTF.m function ------------------------------------------------
-        _write_output2HRTF_m(filepath1, version, sourceType, ear, unitFactor,
+        _write_output2HRTF_m(filepath1, version, sourceType_id, ear, unitFactor,
                              reference, computeHRIRs,
                              speedOfSound, densityOfMedium,
                              cpusAndCores, maxCPUs, maxCores,
@@ -513,7 +519,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # Write NumCalc input files for all CPUs and Cores (NC.inp) -------------------
         _write_nc_inp(filepath1, version, title, ear, speedOfSound,
                       densityOfMedium, frequencies, cpusAndCores,
-                      evaluationGrids, materials, method, sourceType,
+                      evaluationGrids, materials, method, sourceType_id,
                       sourceXPosition, sourceYPosition, sourceZPosition)
 
 # Finish ----------------------------------------------------------------------
@@ -848,7 +854,8 @@ def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
 
 
 def _write_output2HRTF_m(filepath1, version,
-                         sourceType, ear, unitFactor, reference, computeHRIRs,
+                         sourceType_id, ear, unitFactor,
+                         reference, computeHRIRs,
                          speedOfSound, densityOfMedium,
                          cpusAndCores, maxCPUs, maxCores,
                          sourceXPosition, sourceYPosition, sourceZPosition):
@@ -866,7 +873,7 @@ def _write_output2HRTF_m(filepath1, version,
     fw(f"Mesh2HRTF_version = '{version}';\n\n")
 
     # add information about the source
-    if sourceType == 0:
+    if sourceType_id == 0:
         fw("% source information\n")
         fw("sourceType = 'vibratingElement';\n")
 
@@ -1271,7 +1278,7 @@ def _render_pictures(filepath1, unitFactor):
 
 def _write_nc_inp(filepath1, version, title, ear,
                   speedOfSound, densityOfMedium, frequencies, cpusAndCores,
-                  evaluationGrids, materials, method, sourceType,
+                  evaluationGrids, materials, method, sourceType_id,
                   sourceXPosition, sourceYPosition, sourceZPosition):
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
@@ -1365,7 +1372,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # main parameters II ------------------------------------------
                 fw("## 2. Main Parameters II\n")
                 fw("0 ")
-                if sourceType==0:
+                if sourceType_id==0:
                     fw("0 ")
                 else:
                     fw("1 ")
@@ -1407,7 +1414,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("BOUNDARY\n")
                 # write velocity condition for the ears if using vibrating
                 # elements as the sound source
-                if sourceType==0:
+                if sourceType_id==0:
                     if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
                         tmpEar='Left ear'
                     else:
@@ -1443,7 +1450,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("##\n")
 
                 # source information: point source ----------------------------
-                if sourceType==0:
+                if sourceType_id==0:
                     fw("# POINT SOURCES\n")
                     if cpusAndCores[cpu-1][core-1] == 1:
                         fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
