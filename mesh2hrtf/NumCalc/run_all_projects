@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# This script runs all Mesh2HRTF projects inside a folder.
+# E.g., if you have the following folder structure:
+#
+#    yourFolder/project_a
+#    yourFolder/project_b
+#
+# it will first run project_a, wait for it to finish and
+# then run project_b
+#
+# Parameters
+# ----------
+# 1st: Folder
+#     The full path to the folder that contains your
+#     project. The default is "." which searches for
+#     projects in the current folder
+# 2nd: NumCalc
+#     Full path to the NumCalc binary. By default
+#     Num calc is searched in the system path
+#
+# Exdamples
+# ---------
+# > ./run_all_projects
+#     Runs all projects contained in the current folder
+#     and searches NumCalc in the system path
+#
+# > ./run_all_projects ~/Desktop/BEM
+#     Runs all projects in ~/Desktop/BEM and searches
+#     NumCalc in the system path (Make sure the folder
+#     does not end with "/")
+#
+# > ./run_all_projects ~/Desktop/BEM ~/Desktop/NumCalc/Source/NumCalc
+#     Runs all projects in specified folder using NumCalc
+#     at the specified location
+
+# check input
+if [ -n "$1" ] ; then 
+    Folder="${1}/*/"
+else 
+    Folder="./*/"
+fi    
+
+
+if [ -n "$2" ] ; then 
+    NumCalcBin=$2
+else 
+    NumCalcBin="NumCalc"
+fi
+
+# echo input
+printf "\n"
+echo "-----------------------------------------------"
+echo "running all projects in: $Folder"
+echo "using NumCalc at: $NumCalcBin"
+echo "-----------------------------------------------"
+printf "\n"
+
+# run the simulations (uncomment line for additional output)
+for dir in ${Folder}
+do
+	dir=${dir%*/}
+	echo ${dir##*/}
+
+	cd ${dir}
+	cd NumCalc
+
+	#$ find .NumCalc/* -maxdepth 1 -type d | wc -1
+	#echo */ | wc -w
+	numdirs=(*/)
+	numdirs=${#numdirs[@]}
+	#ii=${numdirs}
+
+	for core in $(seq 1 $numdirs)
+	do
+		cd CPU_1_Core_${core}
+		$NumCalcBin >NumCalc.txt &
+		cd ..
+		#echo $core
+	done
+	wait $(jobs -p)
+
+	#echo ${ii}
+done
+
+printf "\nall done\n\n"
+
