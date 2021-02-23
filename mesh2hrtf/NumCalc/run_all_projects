@@ -35,16 +35,16 @@
 #     at the specified location
 
 # check input
-if [ -n "$1" ] ; then 
+if [ -n "$1" ] ; then
     Folder="${1}/*/"
-else 
+else
     Folder="./*/"
-fi    
+fi
 
 
-if [ -n "$2" ] ; then 
+if [ -n "$2" ] ; then
     NumCalcBin=$2
-else 
+else
     NumCalcBin="NumCalc"
 fi
 
@@ -62,7 +62,7 @@ do
 	dir=${dir%*/}
 	echo ${dir##*/}
 
-	cd ${dir}
+	cd "${dir}"
 	cd NumCalc
 
 	#$ find .NumCalc/* -maxdepth 1 -type d | wc -1
@@ -84,4 +84,3 @@ do
 done
 
 printf "\nall done\n\n"
-
