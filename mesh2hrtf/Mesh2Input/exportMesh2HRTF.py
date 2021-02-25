@@ -69,29 +69,31 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     method: EnumProperty(
         name="BEM method",
         description="Method for numerical simulation",
-        items=[('0', 'BEM', 'Traditional BEM'),
-               ('1', 'SL-FMM BEM', 'Singlelevel fast-multipole method BEM'),
-               ('4', 'ML-FMM BEM', 'Multilevel fast-multipole method BEM')],
-        default='4',
+        items=[('BEM', 'BEM', 'Traditional BEM'),
+               ('SL-FMM BEM', 'SL-FMM BEM',
+                'Singlelevel fast-multipole method BEM'),
+               ('ML-FMM BEM', 'ML-FMM BEM',
+                'Multilevel fast-multipole method BEM')],
+        default='ML-FMM BEM',
         )
     sourceType: EnumProperty(
         name="Source type",
         description="Method for numerical simulation",
-        items=[('0', 'Vibrating element', ("Mesh elements with user assigned "
-                                           "materials 'Left ear' and 'Right "
-                                           "ear' act as the source")),
-               ('1', 'Point source', ("Analytical point source. Coordinates "
-                                      "taken from user placed point light "
-                                      "named 'Point'"))],
-        default='0',
+        items=[('Vibrating element', 'Vibrating element',
+                    ("Mesh elements with user assigned materials 'Left ear' "
+                     "and 'Right ear' act as the source")),
+               ('Point source', 'Point source',
+                    ("Analytical point source. Coordinates taken from user "
+                     "placed point light named 'Point'"))],
+        default='Vibrating element',
         )
     ear: EnumProperty(
         name="Ear",
         description=("Selected ear(s) for simulation. Only required if using "
                      "vibrating elements as the source type"),
-        items=[('Left ear', 'left', 'Left ear'),
-               ('Right ear', 'right', 'Right ear'),
-               ('Both ears', 'both', 'Both ears')],
+        items=[('Left ear', 'Left ear', 'Calculate left ear HRTFs only'),
+               ('Right ear', 'Right ear', 'Calculate right ear HRTFs only'),
+               ('Both ears', 'Both ears', 'Calculate HRTFs for both ears')],
         default='Both ears',
         )
     programPath: StringProperty(
@@ -129,12 +131,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         )
     speedOfSound: StringProperty(
         name="c (m/s)",
-        description="Speed of sound (m/s)",
+        description=("Speed of sound in m/s "
+                     "(Pass value as a string to avoid rounding errors)"),
         default="346.18",
         )
     densityOfMedium: StringProperty(
-        name="rho ()",
-        description="Density of air (kg/m^3)",
+        name="rho (kg/m^3)",
+        description=("Density of air in kg/m^3 "
+                     "(Pass value as a string to avoid rounding errors)"),
         default="1.1839",
         )
     # evaluation grids --------------------------------------------------------
@@ -174,12 +178,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Frequencies",
         description=("Select how the frequencies are distributed between min. "
                      "and max. frequency with the paramter 'Value' (below)."),
-        items=[('0', 'Step size',
+        items=[('Step size', 'Step size',
                     ("Simulate frequencies between the min. and max. "
                      "with a fixed step size.")),
-               ('1', 'Num steps',
+               ('Num steps', 'Num steps',
                     "Simulate N frequencies the min. and max. frequency.")],
-        default='0',
+        default='Step size',
         )
     frequencyVectorValue: FloatProperty(
         name="Value",
@@ -296,7 +300,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              title="head-related transfer functions",
              minFrequency=100,
              maxFrequency=20000,
-             frequencyVectorType='0',
+             frequencyVectorType='Step size',
              frequencyVectorValue=100,
              cpuFirst=1,
              cpuLast=1,
@@ -305,14 +309,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              ear='Both ears',
              evaluationGrids='ARI',
              materialSearchPaths='None',
-             method='4',
+             method='ML-FMM BEM',
              reference=False,
              computeHRIRs=False,
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
              programPath="path/to/mesh2hrtf",
-             sourceType='0'
+             sourceType='Vibrating element'
              ):
         """Export Mesh2HRTF project."""
 
@@ -357,7 +361,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             os.mkdir(temp)
 
         # convert to int
-        sourceType = int(sourceType)
+        if sourceType == 'Vibrating element':
+            sourceType_id = int(0)
+        elif sourceType == 'Point source':
+            sourceType_id = int(1)
+        else:
+            ValueError(("Source type must be 'Vibrating element' or "
+                        f"'Point source' but is {sourceType}"))
 
         # assign numSources is used during assigning frequencies to cores. If
         # the simulation does not use a velocity source, numSources must be one
@@ -366,7 +376,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             raise ValueError("`ear` must be 'Left ear', 'Right ear' or "
                              "'Both ears' (case sensitive).")
 
-        if sourceType != 0:
+        if sourceType_id != 0:
             numSources = 1
         else:
             numSources = 2 if ear == 'Both ears' else 1
@@ -387,7 +397,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Get point source position ---------------------------------------------------
-        if sourceType == 1:
+        if sourceType_id == 1:
             sourceXPosition, sourceYPosition, sourceZPosition = \
                 _get_point_source_position(unitFactor)
         else:
@@ -446,7 +456,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         materials = _get_materials(bpy.data.objects['Reference'])
 
         if materials is None:
-            if sourceType == 0:
+            if sourceType_id == 0:
                 raise ValueError(
                     ("Material 'Left ear' and/or 'Right ear' "
                      "must be defined for reciprocal simulations."))
@@ -469,7 +479,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         maxCores = 8
 
         # check how the frequency vector is defined
-        if frequencyVectorType == '0':
+        if frequencyVectorType == 'Step size':
             frequencyStepSize = frequencyVectorValue
             numFrequencySteps = 0
         else:
@@ -493,7 +503,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Write Output2HRTF.m function ------------------------------------------------
-        _write_output2HRTF_m(filepath1, version, sourceType, ear, unitFactor,
+        _write_output2HRTF_m(filepath1, version, sourceType_id, ear, unitFactor,
                              reference, computeHRIRs,
                              speedOfSound, densityOfMedium,
                              cpusAndCores, maxCPUs, maxCores,
@@ -511,7 +521,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # Write NumCalc input files for all CPUs and Cores (NC.inp) -------------------
         _write_nc_inp(filepath1, version, title, ear, speedOfSound,
                       densityOfMedium, frequencies, cpusAndCores,
-                      evaluationGrids, materials, method, sourceType,
+                      evaluationGrids, materials, method, sourceType_id,
                       sourceXPosition, sourceYPosition, sourceZPosition)
 
 # Finish ----------------------------------------------------------------------
@@ -846,7 +856,8 @@ def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
 
 
 def _write_output2HRTF_m(filepath1, version,
-                         sourceType, ear, unitFactor, reference, computeHRIRs,
+                         sourceType_id, ear, unitFactor,
+                         reference, computeHRIRs,
                          speedOfSound, densityOfMedium,
                          cpusAndCores, maxCPUs, maxCores,
                          sourceXPosition, sourceYPosition, sourceZPosition):
@@ -864,7 +875,7 @@ def _write_output2HRTF_m(filepath1, version,
     fw(f"Mesh2HRTF_version = '{version}';\n\n")
 
     # add information about the source
-    if sourceType == 0:
+    if sourceType_id == 0:
         fw("% source information\n")
         fw("sourceType = 'vibratingElement';\n")
 
@@ -1269,13 +1280,24 @@ def _render_pictures(filepath1, unitFactor):
 
 def _write_nc_inp(filepath1, version, title, ear,
                   speedOfSound, densityOfMedium, frequencies, cpusAndCores,
-                  evaluationGrids, materials, method, sourceType,
+                  evaluationGrids, materials, method, sourceType_id,
                   sourceXPosition, sourceYPosition, sourceZPosition):
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
     The file format is documented at:
     https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp/
     """
+
+    # check the BEM method
+    if method == 'BEM':
+        method_id = 0
+    elif method == 'SL-FMM BEM':
+        method_id = 1
+    elif method == 'ML-FMM BEM':
+        method_id = 4
+    else:
+        ValueError(
+            f"Method must be BEM, SL-FMM BEM or ML-FMM BEM but is {method}")
 
     for core in range(1, 9):
         for cpu in range(1, 11):
@@ -1346,13 +1368,13 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("2 %d " % (len(obj_data.polygons[:])+numElements))
                 fw("%d 0 " % (len(obj_data.vertices[:])+numNodes))
                 fw("0")
-                fw(" 2 1 %s 0\n" % (method))
+                fw(" 2 1 %s 0\n" % (method_id))
                 fw("##\n")
 
                 # main parameters II ------------------------------------------
                 fw("## 2. Main Parameters II\n")
                 fw("0 ")
-                if sourceType==0:
+                if sourceType_id==0:
                     fw("0 ")
                 else:
                     fw("1 ")
@@ -1394,7 +1416,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("BOUNDARY\n")
                 # write velocity condition for the ears if using vibrating
                 # elements as the sound source
-                if sourceType==0:
+                if sourceType_id==0:
                     if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
                         tmpEar='Left ear'
                     else:
@@ -1430,7 +1452,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 fw("##\n")
 
                 # source information: point source ----------------------------
-                if sourceType==0:
+                if sourceType_id==0:
                     fw("# POINT SOURCES\n")
                     if cpusAndCores[cpu-1][core-1] == 1:
                         fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
