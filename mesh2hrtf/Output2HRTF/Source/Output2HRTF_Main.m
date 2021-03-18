@@ -320,7 +320,7 @@ if computeHRIRs
         % make fs/2 real
         pressure(end,:,:) = abs(pressure(end,:,:));
         % mirror the spectrum
-        pressure = [pressure; flipud(pressure(2:end-1,:,:))];
+        pressure = [pressure; flipud(conj(pressure(2:end-1,:,:)))];
         % ifft (take complex conjugate because sign conventions differ)
         hrir = ifft(conj(pressure), 'symmetric');
         

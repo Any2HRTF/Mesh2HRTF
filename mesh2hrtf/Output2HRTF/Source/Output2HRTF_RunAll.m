@@ -1,9 +1,10 @@
-% Output2HRTF_RunAll(simulations_dir, overwrite_data,
+% Output2HRTF_RunAll(simulations_dir, overwrite,
 %                    purge_object_mesh_data, purge_eval_grid_data,
-%                    purge_compressed_object_mesh_data,
+%                    purge_compressed_object_mesh_data, purge_hrft
 %                    assume_yes)
 %
-% Batch run Output2HRTF.m files in all subfolder in `simulations_dir`.
+% Batch run Output2HRTF.m files in all subfolders in `simulations_dir`
+% and delete temporary data if desired.
 %
 % Output2HRTF.m reads simulation results and saves them as SOFA and mat
 % files.
@@ -12,7 +13,7 @@
 % simulation_dir: str
 %   The directory containing Msh2HRTF projects. The default is the current
 %   working directory.
-% overwrite_data: boolean
+% overwrite: boolean
 %   Run Output2HRTF.m even if data already exists. The default is false
 % purge_object_mesh_data: boolen
 %   Deletes the uncompressed output from NumCalc after running Output2HRTF
@@ -27,17 +28,20 @@
 % purge_compressed_object_mesh_data: boolen
 %   Deletes simulations_dir/*/Output2HRTF/ObjectMesh_*.mat. This file might
 %   not always be required but can be large. The default is false.
+% purge_hrtf : boolean
+%   Deletes the HRTF SOFA file. This file might not be needed if the HRIRs
+%   were calculated as well. The default is false.
 % assume_yes: boolen
 %   Ask the user if data should be purged if assume_yes=false. The default
 %   is false.
 
 function Output2HRTF_RunAll(simulations_dir, overwrite_data, ...
                             purge_object_mesh_data, purge_eval_grid_data, ...
-                            purge_compressed_object_mesh_data, ...
+                            purge_compressed_object_mesh_data, purge_hrtf, ...
                             assume_yes)
 
 % globar vars are needed because Output2HRTF.m contains a `clear`
-global result_dirs overwrite current_dir nn purge_obj purge_eval purge_compressed
+global result_dirs overwrite current_dir nn purge_obj purge_eval purge_compressed purge_HRTF folder
 
 % default parameters
 if ~exist('simulations_dir', 'var')
@@ -55,6 +59,9 @@ end
 if ~exist('purge_compressed_object_mesh_data', 'var')
     purge_compressed_object_mesh_data = false;
 end
+if ~exist('purge_hrtf', 'var')
+    purge_hrtf = false;
+end
 if ~exist('assume_yes', 'var')
     assume_yes = false;
 end
@@ -65,13 +72,20 @@ overwrite = overwrite_data;
 purge_obj = purge_object_mesh_data;
 purge_eval = purge_eval_grid_data;
 purge_compressed = purge_compressed_object_mesh_data;
+purge_HRTF = purge_hrtf;
 result_dirs = dir(simulations_dir);
 
-clear simulations_dir overwrite_data purge_object_mesh_data purge_eval_grid_data
+clear simulations_dir overwrite_data purge_object_mesh_data ...
+    purge_eval_grid_data purge_hrtf
 
 % ask if data should really, really, be deleted
-if (purge_obj || purge_eval) && ~assume_yes
-    disp('You are about to delete the raw simulation results after processing them.')
+if (purge_obj || purge_eval || purge_compressed || purge_HRTF) && ...
+        ~assume_yes
+    disp('Delete selected files after calculating the results:')
+    if purge_obj; disp("- Raw pressure on the mesh"); end
+    if purge_eval; disp("- Raw pressure on evaluation grid"); end
+    if purge_compressed; disp("- Compressed pressure on the mesh"); end
+    if purge_HRTF; disp("- HRTF SOFA file"); end
     yes = input('Continue (y/n)?: ', 's');
     if ~strcmpi(yes, 'y')
         error('Aborted purging data')
@@ -111,56 +125,61 @@ for nn = 1:numel(result_dirs)
     end
     
     % recover global variables
-    global result_dirs overwrite current_dir nn purge_obj purge_eval purge_compressed %#ok<REDEFGG,TLEV>
+    global result_dirs overwrite current_dir nn purge_obj purge_eval purge_compressed purge_HRTF folder%#ok<REDEFGG,TLEV>
     
     % purge uncompressed simulation results
-    if ~purge_obj && ~purge_eval && ~purge_compressed
-        continue
-    end
-    
-    fprintf('\npurging uncompressed simulation results ... ')
-    
-    % NumCalc CPU* folder
-    cores = dir(fullfile(folder, 'NumCalc', 'CPU*'));
-    for cc = 1:numel(cores)
-        % current core folder
-        core = fullfile(cores(cc).folder, cores(cc).name);
-        % skip any non folders
-        if ~isfolder(core)
-            continue
-        end
+    if purge_obj || purge_eval
+        fprintf('\npurging uncompressed simulation results ... ')
         
-        % remove entire folder ...
-        if purge_obj && purge_eval
-            rmdir(fullfile(core, 'be.out'), 's')
-            continue
-        end
-        
-        % or ... enter results directory and remove separate files
-        cd(fullfile(core, 'be.out'))
-        
-        % loop over frequencies
-        freqs = dir(fullfile(core, 'be.out', 'be.*'));
-        for ff = 1:numel(freqs)
-            freq = fullfile(freqs(ff).folder, freqs(ff).name);
+        % NumCalc CPU* folder
+        cores = dir(fullfile(folder, 'NumCalc', 'CPU*'));
+        for cc = 1:numel(cores)
+            % current core folder
+            core = fullfile(cores(cc).folder, cores(cc).name);
             % skip any non folders
-            if ~isfolder(freq)
+            if ~isfolder(core)
                 continue
             end
             
-            if purge_obj
-                delete(fullfile(freq, '*Boundary'))
-            end
-            if purge_eval
-                delete(fullfile(freq, '*EvalGrid'))
+            % remove entire folder ...
+            if purge_obj && purge_eval
+                rmdir(fullfile(core, 'be.out'), 's')
+                continue
             end
             
+            % or ... enter results directory and remove separate files
+            cd(fullfile(core, 'be.out'))
+            
+            % loop over frequencies
+            freqs = dir(fullfile(core, 'be.out', 'be.*'));
+            for ff = 1:numel(freqs)
+                freq = fullfile(freqs(ff).folder, freqs(ff).name);
+                % skip any non folders
+                if ~isfolder(freq)
+                    continue
+                end
+                
+                if purge_obj
+                    delete(fullfile(freq, '*Boundary'))
+                end
+                if purge_eval
+                    delete(fullfile(freq, '*EvalGrid'))
+                end
+                
+            end
         end
     end
     
+    % purge compressed simulation results
     if purge_compressed
         fprintf('\npurging compressed simulation results ... ')
         delete(fullfile(folder, 'Output2HRTF', 'ObjectMesh_*.mat'))
+    end
+    
+    % purge compressed simulation results
+    if purge_HRTF
+        fprintf('\npurging HRTF SOFA file ... ')
+        delete(fullfile(folder, 'Output2HRTF', 'HRTF_*.sofa'))
     end
     
     fprintf('done\n\n')
