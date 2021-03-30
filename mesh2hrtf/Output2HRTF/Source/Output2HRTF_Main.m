@@ -232,7 +232,7 @@ if reference
         elseif strcmp(sourceType, 'pointSource')
             
             amplitude = .1; % hard coded in Mesh2HRTF
-            ps = amplitude * exp(-1j * 2*pi*freqMatrix/speedOfSound .*r) ./ (4 * pi * r);
+            ps = amplitude * exp(1j * 2*pi*freqMatrix/speedOfSound .*r) ./ (4 * pi * r);
             
         else
             error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.')
