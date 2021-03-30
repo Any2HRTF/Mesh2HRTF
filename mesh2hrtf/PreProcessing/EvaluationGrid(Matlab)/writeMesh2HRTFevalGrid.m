@@ -49,10 +49,20 @@ if ~exist('startCount', 'var')
     startCount = 200000;
 end
 
+% prepare nodes for triangulation in case they are on a plane
+constCoords = [all(nodes(1,1) == nodes(:,1)) ...
+               all(nodes(1,2) == nodes(:,2)) ...
+               all(nodes(1,3) == nodes(:,3))];
+
 % triangulate the nodes
-elements  = delaunayTriangulation(nodes(:,1), nodes(:,2), nodes(:,3)); 
-% get only the surface of the triangulation
-elements  = freeBoundary(elements);
+elements = delaunayTriangulation(nodes(:,~constCoords));
+
+if any(constCoords)
+    elements = elements.ConnectivityList;
+else
+    % get only the surface of the triangulation
+    elements = freeBoundary(elements);
+end
 
 % check and make the path
 if ~exist(path, 'dir')
