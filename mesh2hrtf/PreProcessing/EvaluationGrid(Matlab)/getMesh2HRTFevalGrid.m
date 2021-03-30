@@ -1,7 +1,7 @@
 % D O C U M E N T A T I O N
 % function [nodes, numNodes, elems, numElems] = GetMesh2HRTFevalGrid(path, doPlot)
 %
-% reads the mesh2HRTF evaluation grid from the location specified by path. 
+% reads the mesh2HRTF evaluation grid from the location specified by path.
 % doPlot (true, false) specifies weather or not to plot the grid.
 %
 % OUTPUT:
@@ -12,16 +12,16 @@
 %
 % Author: fabian.brinkmann@tu-berlin.de
 % Audio Communication Group @ TU Berlin
-	
+
 %                                Mesh2HRTF
 %                Copyright (C) 2015 by Harald Ziegelwanger,
 %        Acoustics Research Institute, Austrian Academy of Sciences
 %                        mesh2hrtf.sourceforge.net
-% 
+%
 % Mesh2HRTF is licensed under the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 % Mesh2HRTF is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 % You should have received a copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not, see <http://www.gnu.org/licenses/lgpl.html>.
-% 
+%
 % If you use Mesh2HRTF:
 % - Provide credits:
 %   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
@@ -42,15 +42,15 @@ n     = 0;
 
 newLine = fgetl(nodesID);
 while ischar(newLine)
-    
+
     n = n+1;
     id = find(newLine == ' ');
-    
+
     nodes(n,1) = str2double(newLine(1:id(1)-1));
     nodes(n,2) = str2double(newLine(id(1)+1:id(2)-1));
     nodes(n,3) = str2double(newLine(id(2)+1:id(3)-1));
     nodes(n,4) = str2double(newLine(id(3)+1:end));
-    
+
     newLine = fgetl(nodesID);
 end
 
@@ -68,15 +68,15 @@ n     = 0;
 
 newLine = fgetl(elemsID);
 while ischar(newLine)
-    
+
     n = n+1;
     id = find(newLine == ' ');
-    
+
     elems(n,1) = str2double(newLine(1:id(1)-1));
     elems(n,2) = str2double(newLine(id(1)+1:id(2)-1));
     elems(n,3) = str2double(newLine(id(2)+1:id(3)-1));
     elems(n,4) = str2double(newLine(id(3)+1:id(4)-1));
-    
+
     newLine = fgetl(elemsID);
 end
 
@@ -88,13 +88,12 @@ nodes(:,1) = nodes(:,1) - nodes(1,1)+1;
 
 % plot if desired
 if doPlot
-    
-    AKf(15)
+
     set(gcf,'Color',[1 1 1]);
     trisurf(elems(:,2:4),nodes(:,2),nodes(:,3),nodes(:,4), 'FaceColor', [.8 .8 .8], 'faceAlpha', 1, 'EdgeColor', 'none')
     hold on
     scatter3(nodes(:,2), nodes(:,3), nodes(:,4), 75, '.k')
     axis equal
     xlabel x; ylabel y; zlabel z;
-    
+
 end
