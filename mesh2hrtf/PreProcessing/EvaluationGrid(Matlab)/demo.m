@@ -2,11 +2,11 @@
 %                Copyright (C) 2015 by Harald Ziegelwanger,
 %        Acoustics Research Institute, Austrian Academy of Sciences
 %                        mesh2hrtf.sourceforge.net
-% 
+%
 % Mesh2HRTF is licensed under the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 % Mesh2HRTF is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 % You should have received a copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not, see <http://www.gnu.org/licenses/lgpl.html>.
-% 
+%
 % If you use Mesh2HRTF:
 % - Provide credits:
 %   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
@@ -16,6 +16,12 @@
 %
 % Author: fabian.brinkmann@tu-berlin.de
 % Audio Communication Group @ TU Berlin
+
+%% -----------------------------------------------------------------------------
+%  NOTE: The evaluation grid has to be in meters regardless of the parameter
+%        'unit' in Blender.
+%  -----------------------------------------------------------------------------
+
 %% --------------------------------------------- read a grid from Mesh2HRTF
 close all; clear
 
