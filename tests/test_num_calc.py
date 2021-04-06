@@ -11,5 +11,5 @@ def test_build():
     """ test if make for NumCalc works """
 
     shutil.copytree("../mesh2hrtf/NumCalc/Source", tmp.name+"/NumCalc")
-    os.chdir(tmp.name+"/NumCalc")
-    subprocess.run(["make"], check=True)
+    tmp_path = os.path.join(tmp.name, "NumCalc")
+    subprocess.run(["make"], cwd=tmp_path, check=True)
