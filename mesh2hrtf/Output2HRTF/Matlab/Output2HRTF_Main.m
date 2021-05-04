@@ -54,14 +54,14 @@ ears=max(unique(cpusAndCores));
 evaluationGrids = dir('EvaluationGrids');
 evaluationGrids = evaluationGrids(~ismember({evaluationGrids.name},{'.','..'}));
 
-evaltionGridsNumNodes = 0;
+evaluationGridsNumNodes = 0;
 for ii=1:length(evaluationGrids)
     tmpNodes=importdata(fullfile('EvaluationGrids', evaluationGrids(ii).name, 'Nodes.txt'),' ',1);
     tmpElements=importdata(fullfile('EvaluationGrids', evaluationGrids(ii).name, 'Elements.txt'),' ',1);
     evaluationGrids(ii).nodes = tmpNodes.data;
     evaluationGrids(ii).elements = tmpElements.data;
     evaluationGrids(ii).num_nodes = size(tmpNodes.data, 1);
-    evaltionGridsNumNodes = evaltionGridsNumNodes + evaluationGrids(ii).num_nodes;
+    evaluationGridsNumNodes = evaluationGridsNumNodes + evaluationGrids(ii).num_nodes;
 end
 
 % get the object mesh

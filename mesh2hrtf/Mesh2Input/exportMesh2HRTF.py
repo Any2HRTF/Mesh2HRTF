@@ -99,7 +99,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     programPath: StringProperty(
         name="Mesh2HRTF-path",
         description="Path to folder containing 'Mesh2Input', 'NumCalc', etc..",
-        default=r"path/to/mesh2hrtf",
+        default=r"/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -315,7 +315,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
-             programPath="path/to/mesh2hrtf",
+             programPath="/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
              sourceType='Vibrating element'
              ):
         """Export Mesh2HRTF project."""
@@ -511,6 +511,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 # Write Output2VTK.m function ------------------------------------------------
         _write_output2VTK_m(filepath1, version)
+
+# Write Output2HRTF.py function ------------------------------------------------
+        _write_output2HRTF_py(filepath1, version, sourceType_id, ear, unitFactor,
+                             reference, computeHRIRs,
+                             speedOfSound, densityOfMedium,
+                             cpusAndCores, maxCPUs, maxCores,
+                             sourceXPosition, sourceYPosition, sourceZPosition,
+                             programPath)
 
 
 # Render pictures of the model ------------------------------------------------
@@ -989,6 +997,132 @@ def _write_output2VTK_m(filepath1, version):
 
     # export the sound pressure distribution as dB SPL in VTK-files
     fw("EvalToolsExport2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes(:,2:end),elements(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')\n")
+    file.close
+
+def _write_output2HRTF_py(filepath1, version,
+                         sourceType_id, ear, unitFactor,
+                         reference, computeHRIRs,
+                         speedOfSound, densityOfMedium,
+                         cpusAndCores, maxCPUs, maxCores,
+                         sourceXPosition, sourceYPosition, sourceZPosition, 
+                         programPath):
+
+    # file handling
+    file = open(os.path.join(filepath1, "Output2HRTF.py"), "w",
+                encoding="utf8", newline="\n")
+    fw = file.write
+
+    # header
+    fw("# Collect the data simulated by NumCalc and save to project folder.\n")
+
+    fw("import numpy\n")
+    fw("import sys\n")
+
+    output2hrtfPath = os.path.join(programPath,"Output2HRTF","Python")
+
+    fw("sys.path.insert(1, '%s')\n" % output2hrtfPath)
+    fw("import Output2HRTF_Main as o2hrtfm\n\n")
+
+    fw("projectPath = '%s'\n\n" % filepath1)
+
+    # Mesh2HRTF version
+    fw(f"Mesh2HRTF_version = '{version}'\n\n")
+
+    # initialize arrays for source information
+    if sourceType_id == 0 and ear == 'Both ears':
+        fw("sourceCenter = numpy.zeros((2, 3))\n")
+        fw("sourceArea = numpy.zeros((2, 1))\n\n")
+    else:
+        fw("sourceCenter = numpy.zeros((1, 3))\n")
+        fw("sourceArea = numpy.zeros((1, 1))\n\n")
+    
+    # add information about the source
+    if sourceType_id == 0:
+        fw("# source information\n")
+        fw("sourceType = 'vibratingElement'\n")
+
+        # get the receiver/ear centers and areas
+        obj = bpy.data.objects['Reference']
+        obj_data = obj.data
+        earCenter, earArea = _calculateReceiverProperties(
+            obj, obj_data, unitFactor)
+
+        # write left ear data
+        if ear == 'Left ear' or ear == 'Both ears':
+            fw("sourceCenter[0, :] = [%f, %f, %f]\n" 
+                                            % (earCenter[0][0],
+                                            earCenter[0][1],
+                                            earCenter[0][2]))
+            fw("sourceArea[0, 0] = %g\n" % earArea[0])
+
+        # write right ear data
+        if ear == 'Right ear' or ear == 'Both ears':
+            if ear == 'Right ear':
+                nn = 0
+            if ear == 'Both ears':
+                nn = 1
+
+            fw("sourceCenter[%d, :] = [%f, %f, %f]\n" % (nn,
+                                                    earCenter[1][0],
+                                                    earCenter[1][1],
+                                                    earCenter[1][2]))
+            fw("sourceArea[%d, 0] = %g\n" % (nn, earArea[1]))
+
+        fw("\n")
+    else:
+
+        fw("# source information\n")
+        fw("sourceType = 'pointSource';\n")
+        fw("sourceCenter[0, :] = [%s, %s, %s]\n" 
+                                            % (sourceXPosition,
+                                            sourceYPosition,
+                                            sourceZPosition))
+        fw("sourceArea[0, 0]     = 1\n")
+
+    # referencing
+    fw("# Reference to a point source in the origin\n")
+    fw("# accoring to the classical HRTF definition\n")
+    fw("# (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
+    fw("reference = ")
+    if reference:
+        fw("True\n\n")
+    else:
+        fw("False\n\n")
+
+    # compute HRIRs
+    fw("# Compute HRIRs via the inverse Fourier transfrom.\n")
+    fw("# This will add data at 0 Hz, mirror the single sided spectrum, and\n")
+    fw("# shift the HRIRs in time. Requires reference = true.\n")
+    fw("computeHRIRs = ")
+    if computeHRIRs:
+        fw("True\n\n")
+    else:
+        fw("False\n\n")
+
+    # constants
+    fw("# Constants\n")
+    fw("speedOfSound = " + speedOfSound + "  # [m/s]\n")
+    fw("densityOfAir = " + densityOfMedium + "  # [kg/m^3]\n\n")
+
+    # write CPUs and Cores
+    fw("# Distribution of ears across CPUs and cores.\n")
+    fw("# (Matrix of size [numCPUs x numCores])\n")
+    fw("cpusAndCores = numpy.array([\n")
+    for cpu in range(1, maxCPUs + 1):
+        fw("    [")
+        for core in range(1, maxCores + 1):
+            fw("%i" % cpusAndCores[cpu-1][core-1])
+            if core < maxCores:
+                fw(", ")
+        if cpu < maxCPUs:
+            fw("],\n")
+    fw("]])\n\n")
+
+    fw("# Collect the data simulated by NumCalc\n")
+    fw("o2hrtfm.Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,\n")
+    fw("                 sourceType, sourceCenter, sourceArea,\n")
+    fw("                 reference, computeHRIRs,\n")
+    fw("                 speedOfSound, densityOfAir)\n")
     file.close
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
