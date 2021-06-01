@@ -253,14 +253,17 @@ SOFAstart;
 for ii = 1:numel(evaluationGrids)
     
     xyz = evaluationGrids(ii).nodes;
-    pressure = evaluationGrids(ii).pressure;
     
-    % prepare pressure to be size of MRN when R=2
+    % pressure has size N (frequencies) x M (measurements) x R (sources)
+    pressure = evaluationGrids(ii).pressure;
+    % get dimenson 3 explicitly, because it would be dropped if R=1
+    NMR = [size(pressure, 1), size(pressure, 2), size(pressure, 3)];
+    
+    % shift dimensions to MRN as expected by SOFA
+    % (shifting loses leading and trailing dimensons of size 1)
     pressure = shiftdim(pressure, 1);
-    % prepare pressure to be size of MRN when R=1
-    if size(pressure, 3) == 1
-        pressure = reshape(pressure, size(pressure,1), 1, size(pressure, 2));
-    end
+    % force dimensions of 1
+    pressure = reshape(pressure, NMR(2), NMR(3), NMR(1));
     
     % Save as GeneralTF
     Obj = SOFAgetConventions('GeneralTF');
@@ -330,13 +333,15 @@ if computeHRIRs
         n_shift = round(.30 / (1/fs * speedOfSound));
         hrir = circshift(hrir, n_shift);
         
+        % hrir has size N (samples) x M (measurements) x R (sources)
+        % get dimenson 3 explicitly, because it would be dropped if R=1
+        NMR = [size(hrir, 1), size(hrir, 2), size(hrir, 3)];
         
-        % prepare pressure to be size of MRN when R=2
+        % shift dimensions to MRN as expected by SOFA
+        % (shifting loses leading and trailing dimensons of size 1)
         hrir = shiftdim(hrir, 1);
-        % prepare pressure to be size of MRN when R=1
-        if size(hrir, 3) == 1
-            hrir = reshape(hrir, size(hrir,1), 1, size(hrir, 2));
-        end
+        % force dimensions of 1
+        hrir = reshape(hrir, NMR(2), NMR(3), NMR(1));
         
         % Save as GeneralFIR
         Obj = SOFAgetConventions('GeneralFIR', 'm');
