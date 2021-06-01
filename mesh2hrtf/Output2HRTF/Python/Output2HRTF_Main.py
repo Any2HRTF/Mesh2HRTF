@@ -22,6 +22,7 @@ import os
 import numpy
 import Output2HRTF_ReadComputationTime as o2hrtf_rct
 import Output2HRTF_Load as o2hrtf_l
+import sofa
 
 
 def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores, 
@@ -142,171 +143,182 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
             print('...')
         idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
         frequencies = sorted(frequencies)
-        pressure[ch] = tmpPressure[idx, :]
-        
-        del tmpPressure, tmpPhase
+        pressure.append(tmpPressure[idx, :])
+
+        del tmpPressure
+    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))
 
     print('\nSave ObjectMesh data ...')
     cnt = 0
-    for ii in range(size(objectMeshes)):
-        nodes = objectMeshes[ii][nodes]
-        elements = objectMeshes[ii][elements]
+    for ii in range(len(objectMeshes)):
+        nodes = objectMeshes[ii]["nodes"]
+        elements = objectMeshes[ii]["elements"]
         element_data = pressure
-        for jj in range(size(pressure)):
-            element_data[jj] = element_data[jj][:, cnt+1:cnt+elements.shape[0]]
+        
+        # old version using list representation of pressure
+        # for jj in range(len(pressure)):
+        #     element_data[jj] = element_data[jj][:, cnt:cnt+elements.shape[0]]
+        # new version using MRN-transposed array representation of pressure
+        for jj in range(pressure.shape[1]):
+            element_data[:, jj, :] = element_data[cnt:cnt+elements.shape[0], jj, :]
 
-        file = open("ObjectMesh_"+objectMeshes[ii]+".txt", "w")
-        file.write(repr(nodes)+'\n')
-        file.write(repr(elements)+'\n')
-        file.write(repr(frequencies)+'\n')
-        file.write(repr(element_data)+'\n')
+        # probably still need a better way of storing these values
+        file = open("ObjectMesh_"+objectMeshes[ii]["name"]+".npz", "w")
+        numpy.savez(file.name, nodes=nodes, elements=elements,
+                    frequencies=frequencies, element_data=element_data)
         file.close()
+
+        # file = open("ObjectMeshAppend_"+objectMeshes[ii]["name"]+".txt", "a")
+        # numpy.savetxt(file, nodes)
+        # file.write('\n')
+        # numpy.savetxt(file, elements)
+        # file.write('\n')
+        # numpy.savetxt(file, frequencies)
+        # file.write('\n')
+        # numpy.savetxt(file, element_data)
+        # file.write('\n')
+        # file.close()
+
+        # file = open("ObjectMesh_"+objectMeshes[ii]["name"]+".txt", "w")
+        # file.write(repr(nodes)+'\n')
+        # file.write(repr(elements)+'\n')
+        # file.write(repr(frequencies)+'\n')
+        # file.write(repr(element_data)+'\n')
+        # file.close()
+
         cnt = cnt + elements.shape[0]
 
     del pressure, nodes, elements, frequencies, ii, jj, cnt, ch, idx, element_data
 
-    """ #%% Load EvaluationGrid data
-    if  (evaluationGrids.size!=0):
+    #%% Load EvaluationGrid data
+    tmpPressure = []
+    frequencies = []
+    pressure = []
+    if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
         for ch in range(ears):
-            print('\n    Ear %d ...' % ch)
+            print('\n    Ear %d ...' % (ch+1))
             for ii in range(cpusAndCores.shape[0]):
-                print('\n        CPU %d: ' % ii)
+                print('\n        CPU %d: ' % (ii+1))
                 for jj in range(cpusAndCores.shape[1]):
-                    if (cpusAndCores[ii,jj]==ch):
-                        print([num2str(jj) ', ']);
-                        [tmpData,tmpFrequencies]=Output2HRTF_Load(['NumCalc' filesep 'CPU_' num2str(ii) '_Core_' num2str(jj) filesep 'be.out' filesep],'pEvalGrid');
-                        if exist('tmpPressure','var')
-                            tmpPressure=[tmpPressure; tmpData];
-                            frequencies=[frequencies; tmpFrequencies];
-                        else
-                            tmpPressure=tmpData;
-                            frequencies=tmpFrequencies;
-                        end
-                        clear tmpData tmpFrequencies
-                    end
-                end
-                fprintf('...');
-            end
-            pressure(:,:,ch)=tmpPressure;
-            clear tmpPressure
-        end
-        [frequencies,idx]=sort(frequencies);
-        pressure=pressure(idx,:,:);
-    end
+                    if (cpusAndCores[ii, jj] == (ch+1)):
+                        print('%d, ' % (jj+1))
+                        tmpFilename = os.path.join('NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)), 'be.out')                       
+                        [tmpData, tmpFrequencies] = o2hrtf_l.Output2HRTF_Load(tmpFilename, 'pEvalGrid')
+                        if tmpPressure:
+                            tmpPressure.append(tmpData)
+                            frequencies.append(tmpFrequencies)
+                        else:
+                            tmpPressure = tmpData
+                            frequencies = tmpFrequencies
+                        del tmpData, tmpFrequencies
+                print('...')
+            pressure.append(tmpPressure)
+            del tmpPressure
+        idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
+        frequencies = sorted(frequencies)
+        pressure = [i[idx, :] for i in pressure]
+    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))        
 
     # save to struct
-    cnt = 0;
-    for ii = 1:numel(evaluationGrids)
-        evaluationGrids(ii).pressure = pressure(:, cnt+1:cnt+evaluationGrids(ii).num_nodes, :);
-        cnt = cnt + evaluationGrids(ii).num_nodes;
-    end
+    cnt = 0
+    for ii in range(len(evaluationGrids)):
+        # old version using list representation of pressure
+        # evaluationGrids[ii]["pressure"] = [i[:, cnt:cnt+evaluationGrids[ii]["num_nodes"],] for i in pressure]
+        # new version using MRN-transposed array representation of pressure
+        evaluationGrids[ii]["pressure"] = pressure[cnt:cnt+evaluationGrids[ii]["num_nodes"], :, :]
 
+        cnt = cnt + evaluationGrids[ii]["num_nodes"]
 
-    clear ch ii jj tmpData tmpFrequencies tmpPressure pressure cnt idx
-
+    del ch, ii, jj, pressure, cnt, idx
 
     # reference to pressure in the middle of the head with the head absent
     # according to the HRTF definition.
-    if reference
-        
+    if reference:
+
         # this might be a parameter in the function call
-        refMode = 1;    # 1: reference to only one radius (the smallest found)
-                        # 2: reference to all indivudal radii
-        
-        for ii = 1:numel(evaluationGrids)
-            
-            xyz = evaluationGrids(ii).nodes;
-            pressure = evaluationGrids(ii).pressure;
-            freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
-            
+        refMode = 1    # 1: reference to only one radius (the smallest found)
+                       # 2: reference to all indivudal radii
+
+        for ii in range(len(evaluationGrids)):
+
+            xyz = evaluationGrids[ii]["nodes"]
+            pressure = evaluationGrids[ii]["pressure"]
+            freqMatrix = numpy.tile(frequencies, (pressure.shape[0], pressure.shape[1], 1))
+
             # distance of source positions from the origin
-            if refMode == 1
-                r = min(sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2));
-                r = repmat(r, [size(pressure,1) size(pressure, 2) size(pressure, 3)]);
-            else
-                r = sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2);
-                r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
-            end
-            
-            if strcmp(sourceType, 'vibratingElement')
-                
-                volumeFlow = .1 * ones(size(pressure));
-                if exist('sourceArea', 'var')
-                    #has to be fixed for both ears....
-                    for nn = 1:numel(sourceArea)
-                        volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * sourceArea(nn);
-                    end
-                end
-                
+            if refMode == 1:
+                r = min(numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2))
+                r = numpy.tile(r, (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
+            else:
+                r = numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2)
+                r = numpy.tile(numpy.transpose(r), (pressure.shape[0], pressure.shape[1], 1))
+
+            if sourceType == 'vibratingElement':
+
+                volumeFlow = 0.1 * numpy.ones((pressure.shape[0], pressure.shape[1], pressure.shape[2]))
+                if 'sourceArea':
+                    # has to be fixed for both ears....
+                    for nn in range(len(sourceArea)):
+                        volumeFlow[:, nn, :] = volumeFlow[:, nn, :] * sourceArea[nn]
+
                 # point source in the origin evaluated at r
                 # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-                ps   = -1j * densityOfAir * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
-                    exp(1j * 2*pi*freqMatrix/speedOfSound .* r) ./ r;
-                
-            elseif strcmp(sourceType, 'pointSource')
-                
-                amplitude = .1; # hard coded in Mesh2HRTF
-                ps = amplitude * exp(1j * 2*pi*freqMatrix/speedOfSound .*r) ./ (4 * pi * r);
-                
-            else
+                ps = -1j * densityOfAir * 2 * numpy.pi * freqMatrix * volumeFlow / (4 * numpy.pi) * numpy.exp(1j * 2 * numpy.pi * freqMatrix / speedOfSound * r) / r
+
+            elif sourceType == 'pointSource':
+
+                amplitude = 0.1  # hard coded in Mesh2HRTF
+                ps = amplitude * numpy.exp(1j * 2 * numpy.pi * freqMatrix / speedOfSound * r) / (4 * numpy.pi * r)
+
+            else:
                 error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.')
-            end
-            
+
             # here we go...
-            evaluationGrids(ii).pressure = pressure ./ ps;
-            
-        end
-        
-        clear Areceiver r freqMatrix ps ii
-    end
+            evaluationGrids[ii]["pressure"] = pressure/ ps
+
+        del r, freqMatrix, ps, ii
 
     #%% Save data as SOFA file
-    fprintf('\nSaving complex pressure to SOFA file ...\n')
-    SOFAstart;
+    print('\nSaving complex pressure to SOFA file ...\n')
 
-    for ii = 1:numel(evaluationGrids)
-        
-        xyz = evaluationGrids(ii).nodes;
-        pressure = evaluationGrids(ii).pressure;
-        
-        # prepare pressure to be size of MRN when R=2
-        pressure = shiftdim(pressure, 1);
-        # prepare pressure to be size of MRN when R=1
-        if size(pressure, 3) == 1
-            pressure = reshape(pressure, size(pressure,1), 1, size(pressure, 2));
-        end
-        
-        # Save as GeneralTF
-        Obj = SOFAgetConventions('GeneralTF');
-        
-        Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
-        Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
-        Obj.GLOBAL_Organization = '';
-        Obj.GLOBAL_Title = '';
-        Obj.GLOBAL_DateCreated = date;
-        Obj.GLOBAL_AuthorContact = '';
-        
-        Obj.ReceiverPosition=sourceCenter;
-        Obj.N=frequencies;
-        
-        Obj.Data.Real=real(pressure);
-        Obj.Data.Imag=imag(pressure);
-        Obj.Data.Real_LongName='pressure';
-        Obj.Data.Real_Units='pascal';
-        Obj.Data.Imag_LongName='pressure';
-        Obj.Data.Imag_Units='pascal';
-        
-        Obj.ListenerPosition = [0 0 0];
-        Obj.SourcePosition_Type='cartesian';
-        Obj.SourcePosition_Units='meter';
-        Obj.SourcePosition=xyz(:,2:4);
-        
-        Obj=SOFAupdateDimensions(Obj);
-        SOFAsave(fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']),Obj);
-    end
+    for ii in range(len(evaluationGrids)):
 
-    clear Obj ii xyz pressure
+        xyz = evaluationGrids[ii]["nodes"]
+        pressure = evaluationGrids[ii]["pressure"]
+
+        # Save as GeneralTF           
+        TF_path = os.path.join('Output2HRTF','HRTF_%s.sofa' % evaluationGrids[ii]["name"])
+
+        Obj = sofa.Database.create(TF_path, "GeneralTF")
+
+
+        Obj.Metadata.set_attribute('GLOBAL_ApplicationName', 'Mesh2HRTF')
+        Obj.Metadata.set_attribute('GLOBAL_ApplicationVersion', Mesh2HRTF_version)
+        Obj.Metadata.set_attribute('GLOBAL_Organization', '')
+        Obj.Metadata.set_attribute('GLOBAL_Title', '')
+        Obj.Metadata.set_attribute('GLOBAL_DateCreated', date)
+        Obj.Metadata.set_attribute('GLOBAL_AuthorContact', '')
+
+    """    Obj.ReceiverPosition = sourceCenter
+        Obj.N=frequencies
+
+        Obj.Data.Real = real(pressure)
+        Obj.Data.Imag = imag(pressure)
+        Obj.Data.Real_LongName = 'pressure'
+        Obj.Data.Real_Units = 'pascal'
+        Obj.Data.Imag_LongName = 'pressure'
+        Obj.Data.Imag_Units = 'pascal'
+
+        Obj.ListenerPosition = [0, 0, 0]
+        Obj.SourcePosition_Type='cartesian'
+        Obj.SourcePosition_Units='meter'
+        Obj.SourcePosition=xyz[:, 2:4]
+
+        Obj=SOFAupdateDimensions(Obj)
+        
+
+    del Obj, ii, xyz, pressure
 
 
     #%% Save time data data as SOFA file
