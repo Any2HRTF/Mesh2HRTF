@@ -33,9 +33,14 @@
 # header
 import os
 import numpy
+# TODO: I would suggest to move the functions into this module
 import Output2HRTF_ReadComputationTime as o2hrtf_rct
 import Output2HRTF_Load as o2hrtf_l
 import sofa
+
+# TODO: The module would be easier to test and read if we would separate it
+#       into smaller functions. I've added empty function definitions at the
+#       end for discussion.
 
 
 def Output2HRTF_Main(
@@ -83,6 +88,7 @@ def Output2HRTF_Main(
     ears = numpy.amax(cpusAndCores)
 
     # get the evaluation grids
+    print('\n Loading the EvaluationGrids ...')
     evaluationGrids = []
     evalGridsList = os.listdir('EvaluationGrids')
     evaluationGridsNumNodes = 0
@@ -100,6 +106,7 @@ def Output2HRTF_Main(
         evaluationGridsNumNodes += evaluationGrids[ii]['num_nodes']
 
     # get the object mesh
+    print('\n Loading the ObjectMeshes ...')
     objectMeshes = []
     objMeshesList = os.listdir('ObjectMeshes')
     objectMeshesNumNodes = 0
@@ -120,6 +127,8 @@ def Output2HRTF_Main(
 
     # Read computational effort
     print('\n Loading computational effort data ...')
+    # TODO: remove prints in the for loop. Loading this is fast and printing
+    #       only clutters the command line in this case...
     for ch in range(ears):
         computationTime = []
         print('\n    Ear %d ...' % (ch+1))
@@ -140,6 +149,11 @@ def Output2HRTF_Main(
     description = ['Frequency index', 'Frequency', 'Building', 'Solving',
                    'Postprocessing', 'Total']
 
+# TODO: This is just informal to compare or report computation times. Saving
+#       it as a text file is fine and the most generic format. I would suggest
+#       a csv file:
+#       numpy.savetext("filename.csv", computationTime, delimiter=", ",
+#                      header=", ".join(description), comments="")
 # this following file save operation needs to be refined, perhaps turn it into
 # a dictionary or save as a .npy array, let's see - I don't even know what this
 #  file is used for
@@ -199,6 +213,8 @@ def Output2HRTF_Main(
                 cnt:cnt+elements.shape[0], jj, :]
 
         # probably still need a better way of storing these values
+        # TODO: Saving in numpy format is fine, but I would suggest to use
+        #       savez_compressed :)
         file = open("ObjectMesh_"+objectMeshes[ii]["name"]+".npz", "w")
         numpy.savez(file.name, nodes=nodes, elements=elements,
                     frequencies=frequencies, element_data=element_data)
@@ -455,4 +471,50 @@ def Output2HRTF_Main(
     clear Obj ii xyz pressure
 
     fprintf('Done\n') """
-# %%
+
+
+def read_nodes_and_elements():
+    """
+    Read the nodes and elements of the evaluation grids or object meshes.
+    """
+    # TODO: The code for reading the data above is very redundant. If this
+    #       function uses the code with an additional parameter
+    #       data='ObjectMeshes' or data='EvaluationGrids' one function might
+    #       read both :)
+    pass
+
+
+def read_computation_time():
+    """Read the computation time for each frequency."""
+    pass
+
+
+def read_pressure():
+    """Read the sound pressure on the object meshes or evaluation grid."""
+    # TODO: The code for reading the data above is very redundant. If this
+    #       function uses the code with an additional parameter
+    #       data='pEvalGrid' or data='pBoundary' one function might read
+    #       both :)
+    pass
+
+
+def read_pressure_on_evaluation_grids():
+    """read the sound pressure on the evaluation grids."""
+    pass
+
+
+def reference_HRTF():
+    """Reference HRTF to the sound pressure in the center of the head."""
+    pass
+
+
+def compute_HRIR():
+    """Compute HRIR from HRTF by means of the inverse Fourier transform"""
+    pass
+
+
+def write_to_sofa():
+    # TODO: It might be possible to use this function to write HRTFs and HRIRs
+    #       The two things that might differ are the convention and the data
+    #       which could be passed as parameters
+    pass

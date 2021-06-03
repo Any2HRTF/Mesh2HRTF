@@ -30,18 +30,33 @@ import numpy
 
 
 def Output2HRTF_Load(foldername, filename):
-    # OUTPUT2HRTF_LOAD
-    #   [data,frequency]=Output2HRTF_Load(foldername,filename) loads results
-    #   of the BEM-HRTF calculation.
-    #
-    #   Input:
-    #       foldername:
-    #       filename:
-    #
-    #   Output:
-    #       data: Matrix of complex values
-    #           dim1: frequency
-    #           dim2: datapoints
+    """
+    Load results of the BEM calculation.
+
+    Parameters
+    ----------
+    foldername : string
+        The folder from which the data is loaded. The data to be read is
+        located in the folder be.out inside NumCalc/CPU_*_Core_*
+    filename : string
+        The kind of data that is loaded
+
+        pBoundary
+            The sound pressure on the object mesh
+        vBoundary
+            The sound velocity on the object mesh
+        pEvalGrid
+            The sound pressure on the evaulation grid
+        vEvalGrid
+            The sound velocity on the evaluation grid
+
+    Returns
+    -------
+    data : numpy array
+        Pressure or velocity values of shape (numFrequencies, numEntries)
+    frequencies : numpy array
+        The frequencies in Hz
+    """
 
     # TODO: This if case is not needed - Python automatically throws an error
     #       if required parameters are not provided :)
@@ -75,8 +90,6 @@ def Output2HRTF_Load(foldername, filename):
                     idx2 = int(li[0])
                     if idx2 - idx1 == 1:
                         numHeaderlines_BE = ii - 2
-                        # TODO: the 'l' in 'for l in line' is not used. There
-                        #       should be a better way, maybe 'len(line)'?
                         numDatalines = sum(1 for l in line) + 2
                         break
 
