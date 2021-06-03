@@ -3,19 +3,32 @@
 #        Acoustics Research Institute, Austrian Academy of Sciences
 #                        mesh2hrtf.sourceforge.net
 #
-# Mesh2HRTF is licensed under the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-# Mesh2HRTF is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
-# You should have received a copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not, see <http://www.gnu.org/licenses/lgpl.html>.
+# Mesh2HRTF is licensed under the GNU Lesser General Public License as
+# published by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version. Mesh2HRTF is distributed in the hope
+# that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details. You should have received a
+# copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not,
+# see <http://www.gnu.org/licenses/lgpl.html>.
 #
 # If you use Mesh2HRTF:
 # - Provide credits:
 #   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
 # - In your publication, cite both articles:
-#   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
-#   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+#   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF:
+#       Open-source software package for the numerical calculation of
+#       head-related transfer functions," in Proceedings of the 22nd ICSV,
+#       Florence, IT.
+#   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical
+#       calculation of listener-specific head-related transfer functions and
+#       sound localization: Microphone model and mesh discretization," The
+#       Journal of the Acoustical Society of America, 138, 208-222.
 #
-# Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
-# Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
+# Author: Harald Ziegelwanger
+#        (Acoustics Research Institute, Austrian Academy of Sciences)
+#        Fabian Brinkmann, Robert Pelzer, Jeffrey Thomsen
+#        (Audio Communication Group, Technical University Berlin)
 
 # header
 import os
@@ -25,31 +38,42 @@ import Output2HRTF_Load as o2hrtf_l
 import sofa
 
 
-def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores, 
-                          sourceType, sourceCenter, sourceArea, 
-                          reference, computeHRIRs, 
-                          speedOfSound, densityOfAir):
-    # OUTPUT2HRTF_MAIN
-    #   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
-    #   receiverPositions,receiverArea,reference,speedOfSound,densityOfAir) calculates
-    #   all relevant data after the NumCalc calculation and saves the results.
-    #
-    #   Input:
-    #       cpusAndCores:
-    #
-    #       reciprocity:
-    #
-    #       receiverPositions:
-    #
-    #       microphoneArea: are of the mesh elements that were used as sound
-    #       source in reciprocal calculation in square meters
-    #
-    #       reference: 'true' complex pressure at the evaluation grid is
-    #       devided by a point source in the origin of the coordinate system.
-    #       This is the calssical HRTF definition (pressure st the ear divided
-    #       by pressure at the center of the head with the head being absent)
+def Output2HRTF_Main(
+        projectPath, Mesh2HRTF_version, cpusAndCores, sourceType, sourceCenter,
+        sourceArea, reference, computeHRIRs, speedOfSound, densityOfAir):
+    """
+    Process NumcCalc output and write data as SOFA files.
 
-#%% ----------------------------load meta data------------------------------
+    All parameters are written upon exporting a Mesh2HRTF project from Blender.
+
+    Parameters
+    ----------
+    projectPath : string
+        Path to the Mesh2HRTF folder.
+    Mesh2HRTF_version : string
+        Mesh2HRTF version as string
+    cpusAndCores : array
+        Array indicating which CPUs and Cores were used for the BEM
+    sourceType : string
+        The source type (vibrating element, point source)
+    sourceCenter : array
+        The source position
+    sourceArea : array
+        The area of the source(s) if using vibrating elements as sourceType.
+        This is required for referencing the HRTFs
+    reference : boolean
+        Indicate if the HRTF are referenced to the pressure in the center of
+        the head with the head absent.
+    computeHRIRs : boolean
+        Indicate if the HRIRs should be calculated by means of the inverse
+        Fourier transform.
+    speedOfSound : float
+        The speed of sound in m/s
+    densityOfAir : float
+        The density of air in kg/m^3
+    """
+
+    # ---------------------------- load meta data -----------------------------
     # output directory
     os.chdir(projectPath)
     if not os.path.exists(os.path.join(os.getcwd(), 'Output2HRTF')):
@@ -63,10 +87,12 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
     evalGridsList = os.listdir('EvaluationGrids')
     evaluationGridsNumNodes = 0
     for ii in range(len(evalGridsList)):
-        tmpNodes = numpy.loadtxt(os.path.join('EvaluationGrids',
-                evalGridsList[ii], 'Nodes.txt'), delimiter=' ', skiprows=1)
-        tmpElements = numpy.loadtxt(os.path.join('EvaluationGrids',
-                evalGridsList[ii], 'Elements.txt'), delimiter=' ', skiprows=1)
+        tmpNodes = numpy.loadtxt(os.path.join(
+            'EvaluationGrids', evalGridsList[ii], 'Nodes.txt'),
+            delimiter=' ', skiprows=1)
+        tmpElements = numpy.loadtxt(os.path.join(
+            'EvaluationGrids', evalGridsList[ii], 'Elements.txt'),
+            delimiter=' ', skiprows=1)
         evaluationGrids.append({"name": evalGridsList[ii],
                                 "nodes": tmpNodes,
                                 "elements": tmpElements,
@@ -78,19 +104,21 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
     objMeshesList = os.listdir('ObjectMeshes')
     objectMeshesNumNodes = 0
     for ii in range(len(objMeshesList)):
-        tmpNodes = numpy.loadtxt(os.path.join('ObjectMeshes',
-                objMeshesList[ii], 'Nodes.txt'), delimiter=' ', skiprows=1)
-        tmpElements = numpy.loadtxt(os.path.join('ObjectMeshes',
-                objMeshesList[ii], 'Elements.txt'), delimiter=' ', skiprows=1)
+        tmpNodes = numpy.loadtxt(os.path.join(
+            'ObjectMeshes', objMeshesList[ii], 'Nodes.txt'),
+            delimiter=' ', skiprows=1)
+        tmpElements = numpy.loadtxt(os.path.join(
+            'ObjectMeshes', objMeshesList[ii], 'Elements.txt'),
+            delimiter=' ', skiprows=1)
         objectMeshes.append({"name": objMeshesList[ii],
-                            "nodes": tmpNodes,
-                            "elements": tmpElements,
-                            "num_nodes": tmpNodes.shape[0]})
+                             "nodes": tmpNodes,
+                             "elements": tmpElements,
+                             "num_nodes": tmpNodes.shape[0]})
         objectMeshesNumNodes += objectMeshes[ii]['num_nodes']
 
     del ii, tmpNodes, tmpElements
 
-#%% Read computational effort
+    # Read computational effort
     print('\n Loading computational effort data ...')
     for ch in range(ears):
         computationTime = []
@@ -100,26 +128,30 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
             for jj in range(cpusAndCores.shape[1]):
                 if (cpusAndCores[ii, jj] == ch+1):
                     print('%d, ' % (jj+1))
-                    tmpFilename = os.path.join('NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)), 'NC.out')
-                    tmp = o2hrtf_rct.Output2HRTF_ReadComputationTime(tmpFilename)
+                    tmpFilename = os.path.join(
+                        'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
+                        'NC.out')
+                    tmp = o2hrtf_rct.Output2HRTF_ReadComputationTime(
+                        tmpFilename)
                     computationTime.append(tmp)
                     del tmp
             print('...')
 
     description = ['Frequency index', 'Frequency', 'Building', 'Solving',
-                     'Postprocessing', 'Total']
+                   'Postprocessing', 'Total']
 
 # this following file save operation needs to be refined, perhaps turn it into
 # a dictionary or save as a .npy array, let's see - I don't even know what this
 #  file is used for
 #    file = open(os.path.join('Output2HRTF', 'computationTime.txt'), "w")
 #    file.write(repr(description)+'\n')
-#    file.write(numpy.array2string(computationTime, separator=',', formatter='int')+'\n')
+#    file.write(numpy.array2string(
+#        computationTime, separator=',', formatter='int')+'\n')
 #    file.close()
 
     del ch, ii, jj, description, computationTime
 
-    #%% Load ObjectMesh data
+    # Load ObjectMesh data
     tmpPressure = []
     frequencies = []
     pressure = []
@@ -131,8 +163,11 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
             for jj in range(cpusAndCores.shape[1]):
                 if (cpusAndCores[ii, jj] == (ch+1)):
                     print('%d, ' % (jj+1))
-                    tmpFilename = os.path.join('NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)), 'be.out')
-                    tmpData, tmpFrequencies = o2hrtf_l.Output2HRTF_Load(tmpFilename, 'pBoundary')
+                    tmpFilename = os.path.join(
+                        'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
+                        'be.out')
+                    tmpData, tmpFrequencies = o2hrtf_l.Output2HRTF_Load(
+                        tmpFilename, 'pBoundary')
                     if tmpPressure:
                         tmpPressure.append(tmpData)
                         frequencies.append(tmpFrequencies)
@@ -154,13 +189,14 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
         nodes = objectMeshes[ii]["nodes"]
         elements = objectMeshes[ii]["elements"]
         element_data = pressure
-        
+
         # old version using list representation of pressure
         # for jj in range(len(pressure)):
         #     element_data[jj] = element_data[jj][:, cnt:cnt+elements.shape[0]]
         # new version using MRN-transposed array representation of pressure
         for jj in range(pressure.shape[1]):
-            element_data[:, jj, :] = element_data[cnt:cnt+elements.shape[0], jj, :]
+            element_data[:, jj, :] = element_data[
+                cnt:cnt+elements.shape[0], jj, :]
 
         # probably still need a better way of storing these values
         file = open("ObjectMesh_"+objectMeshes[ii]["name"]+".npz", "w")
@@ -188,9 +224,10 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
 
         cnt = cnt + elements.shape[0]
 
-    del pressure, nodes, elements, frequencies, ii, jj, cnt, ch, idx, element_data
+    del pressure, nodes, elements, frequencies, ii, jj, cnt, ch, idx, \
+        element_data
 
-    #%% Load EvaluationGrid data
+    # Load EvaluationGrid data
     tmpPressure = []
     frequencies = []
     pressure = []
@@ -203,8 +240,11 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
                 for jj in range(cpusAndCores.shape[1]):
                     if (cpusAndCores[ii, jj] == (ch+1)):
                         print('%d, ' % (jj+1))
-                        tmpFilename = os.path.join('NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)), 'be.out')                       
-                        [tmpData, tmpFrequencies] = o2hrtf_l.Output2HRTF_Load(tmpFilename, 'pEvalGrid')
+                        tmpFilename = os.path.join(
+                            'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
+                            'be.out')
+                        [tmpData, tmpFrequencies] = o2hrtf_l.Output2HRTF_Load(
+                            tmpFilename, 'pEvalGrid')
                         if tmpPressure:
                             tmpPressure.append(tmpData)
                             frequencies.append(tmpFrequencies)
@@ -218,15 +258,18 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
         idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
         frequencies = sorted(frequencies)
         pressure = [i[idx, :] for i in pressure]
-    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))        
+    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))
 
     # save to struct
     cnt = 0
     for ii in range(len(evaluationGrids)):
         # old version using list representation of pressure
-        # evaluationGrids[ii]["pressure"] = [i[:, cnt:cnt+evaluationGrids[ii]["num_nodes"],] for i in pressure]
+        # evaluationGrids[ii]["pressure"] = \
+        #     [i[:, cnt:cnt+evaluationGrids[ii]["num_nodes"],] \
+        #     for i in pressure]
         # new version using MRN-transposed array representation of pressure
-        evaluationGrids[ii]["pressure"] = pressure[cnt:cnt+evaluationGrids[ii]["num_nodes"], :, :]
+        evaluationGrids[ii]["pressure"] = pressure[
+            cnt:cnt+evaluationGrids[ii]["num_nodes"], :, :]
 
         cnt = cnt + evaluationGrids[ii]["num_nodes"]
 
@@ -237,49 +280,67 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
     if reference:
 
         # this might be a parameter in the function call
-        refMode = 1    # 1: reference to only one radius (the smallest found)
-                       # 2: reference to all indivudal radii
+        # 1: reference to only one radius (the smallest found)
+        # 2: reference to all individual radii
+        refMode = 1
 
         for ii in range(len(evaluationGrids)):
 
             xyz = evaluationGrids[ii]["nodes"]
             pressure = evaluationGrids[ii]["pressure"]
-            freqMatrix = numpy.tile(frequencies, (pressure.shape[0], pressure.shape[1], 1))
+            freqMatrix = numpy.tile(
+                frequencies, (pressure.shape[0], pressure.shape[1], 1))
 
             # distance of source positions from the origin
             if refMode == 1:
                 r = min(numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2))
-                r = numpy.tile(r, (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
+                r = numpy.tile(
+                    r,
+                    (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
             else:
                 r = numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2)
-                r = numpy.tile(numpy.transpose(r), (pressure.shape[0], pressure.shape[1], 1))
+                r = numpy.tile(numpy.transpose(r),
+                               (pressure.shape[0], pressure.shape[1], 1))
 
             if sourceType == 'vibratingElement':
 
-                volumeFlow = 0.1 * numpy.ones((pressure.shape[0], pressure.shape[1], pressure.shape[2]))
+                volumeFlow = 0.1 * numpy.ones(
+                    (pressure.shape[0],
+                     pressure.shape[1],
+                     pressure.shape[2]))
                 if 'sourceArea':
                     # has to be fixed for both ears....
                     for nn in range(len(sourceArea)):
-                        volumeFlow[:, nn, :] = volumeFlow[:, nn, :] * sourceArea[nn]
+                        volumeFlow[:, nn, :] = \
+                            volumeFlow[:, nn, :] * sourceArea[nn]
 
                 # point source in the origin evaluated at r
                 # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-                ps = -1j * densityOfAir * 2 * numpy.pi * freqMatrix * volumeFlow / (4 * numpy.pi) * numpy.exp(1j * 2 * numpy.pi * freqMatrix / speedOfSound * r) / r
+                ps = -1j * densityOfAir * 2 * numpy.pi * freqMatrix * \
+                    volumeFlow / (4 * numpy.pi) * \
+                    numpy.exp(1j * 2 * numpy.pi *
+                              freqMatrix / speedOfSound * r) / \
+                    r
 
             elif sourceType == 'pointSource':
 
                 amplitude = 0.1  # hard coded in Mesh2HRTF
-                ps = amplitude * numpy.exp(1j * 2 * numpy.pi * freqMatrix / speedOfSound * r) / (4 * numpy.pi * r)
+                ps = amplitude * \
+                    numpy.exp(1j * 2 * numpy.pi * freqMatrix /
+                              speedOfSound * r) / \
+                    (4 * numpy.pi * r)
 
             else:
-                error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.')
+                raise ValueError(
+                    ("Referencing is currently only implemented for "
+                     "sourceType 'vibratingElement' and 'pointSource'."))
 
             # here we go...
-            evaluationGrids[ii]["pressure"] = pressure/ ps
+            evaluationGrids[ii]["pressure"] = pressure / ps
 
         del r, freqMatrix, ps, ii
 
-    #%% Save data as SOFA file
+    # Save data as SOFA file
     print('\nSaving complex pressure to SOFA file ...\n')
 
     for ii in range(len(evaluationGrids)):
@@ -287,14 +348,15 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
         xyz = evaluationGrids[ii]["nodes"]
         pressure = evaluationGrids[ii]["pressure"]
 
-        # Save as GeneralTF           
-        TF_path = os.path.join('Output2HRTF','HRTF_%s.sofa' % evaluationGrids[ii]["name"])
+        # Save as GeneralTF
+        TF_path = os.path.join(
+            'Output2HRTF', 'HRTF_%s.sofa' % evaluationGrids[ii]["name"])
 
         Obj = sofa.Database.create(TF_path, "GeneralTF")
 
-
         Obj.Metadata.set_attribute('GLOBAL_ApplicationName', 'Mesh2HRTF')
-        Obj.Metadata.set_attribute('GLOBAL_ApplicationVersion', Mesh2HRTF_version)
+        Obj.Metadata.set_attribute(
+            'GLOBAL_ApplicationVersion', Mesh2HRTF_version)
         Obj.Metadata.set_attribute('GLOBAL_Organization', '')
         Obj.Metadata.set_attribute('GLOBAL_Title', '')
         Obj.Metadata.set_attribute('GLOBAL_DateCreated', date)
@@ -316,31 +378,31 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
         Obj.SourcePosition=xyz[:, 2:4]
 
         Obj=SOFAupdateDimensions(Obj)
-        
+
 
     del Obj, ii, xyz, pressure
 
 
     #%% Save time data data as SOFA file
     if computeHRIRs
-        
+
         fprintf('\nSaving time data to SOFA file ...\n')
-        
+
         for ii = 1:numel(evaluationGrids)
-            
+
             # check if the frequency vector has the correct format
             if ~all(abs(frequencies(1) - diff(frequencies)) < .1)
                 error('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
             end
-            
+
             if ~reference
                 error('HRIRs can only be computet if refernce=true')
             end
-            
+
             xyz = evaluationGrids(ii).nodes;
             pressure = evaluationGrids(ii).pressure;
             fs = 2*frequencies(end);
-            
+
             # add 0 Hz bin
             pressure = [ones(1, size(pressure,2), size(pressure,3));
                         pressure];
@@ -350,41 +412,41 @@ def Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
             pressure = [pressure; flipud(conj(pressure(2:end-1,:,:)))];
             # ifft (take complex conjugate because sign conventions differ)
             hrir = ifft(conj(pressure), 'symmetric');
-            
+
             # shift 30 cm to make causal
             # (path differences between the origin and the ear are usually
             # smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
             n_shift = round(.30 / (1/fs * speedOfSound));
             hrir = circshift(hrir, n_shift);
-            
-            
+
+
             # prepare pressure to be size of MRN when R=2
             hrir = shiftdim(hrir, 1);
             # prepare pressure to be size of MRN when R=1
             if size(hrir, 3) == 1
                 hrir = reshape(hrir, size(hrir,1), 1, size(hrir, 2));
             end
-            
+
             # Save as GeneralFIR
             Obj = SOFAgetConventions('GeneralFIR', 'm');
-            
+
             Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
             Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
             Obj.GLOBAL_Organization = '';
             Obj.GLOBAL_Title = '';
             Obj.GLOBAL_DateCreated = date;
             Obj.GLOBAL_AuthorContact = '';
-            
+
             Obj.ReceiverPosition=sourceCenter;
-            
+
             Obj.Data.IR=hrir;
             Obj.Data.SamplingRate=fs;
-            
+
             Obj.ListenerPosition = [0 0 0];
             Obj.SourcePosition_Type='cartesian';
             Obj.SourcePosition_Units='meter';
             Obj.SourcePosition=xyz(:,2:4);
-            
+
             Obj=SOFAupdateDimensions(Obj);
             SOFAsave(fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
         end
