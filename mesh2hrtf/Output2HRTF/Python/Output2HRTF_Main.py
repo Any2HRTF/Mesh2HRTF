@@ -37,6 +37,8 @@ import numpy
 import Output2HRTF_ReadComputationTime as o2hrtf_rct
 import Output2HRTF_Load as o2hrtf_l
 import sofa
+from datetime import date
+today = date.today()
 
 # TODO: The module would be easier to test and read if we would separate it
 #       into smaller functions. I've added empty function definitions at the
@@ -368,38 +370,54 @@ def Output2HRTF_Main(
         TF_path = os.path.join(
             'Output2HRTF', 'HRTF_%s.sofa' % evaluationGrids[ii]["name"])
 
-        Obj = sofa.Database.create(TF_path, "GeneralTF")
+        Obj = sofa.Database.create(TF_path, "GeneralTF",
+                dimensions={"M": evaluationGridsNumNodes,
+                            "N": len(frequencies)})
 
         Obj.Metadata.set_attribute('GLOBAL_ApplicationName', 'Mesh2HRTF')
         Obj.Metadata.set_attribute(
             'GLOBAL_ApplicationVersion', Mesh2HRTF_version)
         Obj.Metadata.set_attribute('GLOBAL_Organization', '')
         Obj.Metadata.set_attribute('GLOBAL_Title', '')
-        Obj.Metadata.set_attribute('GLOBAL_DateCreated', date)
+        Obj.Metadata.set_attribute(
+            'GLOBAL_DateCreated', today.strftime("%b-%d-%Y"))
         Obj.Metadata.set_attribute('GLOBAL_AuthorContact', '')
 
-    """    Obj.ReceiverPosition = sourceCenter
-        Obj.N=frequencies
+        Obj.Listener.initialize(fixed=["Position", "View", "Up"])
+        Obj.Listener.Position = [0, 0, 0]
 
-        Obj.Data.Real = real(pressure)
-        Obj.Data.Imag = imag(pressure)
-        Obj.Data.Real_LongName = 'pressure'
-        Obj.Data.Real_Units = 'pascal'
-        Obj.Data.Imag_LongName = 'pressure'
-        Obj.Data.Imag_Units = 'pascal'
+        Obj.Receiver.initialize(fixed=["Position"], count=ears)
+        Obj.Receiver.Position = sourceCenter
 
-        Obj.ListenerPosition = [0, 0, 0]
-        Obj.SourcePosition_Type='cartesian'
-        Obj.SourcePosition_Units='meter'
-        Obj.SourcePosition=xyz[:, 2:4]
+        Obj.Source.initialize(fixed=["Position"])
+        Obj.Source.Position = xyz[:, 2:4]
+        Obj.Emitter.initialize(fixed=["Position"], count=1)
 
-        Obj=SOFAupdateDimensions(Obj)
+        Obj.Data.initialize()
+        Obj.close()
+    #     Obj.N = frequencies
+
+    #     Obj.Data.Real = real(pressure)
+    #     Obj.Data.Imag = imag(pressure)
+    #     Obj.Data.Real_LongName = 'pressure'
+    #     Obj.Data.Real_Units = 'pascal'
+    #     Obj.Data.Imag_LongName = 'pressure'
+    #     Obj.Data.Imag_Units = 'pascal'
+
+    #     Obj.ListenerPosition = [0, 0, 0]
 
 
-    del Obj, ii, xyz, pressure
+    #     Obj.SourcePosition_Type='cartesian'
+    #     Obj.SourcePosition_Units='meter'
+    #     Obj.SourcePosition=xyz[:, 2:4]
+
+    #     Obj=SOFAupdateDimensions(Obj)
 
 
-    #%% Save time data data as SOFA file
+    # del Obj, ii, xyz, pressure
+
+
+    """ #%% Save time data data as SOFA file
     if computeHRIRs
 
         fprintf('\nSaving time data to SOFA file ...\n')
