@@ -371,8 +371,8 @@ def Output2HRTF_Main(
             'Output2HRTF', 'HRTF_%s.sofa' % evaluationGrids[ii]["name"])
 
         Obj = sofa.Database.create(TF_path, "GeneralTF",
-                dimensions={"M": evaluationGridsNumNodes,
-                            "N": len(frequencies)})
+            dimensions={"M": evaluationGridsNumNodes, "R": ears,
+            "N": len(frequencies)})
 
         Obj.Metadata.set_attribute('GLOBAL_ApplicationName', 'Mesh2HRTF')
         Obj.Metadata.set_attribute(
@@ -389,106 +389,101 @@ def Output2HRTF_Main(
         Obj.Receiver.initialize(fixed=["Position"], count=ears)
         Obj.Receiver.Position = sourceCenter
 
-        Obj.Source.initialize(fixed=["Position"])
-        Obj.Source.Position = xyz[:, 2:4]
-        Obj.Emitter.initialize(fixed=["Position"], count=1)
+        Obj.Source.initialize(variances=["Position"], fixed=["View", "Up"])
+        Obj.Source.Position.set_values(xyz[:, 1:4])
+        
+        Obj.Emitter.initialize(fixed=["Position", "View", "Up"], count=1)
 
+        Obj.Data.Type = 'TF'
         Obj.Data.initialize()
-        Obj.close()
-    #     Obj.N = frequencies
-
-    #     Obj.Data.Real = real(pressure)
-    #     Obj.Data.Imag = imag(pressure)
-    #     Obj.Data.Real_LongName = 'pressure'
-    #     Obj.Data.Real_Units = 'pascal'
-    #     Obj.Data.Imag_LongName = 'pressure'
-    #     Obj.Data.Imag_Units = 'pascal'
-
-    #     Obj.ListenerPosition = [0, 0, 0]
-
+        Obj.Data.Real.set_values(numpy.real(pressure))
+        Obj.Data.Imag.set_values(numpy.imag(pressure))
+        Obj.Data.create_attribute('Real_LongName', 'pressure')
+        Obj.Data.create_attribute('Real_Units', 'pascal')
+        Obj.Data.create_attribute('Imag_LongName', 'pressure')
+        Obj.Data.create_attribute('Imag_Units', 'pascal')
+        Obj.Data.N.set_values(frequencies)
 
     #     Obj.SourcePosition_Type='cartesian'
     #     Obj.SourcePosition_Units='meter'
-    #     Obj.SourcePosition=xyz[:, 2:4]
+        Obj.close()
 
-    #     Obj=SOFAupdateDimensions(Obj)
-
-
-    # del Obj, ii, xyz, pressure
+    del Obj, ii, xyz, pressure
 
 
-    """ #%% Save time data data as SOFA file
-    if computeHRIRs
+    #%% Save time data data as SOFA file
+    if computeHRIRs:
 
-        fprintf('\nSaving time data to SOFA file ...\n')
+        print('\nSaving time data to SOFA file ...\n')
 
-        for ii = 1:numel(evaluationGrids)
+        for ii in range(len(evaluationGrids)):
 
             # check if the frequency vector has the correct format
-            if ~all(abs(frequencies(1) - diff(frequencies)) < .1)
-                error('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
-            end
+            if not all(numpy.abs(frequencies[0] - numpy.diff(frequencies)) < .1):
+                raise ValueError('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
 
-            if ~reference
-                error('HRIRs can only be computet if refernce=true')
-            end
+            if not reference:
+                raise ValueError('HRIRs can only be computet if reference=true')
 
-            xyz = evaluationGrids(ii).nodes;
-            pressure = evaluationGrids(ii).pressure;
-            fs = 2*frequencies(end);
+            xyz = evaluationGrids[ii]["nodes"]
+            pressure = evaluationGrids[ii]["pressure"]
+
+            fs = 2*frequencies[-1]
 
             # add 0 Hz bin
-            pressure = [ones(1, size(pressure,2), size(pressure,3));
-                        pressure];
+            pressure = numpy.concatenate((numpy.ones((pressure.shape[0],
+                pressure.shape[1], 1)), pressure), axis=2)
             # make fs/2 real
-            pressure(end,:,:) = abs(pressure(end,:,:));
-            # mirror the spectrum
-            pressure = [pressure; flipud(conj(pressure(2:end-1,:,:)))];
+            pressure[:, :, -1] = numpy.abs(pressure[:, :, -1])
             # ifft (take complex conjugate because sign conventions differ)
-            hrir = ifft(conj(pressure), 'symmetric');
+            hrir = numpy.fft.irfft(numpy.conj(pressure))
 
             # shift 30 cm to make causal
             # (path differences between the origin and the ear are usually
             # smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
-            n_shift = round(.30 / (1/fs * speedOfSound));
-            hrir = circshift(hrir, n_shift);
-
-
-            # prepare pressure to be size of MRN when R=2
-            hrir = shiftdim(hrir, 1);
-            # prepare pressure to be size of MRN when R=1
-            if size(hrir, 3) == 1
-                hrir = reshape(hrir, size(hrir,1), 1, size(hrir, 2));
-            end
+            n_shift = int(numpy.round(.30 / (1/fs * speedOfSound)))
+            hrir = numpy.roll(hrir, n_shift, axis=2)
 
             # Save as GeneralFIR
-            Obj = SOFAgetConventions('GeneralFIR', 'm');
+            FIR_path = os.path.join(
+                'Output2HRTF', 'HRIR_%s.sofa' % evaluationGrids[ii]["name"])
 
-            Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
-            Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
-            Obj.GLOBAL_Organization = '';
-            Obj.GLOBAL_Title = '';
-            Obj.GLOBAL_DateCreated = date;
-            Obj.GLOBAL_AuthorContact = '';
+            Obj = sofa.Database.create(FIR_path, "GeneralFIR",
+                dimensions={"M": evaluationGridsNumNodes, "R": ears,
+                "N": len(frequencies)})
 
-            Obj.ReceiverPosition=sourceCenter;
+            Obj.Metadata.set_attribute('GLOBAL_ApplicationName', 'Mesh2HRTF')
+            Obj.Metadata.set_attribute(
+                'GLOBAL_ApplicationVersion', Mesh2HRTF_version)
+            Obj.Metadata.set_attribute('GLOBAL_Organization', '')
+            Obj.Metadata.set_attribute('GLOBAL_Title', '')
+            Obj.Metadata.set_attribute(
+                'GLOBAL_DateCreated', today.strftime("%b-%d-%Y"))
+            Obj.Metadata.set_attribute('GLOBAL_AuthorContact', '')
 
-            Obj.Data.IR=hrir;
-            Obj.Data.SamplingRate=fs;
+            Obj.Listener.initialize(fixed=["Position", "View", "Up"])
+            Obj.Listener.Position = [0, 0, 0]
 
-            Obj.ListenerPosition = [0 0 0];
-            Obj.SourcePosition_Type='cartesian';
-            Obj.SourcePosition_Units='meter';
-            Obj.SourcePosition=xyz(:,2:4);
+            Obj.Receiver.initialize(fixed=["Position"], count=ears)
+            Obj.Receiver.Position = sourceCenter
 
-            Obj=SOFAupdateDimensions(Obj);
-            SOFAsave(fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
-        end
-    end
+            Obj.Source.initialize(variances=["Position"], fixed=["View", "Up"])
+            Obj.Source.Position.set_values(xyz[:, 1:4])
+            
+            Obj.Emitter.initialize(fixed=["Position", "View", "Up"], count=1)
 
-    clear Obj ii xyz pressure
+            Obj.Data.Type = 'FIR'
+            Obj.Data.initialize()
+            Obj.Data.IR = hrir
+            Obj.Data.SamplingRate = fs
 
-    fprintf('Done\n') """
+        #     Obj.SourcePosition_Type='cartesian'
+        #     Obj.SourcePosition_Units='meter'
+            Obj.close()
+
+        del Obj, ii, xyz, pressure
+
+    print('Done\n')
 
 
 def read_nodes_and_elements():
