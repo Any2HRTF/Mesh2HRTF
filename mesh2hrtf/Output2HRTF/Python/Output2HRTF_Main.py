@@ -36,9 +36,11 @@ import numpy
 # TODO: I would suggest to move the functions into this module
 import Output2HRTF_ReadComputationTime as o2hrtf_rct
 import Output2HRTF_Load as o2hrtf_l
-import sofa
-from datetime import date
-today = date.today()
+# import sofa
+# from datetime import date
+# today = date.today()
+from netCDF4 import Dataset
+import time
 
 # TODO: The module would be easier to test and read if we would separate it
 #       into smaller functions. I've added empty function definitions at the
@@ -370,42 +372,86 @@ def Output2HRTF_Main(
         TF_path = os.path.join(
             'Output2HRTF', 'HRTF_%s.sofa' % evaluationGrids[ii]["name"])
 
-        Obj = sofa.Database.create(TF_path, "GeneralTF",
-            dimensions={"M": evaluationGridsNumNodes, "R": ears,
-            "N": len(frequencies)})
+        #----------Create it----------#
 
-        Obj.Metadata.set_attribute('GLOBAL_ApplicationName', 'Mesh2HRTF')
-        Obj.Metadata.set_attribute(
-            'GLOBAL_ApplicationVersion', Mesh2HRTF_version)
-        Obj.Metadata.set_attribute('GLOBAL_Organization', '')
-        Obj.Metadata.set_attribute('GLOBAL_Title', '')
-        Obj.Metadata.set_attribute(
-            'GLOBAL_DateCreated', today.strftime("%b-%d-%Y"))
-        Obj.Metadata.set_attribute('GLOBAL_AuthorContact', '')
+        # Need to delete it first if file already exists
+        if os.path.exists(TF_path):
+            os.remove(TF_path)
+        Obj = Dataset(TF_path, 'w', format='NETCDF4')
 
-        Obj.Listener.initialize(fixed=["Position", "View", "Up"])
-        Obj.Listener.Position = [0, 0, 0]
+        #----------Required Attributes----------#
 
-        Obj.Receiver.initialize(fixed=["Position"], count=ears)
-        Obj.Receiver.Position = sourceCenter
+        Obj.Conventions = 'SOFA'
+        Obj.Version = '1.0'
+        Obj.SOFAConventions = 'GeneralTF'
+        Obj.SOFAConventionsVersion = '1.0'
+        Obj.APIName = 'pysofaconventions'
+        Obj.APIVersion = '0.1'
+        Obj.AuthorContact = 'andres.perez@eurecat.org'
+        Obj.Comment = ''
+        Obj.DataType = 'TF'
+        Obj.License = 'No license provided, ask the author for permission'
+        Obj.RoomType = 'free field'
+        Obj.DateCreated = time.ctime(time.time())
+        Obj.DateModified = time.ctime(time.time())
+        Obj.Title = ''
+        Obj.Organization = ''
 
-        Obj.Source.initialize(variances=["Position"], fixed=["View", "Up"])
-        Obj.Source.Position.set_values(xyz[:, 1:4])
-        
-        Obj.Emitter.initialize(fixed=["Position", "View", "Up"], count=1)
+        Obj.ApplicationName = 'Mesh2HRTF'
+        Obj.ApplicationVersoin = Mesh2HRTF_version
 
-        Obj.Data.Type = 'TF'
-        Obj.Data.initialize()
-        Obj.Data.Real.set_values(numpy.real(pressure))
-        Obj.Data.Imag.set_values(numpy.imag(pressure))
-        Obj.Data.create_attribute('Real_LongName', 'pressure')
-        Obj.Data.create_attribute('Real_Units', 'pascal')
-        Obj.Data.create_attribute('Imag_LongName', 'pressure')
-        Obj.Data.create_attribute('Imag_Units', 'pascal')
-        Obj.Data.N.set_values(frequencies)
+        #----------Required Dimensions----------#
 
-    #     Obj.SourcePosition_Type='cartesian'
-    #     Obj.SourcePosition_Units='meter'
+        m = evaluationGridsNumNodes
+        n = len(frequencies)
+        r = ears
+        e = 1
+        i = 1
+        c = 3
+        Obj.createDimension('M', m)
+        Obj.createDimension('N', n)
+        Obj.createDimension('E', e)
+        Obj.createDimension('R', r)
+        Obj.createDimension('I', i)
+        Obj.createDimension('C', c)
+
+        #----------Required Variables----------#
+
+        listenerPositionVar = Obj.createVariable('ListenerPosition', 'f8', ('I', 'C'))
+        listenerPositionVar.Units = 'metre'
+        listenerPositionVar.Type = 'cartesian'
+        listenerPositionVar[:] = numpy.asarray([0, 0, 0])
+
+        emitterPositionVar = Obj.createVariable('EmitterPosition', 'f8', ('E', 'C', 'I'))
+        emitterPositionVar.Units = 'metre'
+        emitterPositionVar.Type = 'cartesian'
+        emitterPositionVar[:] = numpy.asarray([0, 0, 0])
+
+        sourcePositionVar = Obj.createVariable('SourcePosition', 'f8', ('M', 'C'))
+        sourcePositionVar.Units = 'degree, degree, metre'
+        sourcePositionVar.Type = 'spherical'
+        sourcePositionVar[:] = xyz[:, 1:4]
+
+        receiverPositionVar = Obj.createVariable('ReceiverPosition', 'f8', ('R', 'C', 'I'))
+        receiverPositionVar.Units = 'metre'
+        receiverPositionVar.Type = 'cartesian'
+        receiverPositionVar[:] = sourceCenter
+
+        dataReal = Obj.createVariable('Data.Real', 'f8', ('M', 'R', 'N'))
+        dataReal[:, :, :] = numpy.real(pressure)
+        dataReal.LongName = 'pressure'
+        dataReal.Units = 'pascal'
+        dataImag = Obj.createVariable('Data.Imag', 'f8', ('M', 'R', 'N'))
+        dataImag[:, :, :] = numpy.imag(pressure)
+        dataImag.LongName = 'pressure'
+        dataImag.Units = 'pascal'
+        dataN = Obj.createVariable('N', 'f8', ('N'))
+        dataN[:] = numpy.asarray(frequencies)
+        dataN.LongName = 'frequency'
+        dataN.Units = 'hertz'
+
+        #----------Close it----------#
+
         Obj.close()
 
     del Obj, ii, xyz, pressure
@@ -448,35 +494,82 @@ def Output2HRTF_Main(
             FIR_path = os.path.join(
                 'Output2HRTF', 'HRIR_%s.sofa' % evaluationGrids[ii]["name"])
 
-            Obj = sofa.Database.create(FIR_path, "GeneralFIR",
-                dimensions={"M": evaluationGridsNumNodes, "R": ears,
-                "N": len(frequencies)})
+            # Need to delete it first if file already exists
+            if os.path.exists(FIR_path):
+                os.remove(FIR_path)
+            Obj = Dataset(FIR_path, 'w', format='NETCDF4')
 
-            Obj.Metadata.set_attribute('GLOBAL_ApplicationName', 'Mesh2HRTF')
-            Obj.Metadata.set_attribute(
-                'GLOBAL_ApplicationVersion', Mesh2HRTF_version)
-            Obj.Metadata.set_attribute('GLOBAL_Organization', '')
-            Obj.Metadata.set_attribute('GLOBAL_Title', '')
-            Obj.Metadata.set_attribute(
-                'GLOBAL_DateCreated', today.strftime("%b-%d-%Y"))
-            Obj.Metadata.set_attribute('GLOBAL_AuthorContact', '')
 
-            Obj.Listener.initialize(fixed=["Position", "View", "Up"])
-            Obj.Listener.Position = [0, 0, 0]
+            #----------Required Attributes----------#
 
-            Obj.Receiver.initialize(fixed=["Position"], count=ears)
-            Obj.Receiver.Position = sourceCenter
+            Obj.Conventions = 'SOFA'
+            Obj.Version = '1.0'
+            Obj.SOFAConventions = 'SimpleFreeFieldHRIR'
+            Obj.SOFAConventionsVersion = '1.0'
+            Obj.APIName = 'pysofaconventions'
+            Obj.APIVersion = '0.1'
+            Obj.AuthorContact = 'andres.perez@eurecat.org'
+            Obj.Comment = ''
+            Obj.DataType = 'FIR'
+            Obj.License = 'No license provided, ask the author for permission'
+            Obj.RoomType = 'free field'
+            Obj.DateCreated = time.ctime(time.time())
+            Obj.DateModified = time.ctime(time.time())
+            Obj.Title = ''
+            Obj.Organization = ''
 
-            Obj.Source.initialize(variances=["Position"], fixed=["View", "Up"])
-            Obj.Source.Position.set_values(xyz[:, 1:4])
+            Obj.ApplicationName = 'Mesh2HRTF'
+            Obj.ApplicationVersoin = Mesh2HRTF_version
+
+            #----------Required Dimensions----------#
+
+            m = evaluationGridsNumNodes
+            n = len(frequencies)
+            r = ears
+            e = 1
+            i = 1
+            c = 3
+            Obj.createDimension('M', m)
+            Obj.createDimension('N', n)
+            Obj.createDimension('E', e)
+            Obj.createDimension('R', r)
+            Obj.createDimension('I', i)
+            Obj.createDimension('C', c)
+
+            #----------Required Variables----------#
+
+            listenerPositionVar = Obj.createVariable('ListenerPosition', 'f8', ('I', 'C'))
+            listenerPositionVar.Units = 'metre'
+            listenerPositionVar.Type = 'cartesian'
+            listenerPositionVar[:] = numpy.asarray([0, 0, 0])
+
+            receiverPositionVar = Obj.createVariable('ReceiverPosition', 'f8', ('R', 'C', 'I'))
+            receiverPositionVar.Units = 'metre'
+            receiverPositionVar.Type = 'cartesian'
+            receiverPositionVar[:] = sourceCenter
+
+            sourcePositionVar = Obj.createVariable('SourcePosition', 'f8', ('M', 'C'))
+            sourcePositionVar.Units = 'degree, degree, metre'
+            sourcePositionVar.Type = 'spherical'
+            sourcePositionVar[:] = xyz[:, 1:4]
             
-            Obj.Emitter.initialize(fixed=["Position", "View", "Up"], count=1)
+            emitterPositionVar = Obj.createVariable('EmitterPosition', 'f8', ('E', 'C', 'I'))
+            emitterPositionVar.Units = 'metre'
+            emitterPositionVar.Type = 'cartesian'
+            emitterPositionVar[:] = numpy.asarray([0, 0, 0])
 
-            Obj.Data.Type = 'FIR'
-            Obj.Data.initialize()
-            Obj.Data.IR = hrir
-            Obj.Data.SamplingRate = fs
+            samplingRateVar = Obj.createVariable('Data.SamplingRate', 'f8',   ('I'))
+            samplingRateVar.Units = 'hertz'
+            samplingRateVar[:] = fs
+            
+            # delayVar        =   Obj.createVariable('Data.Delay',        'f8',   ('I','R'))
+            # delay = np.zeros((i,r))
+            # delayVar[:,:] = delay
 
+            dataIRVar = Obj.createVariable('Data.IR', 'f8', ('M', 'R', 'N'))
+            # dataIRVar.ChannelOrdering   = 'acn'
+            # dataIRVar.Normalization     = 'sn3d'
+            dataIRVar[:, :, :] = hrir
         #     Obj.SourcePosition_Type='cartesian'
         #     Obj.SourcePosition_Units='meter'
             Obj.close()
