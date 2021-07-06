@@ -32,13 +32,8 @@
 
 # header
 import os
+import csv
 import numpy
-# TODO: I would suggest to move the functions into this module
-import Output2HRTF_ReadComputationTime as o2hrtf_rct
-import Output2HRTF_Load as o2hrtf_l
-# import sofa
-# from datetime import date
-# today = date.today()
 from netCDF4 import Dataset
 import time
 
@@ -92,63 +87,24 @@ def Output2HRTF_Main(
     ears = numpy.amax(cpusAndCores)
 
     # get the evaluation grids
-    print('\n Loading the EvaluationGrids ...')
-    evaluationGrids = []
-    evalGridsList = os.listdir('EvaluationGrids')
-    evaluationGridsNumNodes = 0
-    for ii in range(len(evalGridsList)):
-        tmpNodes = numpy.loadtxt(os.path.join(
-            'EvaluationGrids', evalGridsList[ii], 'Nodes.txt'),
-            delimiter=' ', skiprows=1)
-        tmpElements = numpy.loadtxt(os.path.join(
-            'EvaluationGrids', evalGridsList[ii], 'Elements.txt'),
-            delimiter=' ', skiprows=1)
-        evaluationGrids.append({"name": evalGridsList[ii],
-                                "nodes": tmpNodes,
-                                "elements": tmpElements,
-                                "num_nodes": tmpNodes.shape[0]})
-        evaluationGridsNumNodes += evaluationGrids[ii]['num_nodes']
+    evaluationGrids, evaluationGridsNumNodes = read_nodes_and_elements(data='EvaluationGrids')
 
     # get the object mesh
-    print('\n Loading the ObjectMeshes ...')
-    objectMeshes = []
-    objMeshesList = os.listdir('ObjectMeshes')
-    objectMeshesNumNodes = 0
-    for ii in range(len(objMeshesList)):
-        tmpNodes = numpy.loadtxt(os.path.join(
-            'ObjectMeshes', objMeshesList[ii], 'Nodes.txt'),
-            delimiter=' ', skiprows=1)
-        tmpElements = numpy.loadtxt(os.path.join(
-            'ObjectMeshes', objMeshesList[ii], 'Elements.txt'),
-            delimiter=' ', skiprows=1)
-        objectMeshes.append({"name": objMeshesList[ii],
-                             "nodes": tmpNodes,
-                             "elements": tmpElements,
-                             "num_nodes": tmpNodes.shape[0]})
-        objectMeshesNumNodes += objectMeshes[ii]['num_nodes']
-
-    del ii, tmpNodes, tmpElements
+    objectMeshes, objectMeshesNumNodes = read_nodes_and_elements(data='ObjectMeshes')
 
     # Read computational effort
     print('\n Loading computational effort data ...')
-    # TODO: remove prints in the for loop. Loading this is fast and printing
-    #       only clutters the command line in this case...
     for ch in range(ears):
         computationTime = []
-        print('\n    Ear %d ...' % (ch+1))
         for ii in range(cpusAndCores.shape[0]):
-            print('\n        CPU %d: ' % (ii+1))
             for jj in range(cpusAndCores.shape[1]):
                 if (cpusAndCores[ii, jj] == ch+1):
-                    print('%d, ' % (jj+1))
                     tmpFilename = os.path.join(
                         'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
                         'NC.out')
-                    tmp = o2hrtf_rct.Output2HRTF_ReadComputationTime(
-                        tmpFilename)
+                    tmp = read_computation_time(tmpFilename)
                     computationTime.append(tmp)
                     del tmp
-            print('...')
 
     description = ['Frequency index', 'Frequency', 'Building', 'Solving',
                    'Postprocessing', 'Total']
@@ -170,36 +126,8 @@ def Output2HRTF_Main(
     del ch, ii, jj, description, computationTime
 
     # Load ObjectMesh data
-    tmpPressure = []
-    frequencies = []
-    pressure = []
-    print('\n Loading ObjectMesh data ...')
-    for ch in range(ears):
-        print('\n    Ear %d ...' % (ch+1))
-        for ii in range(cpusAndCores.shape[0]):
-            print('\n        CPU %d: ' % (ii+1))
-            for jj in range(cpusAndCores.shape[1]):
-                if (cpusAndCores[ii, jj] == (ch+1)):
-                    print('%d, ' % (jj+1))
-                    tmpFilename = os.path.join(
-                        'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
-                        'be.out')
-                    tmpData, tmpFrequencies = o2hrtf_l.Output2HRTF_Load(
-                        tmpFilename, 'pBoundary')
-                    if tmpPressure:
-                        tmpPressure.append(tmpData)
-                        frequencies.append(tmpFrequencies)
-                    else:
-                        tmpPressure = tmpData
-                        frequencies = tmpFrequencies
-                    del tmpData, tmpFrequencies, tmpFilename
-            print('...')
-        idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
-        frequencies = sorted(frequencies)
-        pressure.append(tmpPressure[idx, :])
-
-        del tmpPressure
-    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))
+    pressure, frequencies = read_pressure(ears, cpusAndCores,
+                                          data='pBoundary')
 
     print('\nSave ObjectMesh data ...')
     cnt = 0
@@ -216,69 +144,22 @@ def Output2HRTF_Main(
             element_data[:, jj, :] = element_data[
                 cnt:cnt+elements.shape[0], jj, :]
 
-        # probably still need a better way of storing these values
-        # TODO: Saving in numpy format is fine, but I would suggest to use
-        #       savez_compressed :)
         file = open("ObjectMesh_"+objectMeshes[ii]["name"]+".npz", "w")
-        numpy.savez(file.name, nodes=nodes, elements=elements,
-                    frequencies=frequencies, element_data=element_data)
+        numpy.savez_compressed(file.name, nodes=nodes, elements=elements,
+                               frequencies=frequencies,
+                               element_data=element_data)
         file.close()
-
-        # file = open("ObjectMeshAppend_"+objectMeshes[ii]["name"]+".txt", "a")
-        # numpy.savetxt(file, nodes)
-        # file.write('\n')
-        # numpy.savetxt(file, elements)
-        # file.write('\n')
-        # numpy.savetxt(file, frequencies)
-        # file.write('\n')
-        # numpy.savetxt(file, element_data)
-        # file.write('\n')
-        # file.close()
-
-        # file = open("ObjectMesh_"+objectMeshes[ii]["name"]+".txt", "w")
-        # file.write(repr(nodes)+'\n')
-        # file.write(repr(elements)+'\n')
-        # file.write(repr(frequencies)+'\n')
-        # file.write(repr(element_data)+'\n')
-        # file.close()
 
         cnt = cnt + elements.shape[0]
 
-    del pressure, nodes, elements, frequencies, ii, jj, cnt, ch, idx, \
-        element_data
+    del pressure, nodes, elements, frequencies, ii, jj, cnt, element_data
 
     # Load EvaluationGrid data
-    tmpPressure = []
-    frequencies = []
-    pressure = []
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
-        for ch in range(ears):
-            print('\n    Ear %d ...' % (ch+1))
-            for ii in range(cpusAndCores.shape[0]):
-                print('\n        CPU %d: ' % (ii+1))
-                for jj in range(cpusAndCores.shape[1]):
-                    if (cpusAndCores[ii, jj] == (ch+1)):
-                        print('%d, ' % (jj+1))
-                        tmpFilename = os.path.join(
-                            'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
-                            'be.out')
-                        [tmpData, tmpFrequencies] = o2hrtf_l.Output2HRTF_Load(
-                            tmpFilename, 'pEvalGrid')
-                        if tmpPressure:
-                            tmpPressure.append(tmpData)
-                            frequencies.append(tmpFrequencies)
-                        else:
-                            tmpPressure = tmpData
-                            frequencies = tmpFrequencies
-                        del tmpData, tmpFrequencies
-                print('...')
-            pressure.append(tmpPressure)
-            del tmpPressure
-        idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
-        frequencies = sorted(frequencies)
-        pressure = [i[idx, :] for i in pressure]
-    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))
+
+        pressure, frequencies = read_pressure(ears, cpusAndCores,
+                                              data='pEvalGrid')
 
     # save to struct
     cnt = 0
@@ -293,72 +174,14 @@ def Output2HRTF_Main(
 
         cnt = cnt + evaluationGrids[ii]["num_nodes"]
 
-    del ch, ii, jj, pressure, cnt, idx
+    del ii, pressure, cnt
 
     # reference to pressure in the middle of the head with the head absent
     # according to the HRTF definition.
     if reference:
-
-        # this might be a parameter in the function call
-        # 1: reference to only one radius (the smallest found)
-        # 2: reference to all individual radii
-        refMode = 1
-
-        for ii in range(len(evaluationGrids)):
-
-            xyz = evaluationGrids[ii]["nodes"]
-            pressure = evaluationGrids[ii]["pressure"]
-            freqMatrix = numpy.tile(
-                frequencies, (pressure.shape[0], pressure.shape[1], 1))
-
-            # distance of source positions from the origin
-            if refMode == 1:
-                r = min(numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2))
-                r = numpy.tile(
-                    r,
-                    (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
-            else:
-                r = numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2)
-                r = numpy.tile(numpy.transpose(r),
-                               (pressure.shape[0], pressure.shape[1], 1))
-
-            if sourceType == 'vibratingElement':
-
-                volumeFlow = 0.1 * numpy.ones(
-                    (pressure.shape[0],
-                     pressure.shape[1],
-                     pressure.shape[2]))
-                if 'sourceArea':
-                    # has to be fixed for both ears....
-                    for nn in range(len(sourceArea)):
-                        volumeFlow[:, nn, :] = \
-                            volumeFlow[:, nn, :] * sourceArea[nn]
-
-                # point source in the origin evaluated at r
-                # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-                ps = -1j * densityOfAir * 2 * numpy.pi * freqMatrix * \
-                    volumeFlow / (4 * numpy.pi) * \
-                    numpy.exp(1j * 2 * numpy.pi *
-                              freqMatrix / speedOfSound * r) / \
-                    r
-
-            elif sourceType == 'pointSource':
-
-                amplitude = 0.1  # hard coded in Mesh2HRTF
-                ps = amplitude * \
-                    numpy.exp(1j * 2 * numpy.pi * freqMatrix /
-                              speedOfSound * r) / \
-                    (4 * numpy.pi * r)
-
-            else:
-                raise ValueError(
-                    ("Referencing is currently only implemented for "
-                     "sourceType 'vibratingElement' and 'pointSource'."))
-
-            # here we go...
-            evaluationGrids[ii]["pressure"] = pressure / ps
-
-        del r, freqMatrix, ps, ii
+        evaluationGrids = reference_HRTF(evaluationGrids, frequencies,
+                                         sourceType, sourceArea, speedOfSound,
+                                         densityOfAir, refMode=1)
 
     # Save data as SOFA file
     print('\nSaving complex pressure to SOFA file ...\n')
@@ -463,33 +286,11 @@ def Output2HRTF_Main(
         print('\nSaving time data to SOFA file ...\n')
 
         for ii in range(len(evaluationGrids)):
-
-            # check if the frequency vector has the correct format
-            if not all(numpy.abs(frequencies[0] - numpy.diff(frequencies)) < .1):
-                raise ValueError('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
-
-            if not reference:
-                raise ValueError('HRIRs can only be computet if reference=true')
+            hrir = compute_HRIR(ii, evaluationGrids, frequencies, reference,
+                                speedOfSound)
 
             xyz = evaluationGrids[ii]["nodes"]
-            pressure = evaluationGrids[ii]["pressure"]
-
-            fs = 2*frequencies[-1]
-
-            # add 0 Hz bin
-            pressure = numpy.concatenate((numpy.ones((pressure.shape[0],
-                pressure.shape[1], 1)), pressure), axis=2)
-            # make fs/2 real
-            pressure[:, :, -1] = numpy.abs(pressure[:, :, -1])
-            # ifft (take complex conjugate because sign conventions differ)
-            hrir = numpy.fft.irfft(numpy.conj(pressure))
-
-            # shift 30 cm to make causal
-            # (path differences between the origin and the ear are usually
-            # smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
-            n_shift = int(numpy.round(.30 / (1/fs * speedOfSound)))
-            hrir = numpy.roll(hrir, n_shift, axis=2)
-
+            
             # Save as GeneralFIR
             FIR_path = os.path.join(
                 'Output2HRTF', 'HRIR_%s.sofa' % evaluationGrids[ii]["name"])
@@ -579,44 +380,171 @@ def Output2HRTF_Main(
     print('Done\n')
 
 
-def read_nodes_and_elements():
+def read_nodes_and_elements(data):
     """
     Read the nodes and elements of the evaluation grids or object meshes.
     """
-    # TODO: The code for reading the data above is very redundant. If this
-    #       function uses the code with an additional parameter
-    #       data='ObjectMeshes' or data='EvaluationGrids' one function might
-    #       read both :)
-    pass
+    # if data not in ['EvaluationGrids', 'ObjectMeshes']
+    if not (data == 'EvaluationGrids' or data == 'ObjectMeshes'):
+        raise ValueError('data must be EvaluationGrids or ObjectMeshes!')
+
+    print('\n Loading the %s ...' % data)
+    grids = []
+    gridsList = os.listdir(data)
+    gridsNumNodes = 0
+    for ii in range(len(gridsList)):
+        tmpNodes = numpy.loadtxt(os.path.join(
+            data, gridsList[ii], 'Nodes.txt'),
+            delimiter=' ', skiprows=1)
+        tmpElements = numpy.loadtxt(os.path.join(
+            data, gridsList[ii], 'Elements.txt'),
+            delimiter=' ', skiprows=1)
+        grids.append({"name": gridsList[ii],
+                                "nodes": tmpNodes,
+                                "elements": tmpElements,
+                                "num_nodes": tmpNodes.shape[0]})
+        gridsNumNodes += grids[ii]['num_nodes']
+
+    return grids, gridsNumNodes
 
 
-def read_computation_time():
-    """Read the computation time for each frequency."""
-    pass
-
-
-def read_pressure():
+def read_pressure(ears, cpusAndCores, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
-    # TODO: The code for reading the data above is very redundant. If this
-    #       function uses the code with an additional parameter
-    #       data='pEvalGrid' or data='pBoundary' one function might read
-    #       both :)
-    pass
+    tmpPressure = []
+    frequencies = []
+    pressure = []
+
+    if not (data == 'pBoundary' or data == 'pEvalGrid'):
+        raise ValueError('data must be pBoundary or pEvalGrid!')
+
+    print('\n Loading %s data ...' % data)
+    for ch in range(ears):
+        print('\n    Ear %d ...' % (ch+1))
+        for ii in range(cpusAndCores.shape[0]):
+            print('\n        CPU %d: ' % (ii+1))
+            for jj in range(cpusAndCores.shape[1]):
+                if (cpusAndCores[ii, jj] == (ch+1)):
+                    print('%d, ' % (jj+1))
+                    tmpFilename = os.path.join(
+                        'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
+                        'be.out')
+                    tmpData, tmpFrequencies = Output2HRTF_Load(tmpFilename,
+                                                               data)
+                    if tmpPressure:
+                        tmpPressure.append(tmpData)
+                        frequencies.append(tmpFrequencies)
+                    else:
+                        tmpPressure = tmpData
+                        frequencies = tmpFrequencies
+                    del tmpData, tmpFrequencies, tmpFilename
+            print('...')
+
+        idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
+        frequencies = sorted(frequencies)
+        pressure.append(tmpPressure[idx, :])
+
+        del tmpPressure
+
+    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))
+
+    return pressure, frequencies
 
 
 def read_pressure_on_evaluation_grids():
+    # TODO is this one necessary?
     """read the sound pressure on the evaluation grids."""
     pass
 
 
-def reference_HRTF():
+def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea, speedOfSound, densityOfAir, refMode):
     """Reference HRTF to the sound pressure in the center of the head."""
-    pass
+    # refmode
+    # 1: reference to only one radius (the smallest found)
+    # 2: reference to all individual radii
+    for ii in range(len(evaluationGrids)):
+
+        xyz = evaluationGrids[ii]["nodes"]
+        pressure = evaluationGrids[ii]["pressure"]
+        freqMatrix = numpy.tile(
+            frequencies, (pressure.shape[0], pressure.shape[1], 1))
+
+        # distance of source positions from the origin
+        if refMode == 1:
+            r = min(numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2))
+            r = numpy.tile(
+                r,
+                (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
+        else:
+            r = numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2)
+            r = numpy.tile(numpy.transpose(r),
+                           (pressure.shape[0], pressure.shape[1], 1))
+
+        if sourceType == 'vibratingElement':
+
+            volumeFlow = 0.1 * numpy.ones(
+                (pressure.shape[0],
+                    pressure.shape[1],
+                    pressure.shape[2]))
+            if 'sourceArea':
+                # has to be fixed for both ears....
+                for nn in range(len(sourceArea)):
+                    volumeFlow[:, nn, :] = \
+                        volumeFlow[:, nn, :] * sourceArea[nn]
+
+            # point source in the origin evaluated at r
+            # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
+            ps = -1j * densityOfAir * 2 * numpy.pi * freqMatrix * \
+                volumeFlow / (4 * numpy.pi) * \
+                numpy.exp(1j * 2 * numpy.pi *
+                          freqMatrix / speedOfSound * r) / r
+
+        elif sourceType == 'pointSource':
+
+            amplitude = 0.1  # hard coded in Mesh2HRTF
+            ps = amplitude * \
+                numpy.exp(1j * 2 * numpy.pi * freqMatrix /
+                          speedOfSound * r) / (4 * numpy.pi * r)
+
+        else:
+            raise ValueError(
+                ("Referencing is currently only implemented for "
+                    "sourceType 'vibratingElement' and 'pointSource'."))
+
+        # here we go...
+        evaluationGrids[ii]["pressure"] = pressure / ps
+
+    return evaluationGrids
 
 
-def compute_HRIR():
+def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
     """Compute HRIR from HRTF by means of the inverse Fourier transform"""
-    pass
+    # check if the frequency vector has the correct format
+    if not all(numpy.abs(frequencies[0] - numpy.diff(frequencies)) < .1):
+        raise ValueError('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
+
+    if not reference:
+        raise ValueError('HRIRs can only be computet if reference=true')
+
+    pressure = evaluationGrids[ii]["pressure"]
+
+    fs = 2*frequencies[-1]
+
+    # add 0 Hz bin
+    pressure = numpy.concatenate((numpy.ones((pressure.shape[0],
+                                  pressure.shape[1], 1)), pressure),
+                                 axis=2)
+    # make fs/2 real
+    pressure[:, :, -1] = numpy.abs(pressure[:, :, -1])
+    # ifft (take complex conjugate because sign conventions differ)
+    hrir = numpy.fft.irfft(numpy.conj(pressure))
+
+    # shift 30 cm to make causal
+    # (path differences between the origin and the ear are usually
+    # smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
+    n_shift = int(numpy.round(.30 / (1/fs * speedOfSound)))
+    hrir = numpy.roll(hrir, n_shift, axis=2)
+
+    return hrir
 
 
 def write_to_sofa():
@@ -624,3 +552,138 @@ def write_to_sofa():
     #       The two things that might differ are the convention and the data
     #       which could be passed as parameters
     pass
+
+
+def Output2HRTF_Load(foldername, filename):
+    """
+    Load results of the BEM calculation.
+
+    Parameters
+    ----------
+    foldername : string
+        The folder from which the data is loaded. The data to be read is
+        located in the folder be.out inside NumCalc/CPU_*_Core_*
+    filename : string
+        The kind of data that is loaded
+
+        pBoundary
+            The sound pressure on the object mesh
+        vBoundary
+            The sound velocity on the object mesh
+        pEvalGrid
+            The sound pressure on the evaulation grid
+        vEvalGrid
+            The sound velocity on the evaluation grid
+
+    Returns
+    -------
+    data : numpy array
+        Pressure or velocity values of shape (numFrequencies, numEntries)
+    frequencies : numpy array
+        The frequencies in Hz
+    """
+
+    # -----------------------check number of freq bins-------------------------
+    for ii in range(1, 1_000_000):
+        current_folder = os.path.join(foldername, 'be.%d' % ii, filename)
+        if not os.path.exists(current_folder):
+            numFrequencies = ii-1
+            break
+
+    # ---------------------check number of header and data lines---------------
+
+    idx1 = 0
+    idx2 = 0
+    ii = 0
+    with open(os.path.join(foldername, 'be.1', filename)) as file:
+        line = csv.reader(file, delimiter=' ', skipinitialspace=True)
+        for li in line:
+            ii += 1
+            if li not in (None, ""):
+                if len(li) == 3:
+                    idx1 = idx2
+                    idx2 = int(li[0])
+                    if idx2 - idx1 == 1:
+                        numHeaderlines_BE = ii - 2
+                        numDatalines = sum(1 for l in line) + 2
+                        break
+
+    # ------------------------------load data----------------------------------
+    data = numpy.zeros((numFrequencies, numDatalines), dtype=complex)
+    frequency = numpy.zeros(numFrequencies)
+
+    for ii in range(numFrequencies):
+        tmpData = []
+        current_file = os.path.join(foldername, 'be.%d' % (ii+1), filename)
+        with open(current_file) as file:
+            line = csv.reader(file, delimiter=' ', skipinitialspace=True)
+            for li in line:
+                if line.line_num > numHeaderlines_BE:
+                    tmpData.append(complex(float(li[1]), float(li[2])))
+
+        if tmpData:
+            current_file = os.path.join(
+                foldername, '..', 'fe.out', 'fe.%d' % (ii+1), 'load')
+            with open(current_file) as file:
+                line = csv.reader(file, delimiter=' ', skipinitialspace=True)
+                for li in line:
+                    if line.line_num > 2:
+                        tmpFrequency = float(li[0])
+            data[ii, :] = tmpData
+            frequency[ii] = tmpFrequency
+        else:
+            data[ii, :] = numpy.nan
+            frequency[ii] = numpy.nan
+
+    return data, frequency
+
+
+def read_computation_time(filename):
+    """
+    Read compuation time
+
+    Parameters
+    ----------
+    filename : string
+
+    Returns
+    -------
+    computation_time : numpy array
+    """
+
+    f = open(filename, "r", encoding="utf8", newline="\n")
+    count = -1
+
+    for line in f:
+        if line.find('Number of frequency steps') != -1:
+            idx = line.find('=')
+            nSteps = int(line[idx+2])
+            data = numpy.zeros((nSteps, 6), dtype=int)
+
+        if line.find('Frequency') != -1:
+            count += 1
+            idx1 = line.find('Step')
+            idx2 = line.find('Frequency')
+            data[count, 0] = int(line[idx1+5:idx2-2])
+            idx1 = line.find('=')
+            idx2 = line.find('Hz')
+            data[count, 1] = int(line[idx1+2:idx2-1])
+
+        if line.find('Assembling the equation system  ') != -1:
+            idx = line.find(':')
+            data[count, 2] = int(line[idx+2:-1])
+
+        if line.find('Solving the equation system  ') != -1:
+            idx = line.find(':')
+            data[count, 3] = int(line[idx+2:-1])
+
+        if line.find('Post processing  ') != -1:
+            idx = line.find(':')
+            data[count, 4] = int(line[idx+2:-1])
+
+        if line.find('Total  ') != -1:
+            idx = line.find(':')
+            data[count, 5] = int(line[idx+2:-1])
+
+        if line.find('Address computation ') != -1:
+            return data
