@@ -109,19 +109,10 @@ def Output2HRTF_Main(
     description = ['Frequency index', 'Frequency', 'Building', 'Solving',
                    'Postprocessing', 'Total']
 
-# TODO: This is just informal to compare or report computation times. Saving
-#       it as a text file is fine and the most generic format. I would suggest
-#       a csv file:
-#       numpy.savetext("filename.csv", computationTime, delimiter=", ",
-#                      header=", ".join(description), comments="")
-# this following file save operation needs to be refined, perhaps turn it into
-# a dictionary or save as a .npy array, let's see - I don't even know what this
-#  file is used for
-#    file = open(os.path.join('Output2HRTF', 'computationTime.txt'), "w")
-#    file.write(repr(description)+'\n')
-#    file.write(numpy.array2string(
-#        computationTime, separator=',', formatter='int')+'\n')
-#    file.close()
+    # save csv file for comparing computation times across simulations
+    numpy.savetxt(os.path.join('Output2HRTF', 'computationTime.csv'),
+                      computationTime[0],  fmt='%1.5e', delimiter=", ",
+                      header=", ".join(description), comments="")
 
     del ch, ii, jj, description, computationTime
 
@@ -187,98 +178,9 @@ def Output2HRTF_Main(
     print('\nSaving complex pressure to SOFA file ...\n')
 
     for ii in range(len(evaluationGrids)):
-
-        xyz = evaluationGrids[ii]["nodes"]
-        pressure = evaluationGrids[ii]["pressure"]
-
-        # Save as GeneralTF
-        TF_path = os.path.join(
-            'Output2HRTF', 'HRTF_%s.sofa' % evaluationGrids[ii]["name"])
-
-        #----------Create it----------#
-
-        # Need to delete it first if file already exists
-        if os.path.exists(TF_path):
-            os.remove(TF_path)
-        Obj = Dataset(TF_path, 'w', format='NETCDF4')
-
-        #----------Required Attributes----------#
-
-        Obj.Conventions = 'SOFA'
-        Obj.Version = '1.0'
-        Obj.SOFAConventions = 'GeneralTF'
-        Obj.SOFAConventionsVersion = '1.0'
-        Obj.APIName = 'pysofaconventions'
-        Obj.APIVersion = '0.1'
-        Obj.AuthorContact = 'andres.perez@eurecat.org'
-        Obj.Comment = ''
-        Obj.DataType = 'TF'
-        Obj.License = 'No license provided, ask the author for permission'
-        Obj.RoomType = 'free field'
-        Obj.DateCreated = time.ctime(time.time())
-        Obj.DateModified = time.ctime(time.time())
-        Obj.Title = ''
-        Obj.Organization = ''
-
-        Obj.ApplicationName = 'Mesh2HRTF'
-        Obj.ApplicationVersoin = Mesh2HRTF_version
-
-        #----------Required Dimensions----------#
-
-        m = evaluationGridsNumNodes
-        n = len(frequencies)
-        r = ears
-        e = 1
-        i = 1
-        c = 3
-        Obj.createDimension('M', m)
-        Obj.createDimension('N', n)
-        Obj.createDimension('E', e)
-        Obj.createDimension('R', r)
-        Obj.createDimension('I', i)
-        Obj.createDimension('C', c)
-
-        #----------Required Variables----------#
-
-        listenerPositionVar = Obj.createVariable('ListenerPosition', 'f8', ('I', 'C'))
-        listenerPositionVar.Units = 'metre'
-        listenerPositionVar.Type = 'cartesian'
-        listenerPositionVar[:] = numpy.asarray([0, 0, 0])
-
-        emitterPositionVar = Obj.createVariable('EmitterPosition', 'f8', ('E', 'C', 'I'))
-        emitterPositionVar.Units = 'metre'
-        emitterPositionVar.Type = 'cartesian'
-        emitterPositionVar[:] = numpy.asarray([0, 0, 0])
-
-        sourcePositionVar = Obj.createVariable('SourcePosition', 'f8', ('M', 'C'))
-        sourcePositionVar.Units = 'degree, degree, metre'
-        sourcePositionVar.Type = 'spherical'
-        sourcePositionVar[:] = xyz[:, 1:4]
-
-        receiverPositionVar = Obj.createVariable('ReceiverPosition', 'f8', ('R', 'C', 'I'))
-        receiverPositionVar.Units = 'metre'
-        receiverPositionVar.Type = 'cartesian'
-        receiverPositionVar[:] = sourceCenter
-
-        dataReal = Obj.createVariable('Data.Real', 'f8', ('M', 'R', 'N'))
-        dataReal[:, :, :] = numpy.real(pressure)
-        dataReal.LongName = 'pressure'
-        dataReal.Units = 'pascal'
-        dataImag = Obj.createVariable('Data.Imag', 'f8', ('M', 'R', 'N'))
-        dataImag[:, :, :] = numpy.imag(pressure)
-        dataImag.LongName = 'pressure'
-        dataImag.Units = 'pascal'
-        dataN = Obj.createVariable('N', 'f8', ('N'))
-        dataN[:] = numpy.asarray(frequencies)
-        dataN.LongName = 'frequency'
-        dataN.Units = 'hertz'
-
-        #----------Close it----------#
-
-        Obj.close()
-
-    del Obj, ii, xyz, pressure
-
+        write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
+                      evaluationGridsNumNodes, frequencies,
+                      ears, sourceCenter, type='HRTF')
 
     #%% Save time data data as SOFA file
     if computeHRIRs:
@@ -289,7 +191,10 @@ def Output2HRTF_Main(
             hrir = compute_HRIR(ii, evaluationGrids, frequencies, reference,
                                 speedOfSound)
 
-            xyz = evaluationGrids[ii]["nodes"]
+            write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
+                          evaluationGridsNumNodes, frequencies, ears,
+                          sourceCenter, fs, hrir, type)
+"""             xyz = evaluationGrids[ii]["nodes"]
             
             # Save as GeneralFIR
             FIR_path = os.path.join(
@@ -375,7 +280,7 @@ def Output2HRTF_Main(
         #     Obj.SourcePosition_Units='meter'
             Obj.close()
 
-        del Obj, ii, xyz, pressure
+        del Obj, ii, xyz, pressure """
 
     print('Done\n')
 
@@ -547,11 +452,128 @@ def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
     return hrir
 
 
-def write_to_sofa():
-    # TODO: It might be possible to use this function to write HRTFs and HRIRs
-    #       The two things that might differ are the convention and the data
-    #       which could be passed as parameters
-    pass
+def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
+                  evaluationGridsNumNodes, frequencies, ears,
+                  sourceCenter, fs=1, hrir=1, type='HRTF'):
+
+    xyz = evaluationGrids[ii]["nodes"]
+    
+    # Save as GeneralTF
+    if type == 'HRTF':
+        path = os.path.join('Output2HRTF',
+                            'HRTF_%s.sofa' % evaluationGrids[ii]["name"])
+        pressure = evaluationGrids[ii]["pressure"]
+    elif type == 'HRIR:':
+        path = os.path.join('Output2HRTF',
+                            'HRIR_%s.sofa' % evaluationGrids[ii]["name"])
+
+    #----------Create it----------#
+
+    # Need to delete it first if file already exists
+    if os.path.exists(path):
+        os.remove(path)
+    Obj = Dataset(path, 'w', format='NETCDF4')
+
+    #----------Required Attributes----------#
+
+    Obj.Conventions = 'SOFA'
+    Obj.Version = '1.0'
+
+    if type == 'HRTF':
+        Obj.SOFAConventions = 'GeneralTF'
+        Obj.DataType = 'TF'
+    elif type == 'HRIR:':
+        Obj.SOFAConventions = 'SimpleFreeFieldHRIR'
+        Obj.DataType = 'FIR'
+
+    Obj.SOFAConventionsVersion = '1.0'
+    Obj.APIName = 'pysofaconventions'
+    Obj.APIVersion = '0.1'
+    Obj.AuthorContact = 'andres.perez@eurecat.org'
+    Obj.Comment = ''
+    
+    Obj.License = 'No license provided, ask the author for permission'
+    Obj.RoomType = 'free field'
+    Obj.DateCreated = time.ctime(time.time())
+    Obj.DateModified = time.ctime(time.time())
+    Obj.Title = ''
+    Obj.Organization = ''
+
+    Obj.ApplicationName = 'Mesh2HRTF'
+    Obj.ApplicationVersoin = Mesh2HRTF_version
+
+    #----------Required Dimensions----------#
+
+    m = evaluationGridsNumNodes
+    n = len(frequencies)
+    r = ears
+    e = 1
+    i = 1
+    c = 3
+    Obj.createDimension('M', m)
+    Obj.createDimension('N', n)
+    Obj.createDimension('E', e)
+    Obj.createDimension('R', r)
+    Obj.createDimension('I', i)
+    Obj.createDimension('C', c)
+
+    #----------Required Variables----------#
+
+    listenerPositionVar = Obj.createVariable('ListenerPosition', 'f8', ('I', 'C'))
+    listenerPositionVar.Units = 'metre'
+    listenerPositionVar.Type = 'cartesian'
+    listenerPositionVar[:] = numpy.asarray([0, 0, 0])
+
+    emitterPositionVar = Obj.createVariable('EmitterPosition', 'f8', ('E', 'C', 'I'))
+    emitterPositionVar.Units = 'metre'
+    emitterPositionVar.Type = 'cartesian'
+    emitterPositionVar[:] = numpy.asarray([0, 0, 0])
+
+    sourcePositionVar = Obj.createVariable('SourcePosition', 'f8', ('M', 'C'))
+    sourcePositionVar.Units = 'degree, degree, metre'
+    sourcePositionVar.Type = 'spherical'
+    sourcePositionVar[:] = xyz[:, 1:4]
+
+    receiverPositionVar = Obj.createVariable('ReceiverPosition', 'f8', ('R', 'C', 'I'))
+    receiverPositionVar.Units = 'metre'
+    receiverPositionVar.Type = 'cartesian'
+    receiverPositionVar[:] = sourceCenter
+
+    if type == 'HRTF':
+        dataReal = Obj.createVariable('Data.Real', 'f8', ('M', 'R', 'N'))
+        dataReal[:, :, :] = numpy.real(pressure)
+        dataReal.LongName = 'pressure'
+        dataReal.Units = 'pascal'
+        dataImag = Obj.createVariable('Data.Imag', 'f8', ('M', 'R', 'N'))
+        dataImag[:, :, :] = numpy.imag(pressure)
+        dataImag.LongName = 'pressure'
+        dataImag.Units = 'pascal'
+        dataN = Obj.createVariable('N', 'f8', ('N'))
+        dataN[:] = numpy.asarray(frequencies)
+        dataN.LongName = 'frequency'
+        dataN.Units = 'hertz'
+    elif type == 'HRIR:':
+        samplingRateVar = Obj.createVariable('Data.SamplingRate', 'f8',   ('I'))
+        samplingRateVar.Units = 'hertz'
+        samplingRateVar[:] = fs
+        
+        # delayVar        =   Obj.createVariable('Data.Delay',        'f8',   ('I','R'))
+        # delay = np.zeros((i,r))
+        # delayVar[:,:] = delay
+
+        dataIRVar = Obj.createVariable('Data.IR', 'f8', ('M', 'R', 'N'))
+        # dataIRVar.ChannelOrdering   = 'acn'
+        # dataIRVar.Normalization     = 'sn3d'
+        dataIRVar[:, :, :] = hrir
+        #     Obj.SourcePosition_Type='cartesian'
+        #     Obj.SourcePosition_Units='meter'
+    
+
+    #----------Close it----------#
+
+    Obj.close()
+
+    return
 
 
 def Output2HRTF_Load(foldername, filename):
