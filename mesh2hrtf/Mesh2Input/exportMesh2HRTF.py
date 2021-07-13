@@ -1004,7 +1004,7 @@ def _write_output2HRTF_py(filepath1, version,
                          reference, computeHRIRs,
                          speedOfSound, densityOfMedium,
                          cpusAndCores, maxCPUs, maxCores,
-                         sourceXPosition, sourceYPosition, sourceZPosition, 
+                         sourceXPosition, sourceYPosition, sourceZPosition,
                          programPath):
 
     # file handling
@@ -1013,12 +1013,13 @@ def _write_output2HRTF_py(filepath1, version,
     fw = file.write
 
     # header
-    fw("# Collect the data simulated by NumCalc and save to project folder.\n")
+    fw("# Read the data simulated by NumCalc and save to the folder\n")
+    fw("# Output2HRTF inside project folder.\n\n")
 
     fw("import numpy\n")
     fw("import sys\n")
 
-    output2hrtfPath = os.path.join(programPath,"Output2HRTF","Python")
+    output2hrtfPath = os.path.join(programPath, "Output2HRTF", "Python")
 
     fw("sys.path.insert(1, '%s')\n" % output2hrtfPath)
     fw("import Output2HRTF_Main as o2hrtfm\n\n")
@@ -1028,6 +1029,7 @@ def _write_output2HRTF_py(filepath1, version,
     # Mesh2HRTF version
     fw(f"Mesh2HRTF_version = '{version}'\n\n")
 
+    fw("# source information\n")
     # initialize arrays for source information
     if sourceType_id == 0 and ear == 'Both ears':
         fw("sourceCenter = numpy.zeros((2, 3))\n")
@@ -1035,10 +1037,9 @@ def _write_output2HRTF_py(filepath1, version,
     else:
         fw("sourceCenter = numpy.zeros((1, 3))\n")
         fw("sourceArea = numpy.zeros((1, 1))\n\n")
-    
+
     # add information about the source
     if sourceType_id == 0:
-        fw("# source information\n")
         fw("sourceType = 'vibratingElement'\n")
 
         # get the receiver/ear centers and areas
@@ -1049,10 +1050,10 @@ def _write_output2HRTF_py(filepath1, version,
 
         # write left ear data
         if ear == 'Left ear' or ear == 'Both ears':
-            fw("sourceCenter[0, :] = [%f, %f, %f]\n" 
+            fw("sourceCenter[0, :] = [%f, %f, %f]\n"
                                             % (earCenter[0][0],
-                                            earCenter[0][1],
-                                            earCenter[0][2]))
+                                               earCenter[0][1],
+                                               earCenter[0][2]))
             fw("sourceArea[0, 0] = %g\n" % earArea[0])
 
         # write right ear data
@@ -1062,21 +1063,20 @@ def _write_output2HRTF_py(filepath1, version,
             if ear == 'Both ears':
                 nn = 1
 
-            fw("sourceCenter[%d, :] = [%f, %f, %f]\n" % (nn,
-                                                    earCenter[1][0],
-                                                    earCenter[1][1],
-                                                    earCenter[1][2]))
+            fw("sourceCenter[%d, :] = [%f, %f, %f]\n"
+                                            % (nn,
+                                               earCenter[1][0],
+                                               earCenter[1][1],
+                                               earCenter[1][2]))
             fw("sourceArea[%d, 0] = %g\n" % (nn, earArea[1]))
 
         fw("\n")
     else:
-
-        fw("# source information\n")
         fw("sourceType = 'pointSource';\n")
-        fw("sourceCenter[0, :] = [%s, %s, %s]\n" 
+        fw("sourceCenter[0, :] = [%s, %s, %s]\n"
                                             % (sourceXPosition,
-                                            sourceYPosition,
-                                            sourceZPosition))
+                                               sourceYPosition,
+                                               sourceZPosition))
         fw("sourceArea[0, 0]     = 1\n")
 
     # referencing
