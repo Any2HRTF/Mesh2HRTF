@@ -42,14 +42,17 @@ def Output2HRTF_Main(
         projectPath, Mesh2HRTF_version, cpusAndCores, sourceType, sourceCenter,
         sourceArea, reference, computeHRIRs, speedOfSound, densityOfAir):
     """
-    Process NumcCalc output and write data as SOFA files.
+    Process NumCalc output and write data to disk.
 
-    All parameters are written upon exporting a Mesh2HRTF project from Blender.
+    All parameters are written to Output2HRTF.py upon exporting a Mesh2HRTF
+    project from Blender. This function will thus usually be called from an
+    Output2HRTF.py file.
 
     Parameters
     ----------
     projectPath : string
-        Path to the Mesh2HRTF folder.
+        Path to the Mesh2HRTF folder, i.e., the folder containing the
+        subfolders `EvaluationGrids`, `NumCal` etc.
     Mesh2HRTF_version : string
         Mesh2HRTF version as string
     cpusAndCores : array
@@ -60,7 +63,8 @@ def Output2HRTF_Main(
         The source position
     sourceArea : array
         The area of the source(s) if using vibrating elements as sourceType.
-        This is required for referencing the HRTFs
+        This is required for referencing the HRTFs. Use an area of 1 for a
+        point source.
     reference : boolean
         Indicate if the HRTF are referenced to the pressure in the center of
         the head with the head absent.
@@ -83,10 +87,12 @@ def Output2HRTF_Main(
     ears = numpy.amax(cpusAndCores)
 
     # get the evaluation grids
-    evaluationGrids, evaluationGridsNumNodes = read_nodes_and_elements(data='EvaluationGrids')
+    evaluationGrids, evaluationGridsNumNodes = \
+        read_nodes_and_elements(data='EvaluationGrids')
 
     # get the object mesh
-    objectMeshes, objectMeshesNumNodes = read_nodes_and_elements(data='ObjectMeshes')
+    objectMeshes, objectMeshesNumNodes = \
+        read_nodes_and_elements(data='ObjectMeshes')
 
     # Read computational effort
     print('\n Loading computational effort data ...')
@@ -123,10 +129,6 @@ def Output2HRTF_Main(
         elements = objectMeshes[ii]["elements"]
         element_data = pressure
 
-        # old version using list representation of pressure
-        # for jj in range(len(pressure)):
-        #     element_data[jj] = element_data[jj][:, cnt:cnt+elements.shape[0]]
-        # new version using MRN-transposed array representation of pressure
         for jj in range(pressure.shape[1]):
             element_data[:, jj, :] = element_data[
                 cnt:cnt+elements.shape[0], jj, :]
@@ -151,11 +153,6 @@ def Output2HRTF_Main(
     # save to struct
     cnt = 0
     for ii in range(len(evaluationGrids)):
-        # old version using list representation of pressure
-        # evaluationGrids[ii]["pressure"] = \
-        #     [i[:, cnt:cnt+evaluationGrids[ii]["num_nodes"],] \
-        #     for i in pressure]
-        # new version using MRN-transposed array representation of pressure
         evaluationGrids[ii]["pressure"] = pressure[
             cnt:cnt+evaluationGrids[ii]["num_nodes"], :, :]
 
@@ -170,7 +167,7 @@ def Output2HRTF_Main(
                                          sourceType, sourceArea, speedOfSound,
                                          densityOfAir, refMode=1)
 
-    # Save data as SOFA file
+    # Save complex pressure as SOFA file
     print('\nSaving complex pressure to SOFA file ...\n')
 
     for ii in range(len(evaluationGrids)):
@@ -178,7 +175,7 @@ def Output2HRTF_Main(
                       evaluationGridsNumNodes, frequencies,
                       ears, sourceCenter, type='HRTF')
 
-    # Save time data data as SOFA file
+    # Save impulse responses as SOFA file
     if computeHRIRs:
 
         print('\nSaving time data to SOFA file ...\n')
@@ -264,12 +261,6 @@ def read_pressure(ears, cpusAndCores, data):
     return pressure, frequencies
 
 
-def read_pressure_on_evaluation_grids():
-    # TODO is this one necessary?
-    """read the sound pressure on the evaluation grids."""
-    pass
-
-
 def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
                    speedOfSound, densityOfAir, refMode):
     """Reference HRTF to the sound pressure in the center of the head."""
@@ -335,7 +326,8 @@ def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
     """Compute HRIR from HRTF by means of the inverse Fourier transform"""
     # check if the frequency vector has the correct format
     if not all(numpy.abs(frequencies[0] - numpy.diff(frequencies)) < .1):
-        raise ValueError('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
+        raise ValueError(('The frequency vector must be if the format '
+                          'a:a:fs/2, with a>0 and fs the sampling rate.'))
 
     if not reference:
         raise ValueError('HRIRs can only be computet if reference=true')
@@ -364,20 +356,14 @@ def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
 
 def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
                   evaluationGridsNumNodes, frequencies, ears,
-                  sourceCenter, fs=1, hrir=1, type='HRTF'):
+                  sourceCenter, fs=None, hrir=None, type='HRTF'):
+    """Write complex pressure or impulse responses as SOFA file."""
 
     xyz = evaluationGrids[ii]["nodes"]
 
-    # Save as GeneralTF
-    if type == 'HRTF':
-        path = os.path.join('Output2HRTF',
-                            'HRTF_%s.sofa' % evaluationGrids[ii]["name"])
-        pressure = evaluationGrids[ii]["pressure"]
-    elif type == 'HRIR':
-        path = os.path.join('Output2HRTF',
-                            'HRIR_%s.sofa' % evaluationGrids[ii]["name"])
-
-    # Create it
+    # Save as SOFA file
+    path = os.path.join('Output2HRTF',
+                        f'{type}_{evaluationGrids[ii]["name"]}%.sofa')
 
     # Need to delete it first if file already exists
     if os.path.exists(path):
@@ -385,7 +371,6 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     Obj = Dataset(path, 'w', format='NETCDF4')
 
     # Required Attributes
-
     Obj.Conventions = 'SOFA'
     Obj.Version = '1.0'
 
@@ -456,6 +441,7 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     receiverPositionVar[:] = sourceCenter
 
     if type == 'HRTF':
+        pressure = evaluationGrids[ii]["pressure"]
         dataReal = Obj.createVariable('Data.Real', 'f8', ('M', 'R', 'N'))
         dataReal[:, :, :] = numpy.real(pressure)
         dataReal.LongName = 'pressure'
@@ -473,13 +459,11 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
         samplingRateVar.Units = 'hertz'
         samplingRateVar[:] = fs
 
-        # delayVar        =   Obj.createVariable('Data.Delay', 'f8', ('I','R'))
+        # delayVar = Obj.createVariable('Data.Delay', 'f8', ('I','R'))
         # delay = np.zeros((i,r))
         # delayVar[:,:] = delay
 
         dataIRVar = Obj.createVariable('Data.IR', 'f8', ('M', 'R', 'N'))
-        # dataIRVar.ChannelOrdering   = 'acn'
-        # dataIRVar.Normalization     = 'sn3d'
         dataIRVar[:, :, :] = hrir
 
     # Close it
