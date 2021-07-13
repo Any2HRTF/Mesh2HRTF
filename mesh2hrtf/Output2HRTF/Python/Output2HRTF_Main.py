@@ -363,7 +363,7 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
 
     # Save as SOFA file
     path = os.path.join('Output2HRTF',
-                        f'{type}_{evaluationGrids[ii]["name"]}%.sofa')
+                        f'{type}_{evaluationGrids[ii]["name"]}.sofa')
 
     # Need to delete it first if file already exists
     if os.path.exists(path):
