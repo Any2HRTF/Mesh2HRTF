@@ -2,6 +2,9 @@ import subprocess
 import tempfile
 import shutil
 import os
+import hrtf_sofa_to_numpy as hstn
+import scipy.io
+import numpy
 
 # create a temporary directory
 tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
@@ -16,7 +19,7 @@ tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
 
 
 def test_1ear_rigid_planewave_bem():
-    """ 
+    """
     test if NumCalc and Output2HRTF.py generate correct output by comparing to
     analytical solution
     """
@@ -40,4 +43,18 @@ def test_1ear_rigid_planewave_bem():
 
     # Verify
 
-#test_1ear_rigid_planewave_bem()
+    # load HRTF data from simulation as numpy
+    hrtf_sim = hstn.hrtf_sofa_to_numpy(os.path.join(tmp_path, "Output2HRTF",
+                                                    "HRTF_HorPlane.sofa"))
+
+    # load HRTF data from analytical comparison
+    ana_path = "/home/matheson/Documents/jthomsen/Test_material/test_boundary/analytic_solutions/sphere_rigid_plane.mat"
+    mat_ana = scipy.io.loadmat(ana_path)
+    hrtf_ana = mat_ana['p_total']
+
+    # compare
+    numpy.testing.assert_allclose(hrtf_sim[:,:,0], hrtf_ana, rtol=0.1, atol=1e-5,
+                                  err_msg='simulated and analytical solution not identical')
+
+
+test_1ear_rigid_planewave_bem()
