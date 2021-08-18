@@ -154,12 +154,12 @@ int NC_DeclareArrays
 	}
 
 	// initialize
-	if(currentFrequency_ == 0) for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
+	if(currentFrequency_ == istart_) for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
 
 Labsettradibem:
 	nlevtop_ = numClusterLevels_ - 1;
 
-	if(currentFrequency_ > 0) {
+	if(currentFrequency_ > istart_) {
 		// see if the computation type and number of levels is changed
 		if(methodFMM_ == imultipori && numClusterLevels_ == nlevmlfmori) idifcomtyp = 0;
 

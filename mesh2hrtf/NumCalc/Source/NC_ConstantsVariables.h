@@ -111,6 +111,8 @@ extern char jobTitle_[SIZE_LINE],   /* title of the job */
 extern int currentFrequency_,   /* number of the current frequency */
 		   numFrequencies_;     /* number of frequencies */
 
+extern int istart_;            /* index of the first frequency step */
+
 extern double firstFrequencyStep_,      /* first frequncy step */
 			  frequencyStepIncrement_;  /* frequency step increment */
 
@@ -124,28 +126,28 @@ extern int numElementGroups_,       /* number of element groups */
            isInternalProblem_;		/* if the job is internal problem */
 
 extern double speedOfSound_,        /* sound speed in the medium */
-              densityOfMedium_,     /* density of the medium */
-	          harmonicTimeFactor_,              /* factor for the unit of the imaginary numbers 
-                                     ( =  1.0  when G = exp(i k r)/(4 PI r)
-                                     = -1.0  when G = exp(-i k r)/(4 PI r) ) */
-              waveNumbers_,         /* wave numbers */
-			  waveLength_,          /* wave length */
-			  averageElementArea_,  /* the average area of boundary elements */
-			  frequency_,           /* frequency */
-	          omega1_,              /* 2*PI*frequency */
-			  rpfact_,              /* sound pressure = rpfact * velocity potential */
-			  Tao_,                 /* = 1.0 for external problem; = -1 for internal problem */
-			  delta_,               /* a small distance, dependent to mesh */
-			  epsilon_,             /* a small distance (= 1.0e-3 mm) */
-			  ClusEdgL0_;           /* input value of average edge length of the clusters 
-                                     (of the coarsest level for MLFMBEM), if <= 0, a value
-                                     for average edge length of the clusters will be computed 
+  densityOfMedium_,     /* density of the medium */
+  harmonicTimeFactor_,              /* factor for the unit of the imaginary numbers 
+				       ( =  1.0  when G = exp(i k r)/(4 PI r)
+				       = -1.0  when G = exp(-i k r)/(4 PI r) ) */
+  waveNumbers_,         /* wave numbers */
+  waveLength_,          /* wave length */
+  averageElementArea_,  /* the average area of boundary elements */
+  frequency_,           /* frequency */
+  omega1_,              /* 2*PI*frequency */
+  rpfact_,              /* sound pressure = rpfact * velocity potential */
+  Tao_,                 /* = 1.0 for external problem; = -1 for internal problem */
+  delta_,               /* a small distance, dependent to mesh */
+  epsilon_,             /* a small distance (= 1.0e-3 mm) */
+  ClusEdgL0_;           /* input value of average edge length of the clusters 
+			   (of the coarsest level for MLFMBEM), if <= 0, a value
+			   for average edge length of the clusters will be computed 
                                      by the program*/
 
 extern int numNodesOfBoundaryMesh_,                 /* number of nodes of the boundary element mesh */
-           numNodesOfEvaluationMesh_,               /* number of nodes of the evaluation mesh */
-		   numElementsOfBoundaryMesh_,              /* number of elements of the BE mesh */
-		   numElementsOfEvaluationMesh_,            /* number of elements of the evaluation mesh */
+  numNodesOfEvaluationMesh_,               /* number of nodes of the evaluation mesh */
+  numElementsOfBoundaryMesh_,              /* number of elements of the BE mesh */
+  numElementsOfEvaluationMesh_,            /* number of elements of the evaluation mesh */
 	       numRowsOfCoefficientMatrix_,             /* number of rows of the coefficient matrix */
 	       numComponentsOfCoefficientMatrix_,       /* number of components of the coefficient matrix */
 	       numReflectionsOfElements_,               /* number of reflections of the elements with respect to the 
