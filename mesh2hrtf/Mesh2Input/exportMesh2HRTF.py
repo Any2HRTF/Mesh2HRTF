@@ -221,7 +221,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                      "A separate folder is created created For each CPU_x_Core_x. "
                      "(This setting does NOT need to match your actual CPU and "
                      "some users might only care about the total nr. of instances)."),
-        default=8,
+        default=1,
         min=1,
         max=10000,
         )
