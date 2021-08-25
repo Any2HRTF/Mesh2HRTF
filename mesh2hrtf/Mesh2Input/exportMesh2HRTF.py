@@ -346,6 +346,23 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             raise ValueError("Did not find the 3D Mesh. It must be named"
                              "'Reference' (case sensitive).")
 
+        # check if 'Reference' object is a triangular mesh
+        obj2 = bpy.data.objects['Reference']
+
+        for p in obj2.data.polygons:
+            # Select non quad face (polygons)
+            p.select = len(p.vertices) != 3
+            if p.select:
+                has_error_message = True
+
+        if has_error_message:
+            # Go in edit mode to show the result
+            bpy.ops.object.mode_set(mode = 'EDIT')
+            raise TypeError(
+                'Not all faces in the Reference mesh are triangular!')
+
+        del obj2, has_error_message
+
         # get Mesh2HRTF version
         with open(os.path.join(programPath, "..", "VERSION")) as read_version:
             version = read_version.readline()
