@@ -52,7 +52,7 @@ ears=max(unique(cpusAndCores));
 
 % get the evaluation grids
 evaluationGrids = dir('EvaluationGrids');
-evaluationGrids = evaluationGrids(~ismember({evaluationGrids.name},{'.','..'}));
+evaluationGrids = evaluationGrids(~cellfun(@(x) strncmp(x, '.', 1), {evaluationGrids.name}));
 
 evaltionGridsNumNodes = 0;
 for ii=1:length(evaluationGrids)
@@ -66,7 +66,7 @@ end
 
 % get the object mesh
 objectMeshes = dir('ObjectMeshes');
-objectMeshes = objectMeshes(~ismember({objectMeshes.name},{'.','..'}));
+objectMeshes = objectMeshes(~cellfun(@(x) strncmp(x, '.', 1), {objectMeshes.name}));
 
 % evaluationGridNodes=[];
 % evaluationGridElements=[];
