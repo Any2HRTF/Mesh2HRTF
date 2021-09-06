@@ -382,7 +382,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         subfolders = ["ObjectMeshes", "EvaluationGrids", "NumCalc"]
         for subfolder in subfolders:
             temp = os.path.join(filepath1, subfolder)
-            # delete subfolder if it exists to ensure data consitency
+            # delete subfolder if it exists to ensure data consistency
             if os.path.exists(temp):
                 shutil.rmtree(temp)
             # make subfolder
@@ -1145,10 +1145,10 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     f: list
         A simple list of the frequencies to be simulated (for debugging).
     frequencyStepSize: float
-        Step size between sucsessive frequncies (written to Info.txt). This is
+        Step size between successive frequencies (written to Info.txt). This is
         returned because it might be zero during the function call.
     numFrequencySteps: int
-        Number of frequncies to be simulated (written to Info.txt). This is
+        Number of frequencies to be simulated (written to Info.txt). This is
         returned because it might be zero during the function call.
 
     """
@@ -1198,7 +1198,7 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
               list of frequencies.')
 
     if not len(f):
-        raise ValueError("No frequncies to be calulated. \
+        raise ValueError("No frequencies to be calculated. \
                          Check the input parameters.")
 
     # check number of cores and frequencies
@@ -1309,7 +1309,7 @@ def _write_nc_inp(filepath1, version, title, ear,
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
     The file format is documented at:
-    https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp/
+    https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp_0.4.0/
     """
 
     # check the BEM method
@@ -1323,13 +1323,13 @@ def _write_nc_inp(filepath1, version, title, ear,
         ValueError(
             f"Method must be BEM, SL-FMM BEM or ML-FMM BEM but is {method}")
 
-    for core in range(1, len(cpusAndCores[0]) +1):
-        for cpu in range(1, len(cpusAndCores) +1):
-            if not cpusAndCores[cpu-1][core-1] == 0:
+    for core in range(len(cpusAndCores[0])):
+        for cpu in range(len(cpusAndCores)):
+            if not cpusAndCores[cpu][core] == 0:
 
                 # create directoy
                 filepath2 = os.path.join(
-                    filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu, core))
+                    filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu+1, core+1))
                 if not os.path.exists(filepath2):
                     os.mkdir(filepath2)
 
@@ -1361,15 +1361,15 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # control parameter II ----------------------------------------
                 fw("## Controlparameter II\n")
                 fw("1 %d 0.000001 0.00e+00 1 0 0\n" % (
-                    len(frequencies[cpu-1][core-1])))
+                    len(frequencies[cpu][core])))
                 fw("##\n")
                 fw("## Load Frequency Curve \n")
-                fw("0 %d\n" % (len(frequencies[cpu-1][core-1])+1))
+                fw("0 %d\n" % (len(frequencies[cpu][core])+1))
                 fw("0.000000 0.000000e+00 0.0\n")
-                for ii in range(0, len(frequencies[cpu-1][core-1])):
+                for ii in range(len(frequencies[cpu][core])):
                     fw("%f %fe+04 0.0\n" % (
                         0.000001*(ii+1),
-                        frequencies[cpu-1][core-1][ii] / 10000))
+                        frequencies[cpu][core][ii] / 10000))
                 fw("##\n")
 
                 # main parameters I -------------------------------------------
@@ -1441,7 +1441,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # write velocity condition for the ears if using vibrating
                 # elements as the sound source
                 if sourceType_id==0:
-                    if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
+                    if cpusAndCores[cpu][core]==1 and ear!='Right ear':
                         tmpEar='Left ear'
                     else:
                         tmpEar='Right ear'
@@ -1478,9 +1478,9 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # source information: point source ----------------------------
                 if sourceType_id==0:
                     fw("# POINT SOURCES\n")
-                    if cpusAndCores[cpu-1][core-1] == 1:
+                    if cpusAndCores[cpu][core] == 1:
                         fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
-                    if cpusAndCores[cpu-1][core-1] == 2:
+                    if cpusAndCores[cpu][core] == 2:
                         fw("# 0 0.0 -0.101 0.0 0.1 -1 0.0 -1\n")
                 else:
                     fw("POINT SOURCES\n")

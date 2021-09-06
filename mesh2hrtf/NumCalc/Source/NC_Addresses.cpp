@@ -807,21 +807,21 @@ void NC_GenerateClustersFMM
                 for(l=0; l<nelgri; l++) 
                     if(nuindxyz(l, 0) == i && nuindxyz(l, 1) == j && nuindxyz(l, 2) == k)
                     {
-		      if(nuelbegrp[l] == 23568)
-			cout << "do something";
-		      
-		      l1++;
-		      nue_clus[i1++] = nuelbegrp[l];
+                        if(nuelbegrp[l] == 23568)
+                            cout << "do something";
+
+                        l1++;
+                        nue_clus[i1++] = nuelbegrp[l];
                     }
                 ne_clus[iclus++] = l1;
             }
         // if there are very small clusters, combine them with the nearest
-	// bigger one
-	NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
+        // bigger one
+        NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
 
 
-	
-	// store the results
+
+        // store the results
         i1 = 0;
         for(i=0; i<nclus; i++)
         {
