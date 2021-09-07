@@ -3,8 +3,10 @@ import numpy
 import sys
 sys.path.insert(1, '/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf/Output2HRTF/Python')
 import Output2HRTF_Main as o2hrtfm
+import os
 
-projectPath = '/home/matheson/Documents/jthomsen/Test_material/porting_test'
+
+projectPath = os.getcwd()
 
 Mesh2HRTF_version = '1.0.0'
 
