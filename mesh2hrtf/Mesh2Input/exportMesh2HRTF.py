@@ -434,6 +434,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             sourceZPosition = None
 
 
+# Sort faces in the object according to materials -----------------------------
+        _sort_faces_according_to_materials(obj)
+
+
 # Write object data -----------------------------------------------------------
         for obj in bpy.context.scene.objects[:]:
             if obj.type == 'MESH' and obj.name == 'Reference':
@@ -573,6 +577,22 @@ def _get_point_source_position(unitFactor):
     return sourceXPosition, sourceYPosition, sourceZPosition
 
 
+def _sort_faces_according_to_materials(obj):
+    """
+    Sort faces in an object according to the materials. This makes the NC.inp
+    files shorter in case boundary conditions are used."""
+
+    # enforce object mode and select the object
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+    obj.select_set(True)
+
+    # sort mesh if required
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.sort_elements(type='MATERIAL', elements={'FACE'})
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
+
 def _write_object_data(obj, objects, unitFactor, context, filepath1):
     """Write object information to Nodes.txt and Elements.txt.
 
@@ -703,12 +723,6 @@ def _get_materials(obj):
     # enforce object mode and select the object
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
     obj.select_set(True)
-
-    # sort mesh if required
-    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.sort_elements(type='MATERIAL', elements={'FACE'})
-    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
     # loop faces and log assigned materials
     materials = dict()
