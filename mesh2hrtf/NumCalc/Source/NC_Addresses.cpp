@@ -154,12 +154,12 @@ int NC_DeclareArrays
 	}
 
 	// initialize
-	if(currentFrequency_ == 0) for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
+	if(currentFrequency_ == istart_) for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
 
 Labsettradibem:
 	nlevtop_ = numClusterLevels_ - 1;
 
-	if(currentFrequency_ > 0) {
+	if(currentFrequency_ > istart_) {
 		// see if the computation type and number of levels is changed
 		if(methodFMM_ == imultipori && numClusterLevels_ == nlevmlfmori) idifcomtyp = 0;
 
@@ -807,21 +807,21 @@ void NC_GenerateClustersFMM
                 for(l=0; l<nelgri; l++) 
                     if(nuindxyz(l, 0) == i && nuindxyz(l, 1) == j && nuindxyz(l, 2) == k)
                     {
-		      if(nuelbegrp[l] == 23568)
-			cout << "do something";
-		      
-		      l1++;
-		      nue_clus[i1++] = nuelbegrp[l];
+                        if(nuelbegrp[l] == 23568)
+                            cout << "do something";
+
+                        l1++;
+                        nue_clus[i1++] = nuelbegrp[l];
                     }
                 ne_clus[iclus++] = l1;
             }
         // if there are very small clusters, combine them with the nearest
-	// bigger one
-	NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
+        // bigger one
+        NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
 
 
-	
-	// store the results
+
+        // store the results
         i1 = 0;
         for(i=0; i<nclus; i++)
         {

@@ -41,7 +41,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Mesh2HRTF input format",
     "author": "The Mesh2HRTF developers",
-    "version": (0, 2, 0),
+    "version": (0, 2, 1),
     "blender": (2, 80, 0),
     "location": "File > Export",
     "description": "Export Mesh2HRTF input files",
@@ -98,8 +98,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
-        description="Path to folder containing 'Mesh2Input', 'NumCalc', etc..",
-        default=r"/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
+        description=("Path to folder containing 'Mesh2Input' and other folders"
+                     "(used to copy files to project folder during export)"),
+        default=r"path/to/mesh2hrtf/",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -196,30 +197,33 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     # Job distribution --------------------------------------------------------
     cpuFirst: IntProperty(
         name="CPU (first)",
-        description=("The different frequencies can be simulated on separate "
-                     "CPUs and cores. A separate output folder will be created"
-                     " inside ProjectFolder/NumCalc for each CPU and core."),
+        description=("The simulation can be distributed to separate instances. "
+                     "A separate folder is created created For each CPU_x_Core_x. "
+                     "(This setting does NOT need to match your actual CPU and "
+                     "some users might only care about the total nr. of instances)."),
         default=1,
         min=1,
-        max=100,
+        max=10000,
         )
     cpuLast: IntProperty(
         name="CPU (last)",
-        description=("The different frequencies can be simulated on separate "
-                     "CPUs and cores. A separate output folder will be created"
-                     " inside ProjectFolder/NumCalc for each CPU and core."),
+        description=("The simulation can be distributed to separate instances. "
+                     "A separate folder is created created For each CPU_x_Core_x. "
+                     "(This setting does NOT need to match your actual CPU and "
+                     "some users might only care about the total nr. of instances)."),
         default=1,
         min=1,
-        max=100,
+        max=10000,
         )
     numCoresPerCPU: IntProperty(
         name="Cores per CPU",
-        description=("The different frequencies can be simulated on separate "
-                     "CPUs and cores. A separate output folder will be created"
-                     " inside ProjectFolder/NumCalc for each CPU and core."),
+        description=("The simulation can be distributed to separate instances. "
+                     "A separate folder is created created For each CPU_x_Core_x. "
+                     "(This setting does NOT need to match your actual CPU and "
+                     "some users might only care about the total nr. of instances)."),
         default=1,
         min=1,
-        max=8,
+        max=10000,
         )
 
     @classmethod
@@ -342,6 +346,24 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             raise ValueError("Did not find the 3D Mesh. It must be named"
                              "'Reference' (case sensitive).")
 
+        # check if 'Reference' object is a triangular mesh
+        obj2 = bpy.data.objects['Reference']
+        has_error_message = False
+
+        for p in obj2.data.polygons:
+            # Select non quad face (polygons)
+            p.select = len(p.vertices) != 3
+            if p.select:
+                has_error_message = True
+
+        if has_error_message:
+            # Go in edit mode to show the result
+            bpy.ops.object.mode_set(mode = 'EDIT')
+            raise TypeError(
+                'Not all faces in the Reference mesh are triangular!')
+
+        del obj2, has_error_message
+
         # get Mesh2HRTF version
         with open(os.path.join(programPath, "..", "VERSION")) as read_version:
             version = read_version.readline()
@@ -351,10 +373,17 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             filepath += os.path.sep
         filepath1, _ = os.path.split(filepath)
 
+        if not os.path.exists(filepath1): # create project folder with "Filename"
+            os.mkdir(filepath1)
+        elif os.path.exists( os.path.join(filepath1, "NumCalc") ):
+            raise ValueError("Project folder ", filepath1,
+                             " already exists. Please choose another Project "
+                             "name or manually delete existing files.")
+
         subfolders = ["ObjectMeshes", "EvaluationGrids", "NumCalc"]
         for subfolder in subfolders:
             temp = os.path.join(filepath1, subfolder)
-            # delete subfolder if it exists to ensure data consitency
+            # delete subfolder if it exists to ensure data consistency
             if os.path.exists(temp):
                 shutil.rmtree(temp)
             # make subfolder
@@ -404,6 +433,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             sourceXPosition = None
             sourceYPosition = None
             sourceZPosition = None
+
+
+# Sort faces in the object according to materials -----------------------------
+        _sort_faces_according_to_materials(obj)
 
 
 # Write object data -----------------------------------------------------------
@@ -469,14 +502,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Calculate frequency information ---------------------------------------------
-        # maximum number of cpus. Still hard coded but might be:
-        # `maxCPUs = max(10, cpuLast)` if it works with the rest of Mesh2HRTF
-        maxCPUs = 10
+        # maximum numbers are used for initialization & status print-outs:
+        maxCPUs = cpuLast             # used to be max(10, cpuLast)
+        maxCores = numCoresPerCPU     # used to be max(8, numCoresPerCPU)
 
-        # maximum number of cores. Still hard coded but might be:
-        # maxCores = max(8, numCoresPerCPU) if it works with the rest of
-        # Mesh2HRTF
-        maxCores = 8
 
         # check how the frequency vector is defined
         if frequencyVectorType == 'Step size':
@@ -499,7 +528,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         _write_info_txt(evalGridPaths, title, ear, filepath1, version,
                         cpuFirst, cpuLast, numCoresAvailable,
                         frequencyStepsPerCore, frequencies, freqs,
-                        frequencyStepSize, numFrequencySteps)
+                        frequencyStepSize, numFrequencySteps, maxCores, maxCPUs)
 
 
 # Write Output2HRTF.m function ------------------------------------------------
@@ -555,6 +584,22 @@ def _get_point_source_position(unitFactor):
     sourceZPosition = bpy.data.objects["Point"].location[2] * unitFactor
 
     return sourceXPosition, sourceYPosition, sourceZPosition
+
+
+def _sort_faces_according_to_materials(obj):
+    """
+    Sort faces in an object according to the materials. This makes the NC.inp
+    files shorter in case boundary conditions are used."""
+
+    # enforce object mode and select the object
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+    obj.select_set(True)
+
+    # sort mesh if required
+    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.sort_elements(type='MATERIAL', elements={'FACE'})
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
 
 def _write_object_data(obj, objects, unitFactor, context, filepath1):
@@ -688,12 +733,6 @@ def _get_materials(obj):
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
     obj.select_set(True)
 
-    # sort mesh if required
-    bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.sort_elements(type='MATERIAL', elements={'FACE'})
-    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
     # loop faces and log assigned materials
     materials = dict()
 
@@ -825,7 +864,7 @@ def _read_material_data(materials):
 def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
                     cpuFirst, cpuLast, numCoresAvailable,
                     frequencyStepsPerCore, frequencies, freqs,
-                    frequencyStepSize, numFrequencySteps):
+                    frequencyStepSize, numFrequencySteps, maxCores, maxCPUs):
     file = open(os.path.join(filepath1, "Info.txt"), "w",
                 encoding="utf8", newline="\n")
     fw = file.write
@@ -854,8 +893,8 @@ def _write_info_txt(evalGridPaths, title, ear, filepath1, version,
     fw("First CPU: 'CPU_%d'\n" % cpuFirst)
     fw("Last CPU: 'CPU_%d'\n" % cpuLast)
     fw("Number of Cores (available): %d\n" % numCoresAvailable)
-    for core in range(1, 9):
-        for cpu in range(1, 11):
+    for cpu in range(1, maxCPUs+1):
+        for core in range(1, maxCores+1):
             fw("CPU_%d (Core %d):\n" % (cpu, core))
             for ii in range(0, len(frequencies[cpu-1][core-1])):
                 fw("    %f\n" % frequencies[cpu-1][core-1][ii])
@@ -1255,10 +1294,10 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
     f: list
         A simple list of the frequencies to be simulated (for debugging).
     frequencyStepSize: float
-        Step size between sucsessive frequncies (written to Info.txt). This is
+        Step size between successive frequencies (written to Info.txt). This is
         returned because it might be zero during the function call.
     numFrequencySteps: int
-        Number of frequncies to be simulated (written to Info.txt). This is
+        Number of frequencies to be simulated (written to Info.txt). This is
         returned because it might be zero during the function call.
 
     """
@@ -1308,7 +1347,7 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
               list of frequencies.')
 
     if not len(f):
-        raise ValueError("No frequncies to be calulated. \
+        raise ValueError("No frequencies to be calculated. \
                          Check the input parameters.")
 
     # check number of cores and frequencies
@@ -1419,7 +1458,7 @@ def _write_nc_inp(filepath1, version, title, ear,
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
     The file format is documented at:
-    https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp/
+    https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp_0.4.0/
     """
 
     # check the BEM method
@@ -1433,13 +1472,13 @@ def _write_nc_inp(filepath1, version, title, ear,
         ValueError(
             f"Method must be BEM, SL-FMM BEM or ML-FMM BEM but is {method}")
 
-    for core in range(1, 9):
-        for cpu in range(1, 11):
-            if not cpusAndCores[cpu-1][core-1] == 0:
+    for core in range(len(cpusAndCores[0])):
+        for cpu in range(len(cpusAndCores)):
+            if not cpusAndCores[cpu][core] == 0:
 
                 # create directoy
                 filepath2 = os.path.join(
-                    filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu, core))
+                    filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu+1, core+1))
                 if not os.path.exists(filepath2):
                     os.mkdir(filepath2)
 
@@ -1471,15 +1510,15 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # control parameter II ----------------------------------------
                 fw("## Controlparameter II\n")
                 fw("1 %d 0.000001 0.00e+00 1 0 0\n" % (
-                    len(frequencies[cpu-1][core-1])))
+                    len(frequencies[cpu][core])))
                 fw("##\n")
                 fw("## Load Frequency Curve \n")
-                fw("0 %d\n" % (len(frequencies[cpu-1][core-1])+1))
+                fw("0 %d\n" % (len(frequencies[cpu][core])+1))
                 fw("0.000000 0.000000e+00 0.0\n")
-                for ii in range(0, len(frequencies[cpu-1][core-1])):
+                for ii in range(len(frequencies[cpu][core])):
                     fw("%f %fe+04 0.0\n" % (
                         0.000001*(ii+1),
-                        frequencies[cpu-1][core-1][ii] / 10000))
+                        frequencies[cpu][core][ii] / 10000))
                 fw("##\n")
 
                 # main parameters I -------------------------------------------
@@ -1551,7 +1590,7 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # write velocity condition for the ears if using vibrating
                 # elements as the sound source
                 if sourceType_id==0:
-                    if cpusAndCores[cpu-1][core-1]==1 and ear!='Right ear':
+                    if cpusAndCores[cpu][core]==1 and ear!='Right ear':
                         tmpEar='Left ear'
                     else:
                         tmpEar='Right ear'
@@ -1588,9 +1627,9 @@ def _write_nc_inp(filepath1, version, title, ear,
                 # source information: point source ----------------------------
                 if sourceType_id==0:
                     fw("# POINT SOURCES\n")
-                    if cpusAndCores[cpu-1][core-1] == 1:
+                    if cpusAndCores[cpu][core] == 1:
                         fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
-                    if cpusAndCores[cpu-1][core-1] == 2:
+                    if cpusAndCores[cpu][core] == 2:
                         fw("# 0 0.0 -0.101 0.0 0.1 -1 0.0 -1\n")
                 else:
                     fw("POINT SOURCES\n")

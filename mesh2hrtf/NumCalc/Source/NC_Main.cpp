@@ -76,7 +76,7 @@ using namespace std;                                                            
 
 
 
-void NC_ControlProgram(ofstream&);
+void NC_ControlProgram(ofstream&,int);
 void NC_FrequencyInformations(ostream&, ofstream&);
 
 
@@ -97,7 +97,7 @@ extern void NC_PostProcessing(ofstream&);
 ofstream NCout;
 FILE *inputFile_, *tmpFile_;
 char jobTitle_[SIZE_LINE], versionNumber_[15];
-int currentFrequency_, numFrequencies_;
+int currentFrequency_, numFrequencies_, istart_;
 double firstFrequencyStep_, frequencyStepIncrement_;
 int numElementGroups_, numElements_, numNodes_, minExpansionTermsFMM_, liorcn_, numSymmetricPlanes_, numIncidentPlaneWaves_, numPointSources_,
 isInternalProblem_;
@@ -154,9 +154,48 @@ ElCluster *ClustArray;
 // the main program for NumCalc
 int main(int argc, char **argv) 
 {
+
+  int i;          //* used for command line parameters
+  int iend = 0;   //* first freq step
+  char filename[200];  //* filename for the outputfile
+  istart_ = 0;    //* last freq step
+
+
+  /* check the caommand line */
+  i = 1;
+  while (i < argc) {
+    if(!strcmp(argv[i],"-h")) {
+      printf("-istart int : start index of iteration\n");
+      printf("-iend   int : end index of iteration\n");
+      printf("-h          : this message\n");
+      exit(0);
+    }
+    if(!strcmp(argv[i],"-istart")) {
+      i++;
+      if(i<argc) {
+	istart_=atoi(argv[i]);
+      }
+    }
+    if(!strcmp(argv[i],"-iend")) {
+      i++;
+      if(i<argc)
+	iend=atoi(argv[i]);
+    }
+    i++;
+  }
+
+
+  // check if istart is okay
+  if( istart_ < 0 ) {
+    cerr << "I need to start with a step bigger 0\n";
+    exit(-1);
+  }
+      
+  fprintf(stdout, "istart= %d iend = %d\n", istart_, iend);
+  
 	// compute the start time
-	time_t lot = time(NULL);
-	tm *d_t = localtime(&lot);
+  time_t lot = time(NULL);
+  tm *d_t = localtime(&lot);
 
 	// Start informations
 	cout << "\n---------- NumCalc started: " << d_t->tm_mday << "/" << d_t->tm_mon + 1 <<
@@ -172,31 +211,56 @@ int main(int argc, char **argv)
     cout << "Running on:         " << Name << "\n" << endl;
 #endif
 
+    
     // open the general output file
-	ofstream NCout("NC.out");
+    if(istart_ > 0) {
+      if( iend >= istart_ )
+	sprintf(filename,"NC%d-%d.out",istart_,iend);
+      else if (iend > 0) {
+	cerr << "istart is bigger than iend. Stopping now!\n";
+	exit(-1);
+      }
+      else
+	sprintf(filename,"NCfrom%d",istart_);
+    }
+    else {
+      if(iend > 0)
+	sprintf(filename,"NCuntil%d.out",iend);
+      else
+	sprintf(filename,"NC.out");
+    }
+    
+	ofstream NCout(filename);
 	if(!NCout) NC_Error_Exit_0(NCout, "can not open the output stream NCout!");
 
 	// start time
     NCout << "\nStart time: " << d_t->tm_mday << "/" << d_t->tm_mon + 1 << "/" <<
         d_t->tm_year + 1900 << " " << d_t->tm_hour << ":" << d_t->tm_min << ":" <<
         d_t->tm_sec << endl;
-    
-	// delete and create the output directories
+
+
+      // delete and create the output directories if all freqsteps
+      // need to be calculated, otherwise keep the old directory
+      // and the data in it
 #ifdef isWindows
-	int ifmkd;
-    if(system("rmdir /s /q be.out")==-1) cout << "\nCannot create directory be.out";
-    if(system("rmdir /s /q fe.out")==-1) cout << "\nCannot create directory fe.out";
-    ifmkd = _mkdir("be.out"); // WINDOWS
-    ifmkd = _mkdir("fe.out");
+      int ifmkd;
+      if(istart_ == 0 && iend == 0) { // no steps are given, remove the old directory
+	if(system("rmdir /s /q be.out")==-1) cout << "\nCannot create directory be.out";
+	if(system("rmdir /s /q fe.out")==-1) cout << "\nCannot create directory fe.out";
+      }
+      ifmkd = _mkdir("be.out"); // WINDOWS
+      ifmkd = _mkdir("fe.out");
 #else
+      if(istart_ == 0 && iend == 0) {
 	if(system("rm -f -r be.out")==-1) cout << "\nCannot create directory be.out";
 	if(system("rm -f -r fe.out")==-1) cout << "\nCannot create directory fe.out";
-	mkdir("be.out", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
-	mkdir("fe.out", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
+      }
+      mkdir("be.out", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
+      mkdir("fe.out", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
 #endif
     
 	// call the control program
-	NC_ControlProgram(NCout);
+    NC_ControlProgram(NCout,iend);
 
 	// compute the end time
 	lot = time(NULL);
@@ -215,7 +279,7 @@ int main(int argc, char **argv)
 }
 
 // control program
-void NC_ControlProgram(ofstream& NCout)
+void NC_ControlProgram(ofstream& NCout,int iend)
 {
 	double *Freqs = nullptr;
 
@@ -276,7 +340,19 @@ void NC_ControlProgram(ofstream& NCout)
 	time(&ltim[2]);
 
 	// loop over frequencies
-	for(currentFrequency_ = 0; currentFrequency_ < numFrequencies_; currentFrequency_++)
+
+	if(iend > 0)  {
+	  if(iend > numFrequencies_)
+            iend = numFrequencies_;
+	}
+	if(iend == 0)
+	  iend = numFrequencies_;
+	if(istart_ > 0)
+	  istart_--;
+	
+
+	
+	for(currentFrequency_ = istart_; currentFrequency_ < iend; currentFrequency_++)
 	{
 
 		time(&ltim[3]);
@@ -306,7 +382,7 @@ void NC_ControlProgram(ofstream& NCout)
         if(ifdiff) NC_FrequencyInformations(cout, NCout);
 
 		// Asign some arrays on the finest level to the corresponding actual arrays 
-		if(methodFMM_ >= 2 && currentFrequency_ > 0) 
+		if(methodFMM_ >= 2 && currentFrequency_ > istart_) 
 		{
 			ClustArray = clulevarry[nlevtop_].ClastArLv;
 
@@ -627,7 +703,7 @@ void NC_ControlProgram(ofstream& NCout)
         cout << endl;
 
 		// delete arrays generated by 3-d address computations
-		if(currentFrequency_ == numFrequencies_ - 1)  NC_DeleteArrays(methodFMM_, numClusterLevels_, 1);
+		if(currentFrequency_ == iend - 1)  NC_DeleteArrays(methodFMM_, numClusterLevels_, 1);
 
 	} // end of loop I_FREQ (Loop over Frequencies)
 
@@ -738,7 +814,7 @@ void NC_FrequencyInformations
 	}
 
 	// write the parameters of the equation system
-	if(currentFrequency_ == 0)
+	if(currentFrequency_ == istart_)
 	{
 		xout << "\nNumber of equations = " << numRowsOfCoefficientMatrix_  << endl;
 		if(methodFMM_ == 0) {
@@ -785,7 +861,7 @@ void NC_FrequencyInformations
 	}
 
 	// write the parameters of the equation system
-	if(currentFrequency_ == 0)
+	if(currentFrequency_ == istart_)
 	{
 		yout << "\nNumber of equations = " << numRowsOfCoefficientMatrix_  << endl;
 		if(methodFMM_ == 0) {
