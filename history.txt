@@ -1,21 +1,25 @@
 *******************************************************************************
 *** History of Mesh2HRTF
 *** Contributors:
-***     Piotr Majdak, ARI
-***		Wolfgang Kreuzer, ARI
-***		Harald Ziegelwanger, ARI
-*** 	Michael Kalcher, ARI
-***     Fabian Brinkmann, AC-TUB
-***		Robert Pelzer, AC-TUB
+***   Fabian Brinkmann, AC-TUB
+***   Slim Ghorbal, IETR/CentraleSupélec, Mimi
 ***		Junaid Khan, FH Technikum Wien
-***     Oliver Weissbarth, CG-TUB
-***     Slim Ghorbal, IETR/CentraleSupélec, Mimi
+*** 	Michael Kalcher, ARI
+***		Wolfgang Kreuzer, ARI
+***   Piotr Majdak, ARI
+***		Robert Pelzer, AC-TUB
+***   Johan Pauwels, ICL
+***   Filip Tsai, KTH
+***   Oliver Weissbarth, CG-TUB
+***		Harald Ziegelwanger, ARI
 *** Institutions
 ***		ARI: Austrian Research Institute, Austian Academy of Sciences, Vienna
-***     AC-TUB: Audio Communication Group, Technical University of Berlin
-***     CG-TUB: Computer Graphics Group, Technical University of Berlin
-***     FH Technikum Wien: University of Applied Sciences, Technikum Wien
-***     Mimi: Mimi Hearing Technologies, Berlin, Germany
+***   AC-TUB: Audio Communication Group, Technical University of Berlin
+***   CG-TUB: Computer Graphics Group, Technical University of Berlin
+***   FH Technikum Wien: University of Applied Sciences, Technikum Wien
+***   ICL: Imperial College London, UK
+***   KTH: Royal Institute of Technology, Stockholm, Sweden
+***   Mimi: Mimi Hearing Technologies, Berlin, Germany
 *******************************************************************************
 
 *** DEVELOPMENT STATUS ***

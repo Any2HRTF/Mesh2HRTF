@@ -2,7 +2,7 @@
 # Authors: The Mesh2HRTF developers
 #
 # See class MaterialAssignment(bpy.types.Operator) for information on how to
-# use this file. For debugging use the commeted code at the end insude Blenders
+# use this file. For debugging use the commented code at the end inside Blender's
 # text editor.
 #
 #                                Mesh2HRTF
@@ -199,7 +199,7 @@ def assign_material(obj, tolerance):
         print(f"Left ear index: {left_index}")
     if right_index is not None:
         bm.faces[right_index].material_index = 2
-        print(f"Right ear indexX {right_index}")
+        print(f"Right ear index {right_index}")
     if left_index is None or right_index is None:
         print("One or more ears not found. Consider increasing the tolerance \
             or simulating only one ear.")

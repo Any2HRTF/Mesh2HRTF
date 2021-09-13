@@ -29,7 +29,7 @@
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 %
-function [nodes, numNodes, elems, numElems] = GetMesh2HRTFevalGrid(path, doPlot)
+function [nodes, numNodes, elems, numElems] = getMesh2HRTFevalGrid(path, doPlot)
 
 % get nodes and number of nodes
 nodesID = fopen(fullfile(path, 'Nodes.txt'), 'r');
