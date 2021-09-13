@@ -348,6 +348,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         # check if 'Reference' object is a triangular mesh
         obj2 = bpy.data.objects['Reference']
+        has_error_message = False
 
         for p in obj2.data.polygons:
             # Select non quad face (polygons)
