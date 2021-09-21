@@ -41,7 +41,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Mesh2HRTF input format",
     "author": "The Mesh2HRTF developers",
-    "version": (0, 2, 1),
+    "version": (1, 0, 0),
     "blender": (2, 80, 0),
     "location": "File > Export",
     "description": "Export Mesh2HRTF input files",
