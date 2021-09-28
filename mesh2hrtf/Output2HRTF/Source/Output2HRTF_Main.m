@@ -284,7 +284,7 @@ for ii = 1:numel(evaluationGrids)
     
     Obj.ListenerPosition = [0 0 0];
     Obj.SourcePosition_Type='cartesian';
-    Obj.SourcePosition_Units='meter';
+    Obj.SourcePosition_Units='metre';
     Obj.SourcePosition=xyz(:,2:4);
     
     Obj=SOFAupdateDimensions(Obj);
@@ -352,10 +352,11 @@ if computeHRIRs
         
         Obj.Data.IR=hrir;
         Obj.Data.SamplingRate=fs;
+        Obj.Data.Delay=zeros(1, size(hrir, 2));
         
         Obj.ListenerPosition = [0 0 0];
         Obj.SourcePosition_Type='cartesian';
-        Obj.SourcePosition_Units='meter';
+        Obj.SourcePosition_Units='metre';
         Obj.SourcePosition=xyz(:,2:4);
         
         Obj=SOFAupdateDimensions(Obj);
