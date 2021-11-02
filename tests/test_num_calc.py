@@ -6,6 +6,7 @@ import os
 import hrtf_sofa_to_numpy as hstn
 import scipy.io
 import numpy
+import tests_fb as fb
 
 
 # def test_build():
@@ -20,7 +21,8 @@ import numpy
 
 @pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])
 @pytest.mark.parametrize("source", [("plane"), ("point")])
-def test_bem(boundary_condition, source):
+@pytest.mark.parametrize("bem_method", [("bem"), ("fmm-bem"), ("ml-fmm-bem")])
+def test_numcalc(boundary_condition, source, bem_method):
     """
     test if NumCalc and Output2HRTF.py generate correct output by comparing to
     analytical solution
@@ -36,7 +38,7 @@ def test_bem(boundary_condition, source):
     # copy correct input file and rename it to NC.inp
     shutil.copyfile(os.path.join(os.path.dirname(__file__),
                     'test_numcalc_input_files', 'NC_'+boundary_condition+'_' +
-                                 source+'_bem.inp'),
+                                 source+'_'+bem_method+'.inp'),
                     os.path.join(tmp.name, 'project', 'NumCalc',
                                  'CPU_1_Core_1', 'NC.inp'))
 
@@ -65,12 +67,18 @@ def test_bem(boundary_condition, source):
     mat_ana = scipy.io.loadmat(ana_path)
     hrtf_ana = mat_ana['p_total']
     # normalize because only relative differences of interest
-    hrtf_ana = hrtf_ana/numpy.mean(numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]))
+    hrtf_ana = hrtf_ana/numpy.mean(
+                numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]))
 
     # compare
     numpy.testing.assert_allclose(
         numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]),
         numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
+
+    xyz = mat_ana["XYZ"]
+    fb.scatter_reference_vs_analytic(hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
+                                     (0, -10), (5, -5),
+                                     boundary_condition, source, bem_method)
 
 
 # test_bem("soft", "plane")
