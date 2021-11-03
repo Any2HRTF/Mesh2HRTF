@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 	exit(-1);
       }
       else
-	sprintf(filename,"NCfrom%d",istart_);
+	sprintf(filename,"NCfrom%d.out",istart_);
     }
     else {
       if(iend > 0)
