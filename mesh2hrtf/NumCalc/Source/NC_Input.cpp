@@ -403,7 +403,9 @@ void NC_ReadMesh
         {
             cout << "No Nodes file found!" << endl;
             NCout << "No Nodes file found!" << endl;
+	    exit(-1);
         }
+	fclose(tmpFile_); // everything that is open should be closed
     }
 
 	// read the key word ELEMENTS
@@ -1422,7 +1424,7 @@ void NC_WriteParameters
 
     delta_ = dmesh_min/100.0;
 
-    // check the frequncies: the frequecies higher than the highst allowable frequency are ignored
+    // check the frequncies: the frequecies higher than the highest allowable frequency are ignored
 
     double ele_leng = dmesh_eqi, elnumperwve;
 
@@ -1441,9 +1443,9 @@ void NC_WriteParameters
     if(numFrequencies_ori > i)
     {
         NCout << endl;
-        NC_Error_Warning_2(NCout, "Frequencies higher than the highst allowable frequency are ignored!",
-                           "Number of ignored frequencies = ", numFrequencies_ori - numFrequencies_,
-                           "The highst allowable frequency = ", freq_max);
+        NC_Error_Warning_2(NCout, "There are some frequencies higher than the highest allowable frequency!",
+			   "Number of frequencies outside the range= ", numFrequencies_ori - i,
+                           "The highest allowable frequency = ", freq_max);
     }
 
     // output the results
@@ -1457,7 +1459,7 @@ void NC_WriteParameters
     NCout << "First step .................................. = " << firstFrequencyStep_ << endl;
     NCout << "Number of steps ............................. = " << numFrequencies_ << endl;
     NCout << "Step increment .............................. = " << frequencyStepIncrement_ << endl;
-    NCout << "Highst allowable frequency .................. = " << freq_max << endl;
+    NCout << "Highest allowable frequency .................. = " << freq_max << endl;
 
     // write the basic BEM parameters
     NCout << "\n\n\n>> B A S I C   P A R A M E T E R S   F O R   B E M <<\n" << endl;
