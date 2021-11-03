@@ -6,7 +6,7 @@ import os
 import hrtf_sofa_to_numpy as hstn
 import scipy.io
 import numpy
-import tests_fb as fb
+import tests_utils as tu
 
 
 # def test_build():
@@ -76,7 +76,7 @@ def test_numcalc(boundary_condition, source, bem_method):
         numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
 
     xyz = mat_ana["XYZ"]
-    fb.scatter_reference_vs_analytic(hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
+    tu.scatter_reference_vs_analytic(hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
                                      (0, -10), (5, -5),
                                      boundary_condition, source, bem_method)
 
