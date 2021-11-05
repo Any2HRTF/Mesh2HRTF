@@ -1442,7 +1442,7 @@ void NC_SearchAddressNforFMM
                                    "Column number = ", ncol);
 }
 
-// function for performing the singular integration over an element (see eq. (14) in [1])
+// function for performing the singular integration over an element (see eq. (14) in [1]), the idea is taken from the paper of Kirshnasamyetal where the hypersgl operator could be split into an integral over the edges \int_{edge} dG/dy_j dy_k times the normal vector and the Levi-Civita-symbol. Here the integral over the edge is one-dimensional because y_j = y_0 + t edge_j and everything can be written in terms of a cross product
 void NC_SingularIntegration
 (
 	ofstream& NCout,
@@ -1490,7 +1490,7 @@ void NC_SingularIntegration
             difpoi[i] = crdelj(ig1, i) - crdelj(ieg, i);
             leneg += difpoi[i]*difpoi[i];
         }
-        leneg = sqrt(leneg); // length of the eadge
+        leneg = sqrt(leneg); // length of the edge
         for(i=0; i<NDIM; i++) difpoo[i] = difpoi[i]/leneg; // unit vector along the edge
         leneg /= (2.0*(double)nsec1);
         
@@ -1512,7 +1512,8 @@ void NC_SingularIntegration
                     crdgp[i] = crdelj(ieg, i) + difpoi[i]*(sga + 1.0)/2.0;
                     diffsp[i] = crdgp[i] - Sourpoi3[i];
                 }
-                Vcnorm_dim3_(diffsp, disfsp); // r and unit vector along r
+		// warning Vcnorm returns a vector of length 1
+                Vcnorm_dim3_(diffsp, disfsp); // (y-x)/r and r
                 re1 = wavruim*disfsp;
                 re2 = PI4*disfsp;
                 zg.set(cos(re1)/re2, sin(re1)/re2);

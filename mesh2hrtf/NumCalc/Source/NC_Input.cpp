@@ -444,7 +444,9 @@ void NC_ReadMesh
         {
             cout << "No Elements file found!" << endl;
             NCout << "No Elements file found!" << endl;
+	    exit(-1);
         }
+	fclose(tmpFile_);
     }
 
 	// compute the number of BEs and the number of evaluation elements
@@ -799,7 +801,7 @@ void NC_ReadBoundaryConditions
 			// 7: imaginary value of boundary condition
 			// 8: Curve id to defines the imaginary part or -1 (no curve used)
 			// Indicees of elements to which the boundary condition applies
-            if(nterms < 6) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
+            if(nterms < 9) NC_Error_Exit_1(NCout, "A input line under BOUNDARY is too short!",
                                            "Number of the input line = ", i);
             if(chterms[0].compare("ELEM")) NC_Error_Exit_0(NCout, "Key word ELEM expected!");
             bouconlin[i].nLow = NC_String2Integer(chterms[1]);
