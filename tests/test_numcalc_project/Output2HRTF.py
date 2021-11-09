@@ -1,10 +1,11 @@
 # Collect the data simulated by NumCalc and save to project folder.
 import numpy
 import sys
-sys.path.insert(1, '/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf/Output2HRTF/Python')
-import Output2HRTF_Main as o2hrtfm
 import os
 
+sys.path.append('/home/matheson/Apps/mesh2hrtf-git/'
+                'mesh2hrtf/Output2HRTF/Python')
+import Output2HRTF_Main as o2hrtfm
 
 projectPath = os.getcwd()
 

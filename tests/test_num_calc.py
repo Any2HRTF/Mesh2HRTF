@@ -6,23 +6,26 @@ import os
 import hrtf_sofa_to_numpy as hstn
 import scipy.io
 import numpy
-import tests_utils as tu
+import test_utils as tu
 
 
-# def test_build():
-#     """ test if make for NumCalc works """
+def test_build():
+    """ test if make for NumCalc works """
 
-#     create a temporary directory
-#     tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
+    # create a temporary directory
+    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
 
-#     shutil.copytree("../mesh2hrtf/NumCalc/Source", tmp.name+"/NumCalc")
-#     tmp_path = os.path.join(tmp.name, "NumCalc")
-#     subprocess.run(["make"], cwd=tmp_path, check=True)
+    shutil.copytree("../mesh2hrtf/NumCalc/Source", tmp.name+"/NumCalc")
+    tmp_path = os.path.join(tmp.name, "NumCalc")
+    subprocess.run(["make"], cwd=tmp_path, check=True)
 
-@pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])
-@pytest.mark.parametrize("source", [("plane"), ("point")])
+
+@pytest.mark.parametrize("boundary_condition,range_b", [("rigid", (0.3, -0.3)),
+                                                        ("soft", (15, -15))])
+@pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
+                                            ("point", (40, -45))])
 @pytest.mark.parametrize("bem_method", [("bem"), ("fmm-bem"), ("ml-fmm-bem")])
-def test_numcalc(boundary_condition, source, bem_method):
+def test_numcalc(boundary_condition, source, bem_method, range_a, range_b):
     """
     test if NumCalc and Output2HRTF.py generate correct output by comparing to
     analytical solution
@@ -77,7 +80,7 @@ def test_numcalc(boundary_condition, source, bem_method):
 
     xyz = mat_ana["XYZ"]
     tu.scatter_reference_vs_analytic(hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
-                                     (0, -10), (5, -5),
+                                     range_a, range_b,
                                      boundary_condition, source, bem_method)
 
 
