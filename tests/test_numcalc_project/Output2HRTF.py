@@ -1,11 +1,7 @@
 # Collect the data simulated by NumCalc and save to project folder.
 import numpy
-import sys
 import os
-
-sys.path.append('/home/matheson/Apps/mesh2hrtf-git/'
-                'mesh2hrtf/Output2HRTF/Python')
-import Output2HRTF_Main as o2hrtfm
+import mesh2hrtf as m2h
 
 projectPath = os.getcwd()
 
@@ -48,6 +44,6 @@ cpusAndCores = numpy.array([
     [0, 0, 0, 0, 0, 0, 0, 0]])
 
 # Collect the data simulated by NumCalc
-o2hrtfm.Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
+m2h.Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,
                          sourceType, sourceCenter, sourceArea, reference,
                          computeHRIRs, speedOfSound, densityOfAir)

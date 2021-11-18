@@ -100,7 +100,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'Mesh2Input' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"path/to/mesh2hrtf/",
+        default=r"/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -1056,14 +1056,10 @@ def _write_output2HRTF_py(filepath1, version,
     fw("# Output2HRTF inside project folder.\n\n")
 
     fw("import numpy\n")
-    fw("import sys\n")
+    fw("import os\n")
+    fw("import mesh2hrtf as m2h\n\n")
 
-    output2hrtfPath = os.path.join(programPath, "Output2HRTF", "Python")
-
-    fw("sys.path.insert(1, '%s')\n" % output2hrtfPath)
-    fw("import Output2HRTF_Main as o2hrtfm\n\n")
-
-    fw("projectPath = '%s'\n\n" % filepath1)
+    fw("projectPath = os.getcwd()\n\n")
 
     # Mesh2HRTF version
     fw(f"Mesh2HRTF_version = '{version}'\n\n")
@@ -1158,7 +1154,7 @@ def _write_output2HRTF_py(filepath1, version,
     fw("]])\n\n")
 
     fw("# Collect the data simulated by NumCalc\n")
-    fw("o2hrtfm.Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,\n")
+    fw("m2h.Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,\n")
     fw("                 sourceType, sourceCenter, sourceArea,\n")
     fw("                 reference, computeHRIRs,\n")
     fw("                 speedOfSound, densityOfAir)\n")

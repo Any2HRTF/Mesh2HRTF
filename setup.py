@@ -11,7 +11,7 @@ with open('readme.md') as readme_file:
 with open('history.txt') as history_file:
     history = history_file.read()
 
-with open('VERsiON') as version_file:
+with open('VERSION') as version_file:
     version = version_file.read()
 
 requirements = [
