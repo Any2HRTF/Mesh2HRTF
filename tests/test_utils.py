@@ -30,11 +30,12 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
     plt.figure(figsize=(30/2.54, 8/2.54))
 
     # Plot simulated and analytical data data
-    for n, (p, titel, clabel, crange) in enumerate(zip(
+    for n, (p, title, clabel, crange) in enumerate(zip(
             [p_num, p_ana, p_num / p_ana],           # pressure arrays
             ["Numerical solution",                   # titles
              "Analytical solution",
-             "Numerical / Analytical"],
+             "Difference (max. deviation {:.2f} dB)".format(
+                 np.nanmax(np.abs(20*np.log10(np.abs(p_num / p_ana)))))],
             ["pressure", "pressure", "difference"],  # colorbar labels
             [range_a, range_a, range_b]              # range of the colormap
             )):
@@ -46,7 +47,7 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
         plt.axis("off")
         cb.set_label(clabel + ' in dB')
         ax.set_aspect("equal")
-        ax.set_title(titel + " solution")
+        ax.set_title(title)
 
     plt.tight_layout()
     plt.savefig("test_numcalc_analytical_references/comparisonplot_" +

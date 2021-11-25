@@ -20,12 +20,11 @@ def test_build():
     subprocess.run(["make"], cwd=tmp_path, check=True)
 
 
-@pytest.mark.parametrize("boundary_condition,range_b", [("rigid", (0.3, -0.3)),
-                                                        ("soft", (15, -15))])
+@pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])
 @pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
                                             ("point", (40, -45))])
-@pytest.mark.parametrize("bem_method", [("bem"), ("fmm-bem"), ("ml-fmm-bem")])
-def test_numcalc(boundary_condition, source, bem_method, range_a, range_b):
+@pytest.mark.parametrize("bem_method", [("ml-fmm-bem"), ("fmm-bem"), ("bem")])
+def test_numcalc(boundary_condition, source, bem_method, range_a, range_b=(-1, 1)):
     """
     test if NumCalc and Output2HRTF.py generate correct output by comparing to
     analytical solution
