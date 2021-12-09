@@ -191,37 +191,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         min=0,
         max=24000,
         )
-    # Job distribution --------------------------------------------------------
-    cpuFirst: IntProperty(
-        name="CPU (first)",
-        description=("The simulation can be distributed to separate instances. "
-                     "A separate folder is created created For each CPU_x_Core_x. "
-                     "(This setting does NOT need to match your actual CPU and "
-                     "some users might only care about the total nr. of instances)."),
-        default=1,
-        min=1,
-        max=10000,
-        )
-    cpuLast: IntProperty(
-        name="CPU (last)",
-        description=("The simulation can be distributed to separate instances. "
-                     "A separate folder is created created For each CPU_x_Core_x. "
-                     "(This setting does NOT need to match your actual CPU and "
-                     "some users might only care about the total nr. of instances)."),
-        default=1,
-        min=1,
-        max=10000,
-        )
-    numCoresPerCPU: IntProperty(
-        name="Cores per CPU",
-        description=("The simulation can be distributed to separate instances. "
-                     "A separate folder is created created For each CPU_x_Core_x. "
-                     "(This setting does NOT need to match your actual CPU and "
-                     "some users might only care about the total nr. of instances)."),
-        default=1,
-        min=1,
-        max=10000,
-        )
 
     @classmethod
     def poll(cls, context):
@@ -284,14 +253,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "frequencyVectorType")
         row = layout.row()
         row.prop(self, "frequencyVectorValue")
-        # job distribution
-        layout.label(text="Job distribution:")
-        row = layout.row()
-        row.prop(self, "cpuFirst")
-        row = layout.row()
-        row.prop(self, "cpuLast")
-        row = layout.row()
-        row.prop(self, "numCoresPerCPU")
 
     def save(operator,
              context,
@@ -301,9 +262,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              maxFrequency=20000,
              frequencyVectorType='Step size',
              frequencyVectorValue=100,
-             cpuFirst=1,
-             cpuLast=1,
-             numCoresPerCPU=1,
              pictures=True,
              evaluationGrids='ARI',
              materialSearchPaths='None',
@@ -389,9 +347,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             # make subfolder
             os.mkdir(temp)
 
-        # assign numSources is used during assigning frequencies to cores. If
-        # the simulation does not use a velocity source, numSources must be one
-        # otherwise it is determined by the ears to be simulated
+        # number of sources used to create NC.inp files
         numSources = 1 if sourceType != "Both ears" else 2
 
         # check input and assign unitFactor
@@ -486,10 +442,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Calculate frequency information ---------------------------------------------
-        # maximum numbers are used for initialization & status print-outs:
-        maxCPUs = cpuLast             # used to be max(10, cpuLast)
-        maxCores = numCoresPerCPU     # used to be max(8, numCoresPerCPU)
-
 
         # check how the frequency vector is defined
         if frequencyVectorType == 'Step size':
@@ -499,27 +451,20 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             frequencyStepSize = 0
             numFrequencySteps = int(frequencyVectorValue)
 
-        cpusAndCores, frequencies, frequencyStepsPerCore, numCoresAvailable, \
-            freqs, frequencyStepSize, numFrequencySteps = \
-            _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
-                                    numCoresPerCPU, maxCores,
-                                    numSources,
-                                    minFrequency, maxFrequency,
+        frequencies, frequencyStepSize, numFrequencySteps = \
+            _distribute_frequencies(minFrequency, maxFrequency,
                                     frequencyStepSize, numFrequencySteps)
 
 
 # Write Info.txt (feedback for user, not used by NumCalc) ---------------------
         _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
-                        cpuFirst, cpuLast, numCoresAvailable,
-                        frequencyStepsPerCore, frequencies, freqs,
-                        frequencyStepSize, numFrequencySteps, maxCores, maxCPUs)
+                        frequencies, frequencyStepSize, numFrequencySteps)
 
 
 # Write Output2HRTF.m function ------------------------------------------------
         _write_output2HRTF_m(filepath1, version, sourceType, unitFactor,
                              reference, computeHRIRs,
                              speedOfSound, densityOfMedium,
-                             cpusAndCores, maxCPUs, maxCores,
                              sourceXPosition, sourceYPosition, sourceZPosition)
 
 # Write Output2VTK.m function ------------------------------------------------
@@ -529,7 +474,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         _write_output2HRTF_py(filepath1, version, sourceType, unitFactor,
                              reference, computeHRIRs,
                              speedOfSound, densityOfMedium,
-                             cpusAndCores, maxCPUs, maxCores,
                              sourceXPosition, sourceYPosition, sourceZPosition,
                              programPath)
 
@@ -539,10 +483,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             _render_pictures(filepath1, unitFactor)
 
 
-# Write NumCalc input files for all CPUs and Cores (NC.inp) -------------------
+# Write NumCalc input files for all sources (NC.inp) --------------------------
         _write_nc_inp(filepath1, version, title, speedOfSound,
-                      densityOfMedium, frequencies, cpusAndCores,
-                      evaluationGrids, materials, method, sourceType,
+                      densityOfMedium, frequencies, evaluationGrids, materials,
+                      method, sourceType, numSources,
                       sourceXPosition, sourceYPosition, sourceZPosition)
 
 # Finish ----------------------------------------------------------------------
@@ -846,9 +790,7 @@ def _read_material_data(materials):
 
 
 def _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
-                    cpuFirst, cpuLast, numCoresAvailable,
-                    frequencyStepsPerCore, frequencies, freqs,
-                    frequencyStepSize, numFrequencySteps, maxCores, maxCPUs):
+                    frequencies, frequencyStepSize, numFrequencySteps):
     file = open(os.path.join(filepath1, "Info.txt"), "w",
                 encoding="utf8", newline="\n")
     fw = file.write
@@ -865,24 +807,10 @@ def _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
     fw("#####################################\n")
     fw("####### Frequency information #######\n")
     fw("#####################################\n\n")
-    fw("Minimum evaluated Frequency: %f\n" % freqs[0])
-    fw("Highest evaluated Frequency: %f\n" % freqs[-1])
+    fw("Minimum evaluated Frequency: %f\n" % frequencies[0])
+    fw("Highest evaluated Frequency: %f\n" % frequencies[-1])
     fw("Frequency Stepsize: %f\n" % frequencyStepSize)
     fw("Frequency Steps: %d\n" % numFrequencySteps)
-    fw("Frequency steps per Core: %d\n\n" % frequencyStepsPerCore)
-    fw("#####################################\n")
-    fw("######## Cluster information ########\n")
-    fw("#####################################\n\n")
-    fw("Number of CPUs: %d\n" % (cpuLast-cpuFirst+1))
-    fw("First CPU: 'CPU_%d'\n" % cpuFirst)
-    fw("Last CPU: 'CPU_%d'\n" % cpuLast)
-    fw("Number of Cores (available): %d\n" % numCoresAvailable)
-    for cpu in range(1, maxCPUs+1):
-        for core in range(1, maxCores+1):
-            fw("CPU_%d (Core %d):\n" % (cpu, core))
-            for ii in range(0, len(frequencies[cpu-1][core-1])):
-                fw("    %f\n" % frequencies[cpu-1][core-1][ii])
-        fw("\n")
     file.close
 
 
@@ -890,7 +818,6 @@ def _write_output2HRTF_m(filepath1, version,
                          sourceType, unitFactor,
                          reference, computeHRIRs,
                          speedOfSound, densityOfMedium,
-                         cpusAndCores, maxCPUs, maxCores,
                          sourceXPosition, sourceYPosition, sourceZPosition):
 
     # file handling
@@ -906,9 +833,9 @@ def _write_output2HRTF_m(filepath1, version,
     fw(f"Mesh2HRTF_version = '{version}';\n\n")
 
     # add information about the source
+    fw("% source information\n")
+    fw(f"sourceType = '{sourceType}';\n")
     if "ear" in sourceType:
-        fw("% source information\n")
-        fw("sourceType = 'vibratingElement';\n")
 
         # get the receiver/ear centers and areas
         obj = bpy.data.objects['Reference']
@@ -939,8 +866,6 @@ def _write_output2HRTF_m(filepath1, version,
         fw("\n")
     else:
 
-        fw("% source information\n")
-        fw("sourceType = 'pointSource';\n")
         fw("sourceCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition,
                                                     sourceYPosition,
                                                     sourceZPosition))
@@ -971,22 +896,8 @@ def _write_output2HRTF_m(filepath1, version,
     fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
     fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
 
-    # write CPUs and Cores
-    fw("% Distribution of ears across CPUs and cores.\n")
-    fw("% (Matrix of size [numCPUs x numCores])\n")
-    fw("cpusAndCores = [\n")
-    for cpu in range(1, maxCPUs + 1):
-        fw("    ")
-        for core in range(1, maxCores + 1):
-            fw("%i" % cpusAndCores[cpu-1][core-1])
-            if core < maxCores:
-                fw(" ")
-        if cpu < maxCPUs:
-            fw("; ...\n")
-    fw("];\n\n")
-
     fw("% Collect the data simulated by NumCalc\n")
-    fw("Output2HRTF_Main(Mesh2HRTF_version, cpusAndCores, ...\n")
+    fw("Output2HRTF_Main(Mesh2HRTF_version, ...\n")
     fw("                 sourceType, sourceCenter, sourceArea, ...\n")
     fw("                 reference, computeHRIRs, ...\n")
     fw("                 speedOfSound,densityOfAir);\n")
@@ -1026,7 +937,6 @@ def _write_output2HRTF_py(filepath1, version,
                          sourceType, unitFactor,
                          reference, computeHRIRs,
                          speedOfSound, densityOfMedium,
-                         cpusAndCores, maxCPUs, maxCores,
                          sourceXPosition, sourceYPosition, sourceZPosition,
                          programPath):
 
@@ -1058,8 +968,8 @@ def _write_output2HRTF_py(filepath1, version,
         fw("sourceArea = numpy.zeros((1, 1))\n\n")
 
     # add information about the source
+    fw(f"sourceType = '{sourceType}'\n")
     if "ear" in sourceType:
-        fw("sourceType = 'vibratingElement'\n")
 
         # get the receiver/ear centers and areas
         obj = bpy.data.objects['Reference']
@@ -1123,22 +1033,9 @@ def _write_output2HRTF_py(filepath1, version,
     fw("speedOfSound = " + speedOfSound + "  # [m/s]\n")
     fw("densityOfAir = " + densityOfMedium + "  # [kg/m^3]\n\n")
 
-    # write CPUs and Cores
-    fw("# Distribution of ears across CPUs and cores.\n")
-    fw("# (Matrix of size [numCPUs x numCores])\n")
-    fw("cpusAndCores = numpy.array([\n")
-    for cpu in range(1, maxCPUs + 1):
-        fw("    [")
-        for core in range(1, maxCores + 1):
-            fw("%i" % cpusAndCores[cpu-1][core-1])
-            if core < maxCores:
-                fw(", ")
-        if cpu < maxCPUs:
-            fw("],\n")
-    fw("]])\n\n")
-
+    # function call
     fw("# Collect the data simulated by NumCalc\n")
-    fw("m2h.Output2HRTF_Main(projectPath, Mesh2HRTF_version, cpusAndCores,\n")
+    fw("m2h.Output2HRTF_Main(projectPath, Mesh2HRTF_version,\n")
     fw("                 sourceType, sourceCenter, sourceArea,\n")
     fw("                 reference, computeHRIRs,\n")
     fw("                 speedOfSound, densityOfAir)\n")
@@ -1247,32 +1144,15 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
     return earCenter, earArea
 
 
-def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
-                            numCoresPerCPU, maxCores,
-                            numSources,
-                            minFrequency, maxFrequency,
+def _distribute_frequencies(minFrequency, maxFrequency,
                             frequencyStepSize, numFrequencySteps):
-    """Calculate list of frequencies and distribute across cores and CPUs.
+    """Calculate list of frequencies.
 
     Returns
     -------
 
-    cpusAndCores: list
-        Nested list that indicates which cpu and core is used to calculate data
-        for which ear (e.g. cpuAndCores[0][1] holds the entry for the second
-        core on the first cpu). Entries: 0=idle, 1=leftEar/right ear if
-        calculating one ear, 2=rightEar if calculating two ears.
     frequencies: list
-        Nested list that holds the frequencies that are calculated by each
-        cpu/core (e.g. frequencies[0][1] holds a list of frequencies calculated
-        by the second core on the first cpu.
-    frequencyStepsPerCore: int
-        The number of frequency steps calculated per core (written to
-        Info.txt).
-    numCoresAvailable: int
-        The number of cores used for the computation (written to Info.txt).
-    f: list
-        A simple list of the frequencies to be simulated (for debugging).
+        list that holds the frequencies in Hz that are calculated.
     frequencyStepSize: float
         Step size between successive frequencies (written to Info.txt). This is
         returned because it might be zero during the function call.
@@ -1282,21 +1162,11 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
 
     """
 
-    # number of CPUs used
-    numCPUs = cpuLast-cpuFirst+1
-
-    # number of cores per ear
-    numCoresUsedPerEar = numCPUs*numCoresPerCPU//numSources
-    if not numCoresUsedPerEar:
-        raise Exception("At least two cores must be available for calculating "
-                        "both ears, i.e., two CPUs with one core each or one "
-                        "CPU with two cores.")
-
     # check input
     if (numFrequencySteps == 0 and frequencyStepSize == 0) \
             or (numFrequencySteps != 0 and frequencyStepSize != 0):
-        raise Exception("Either 'frequencyStepSize' or 'numFrequencySteps' \
-                        must be zero while the other must not.")
+        raise Exception(("Either 'frequencyStepSize' or 'numFrequencySteps' "
+                         "must be zero while the other must not."))
 
     # Calculate Number of frequencies and frequency step size
     if minFrequency == maxFrequency:
@@ -1306,66 +1176,37 @@ def _distribute_frequencies(cpuFirst, cpuLast, maxCPUs,
         frequencySteps = divmod(
             maxFrequency - minFrequency + frequencyStepSize, frequencyStepSize)
     else:
-        if numFrequencySteps < 2:
-            raise Exception("'numFrequencySteps' must be at least 2.")
+        if numFrequencySteps < 1:
+            raise Exception("'numFrequencySteps' must be at least 1.")
         frequencySteps = (numFrequencySteps, 0)
         frequencyStepSize = (maxFrequency-minFrequency)/(numFrequencySteps-1)
 
     if not frequencySteps[1] == 0:
-        raise Exception("Error, frequencyStepSize is not a divisor of \
-                        maxFrequency-minFrequency")
+        raise Exception(("Error, frequencyStepSize is not a divisor of "
+                         "maxFrequency-minFrequency"))
 
     # get all frequencies to be calculated
-    f = [ff*frequencyStepSize+minFrequency
-            for ff in range(int(frequencySteps[0]))]
+    frequencies = [ff*frequencyStepSize+minFrequency
+                   for ff in range(int(frequencySteps[0]))]
 
     # remove 0 Hz if included in the list
-    if f[0] == 0:
-        f.pop(0)
+    if frequencies[0] == 0:
+        frequencies.pop(0)
         frequencySteps = (frequencySteps[0]-1, 0)
-        print('Warning: 0 Hz can not be calculated and was removed from the \
-              list of frequencies.')
+        print(('Warning: 0 Hz can not be calculated and was removed from the '
+               'list of frequencies.'))
 
-    if not len(f):
-        raise ValueError("No frequencies to be calculated. \
-                         Check the input parameters.")
+    numFrequencySteps = len(frequencies)
 
-    # check number of cores and frequencies
-    if len(f) < numCoresUsedPerEar:
-        raise Exception("More cores than frequencies, i.e., \
-                        numCPUs*numCoresPerCPU//numSources < numFrequencies.")
+    if numFrequencySteps == 0:
+        raise ValueError(("No frequencies to be calculated. "
+                          "Check the input parameters."))
+    elif numFrequencySteps == 1:
+        frequencyStepSize = 0
+    else:
+        frequencyStepSize = frequencies[1] - frequencies[0]
 
-    # distribution of frequencies across numCoresUsedPerEar
-    F = [[] for ff in range(numCoresUsedPerEar)]
-    for nn, ff in enumerate(f):
-        F[nn % numCoresUsedPerEar].append(ff)
-
-    # Initialize cpusAndCores:
-    cpusAndCores = [[0]*maxCores for cc in range(maxCPUs)]
-
-    # Initialize frequencies:
-    freqs = [[] for cc in range(maxCores)]
-    frequencies = [freqs.copy() for cc in range(maxCPUs)]
-
-    # distribute ears and frequencies across cpus and cores.
-    # Left ear is calculated on cpus 0 to numCoresUsedPerEar-1
-    # Right ear is calculated on cpus numCoresUsedPerEar to numCoresAvailable
-    for count in range(numCoresUsedPerEar*numSources):
-        cpu, core = divmod(count + (cpuFirst-1)*numCoresPerCPU, numCoresPerCPU)
-        cpusAndCores[cpu][core] = count//numCoresUsedPerEar + 1
-        frequencies[cpu][core] = F[count % len(F)]
-        # output for debugging
-        # print(f"CPU {cpu+1:2d}, core {core+1}, \
-        #       ear {count//numCoresUsedPerEar + 1}, \
-        #       freqList {count%len(F)}")
-
-    # meta data for Info.txt
-    frequencyStepsPerCore = len(f)//numCoresUsedPerEar
-    numCoresAvailable = numCoresUsedPerEar*numSources
-
-    return cpusAndCores, frequencies, \
-        frequencyStepsPerCore, numCoresAvailable, \
-        f, frequencyStepSize, numFrequencySteps
+    return frequencies, frequencyStepSize, numFrequencySteps
 
 
 def _render_pictures(filepath1, unitFactor):
@@ -1432,8 +1273,8 @@ def _render_pictures(filepath1, unitFactor):
 
 
 def _write_nc_inp(filepath1, version, title,
-                  speedOfSound, densityOfMedium, frequencies, cpusAndCores,
-                  evaluationGrids, materials, method, sourceType,
+                  speedOfSound, densityOfMedium, frequencies,
+                  evaluationGrids, materials, method, sourceType, numSources,
                   sourceXPosition, sourceYPosition, sourceZPosition):
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
@@ -1452,203 +1293,201 @@ def _write_nc_inp(filepath1, version, title,
         ValueError(
             f"Method must be BEM, SL-FMM BEM or ML-FMM BEM but is {method}")
 
-    for core in range(len(cpusAndCores[0])):
-        for cpu in range(len(cpusAndCores)):
-            if not cpusAndCores[cpu][core] == 0:
+    for source in range(numSources):
 
-                # create directoy
-                filepath2 = os.path.join(
-                    filepath1, "NumCalc", "CPU_%i_Core_%i" % (cpu+1, core+1))
-                if not os.path.exists(filepath2):
-                    os.mkdir(filepath2)
+        # create directory
+        filepath2 = os.path.join(
+            filepath1, "NumCalc", f"source_{source+1}")
+        if not os.path.exists(filepath2):
+            os.mkdir(filepath2)
 
-                # write NC.inp
-                file = open(os.path.join(filepath2, "NC.inp"), "w",
-                            encoding="utf8", newline="\n")
-                fw = file.write
+        # write NC.inp
+        file = open(os.path.join(filepath2, "NC.inp"), "w",
+                    encoding="utf8", newline="\n")
+        fw = file.write
 
-                obj_name = "Reference"
+        obj_name = "Reference"
 
-                obj = bpy.data.objects[obj_name]
-                obj_data = obj.data
+        obj = bpy.data.objects[obj_name]
+        obj_data = obj.data
 
-                # header ------------------------------------------------------
-                fw("##-------------------------------------------\n")
-                fw("## This file was created by export_mesh2hrtf\n")
-                fw("## Date: %s\n" % datetime.date.today())
-                fw("##-------------------------------------------\n")
-                fw("Mesh2HRTF %s\n" % version)
-                fw("##\n")
-                fw("%s\n" % title)
-                fw("##\n")
+        # header ------------------------------------------------------
+        fw("##-------------------------------------------\n")
+        fw("## This file was created by export_mesh2hrtf\n")
+        fw("## Date: %s\n" % datetime.date.today())
+        fw("##-------------------------------------------\n")
+        fw("Mesh2HRTF %s\n" % version)
+        fw("##\n")
+        fw("%s\n" % title)
+        fw("##\n")
 
-                # control parameter I (hard coded, not documented) ------------
-                fw("## Controlparameter I\n")
-                fw("0 0 0 0 7 0\n")
-                fw("##\n")
+        # control parameter I (hard coded, not documented) ------------
+        fw("## Controlparameter I\n")
+        fw("0 0 0 0 7 0\n")
+        fw("##\n")
 
-                # control parameter II ----------------------------------------
-                fw("## Controlparameter II\n")
-                fw("1 %d 0.000001 0.00e+00 1 0 0\n" % (
-                    len(frequencies[cpu][core])))
-                fw("##\n")
-                fw("## Load Frequency Curve \n")
-                fw("0 %d\n" % (len(frequencies[cpu][core])+1))
-                fw("0.000000 0.000000e+00 0.0\n")
-                for ii in range(len(frequencies[cpu][core])):
-                    fw("%f %fe+04 0.0\n" % (
-                        0.000001*(ii+1),
-                        frequencies[cpu][core][ii] / 10000))
-                fw("##\n")
+        # control parameter II ----------------------------------------
+        fw("## Controlparameter II\n")
+        fw("1 %d 0.000001 0.00e+00 1 0 0\n" % (
+            len(frequencies)))
+        fw("##\n")
+        fw("## Load Frequency Curve \n")
+        fw("0 %d\n" % (len(frequencies)+1))
+        fw("0.000000 0.000000e+00 0.0\n")
+        for ii in range(len(frequencies)):
+            fw("%f %fe+04 0.0\n" % (
+                0.000001*(ii+1),
+                frequencies[ii] / 10000))
+        fw("##\n")
 
-                # main parameters I -------------------------------------------
-                fw("## 1. Main Parameters I\n")
-                numNodes = 0
-                numElements = 0
-                for evaluationGrid in evaluationGrids:
-                    # read number of nodes
-                    nodes = open(os.path.join(
-                        filepath1, "EvaluationGrids", evaluationGrid,
-                        "Nodes.txt"))
-                    line = nodes.readline()
-                    numNodes = numNodes+int(line)
-                    # read number of elements
-                    elements = open(os.path.join(
-                        filepath1, "EvaluationGrids", evaluationGrid,
-                        "Elements.txt"))
-                    line = elements.readline()
-                    numElements = numElements+int(line)
-                fw("2 %d " % (len(obj_data.polygons[:])+numElements))
-                fw("%d 0 " % (len(obj_data.vertices[:])+numNodes))
-                fw("0")
-                fw(" 2 1 %s 0\n" % (method_id))
-                fw("##\n")
+        # main parameters I -------------------------------------------
+        fw("## 1. Main Parameters I\n")
+        numNodes = 0
+        numElements = 0
+        for evaluationGrid in evaluationGrids:
+            # read number of nodes
+            nodes = open(os.path.join(
+                filepath1, "EvaluationGrids", evaluationGrid,
+                "Nodes.txt"))
+            line = nodes.readline()
+            numNodes = numNodes+int(line)
+            # read number of elements
+            elements = open(os.path.join(
+                filepath1, "EvaluationGrids", evaluationGrid,
+                "Elements.txt"))
+            line = elements.readline()
+            numElements = numElements+int(line)
+        fw("2 %d " % (len(obj_data.polygons[:])+numElements))
+        fw("%d 0 " % (len(obj_data.vertices[:])+numNodes))
+        fw("0")
+        fw(" 2 1 %s 0\n" % (method_id))
+        fw("##\n")
 
-                # main parameters II ------------------------------------------
-                fw("## 2. Main Parameters II\n")
-                fw("0 ")
-                if "ear" in sourceType:
-                    fw("0 ")
-                else:
-                    fw("1 ")
-                fw("0 0.0000e+00 0 0 0\n")
-                fw("##\n")
+        # main parameters II ------------------------------------------
+        fw("## 2. Main Parameters II\n")
+        fw("0 ")
+        if "ear" in sourceType:
+            fw("0 ")
+        else:
+            fw("1 ")
+        fw("0 0.0000e+00 0 0 0\n")
+        fw("##\n")
 
-                # main parameters III -----------------------------------------
-                fw("## 3. Main Parameters III\n")
-                fw("0 0 0 0\n")
-                fw("##\n")
+        # main parameters III -----------------------------------------
+        fw("## 3. Main Parameters III\n")
+        fw("0 0 0 0\n")
+        fw("##\n")
 
-                # main parameters IV ------------------------------------------
-                fw("## 4. Main Parameters IV\n")
-                fw("%s %se+00 1.0 0.0e+00 0.0 e+00 0.0e+00 0.0e+00\n" % (
-                    speedOfSound, densityOfMedium))
-                fw("##\n")
+        # main parameters IV ------------------------------------------
+        fw("## 4. Main Parameters IV\n")
+        fw("%s %se+00 1.0 0.0e+00 0.0 e+00 0.0e+00 0.0e+00\n" % (
+            speedOfSound, densityOfMedium))
+        fw("##\n")
 
-                # nodes -------------------------------------------------------
-                fw("NODES\n")
-                fw("../../ObjectMeshes/Reference/Nodes.txt\n")
-                # write file path of nodes to input file
-                for grid in evaluationGrids:
-                    fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
-                fw("##\n")
-                fw("ELEMENTS\n")
-                fw("../../ObjectMeshes/Reference/Elements.txt\n")
-                # write file path of elements to input file
-                for grid in evaluationGrids:
-                    fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
-                fw("##\n")
+        # nodes -------------------------------------------------------
+        fw("NODES\n")
+        fw("../../ObjectMeshes/Reference/Nodes.txt\n")
+        # write file path of nodes to input file
+        for grid in evaluationGrids:
+            fw("../../EvaluationGrids/%s/Nodes.txt\n" % grid)
+        fw("##\n")
+        fw("ELEMENTS\n")
+        fw("../../ObjectMeshes/Reference/Elements.txt\n")
+        # write file path of elements to input file
+        for grid in evaluationGrids:
+            fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
+        fw("##\n")
 
-                # SYMMETRY ----------------------------------------------------
-                fw("# SYMMETRY\n")
-                fw("# 0 0 0\n")
-                fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
-                fw("##\n")
+        # SYMMETRY ----------------------------------------------------
+        fw("# SYMMETRY\n")
+        fw("# 0 0 0\n")
+        fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
+        fw("##\n")
 
-                # boundary information ----------------------------------------
-                fw("BOUNDARY\n")
-                # write velocity condition for the ears if using vibrating
-                # elements as the sound source
-                if "ear" in sourceType:
-                    if cpusAndCores[cpu][core]==1 and \
-                            sourceType in ['Both ears', 'Left ear']:
-                        tmpEar='Left ear'
-                    else:
-                        tmpEar='Right ear'
-                    fw(f"# {tmpEar} velocity source\n")
-                    fw("ELEM %i TO %i VELO 0.1 -1 0.0 -1\n" % (
-                        materials[tmpEar]["index_start"],
-                        materials[tmpEar]["index_end"]))
-                # remaining conditions defined by frequency curves
-                curves = 0
-                steps = 0
-                if materials is not None:
-                    for m in materials:
-                        if materials[m]["path"] is None:
-                            continue
-                        # write information
-                        fw(f"# Material: {m}\n")
-                        fw("ELEM %i TO %i %s 1.0 %i 1.0 %i\n" % (
-                            materials[m]["index_start"],
-                            materials[m]["index_end"],
-                            materials[m]["boundary"],
-                            curves + 1, curves + 2))
-                        # update metadata
-                        steps = max(steps, len(materials[m]["freqs"]))
-                        curves += 2
+        # boundary information ----------------------------------------
+        fw("BOUNDARY\n")
+        # write velocity condition for the ears if using vibrating
+        # elements as the sound source
+        if "ear" in sourceType:
+            if source==0 and \
+                    sourceType in ['Both ears', 'Left ear']:
+                tmpEar='Left ear'
+            else:
+                tmpEar='Right ear'
+            fw(f"# {tmpEar} velocity source\n")
+            fw("ELEM %i TO %i VELO 0.1 -1 0.0 -1\n" % (
+                materials[tmpEar]["index_start"],
+                materials[tmpEar]["index_end"]))
+        # remaining conditions defined by frequency curves
+        curves = 0
+        steps = 0
+        if materials is not None:
+            for m in materials:
+                if materials[m]["path"] is None:
+                    continue
+                # write information
+                fw(f"# Material: {m}\n")
+                fw("ELEM %i TO %i %s 1.0 %i 1.0 %i\n" % (
+                    materials[m]["index_start"],
+                    materials[m]["index_end"],
+                    materials[m]["boundary"],
+                    curves + 1, curves + 2))
+                # update metadata
+                steps = max(steps, len(materials[m]["freqs"]))
+                curves += 2
 
-                fw("RETU\n")
-                fw("##\n")
+        fw("RETU\n")
+        fw("##\n")
 
-                # source information: plane wave ------------------------------
-                fw("# PLANE WAVES\n")
-                fw("# 0 0.0000e+00 -1.0000e+00 0.0000e+00 1.0000e-6 -1 0.0000e+00 -1\n")
-                fw("##\n")
+        # source information: plane wave ------------------------------
+        fw("# PLANE WAVES\n")
+        fw("# 0 0.0000e+00 -1.0000e+00 0.0000e+00 1.0000e-6 -1 0.0000e+00 -1\n")
+        fw("##\n")
 
-                # source information: point source ----------------------------
-                if "ear" in sourceType:
-                    fw("# POINT SOURCES\n")
-                    if cpusAndCores[cpu][core] == 1:
-                        fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
-                    if cpusAndCores[cpu][core] == 2:
-                        fw("# 0 0.0 -0.101 0.0 0.1 -1 0.0 -1\n")
-                else:
-                    fw("POINT SOURCES\n")
-                    fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (
-                        sourceXPosition, sourceYPosition, sourceZPosition))
-                fw("##\n")
+        # source information: point source ----------------------------
+        if "ear" in sourceType:
+            fw("# POINT SOURCES\n")
+            if source == 0:
+                fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
+            if source == 1:
+                fw("# 0 0.0 -0.101 0.0 0.1 -1 0.0 -1\n")
+        else:
+            fw("POINT SOURCES\n")
+            fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (
+                sourceXPosition, sourceYPosition, sourceZPosition))
+        fw("##\n")
 
-                # curves ------------------------------------------------------
-                if curves > 0:
-                    fw("CURVES\n")
-                    # number of curves and maximum number of steps
-                    fw(f"{curves} {steps}\n")
-                    curves = 0
-                    for m in materials:
-                        if materials[m]["path"] is None:
-                            continue
-                        # write curve for real values
-                        curves += 1
-                        fw(f"{curves} {len(materials[m]['freqs'])}\n")
-                        for f, v in zip(materials[m]['freqs'],
-                                        materials[m]['real']):
-                            fw(f"{f} {v} 0.0\n")
-                        # write curve for imaginary values
-                        curves += 1
-                        fw(f"{curves} {len(materials[m]['freqs'])}\n")
-                        for f, v in zip(materials[m]['freqs'],
-                                        materials[m]['imag']):
-                            fw(f"{f} {v} 0.0\n")
+        # curves ------------------------------------------------------
+        if curves > 0:
+            fw("CURVES\n")
+            # number of curves and maximum number of steps
+            fw(f"{curves} {steps}\n")
+            curves = 0
+            for m in materials:
+                if materials[m]["path"] is None:
+                    continue
+                # write curve for real values
+                curves += 1
+                fw(f"{curves} {len(materials[m]['freqs'])}\n")
+                for f, v in zip(materials[m]['freqs'],
+                                materials[m]['real']):
+                    fw(f"{f} {v} 0.0\n")
+                # write curve for imaginary values
+                curves += 1
+                fw(f"{curves} {len(materials[m]['freqs'])}\n")
+                for f, v in zip(materials[m]['freqs'],
+                                materials[m]['imag']):
+                    fw(f"{f} {v} 0.0\n")
 
-                else:
-                    fw("# CURVES\n")
-                fw("##\n")
+        else:
+            fw("# CURVES\n")
+        fw("##\n")
 
-                # post process ------------------------------------------------
-                fw("POST PROCESS\n")
-                fw("##\n")
-                fw("END\n")
-                file.close()
+        # post process ------------------------------------------------
+        fw("POST PROCESS\n")
+        fw("##\n")
+        fw("END\n")
+        file.close()
 
 # ----------------------- Blender add-on registration -------------------------
 def menu_func_export(self, context):
