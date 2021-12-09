@@ -1,5 +1,12 @@
-.vscode
-*.asv
+# NumCalc build files
 mesh2hrtf/NumCalc/Source/*.o
 mesh2hrtf/NumCalc/Source/NumCalc
+
+# Python cach and install files
 *__pycache__
+.eggs/*
+mesh2hrtf.egg-info/*
+
+# Other application specific files
+.vscode
+*.asv
