@@ -334,14 +334,20 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # Switch to object mode to avoid export errors
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 
-        # check if 'Reference' object exists and select it
+        # de-select all objects
+        bpy.ops.object.select_all(action='DESELECT')
+
+        # check if 'Reference' object exists
         referenceExist = False
         for obj in bpy.context.scene.objects[:]:
             if obj.type == 'MESH' and obj.name == 'Reference':
                 referenceExist = True
 
+        # select and activate 'Reference'
         if referenceExist:
             bpy.data.objects['Reference'].select_set(True)
+            bpy.context.view_layer.objects.active = \
+                bpy.data.objects['Reference']
         else:
             raise ValueError("Did not find the 3D Mesh. It must be named"
                              "'Reference' (case sensitive).")
