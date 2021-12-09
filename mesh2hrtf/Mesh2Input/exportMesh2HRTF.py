@@ -1001,7 +1001,7 @@ def _write_output2HRTF_py(filepath1, version,
 
         fw("\n")
     else:
-        fw("sourceType = 'pointSource';\n")
+
         fw("sourceCenter[0, :] = [%s, %s, %s]\n"
                                             % (sourceXPosition,
                                                sourceYPosition,
