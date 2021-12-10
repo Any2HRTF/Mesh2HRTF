@@ -90,14 +90,18 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                      "act as the source")),
                ('Point source', 'Point source',
                     ("Analytical point source. Coordinates taken from user "
-                     "placed point light named 'Point'"))],
+                     "placed point light named 'Point source'")),
+               ('Plane wave', 'Plane wave',
+                    ("Analytical plane wave. Coordinates taken from the "
+                    "location (not rotation) of the user placed "
+                     "placed area light named 'Plane wave'"))],
         default='Both ears',
         )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'Mesh2Input' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
+        default=r"/path/to/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -276,7 +280,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              ):
         """Export Mesh2HRTF project."""
 
-
 # General handling and constants ----------------------------------------------
         # purge unused data
         ret = bpy.ops.outliner.orphans_purge()
@@ -289,11 +292,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # de-select all objects
         bpy.ops.object.select_all(action='DESELECT')
 
-        # check if 'Reference' object exists
+        # check if 'Reference' object exists and assign to `obj`
         referenceExist = False
         for obj in bpy.context.scene.objects[:]:
             if obj.type == 'MESH' and obj.name == 'Reference':
                 referenceExist = True
+                break
 
         # select and activate 'Reference'
         if referenceExist:
@@ -305,10 +309,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                              "'Reference' (case sensitive).")
 
         # check if 'Reference' object is a triangular mesh
-        obj2 = bpy.data.objects['Reference']
         has_error_message = False
 
-        for p in obj2.data.polygons:
+        for p in bpy.data.objects['Reference'].data.polygons:
             # Select non quad face (polygons)
             p.select = len(p.vertices) != 3
             if p.select:
@@ -318,9 +321,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             # Go in edit mode to show the result
             bpy.ops.object.mode_set(mode = 'EDIT')
             raise TypeError(
-                'Not all faces in the Reference mesh are triangular!')
+                ('Not all faces in the Reference mesh are triangular! '
+                 'Non triangular faces are selected'))
 
-        del obj2, has_error_message
+        del has_error_message
 
         # get Mesh2HRTF version
         with open(os.path.join(programPath, "..", "VERSION")) as read_version:
@@ -330,14 +334,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if not filepath.endswith(os.path.sep):
             filepath += os.path.sep
         filepath1, _ = os.path.split(filepath)
-
-        if not os.path.exists(filepath1): # create project folder with "Filename"
+        # create project folder
+        if not os.path.exists(filepath1):
             os.mkdir(filepath1)
-        elif os.path.exists( os.path.join(filepath1, "NumCalc") ):
-            raise ValueError("Project folder ", filepath1,
-                             " already exists. Please choose another Project "
-                             "name or manually delete existing files.")
-
+        # check for existing projects
+        if os.path.exists(os.path.join(filepath1, "NumCalc")):
+            raise ValueError((f"Project folder {filepath1} already exists. "
+                               "Choose another folder or delete files."))
+        # create sub-folders
         subfolders = ["ObjectMeshes", "EvaluationGrids", "NumCalc"]
         for subfolder in subfolders:
             temp = os.path.join(filepath1, subfolder)
@@ -366,9 +370,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Get point source position ---------------------------------------------------
-        if sourceType == "Point source":
+        if sourceType in ["Point source", "Plane wave"]:
             sourceXPosition, sourceYPosition, sourceZPosition = \
-                _get_point_source_position(unitFactor)
+                _get_source_position(sourceType, unitFactor)
         else:
             sourceXPosition = None
             sourceYPosition = None
@@ -495,20 +499,31 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-def _get_point_source_position(unitFactor):
+def _get_source_position(sourceType, unitFactor):
     # check if 'Reference' object exists and select it
-    pointSourceExist = False
+    sourceExist = False
     for obj in bpy.context.scene.objects[:]:
-        if obj.type == 'LIGHT' and obj.name == 'Point':
-            pointSourceExist = True
+        if obj.type == 'LIGHT' and obj.name == sourceType:
+            sourceExist = True
 
-    if not pointSourceExist:
-        raise ValueError("Did not find the point source. It must be 'Point'"
-                         "light object named 'Point' (case sensitive).")
+    if not sourceExist:
+        light_type = "a 'Point'" if sourceType == "Point source" \
+            else "an 'Area'"
+        raise ValueError((
+            f"Did not find the {sourceType.lower()}. It must be {light_type} "
+            f"light object named '{sourceType}' (case sensitive)."))
 
-    sourceXPosition = bpy.data.objects["Point"].location[0] * unitFactor
-    sourceYPosition = bpy.data.objects["Point"].location[1] * unitFactor
-    sourceZPosition = bpy.data.objects["Point"].location[2] * unitFactor
+    sourceXPosition = bpy.data.objects[sourceType].location[0] * unitFactor
+    sourceYPosition = bpy.data.objects[sourceType].location[1] * unitFactor
+    sourceZPosition = bpy.data.objects[sourceType].location[2] * unitFactor
+
+    if sourceType == "Plane wave":
+        abs_source_position = math.sqrt(
+            sourceXPosition**2 + sourceYPosition**2 + sourceZPosition**2)
+
+        sourceXPosition /= abs_source_position
+        sourceYPosition /= abs_source_position
+        sourceZPosition /= abs_source_position
 
     return sourceXPosition, sourceYPosition, sourceZPosition
 
@@ -1309,7 +1324,7 @@ def _write_nc_inp(filepath1, version, title,
         obj = bpy.data.objects[obj_name]
         obj_data = obj.data
 
-        # header ------------------------------------------------------
+        # header --------------------------------------------------------------
         fw("##-------------------------------------------\n")
         fw("## This file was created by export_mesh2hrtf\n")
         fw("## Date: %s\n" % datetime.date.today())
@@ -1319,12 +1334,12 @@ def _write_nc_inp(filepath1, version, title,
         fw("%s\n" % title)
         fw("##\n")
 
-        # control parameter I (hard coded, not documented) ------------
+        # control parameter I (hard coded, not documented) --------------------
         fw("## Controlparameter I\n")
         fw("0 0 0 0 7 0\n")
         fw("##\n")
 
-        # control parameter II ----------------------------------------
+        # control parameter II ------------------------------------------------
         fw("## Controlparameter II\n")
         fw("1 %d 0.000001 0.00e+00 1 0 0\n" % (
             len(frequencies)))
@@ -1338,7 +1353,7 @@ def _write_nc_inp(filepath1, version, title,
                 frequencies[ii] / 10000))
         fw("##\n")
 
-        # main parameters I -------------------------------------------
+        # main parameters I ---------------------------------------------------
         fw("## 1. Main Parameters I\n")
         numNodes = 0
         numElements = 0
@@ -1361,7 +1376,7 @@ def _write_nc_inp(filepath1, version, title,
         fw(" 2 1 %s 0\n" % (method_id))
         fw("##\n")
 
-        # main parameters II ------------------------------------------
+        # main parameters II --------------------------------------------------
         fw("## 2. Main Parameters II\n")
         fw("0 ")
         if "ear" in sourceType:
@@ -1371,18 +1386,18 @@ def _write_nc_inp(filepath1, version, title,
         fw("0 0.0000e+00 0 0 0\n")
         fw("##\n")
 
-        # main parameters III -----------------------------------------
+        # main parameters III -------------------------------------------------
         fw("## 3. Main Parameters III\n")
         fw("0 0 0 0\n")
         fw("##\n")
 
-        # main parameters IV ------------------------------------------
+        # main parameters IV --------------------------------------------------
         fw("## 4. Main Parameters IV\n")
         fw("%s %se+00 1.0 0.0e+00 0.0 e+00 0.0e+00 0.0e+00\n" % (
             speedOfSound, densityOfMedium))
         fw("##\n")
 
-        # nodes -------------------------------------------------------
+        # nodes ---------------------------------------------------------------
         fw("NODES\n")
         fw("../../ObjectMeshes/Reference/Nodes.txt\n")
         # write file path of nodes to input file
@@ -1396,13 +1411,14 @@ def _write_nc_inp(filepath1, version, title,
             fw("../../EvaluationGrids/%s/Elements.txt\n" % grid)
         fw("##\n")
 
-        # SYMMETRY ----------------------------------------------------
+        # SYMMETRY ------------------------------------------------------------
         fw("# SYMMETRY\n")
         fw("# 0 0 0\n")
         fw("# 0.0000e+00 0.0000e+00 0.0000e+00\n")
         fw("##\n")
 
-        # boundary information ----------------------------------------
+        # assign mesh elements to boundary conditions -------------------------
+        # (including both, left, right ear)
         fw("BOUNDARY\n")
         # write velocity condition for the ears if using vibrating
         # elements as the sound source
@@ -1437,25 +1453,17 @@ def _write_nc_inp(filepath1, version, title,
         fw("RETU\n")
         fw("##\n")
 
-        # source information: plane wave ------------------------------
-        fw("# PLANE WAVES\n")
-        fw("# 0 0.0000e+00 -1.0000e+00 0.0000e+00 1.0000e-6 -1 0.0000e+00 -1\n")
-        fw("##\n")
-
-        # source information: point source ----------------------------
-        if "ear" in sourceType:
-            fw("# POINT SOURCES\n")
-            if source == 0:
-                fw("# 0 0.0 0.101 0.0 0.1 -1 0.0 -1\n")
-            if source == 1:
-                fw("# 0 0.0 -0.101 0.0 0.1 -1 0.0 -1\n")
-        else:
+        # source information: point source and plane wave ---------------------
+        if sourceType == "Point source":
             fw("POINT SOURCES\n")
+        elif sourceType == "Plane wave":
+            fw("PLANE WAVES\n")
+        if sourceType in ["Point source", "Plane wave"]:
             fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (
                 sourceXPosition, sourceYPosition, sourceZPosition))
         fw("##\n")
 
-        # curves ------------------------------------------------------
+        # curves defining boundary conditions of the mesh ---------------------
         if curves > 0:
             fw("CURVES\n")
             # number of curves and maximum number of steps
@@ -1481,7 +1489,7 @@ def _write_nc_inp(filepath1, version, title,
             fw("# CURVES\n")
         fw("##\n")
 
-        # post process ------------------------------------------------
+        # post process --------------------------------------------------------
         fw("POST PROCESS\n")
         fw("##\n")
         fw("END\n")
