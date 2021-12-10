@@ -462,20 +462,19 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 
 # Write Output2HRTF.m function ------------------------------------------------
-        _write_output2HRTF_m(filepath1, version, sourceType, unitFactor,
-                             reference, computeHRIRs,
-                             speedOfSound, densityOfMedium,
-                             sourceXPosition, sourceYPosition, sourceZPosition)
+        _write_output2HRTF_m(
+            filepath1, version, sourceType, numSources, unitFactor, reference,
+            computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
+            sourceYPosition, sourceZPosition)
 
 # Write Output2VTK.m function ------------------------------------------------
         _write_output2VTK_m(filepath1, version)
 
 # Write Output2HRTF.py function ------------------------------------------------
-        _write_output2HRTF_py(filepath1, version, sourceType, unitFactor,
-                             reference, computeHRIRs,
-                             speedOfSound, densityOfMedium,
-                             sourceXPosition, sourceYPosition, sourceZPosition,
-                             programPath)
+        _write_output2HRTF_py(
+            filepath1, version, sourceType, numSources, unitFactor, reference,
+            computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
+            sourceYPosition, sourceZPosition)
 
 
 # Render pictures of the model ------------------------------------------------
@@ -814,11 +813,10 @@ def _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
     file.close
 
 
-def _write_output2HRTF_m(filepath1, version,
-                         sourceType, unitFactor,
-                         reference, computeHRIRs,
-                         speedOfSound, densityOfMedium,
-                         sourceXPosition, sourceYPosition, sourceZPosition):
+def _write_output2HRTF_m(
+        filepath1, version, sourceType, numSources, unitFactor, reference,
+        computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
+        sourceYPosition, sourceZPosition):
 
     # file handling
     file = open(os.path.join(filepath1, "Output2HRTF.m"), "w",
@@ -835,6 +833,7 @@ def _write_output2HRTF_m(filepath1, version,
     # add information about the source
     fw("% source information\n")
     fw(f"sourceType = '{sourceType}';\n")
+    fw(f"numSources = {numSources};\n")
     if "ear" in sourceType:
 
         # get the receiver/ear centers and areas
@@ -898,9 +897,9 @@ def _write_output2HRTF_m(filepath1, version,
 
     fw("% Collect the data simulated by NumCalc\n")
     fw("Output2HRTF_Main(Mesh2HRTF_version, ...\n")
-    fw("                 sourceType, sourceCenter, sourceArea, ...\n")
+    fw("                 sourceType, numSources, sourceCenter, sourceArea, ...\n")
     fw("                 reference, computeHRIRs, ...\n")
-    fw("                 speedOfSound,densityOfAir);\n")
+    fw("                 speedOfSound, densityOfAir);\n")
     file.close
 
 def _write_output2VTK_m(filepath1, version):
@@ -933,12 +932,10 @@ def _write_output2VTK_m(filepath1, version):
     fw("EvalToolsExport2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes(:,2:end),elements(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')\n")
     file.close
 
-def _write_output2HRTF_py(filepath1, version,
-                         sourceType, unitFactor,
-                         reference, computeHRIRs,
-                         speedOfSound, densityOfMedium,
-                         sourceXPosition, sourceYPosition, sourceZPosition,
-                         programPath):
+def _write_output2HRTF_py(
+        filepath1, version, sourceType, numSources, unitFactor, reference,
+        computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
+        sourceYPosition, sourceZPosition):
 
     # file handling
     file = open(os.path.join(filepath1, "Output2HRTF.py"), "w",
@@ -969,6 +966,7 @@ def _write_output2HRTF_py(filepath1, version,
 
     # add information about the source
     fw(f"sourceType = '{sourceType}'\n")
+    fw(f"numSources = {numSources}\n")
     if "ear" in sourceType:
 
         # get the receiver/ear centers and areas
@@ -1006,7 +1004,7 @@ def _write_output2HRTF_py(filepath1, version,
                                             % (sourceXPosition,
                                                sourceYPosition,
                                                sourceZPosition))
-        fw("sourceArea[0, 0]     = 1\n")
+        fw("sourceArea[0, 0] = 1\n")
 
     # referencing
     fw("# Reference to a point source in the origin\n")
@@ -1035,10 +1033,10 @@ def _write_output2HRTF_py(filepath1, version,
 
     # function call
     fw("# Collect the data simulated by NumCalc\n")
-    fw("m2h.Output2HRTF_Main(projectPath, Mesh2HRTF_version,\n")
-    fw("                 sourceType, sourceCenter, sourceArea,\n")
-    fw("                 reference, computeHRIRs,\n")
-    fw("                 speedOfSound, densityOfAir)\n")
+    fw("m2h.Output2HRTF_Main(Mesh2HRTF_version,\n")
+    fw("                     sourceType, numSources, sourceCenter, sourceArea,\n")
+    fw("                     reference, computeHRIRs,\n")
+    fw("                     speedOfSound, densityOfAir)\n")
     file.close
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
