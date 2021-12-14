@@ -36,10 +36,11 @@ import csv
 import numpy
 from netCDF4 import Dataset
 import time
+from pathlib import Path
 
 
 def Output2HRTF_Main(
-        projectPath, Mesh2HRTF_version, cpusAndCores, sourceType, sourceCenter,
+        Mesh2HRTF_version, sourceType, numSources, sourceCenter,
         sourceArea, reference, computeHRIRs, speedOfSound, densityOfAir):
     """
     Process NumCalc output and write data to disk.
@@ -50,15 +51,13 @@ def Output2HRTF_Main(
 
     Parameters
     ----------
-    projectPath : string
-        Path to the Mesh2HRTF folder, i.e., the folder containing the
-        subfolders `EvaluationGrids`, `NumCal` etc.
     Mesh2HRTF_version : string
         Mesh2HRTF version as string
-    cpusAndCores : array
-        Array indicating which CPUs and Cores were used for the BEM
+    numSources : integer
+        Number of sound sources in the simulation
     sourceType : string
-        The source type (vibrating element, point source)
+        The source type ('Both ears', 'Left ear', 'Right ear',
+                         'Point source', 'Plane wave')
     sourceCenter : array
         The source position
     sourceArea : array
@@ -79,12 +78,8 @@ def Output2HRTF_Main(
 
     # load meta data
     # output directory
-    os.chdir(projectPath)
     if not os.path.exists(os.path.join(os.getcwd(), 'Output2HRTF')):
         os.makedirs(os.path.join(os.getcwd(), 'Output2HRTF'))
-
-    # number of ears
-    ears = numpy.amax(cpusAndCores)
 
     # get the evaluation grids
     evaluationGrids, evaluationGridsNumNodes = \
@@ -94,33 +89,29 @@ def Output2HRTF_Main(
     objectMeshes, objectMeshesNumNodes = \
         read_nodes_and_elements(data='ObjectMeshes')
 
-    # Read computational effort
-    print('\n Loading computational effort data ...')
-    for ch in range(ears):
-        computationTime = []
-        for ii in range(cpusAndCores.shape[0]):
-            for jj in range(cpusAndCores.shape[1]):
-                if (cpusAndCores[ii, jj] == ch+1):
-                    tmpFilename = os.path.join(
-                        'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
-                        'NC.out')
-                    tmp = read_computation_time(tmpFilename)
-                    computationTime.append(tmp)
-                    del tmp
+    # # Read computational effort
+    # print('\n Loading computational effort data ...')
+    # computationTime = []
+    # for source in range(numSources):
+    #     for file in Path(os.path.join('NumCalc',
+    #                                   f'source_{source+1}')).glob('NC*.out'):
+    #         tmpFilename = os.path.join(file)
+    #         tmp = read_computation_time(tmpFilename)
+    #         computationTime.append(tmp)
+    #         del tmp
 
-    description = ['Frequency index', 'Frequency', 'Building', 'Solving',
-                   'Postprocessing', 'Total']
+    # description = ['Frequency index', 'Frequency', 'Building', 'Solving',
+    #                'Postprocessing', 'Total']
 
-    # save csv file for comparing computation times across simulations
-    numpy.savetxt(os.path.join('Output2HRTF', 'computationTime.csv'),
-                  computationTime[0],  fmt='%1.5e', delimiter=", ",
-                  header=", ".join(description), comments="")
+    # # save csv file for comparing computation times across simulations
+    # numpy.savetxt(os.path.join('Output2HRTF', 'computationTime.csv'),
+    #               computationTime[0],  fmt='%1.5e', delimiter=", ",
+    #               header=", ".join(description), comments="")
 
-    del ch, ii, jj, description, computationTime
+    # del source, file, description, computationTime
 
     # Load ObjectMesh data
-    pressure, frequencies = read_pressure(ears, cpusAndCores,
-                                          data='pBoundary')
+    pressure, frequencies = read_pressure(numSources, data='pBoundary')
 
     print('\nSave ObjectMesh data ...')
     cnt = 0
@@ -147,8 +138,7 @@ def Output2HRTF_Main(
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
 
-        pressure, frequencies = read_pressure(ears, cpusAndCores,
-                                              data='pEvalGrid')
+        pressure, frequencies = read_pressure(numSources, data='pEvalGrid')
 
     # save to struct
     cnt = 0
@@ -173,7 +163,7 @@ def Output2HRTF_Main(
     for ii in range(len(evaluationGrids)):
         write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
                       evaluationGridsNumNodes, frequencies,
-                      ears, sourceCenter, type='HRTF')
+                      numSources, sourceCenter, type='HRTF')
 
     # Save impulse responses as SOFA file
     if computeHRIRs:
@@ -185,7 +175,7 @@ def Output2HRTF_Main(
                                     reference, speedOfSound)
 
             write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
-                          evaluationGridsNumNodes, frequencies, ears,
+                          evaluationGridsNumNodes, frequencies, numSources,
                           sourceCenter, fs, hrir, type='HRIR')
 
     print('Done\n')
@@ -210,16 +200,14 @@ def read_nodes_and_elements(data):
         tmpElements = numpy.loadtxt(os.path.join(
             data, gridsList[ii], 'Elements.txt'),
             delimiter=' ', skiprows=1)
-        grids.append({"name": gridsList[ii],
-                                "nodes": tmpNodes,
-                                "elements": tmpElements,
-                                "num_nodes": tmpNodes.shape[0]})
+        grids.append({"name": gridsList[ii], "nodes": tmpNodes,
+                      "elements": tmpElements, "num_nodes": tmpNodes.shape[0]})
         gridsNumNodes += grids[ii]['num_nodes']
 
     return grids, gridsNumNodes
 
 
-def read_pressure(ears, cpusAndCores, data):
+def read_pressure(numSources, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
     tmpPressure = []
     frequencies = []
@@ -229,26 +217,18 @@ def read_pressure(ears, cpusAndCores, data):
         raise ValueError('data must be pBoundary or pEvalGrid!')
 
     print('\n Loading %s data ...' % data)
-    for ch in range(ears):
-        print('\n    Ear %d ...' % (ch+1))
-        for ii in range(cpusAndCores.shape[0]):
-            print('\n        CPU %d: ' % (ii+1))
-            for jj in range(cpusAndCores.shape[1]):
-                if (cpusAndCores[ii, jj] == (ch+1)):
-                    print('%d, ' % (jj+1))
-                    tmpFilename = os.path.join(
-                        'NumCalc', 'CPU_%d_Core_%d' % ((ii+1), (jj+1)),
-                        'be.out')
-                    tmpData, tmpFrequencies = Output2HRTF_Load(tmpFilename,
-                                                               data)
-                    if tmpPressure:
-                        tmpPressure.append(tmpData)
-                        frequencies.append(tmpFrequencies)
-                    else:
-                        tmpPressure = tmpData
-                        frequencies = tmpFrequencies
-                    del tmpData, tmpFrequencies, tmpFilename
-            print('...')
+    for source in range(numSources):
+        print('\n    Source %d ...' % (source+1))
+        tmpFilename = os.path.join('NumCalc', f'source_{source+1}', 'be.out')
+        tmpData, tmpFrequencies = Output2HRTF_Load(tmpFilename, data)
+        if tmpPressure:
+            tmpPressure.append(tmpData)
+            frequencies.append(tmpFrequencies)
+        else:
+            tmpPressure = tmpData
+            frequencies = tmpFrequencies
+        del tmpData, tmpFrequencies, tmpFilename
+        print('...')
 
         idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
         frequencies = sorted(frequencies)
@@ -285,12 +265,10 @@ def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
             r = numpy.tile(numpy.transpose(r),
                            (pressure.shape[0], pressure.shape[1], 1))
 
-        if sourceType == 'vibratingElement':
+        if sourceType in {'Both ears', 'Left ear', 'Right ear'}:
 
             volumeFlow = 0.1 * numpy.ones(
-                (pressure.shape[0],
-                    pressure.shape[1],
-                    pressure.shape[2]))
+                (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
             if 'sourceArea':
                 # has to be fixed for both ears....
                 for nn in range(len(sourceArea)):
@@ -304,17 +282,22 @@ def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
                 numpy.exp(1j * 2 * numpy.pi *
                           freqMatrix / speedOfSound * r) / r
 
-        elif sourceType == 'pointSource':
+        elif sourceType == 'Point source':
 
             amplitude = 0.1  # hard coded in Mesh2HRTF
             ps = amplitude * \
                 numpy.exp(1j * 2 * numpy.pi * freqMatrix /
                           speedOfSound * r) / (4 * numpy.pi * r)
 
+        elif sourceType == 'Plane wave':
+            raise ValueError(
+                ("Plane wave not implemented yet."))
+
         else:
             raise ValueError(
                 ("Referencing is currently only implemented for "
-                    "sourceType 'vibratingElement' and 'pointSource'."))
+                    "sourceType 'Both ears', 'Left ear', 'Right ear',"
+                    "'Point source' and 'Plane wave'."))
 
         # here we go...
         evaluationGrids[ii]["pressure"] = pressure / ps
@@ -355,7 +338,7 @@ def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
 
 
 def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
-                  evaluationGridsNumNodes, frequencies, ears,
+                  evaluationGridsNumNodes, frequencies, numSources,
                   sourceCenter, fs=None, hrir=None, type='HRTF'):
     """Write complex pressure or impulse responses as SOFA file."""
 
@@ -404,7 +387,7 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
         n = len(frequencies)
     elif type == 'HRIR':
         n = 2*len(frequencies)
-    r = ears
+    r = numSources
     e = 1
     i = 1
     c = 3
@@ -480,7 +463,7 @@ def Output2HRTF_Load(foldername, filename):
     ----------
     foldername : string
         The folder from which the data is loaded. The data to be read is
-        located in the folder be.out inside NumCalc/CPU_*_Core_*
+        located in the folder be.out inside NumCalc/source_*
     filename : string
         The kind of data that is loaded
 
