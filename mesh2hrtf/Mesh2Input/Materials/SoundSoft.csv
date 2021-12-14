@@ -1,0 +1,17 @@
+# Info:
+# Sound soft material defined using a pressure (PRES) boundary condition.
+# Sound soft materials have a zero pressure on the surface
+#
+# Keyword to define the boundary condition:
+# ADMI: Normalized admittance boundary condition
+# PRES: Pressure boundary condition
+# VELO: Velocity boundary condition
+# NOTE: Mesh2HRTF expects normalized admittances, i.e., admittance/(rho*c).
+#       rho is the density of air and c the speed of sound. The normalization is
+#       beneficial because a single material file can be used for simulations
+#       with differing speed of sound and density of air.
+PRES
+#
+# Frequency curve:
+# Frequency in Hz, real value, imaginary value
+0, 0, 0
