@@ -433,7 +433,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         materials = _get_materials(bpy.data.objects['Reference'])
 
         if materials is None:
-            if 'ear' not in sourceType:
+            if 'ear' in sourceType:
                 raise ValueError(
                     ("Material 'Left ear' and/or 'Right ear' "
                      "must be defined for reciprocal simulations."))
@@ -1048,8 +1048,8 @@ def _write_output2HRTF_py(
 
     # function call
     fw("# Collect the data simulated by NumCalc\n")
-    fw("m2h.Output2HRTF_Main(Mesh2HRTF_version,\n")
-    fw("                     sourceType, numSources, sourceCenter, sourceArea,\n")
+    fw("m2h.Output2HRTF_Main(Mesh2HRTF_version, sourceType, \n")
+    fw("                     numSources, sourceCenter, sourceArea,\n")
     fw("                     reference, computeHRIRs,\n")
     fw("                     speedOfSound, densityOfAir)\n")
     file.close
