@@ -42,12 +42,12 @@ def test_numcalc(boundary_condition, source, bem_method, range_a, range_b=(-1, 1
                     'test_numcalc_input_files', 'NC_'+boundary_condition+'_' +
                                  source+'_'+bem_method+'.inp'),
                     os.path.join(tmp.name, 'project', 'NumCalc',
-                                 'CPU_1_Core_1', 'NC.inp'))
+                                 'source_1', 'NC.inp'))
 
     # Exercise
 
     # run NumCalc with subprocess
-    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "CPU_1_Core_1")
+    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
     subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")

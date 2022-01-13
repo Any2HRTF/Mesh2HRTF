@@ -1048,7 +1048,7 @@ def _write_output2HRTF_py(
 
     # function call
     fw("# Collect the data simulated by NumCalc\n")
-    fw("m2h.Output2HRTF_Main(Mesh2HRTF_version, sourceType, \n")
+    fw("m2h.Output2HRTF_Main(Mesh2HRTF_version, sourceType,\n")
     fw("                     numSources, sourceCenter, sourceArea,\n")
     fw("                     reference, computeHRIRs,\n")
     fw("                     speedOfSound, densityOfAir)\n")
