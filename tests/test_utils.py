@@ -4,6 +4,7 @@ import scipy.io
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import os
 
 # remove this if used in test file
 # %matplotlib qt
@@ -50,7 +51,7 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
         ax.set_title(title)
 
     plt.tight_layout()
-    plt.savefig("test_numcalc_analytical_references/comparisonplot_" +
+    plt.savefig(os.path.dirname(__file__) + "/test_numcalc_analytical_references/comparisonplot_" +
                 boundary_condition+"_"+source+"_"+bem_method+".jpg")
 
 

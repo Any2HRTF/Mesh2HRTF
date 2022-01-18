@@ -10,19 +10,36 @@ import test_utils as tu
 
 
 def test_blender_export():
+    """ test the exportMesh2HRTF Blender plugin """
+
     # create a temporary directory
     tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                    'script_blender_export_test'), os.path.join(tmp.name, 'project'))
-    blender_path = os.path.join('/home', 'matheson', 'Apps', 'blender-2.91.0', 'blender')
+                                 'test_blender_export_project'),
+                    os.path.join(tmp.name, 'project'))
+    
+    blender_path = os.path.join('/home', 'matheson', 'Apps', 'blender-2.91.0',
+                                'blender')
     tmp_path = os.path.join(tmp.name, 'project')
-    # subprocess.run("pwd", cwd=tmp_path, check=True)
-    # subprocess.run("ls", cwd=tmp_path, check=True)
-    # subprocess.run([blender_path, "3dModel.blend",
-    #                 "--background", "--python",
-    #                 "blender_script.py"], cwd=tmp_path, check=True)
+    blender_file_path = os.path.join(tmp_path, '3dModel.blend')
+    python_file_path = os.path.join(tmp_path, 'blender_script.py')
+
+    # run exportMesh2HRTF from Blender with subprocess
+    subprocess.run([blender_path, blender_file_path,
+                    "--background", "--python",
+                    python_file_path],
+                   cwd=tmp_path, check=True, capture_output=True)
+
+    # run NumCalc with subprocess
+    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
+    subprocess.run(["NumCalc"], cwd=tmp_path, check=True, capture_output=True)
+
+    # run Output2HRTF.py
+    tmp_path = os.path.join(tmp.name, "project")
+    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True,
+                   capture_output=True)
 
 # subprocess.run(["/home/matheson/Apps/blender-2.91.0/blender 3dModel.blend --background --python blender_script.py"], cwd=tmp_path)
 
@@ -33,7 +50,9 @@ def test_build():
     # create a temporary directory
     tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
 
-    shutil.copytree("../mesh2hrtf/NumCalc/Source", tmp.name+"/NumCalc")
+    shutil.copytree(os.path.join(os.path.dirname(__file__),
+                                 "..", "mesh2hrtf", "NumCalc", "Source"),
+                    tmp.name+"/NumCalc")
     tmp_path = os.path.join(tmp.name, "NumCalc")
     subprocess.run(["make"], cwd=tmp_path, check=True)
 
@@ -54,7 +73,8 @@ def test_numcalc(boundary_condition, source, bem_method, range_a, range_b=(-1, 1
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_project'), os.path.join(tmp.name, 'project'))
+                                 'test_numcalc_project'),
+                    os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
     shutil.copyfile(os.path.join(os.path.dirname(__file__),
                     'test_numcalc_input_files', 'NC_'+boundary_condition+'_' +
@@ -112,7 +132,8 @@ def test_two_sources():
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                    'test_2sources_project'), os.path.join(tmp.name, 'project'))
+                                 'test_2sources_project'),
+                    os.path.join(tmp.name, 'project'))
 
     # Exercise
 
@@ -120,10 +141,14 @@ def test_two_sources():
     # for iSource in (1, 2):
     #     tmp_path = os.path.join(tmp.name, "project", "NumCalc", f"source_{iSource+1}")
     #     subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
-    
+
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
     subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
 
+# Only used for debugging
 # test_blender_export()
+# test_build()
 # test_numcalc("rigid", "point", "ml-fmm-bem", (10, -20), range_b=(-1, 1))
+# test_two_sources()
+
