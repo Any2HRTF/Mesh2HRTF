@@ -9,6 +9,24 @@ import numpy
 import test_utils as tu
 
 
+def test_blender_export():
+    # create a temporary directory
+    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
+
+    # copy test directory
+    shutil.copytree(os.path.join(os.path.dirname(__file__),
+                    'script_blender_export_test'), os.path.join(tmp.name, 'project'))
+    blender_path = os.path.join('/home', 'matheson', 'Apps', 'blender-2.91.0', 'blender')
+    tmp_path = os.path.join(tmp.name, 'project')
+    # subprocess.run("pwd", cwd=tmp_path, check=True)
+    # subprocess.run("ls", cwd=tmp_path, check=True)
+    # subprocess.run([blender_path, "3dModel.blend",
+    #                 "--background", "--python",
+    #                 "blender_script.py"], cwd=tmp_path, check=True)
+
+# subprocess.run(["/home/matheson/Apps/blender-2.91.0/blender 3dModel.blend --background --python blender_script.py"], cwd=tmp_path)
+
+
 def test_build():
     """ test if make for NumCalc works """
 
@@ -83,4 +101,29 @@ def test_numcalc(boundary_condition, source, bem_method, range_a, range_b=(-1, 1
                                      boundary_condition, source, bem_method)
 
 
-# test_bem("soft", "plane")
+def test_two_sources():
+    """
+    test Output2HRTF.py handling two sound sources ("Both ears" condition)
+    """
+    # Setup
+
+    # create temporary directory
+    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
+
+    # copy test directory
+    shutil.copytree(os.path.join(os.path.dirname(__file__),
+                    'test_2sources_project'), os.path.join(tmp.name, 'project'))
+
+    # Exercise
+
+    # # run NumCalc with subprocess
+    # for iSource in (1, 2):
+    #     tmp_path = os.path.join(tmp.name, "project", "NumCalc", f"source_{iSource+1}")
+    #     subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
+    
+    # run Output2HRTF.py
+    tmp_path = os.path.join(tmp.name, "project")
+    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
+
+# test_blender_export()
+# test_numcalc("rigid", "point", "ml-fmm-bem", (10, -20), range_b=(-1, 1))

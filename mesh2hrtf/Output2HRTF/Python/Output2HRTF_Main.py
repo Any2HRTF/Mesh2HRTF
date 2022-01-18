@@ -209,8 +209,6 @@ def read_nodes_and_elements(data):
 
 def read_pressure(numSources, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
-    tmpPressure = []
-    frequencies = []
     pressure = []
 
     if not (data == 'pBoundary' or data == 'pEvalGrid'):
@@ -219,22 +217,13 @@ def read_pressure(numSources, data):
     print('\n Loading %s data ...' % data)
     for source in range(numSources):
         print('\n    Source %d ...' % (source+1))
+        
         tmpFilename = os.path.join('NumCalc', f'source_{source+1}', 'be.out')
-        tmpData, tmpFrequencies = Output2HRTF_Load(tmpFilename, data)
-        if tmpPressure:
-            tmpPressure.append(tmpData)
-            frequencies.append(tmpFrequencies)
-        else:
-            tmpPressure = tmpData
-            frequencies = tmpFrequencies
-        del tmpData, tmpFrequencies, tmpFilename
+        tmpPressure, frequencies = Output2HRTF_Load(tmpFilename, data)
+
         print('...')
 
-        idx = sorted(range(len(frequencies)), key=lambda k: frequencies[k])
-        frequencies = sorted(frequencies)
-        pressure.append(tmpPressure[idx, :])
-
-        del tmpPressure
+        pressure.append(tmpPressure)
 
     pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))
 
@@ -407,7 +396,7 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     listenerPositionVar[:] = numpy.asarray([0, 0, 0])
 
     emitterPositionVar = Obj.createVariable('EmitterPosition', 'f8',
-                                            ('E', 'C', 'I'))
+                                            ('E', 'C'))
     emitterPositionVar.Units = 'metre'
     emitterPositionVar.Type = 'cartesian'
     emitterPositionVar[:] = numpy.asarray([0, 0, 0])
@@ -418,7 +407,7 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     sourcePositionVar[:] = xyz[:, 1:4]
 
     receiverPositionVar = Obj.createVariable('ReceiverPosition', 'f8',
-                                             ('R', 'C', 'I'))
+                                             ('R', 'C'))
     receiverPositionVar.Units = 'metre'
     receiverPositionVar.Type = 'cartesian'
     receiverPositionVar[:] = sourceCenter
