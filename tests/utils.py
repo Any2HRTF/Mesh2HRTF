@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import pysofaconventions as pysofa
+import sofar as sf
 
 # remove this if used in test file
 # %matplotlib qt
@@ -11,32 +11,10 @@ import pysofaconventions as pysofa
 def hrtf_sofa_to_numpy(path):
     """
     Read SOFA file with data type TF and return complex spectrum
-
-    adapted from Andrés Pérez-López: plotListenHRTF.py
     """
 
-    sofa = pysofa.SOFAFile(path, 'r')
-
-    # File is actually not valid, but we can forgive them
-    print("\n")
-    print("File is valid:", sofa.isValid())
-
-    # Convention is SimpleFreeFieldHRIR
-    print("\n")
-    print("SOFA Convention:", sofa.getGlobalAttributeValue('SOFAConventions'))
-
-    # Let's see the dimensions:
-    print("\n")
-    print("Dimensions:")
-    sofa.printSOFADimensions()
-
-    # Read the data
-    dataReal = sofa.getVariableValue('Data.Real')
-    dataReal = np.asarray(dataReal)
-    dataImag = sofa.getVariableValue('Data.Imag')
-    dataImag = np.asarray(dataImag)
-    # and get the HRTF associated with m=0
-    hrtf = np.array(dataReal+1j*dataImag, dtype=complex)
+    sofa = sf.read_sofa(path)
+    hrtf = sofa.Data_Real + 1j * sofa.Data_Imag
 
     return hrtf
 

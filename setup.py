@@ -15,15 +15,15 @@ with open('VERSION') as version_file:
     version = version_file.read()
 
 requirements = [
-    'netCDF4'
+    'numpy>=1.14.0',
+    'scipy>=1.5.0',
+    'sofar'
 ]
 
 setup_requirements = ['pytest-runner', ]
 
 test_requirements = [
     'pytest',
-    'numpy>=1.14.0',
-    'scipy>=1.5.0',
     'matplotlib'
 ]
 

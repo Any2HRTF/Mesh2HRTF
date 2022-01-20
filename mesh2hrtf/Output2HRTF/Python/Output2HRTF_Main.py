@@ -34,9 +34,7 @@
 import os
 import csv
 import numpy
-from netCDF4 import Dataset
-import time
-from pathlib import Path
+import sofar as sf
 
 
 def Output2HRTF_Main(
@@ -217,7 +215,7 @@ def read_pressure(numSources, data):
     print('\n Loading %s data ...' % data)
     for source in range(numSources):
         print('\n    Source %d ...' % (source+1))
-        
+
         tmpFilename = os.path.join('NumCalc', f'source_{source+1}', 'be.out')
         tmpPressure, frequencies = Output2HRTF_Load(tmpFilename, data)
 
@@ -340,108 +338,41 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     # Need to delete it first if file already exists
     if os.path.exists(path):
         os.remove(path)
-    Obj = Dataset(path, 'w', format='NETCDF4')
 
-    # Required Attributes
-    Obj.Conventions = 'SOFA'
-    Obj.Version = '1.0'
-
+    # create empty SOFA object
     if type == 'HRTF':
-        Obj.SOFAConventions = 'GeneralTF'
-        Obj.DataType = 'TF'
+        convention = "SimpleFreeFieldHRTF" if numSources == 2 else "GeneralTF"
     elif type == 'HRIR':
-        Obj.SOFAConventions = 'GeneralFIR'
-        Obj.DataType = 'FIR'
+        convention = "SimpleFreeFieldHRIR" if numSources == 2 else "GeneralFIR"
 
-    Obj.SOFAConventionsVersion = '1.0'
-    Obj.APIName = 'pysofaconventions'
-    Obj.APIVersion = '0.1'
-    Obj.AuthorContact = 'andres.perez@eurecat.org'
-    Obj.Comment = ''
+    sofa = sf.Sofa(convention)
 
-    Obj.License = 'No license provided, ask the author for permission'
-    Obj.RoomType = 'free field'
-    Obj.DateCreated = time.ctime(time.time())
-    Obj.DateModified = time.ctime(time.time())
-    Obj.Title = ''
-    Obj.Organization = ''
+    # write meta data
+    sofa.GLOBAL_ApplicationName = 'Mesh2HRTF'
+    sofa.GLOBAL_ApplicationVersion = Mesh2HRTF_version
+    sofa.GLOBAL_History = "numerically simulated data"
 
-    Obj.ApplicationName = 'Mesh2HRTF'
-    Obj.ApplicationVersoin = Mesh2HRTF_version
+    # Source and receiver data
+    sofa.SourcePosition = xyz[:, 1:4]
+    sofa.SourcePosition_Units = "meter"
+    sofa.SourcePosition_Type = "cartesian"
 
-    # Required Dimensions
+    sofa.ReceiverPosition = sourceCenter
+    sofa.ReceiverPosition_Units = "meter"
+    sofa.ReceiverPosition_Type = "cartesian"
 
-    m = evaluationGridsNumNodes
+    # HRTF/HRIR data
     if type == 'HRTF':
-        n = len(frequencies)
+        sofa.Data_Real = numpy.real(evaluationGrids[ii]["pressure"])
+        sofa.Data_Imag = numpy.imag(evaluationGrids[ii]["pressure"])
+        sofa.N = frequencies
     elif type == 'HRIR':
-        n = 2*len(frequencies)
-    r = numSources
-    e = 1
-    i = 1
-    c = 3
-    Obj.createDimension('M', m)
-    Obj.createDimension('N', n)
-    Obj.createDimension('E', e)
-    Obj.createDimension('R', r)
-    Obj.createDimension('I', i)
-    Obj.createDimension('C', c)
+        sofa.Data_IR = hrir
+        sofa.Data_SamplingRate = fs
+        sofa.Data_Delay = numpy.zeros((1, hrir.shape[2]))
 
-    # Required Variables
-
-    listenerPositionVar = Obj.createVariable('ListenerPosition', 'f8',
-                                             ('I', 'C'))
-    listenerPositionVar.Units = 'metre'
-    listenerPositionVar.Type = 'cartesian'
-    listenerPositionVar[:] = numpy.asarray([0, 0, 0])
-
-    emitterPositionVar = Obj.createVariable('EmitterPosition', 'f8',
-                                            ('E', 'C'))
-    emitterPositionVar.Units = 'metre'
-    emitterPositionVar.Type = 'cartesian'
-    emitterPositionVar[:] = numpy.asarray([0, 0, 0])
-
-    sourcePositionVar = Obj.createVariable('SourcePosition', 'f8', ('M', 'C'))
-    sourcePositionVar.Units = 'metre'
-    sourcePositionVar.Type = 'cartesian'
-    sourcePositionVar[:] = xyz[:, 1:4]
-
-    receiverPositionVar = Obj.createVariable('ReceiverPosition', 'f8',
-                                             ('R', 'C'))
-    receiverPositionVar.Units = 'metre'
-    receiverPositionVar.Type = 'cartesian'
-    receiverPositionVar[:] = sourceCenter
-
-    if type == 'HRTF':
-        pressure = evaluationGrids[ii]["pressure"]
-        dataReal = Obj.createVariable('Data.Real', 'f8', ('M', 'R', 'N'))
-        dataReal[:, :, :] = numpy.real(pressure)
-        dataReal.LongName = 'pressure'
-        dataReal.Units = 'pascal'
-        dataImag = Obj.createVariable('Data.Imag', 'f8', ('M', 'R', 'N'))
-        dataImag[:, :, :] = numpy.imag(pressure)
-        dataImag.LongName = 'pressure'
-        dataImag.Units = 'pascal'
-        dataN = Obj.createVariable('N', 'f8', ('N'))
-        dataN[:] = numpy.asarray(frequencies)
-        dataN.LongName = 'frequency'
-        dataN.Units = 'hertz'
-    elif type == 'HRIR':
-        samplingRateVar = Obj.createVariable('Data.SamplingRate', 'f8', ('I'))
-        samplingRateVar.Units = 'hertz'
-        samplingRateVar[:] = fs
-
-        # delayVar = Obj.createVariable('Data.Delay', 'f8', ('I','R'))
-        # delay = np.zeros((i,r))
-        # delayVar[:,:] = delay
-
-        dataIRVar = Obj.createVariable('Data.IR', 'f8', ('M', 'R', 'N'))
-        dataIRVar[:, :, :] = hrir
-
-    # Close it
-    Obj.close()
-
-    return
+    # Save
+    sf.write_sofa(path, sofa)
 
 
 def Output2HRTF_Load(foldername, filename):
@@ -495,7 +426,7 @@ def Output2HRTF_Load(foldername, filename):
                     idx2 = int(li[0])
                     if idx2 - idx1 == 1:
                         numHeaderlines_BE = ii - 2
-                        numDatalines = sum(1 for l in line) + 2
+                        numDatalines = sum(1 for ll in line) + 2
                         break
 
     # ------------------------------load data----------------------------------
