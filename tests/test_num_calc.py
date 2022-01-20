@@ -3,45 +3,9 @@ import subprocess
 import tempfile
 import shutil
 import os
-import hrtf_sofa_to_numpy as hstn
 import scipy.io
 import numpy
-import test_utils as tu
-
-
-def test_blender_export():
-    """ test the exportMesh2HRTF Blender plugin """
-
-    # create a temporary directory
-    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
-
-    # copy test directory
-    shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 'test_blender_export_project'),
-                    os.path.join(tmp.name, 'project'))
-    
-    blender_path = os.path.join('/home', 'matheson', 'Apps', 'blender-2.91.0',
-                                'blender')
-    tmp_path = os.path.join(tmp.name, 'project')
-    blender_file_path = os.path.join(tmp_path, '3dModel.blend')
-    python_file_path = os.path.join(tmp_path, 'blender_script.py')
-
-    # run exportMesh2HRTF from Blender with subprocess
-    subprocess.run([blender_path, blender_file_path,
-                    "--background", "--python",
-                    python_file_path],
-                   cwd=tmp_path, check=True, capture_output=True)
-
-    # run NumCalc with subprocess
-    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run(["NumCalc"], cwd=tmp_path, check=True, capture_output=True)
-
-    # run Output2HRTF.py
-    tmp_path = os.path.join(tmp.name, "project")
-    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True,
-                   capture_output=True)
-
-# subprocess.run(["/home/matheson/Apps/blender-2.91.0/blender 3dModel.blend --background --python blender_script.py"], cwd=tmp_path)
+import utils
 
 
 def test_build():
@@ -61,7 +25,8 @@ def test_build():
 @pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
                                             ("point", (40, -45))])
 @pytest.mark.parametrize("bem_method", [("ml-fmm-bem"), ("fmm-bem"), ("bem")])
-def test_numcalc(boundary_condition, source, bem_method, range_a, range_b=(-1, 1)):
+def test_against_reference(boundary_condition, source, bem_method,
+                           range_a, range_b=(-1, 1)):
     """
     test if NumCalc and Output2HRTF.py generate correct output by comparing to
     analytical solution
@@ -94,8 +59,8 @@ def test_numcalc(boundary_condition, source, bem_method, range_a, range_b=(-1, 1
     # Verify
 
     # load HRTF data from simulation as numpy
-    hrtf_sim = hstn.hrtf_sofa_to_numpy(os.path.join(tmp_path, "Output2HRTF",
-                                                    "HRTF_HorPlane.sofa"))
+    hrtf_sim = utils.hrtf_sofa_to_numpy(
+        os.path.join(tmp_path, "Output2HRTF", "HRTF_HorPlane.sofa"))
     # normalize because only relative differences of interest
     hrtf_sim = hrtf_sim[:, :, 0]/numpy.mean(
                 numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]))
@@ -116,39 +81,6 @@ def test_numcalc(boundary_condition, source, bem_method, range_a, range_b=(-1, 1
         numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
 
     xyz = mat_ana["XYZ"]
-    tu.scatter_reference_vs_analytic(hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
-                                     range_a, range_b,
-                                     boundary_condition, source, bem_method)
-
-
-def test_two_sources():
-    """
-    test Output2HRTF.py handling two sound sources ("Both ears" condition)
-    """
-    # Setup
-
-    # create temporary directory
-    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
-
-    # copy test directory
-    shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 'test_2sources_project'),
-                    os.path.join(tmp.name, 'project'))
-
-    # Exercise
-
-    # # run NumCalc with subprocess
-    # for iSource in (1, 2):
-    #     tmp_path = os.path.join(tmp.name, "project", "NumCalc", f"source_{iSource+1}")
-    #     subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
-
-    # run Output2HRTF.py
-    tmp_path = os.path.join(tmp.name, "project")
-    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
-
-# Only used for debugging
-# test_blender_export()
-# test_build()
-# test_numcalc("rigid", "point", "ml-fmm-bem", (10, -20), range_b=(-1, 1))
-# test_two_sources()
-
+    utils.scatter_reference_vs_analytic(
+        hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
+        range_a, range_b, boundary_condition, source, bem_method)

@@ -1,13 +1,44 @@
-# %%
-from matplotlib import cm
-import scipy.io
+"""Utilities to be used in testing"""
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import os
+import pysofaconventions as pysofa
 
 # remove this if used in test file
 # %matplotlib qt
+
+
+def hrtf_sofa_to_numpy(path):
+    """
+    Read SOFA file with data type TF and return complex spectrum
+
+    adapted from Andrés Pérez-López: plotListenHRTF.py
+    """
+
+    sofa = pysofa.SOFAFile(path, 'r')
+
+    # File is actually not valid, but we can forgive them
+    print("\n")
+    print("File is valid:", sofa.isValid())
+
+    # Convention is SimpleFreeFieldHRIR
+    print("\n")
+    print("SOFA Convention:", sofa.getGlobalAttributeValue('SOFAConventions'))
+
+    # Let's see the dimensions:
+    print("\n")
+    print("Dimensions:")
+    sofa.printSOFADimensions()
+
+    # Read the data
+    dataReal = sofa.getVariableValue('Data.Real')
+    dataReal = np.asarray(dataReal)
+    dataImag = sofa.getVariableValue('Data.Imag')
+    dataImag = np.asarray(dataImag)
+    # and get the HRTF associated with m=0
+    hrtf = np.array(dataReal+1j*dataImag, dtype=complex)
+
+    return hrtf
 
 
 def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
@@ -51,7 +82,8 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
         ax.set_title(title)
 
     plt.tight_layout()
-    plt.savefig(os.path.dirname(__file__) + "/test_numcalc_analytical_references/comparisonplot_" +
+    plt.savefig(os.path.dirname(__file__) +
+                "/test_numcalc_analytical_references/comparisonplot_" +
                 boundary_condition+"_"+source+"_"+bem_method+".jpg")
 
 
@@ -71,5 +103,3 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
 
 # save, e.g. to test_numcalc_analytical_references
 # plt.savefig("something.pdf")
-
-# %%
