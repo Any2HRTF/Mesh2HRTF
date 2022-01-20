@@ -301,16 +301,17 @@ def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
 def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
     """Compute HRIR from HRTF by means of the inverse Fourier transform"""
     # check if the frequency vector has the correct format
-    if not all(numpy.abs(frequencies[0] - numpy.diff(frequencies)) < .1):
-        raise ValueError(('The frequency vector must be if the format '
-                          'a:a:fs/2, with a>0 and fs the sampling rate.'))
+    if any(numpy.abs(numpy.diff(frequencies, 2)) > .1) or frequencies[0] < .1:
+        raise ValueError(
+            ('The frequency vector must go from f_1 > 0 to'
+             'f_2 (half the sampling rate) in equidistant steps.'))
 
     if not reference:
         raise ValueError('HRIRs can only be computet if reference=true')
 
     pressure = evaluationGrids[ii]["pressure"]
 
-    fs = 2*frequencies[-1]
+    fs = round(2*frequencies[-1])
 
     # add 0 Hz bin
     pressure = numpy.concatenate((numpy.ones((pressure.shape[0],
