@@ -79,6 +79,9 @@ def Output2HRTF_Main(
     if not os.path.exists(os.path.join(os.getcwd(), 'Output2HRTF')):
         os.makedirs(os.path.join(os.getcwd(), 'Output2HRTF'))
 
+    # get the number of frequency steps
+    numFrequencies = get_number_of_frequencies('Info.txt')
+
     # get the evaluation grids
     evaluationGrids, evaluationGridsNumNodes = \
         read_nodes_and_elements(data='EvaluationGrids')
@@ -109,7 +112,8 @@ def Output2HRTF_Main(
     # del source, file, description, computationTime
 
     # Load ObjectMesh data
-    pressure, frequencies = read_pressure(numSources, data='pBoundary')
+    pressure, frequencies = read_pressure(
+        numSources, numFrequencies, data='pBoundary')
 
     print('\nSave ObjectMesh data ...')
     cnt = 0
@@ -136,7 +140,8 @@ def Output2HRTF_Main(
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
 
-        pressure, frequencies = read_pressure(numSources, data='pEvalGrid')
+        pressure, frequencies = read_pressure(
+            numSources, numFrequencies, data='pEvalGrid')
 
     # save to struct
     cnt = 0
@@ -205,7 +210,7 @@ def read_nodes_and_elements(data):
     return grids, gridsNumNodes
 
 
-def read_pressure(numSources, data):
+def read_pressure(numSources, numFrequencies, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
     pressure = []
 
@@ -217,7 +222,8 @@ def read_pressure(numSources, data):
         print('\n    Source %d ...' % (source+1))
 
         tmpFilename = os.path.join('NumCalc', f'source_{source+1}', 'be.out')
-        tmpPressure, frequencies = Output2HRTF_Load(tmpFilename, data)
+        tmpPressure, frequencies = Output2HRTF_Load(
+            tmpFilename, data, numFrequencies)
 
         print('...')
 
@@ -375,7 +381,7 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     sf.write_sofa(path, sofa)
 
 
-def Output2HRTF_Load(foldername, filename):
+def Output2HRTF_Load(foldername, filename, numFrequencies):
     """
     Load results of the BEM calculation.
 
@@ -395,6 +401,8 @@ def Output2HRTF_Load(foldername, filename):
             The sound pressure on the evaulation grid
         vEvalGrid
             The sound velocity on the evaluation grid
+    numFrequencies : int
+        the number of simulated frequencies
 
     Returns
     -------
@@ -403,13 +411,6 @@ def Output2HRTF_Load(foldername, filename):
     frequencies : numpy array
         The frequencies in Hz
     """
-
-    # -----------------------check number of freq bins-------------------------
-    for ii in range(1, 1_000_000):
-        current_folder = os.path.join(foldername, 'be.%d' % ii, filename)
-        if not os.path.exists(current_folder):
-            numFrequencies = ii-1
-            break
 
     # ---------------------check number of header and data lines---------------
 
@@ -457,6 +458,35 @@ def Output2HRTF_Load(foldername, filename):
             frequency[ii] = numpy.nan
 
     return data, frequency
+
+
+def get_number_of_frequencies(path):
+    """
+    Read number of simulated frequency steps from Info.txt
+
+    Parameters
+    ----------
+    path : str
+        path of Info.txt
+
+    Returns
+    -------
+    frequency_steps : int
+        number of simulated frequency steps
+    """
+
+    key = 'Frequency Steps: '
+
+    # read info file
+    with open(path) as f:
+        lines = f.readlines()
+
+    # find line containing the number of frequency steps
+    for line in lines:
+        if line.startswith(key):
+            break
+
+    return int(line.strip()[len(key):])
 
 
 def read_computation_time(filename):
