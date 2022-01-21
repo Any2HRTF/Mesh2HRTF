@@ -376,7 +376,7 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     elif type == 'HRIR':
         sofa.Data_IR = hrir
         sofa.Data_SamplingRate = fs
-        sofa.Data_Delay = numpy.zeros((1, hrir.shape[2]))
+        sofa.Data_Delay = numpy.zeros((1, hrir.shape[1]))
 
     # Save
     sf.write_sofa(path, sofa)
