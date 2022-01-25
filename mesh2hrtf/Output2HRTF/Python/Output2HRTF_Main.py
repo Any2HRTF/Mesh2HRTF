@@ -165,8 +165,7 @@ def Output2HRTF_Main(
 
     for ii in range(len(evaluationGrids)):
         write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
-                      evaluationGridsNumNodes, frequencies,
-                      numSources, sourceCenter, type='HRTF')
+                      frequencies, numSources, sourceCenter, type='HRTF')
 
     # Save impulse responses as SOFA file
     if computeHRIRs:
@@ -177,9 +176,8 @@ def Output2HRTF_Main(
             hrir, fs = compute_HRIR(ii, evaluationGrids, frequencies,
                                     reference, speedOfSound)
 
-            write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
-                          evaluationGridsNumNodes, frequencies, numSources,
-                          sourceCenter, fs, hrir, type='HRIR')
+            write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version, frequencies,
+                          numSources, sourceCenter, fs, hrir, type='HRIR')
 
     print('Done\n')
 
@@ -332,8 +330,8 @@ def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
 
 
 def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
-                  evaluationGridsNumNodes, frequencies, numSources,
-                  sourceCenter, fs=None, hrir=None, type='HRTF'):
+                  frequencies, numSources, sourceCenter, fs=None, hrir=None,
+                  type='HRTF'):
     """Write complex pressure or impulse responses as SOFA file."""
 
     xyz = evaluationGrids[ii]["nodes"]
