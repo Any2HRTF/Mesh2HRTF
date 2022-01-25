@@ -1,0 +1,18 @@
+#####################################
+######## General information ########
+#####################################
+
+Program: Mesh2HRTF 1.0.0
+Title: Head-Related Transfer Functions
+Source type: Right ear
+Evaluation Grids:
+    /home/matheson/Apps/mesh2hrtf-git/mesh2hrtf/Mesh2Input/EvaluationGrids/HorPlane
+
+#####################################
+####### Frequency information #######
+#####################################
+
+Minimum evaluated Frequency: 4000.000000
+Highest evaluated Frequency: 4000.000000
+Frequency Stepsize: 0.000000
+Frequency Steps: 1
