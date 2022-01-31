@@ -15,31 +15,31 @@
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 %
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
-% Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin)	
+% Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin), Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
 
-function Output2HRTF_Main(filepath1, version, sourceType, ...
-            numSources, unitFactor, reference, ...
-            computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition, ...
-            sourceYPosition, sourceZPosition)
-%OUTPUT2HRTF_MAIN
-%   []=Output2HRTF_Main(cpusAndCores,objectMeshesUsed,reciprocity,
-%   receiverPositions,receiverArea,reference,speedOfSound,densityOfAir) calculates
-%   all relevant data after the NumCalc calculation and saves the results.
+function Output2HRTF_Main(Mesh2HRTF_version, ...
+  sourceType, numSources, sourceCenter, sourceArea, ...
+  reference, computeHRIRs, ...
+  speedOfSound, densityOfAir)
+%   [] = OUTPUT2HRTF_MAIN(Mesh2HRTF_version, ...
+%                         sourceType, numSources, sourceCenter, sourceArea, ...
+%                         reference, computeHRIRs, ...
+%                         speedOfSound, densityOfAir)
 %
 %   Input:
-%       cpusAndCores:
-% 
-%       reciprocity:
-%
-%       receiverPositions:
-%
-%       microphoneArea: are of the mesh elements that were used as sound
-%       source in reciprocal calculation in square meters
-%
-%       reference: 'true' complex pressure at the evaluation grid is
-%       devided by a point source in the origin of the coordinate system.
-%       This is the calssical HRTF definition (pressure st the ear divided
-%       by pressure at the center of the head with the head being absent)
+%       Mesh2HRTF_version ... mesh2hrtf version
+%       sourceType .......... 'Point source', 'Left ear', 'Right ear', 'Both ears'
+%       numSources .......... either 1 or 2 [1x1]
+%       sourceCenter ........ center position of the sound sources, position [numSourcesx3]
+%       sourceArea .......... area of the mesh elements that were used as sound
+%                             source in reciprocal calculation in square meters
+%       reference ........... true complex pressure at the evaluation grid is
+%                             divided by a point source in the origin of the coordinate system.
+%                             This is the classical HRTF definition (pressure at the ear divided
+%                             by pressure at the center of the head with the head being absent)
+%       computeHRIRs ........ include the conversion to HRIRs [true, false]
+%       speedOfSound ........ speed of sound, constant [1x1]
+%       densityOfAir ........ density of medium, constant [1x1]
 
 %% ----------------------------load meta data------------------------------
 % output directory
