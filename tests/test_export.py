@@ -24,12 +24,13 @@ def test_blender_export():
         tmp_path = os.path.join(tmp.name, 'project')
         blender_file_path = os.path.join(tmp_path, '3d Model.blend')
         python_file_path = os.path.join(tmp_path, 'blender_script.py')
+        addon_path = '/home/matheson/Apps/blender-2.91.0/2.91/scripts/addons'
 
         # Exercise
 
         # run exportMesh2HRTF from Blender with subprocess
         subprocess.run([blender_path[i], blender_file_path,
-                        "--background", "--python", python_file_path],
+                        "--background", "--python", python_file_path, addon_path],
                        cwd=tmp_path, check=True, capture_output=True)
 
         # # run NumCalc with subprocess

@@ -1,19 +1,33 @@
 import bpy
 import os
+import sys
+
+if len(sys.argv) > 2:
+    print('You have specified too many arguments')
+    sys.exit()
+
+if len(sys.argv) < 2:
+    print('You need to specify the Blender addon path')
+    sys.exit()
 
 # # remove old data
 # if os.path.exists(dir_export):
 #     shutil.rmtree(dir_export)
 # os.mkdir(dir_export)
 
-
 # Define paths
 exportPath = os.getcwd()
 mesh2HRTFpath = os.path.join(os.getcwd(), "..", "..", "mesh2hrtf")
 eval_grid = 'HorPlane'
 # os.path.join(os.getcwd(), "..", "export_project_test", "Evaluation Grids", "HorPlane")
-addonPath = '/home/matheson/Apps/blender-2.91.0/2.91/scripts/addons'
-addonFile = '/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf/Mesh2Input/exportMesh2HRTF.py'
+addonPath = sys.argv[1]
+if not os.path.isdir(addonPath):
+    print('The Blender addon path specified does not exist')
+    sys.exit()
+# '/home/matheson/Apps/blender-2.91.0/2.91/scripts/addons'
+addonFile = os.path.join(os.getcwd(), "..", "..", "mesh2hrtf", "Mesh2Input",
+                         "exportMesh2HRTF.py")
+# '/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf/Mesh2Input/exportMesh2HRTF.py'
 
 # re-install export addon
 bpy.context.preferences.filepaths.script_directory = addonPath
