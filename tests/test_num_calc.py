@@ -10,7 +10,7 @@ import utils
 create_baseline = False
 
 
-def test_build():
+def test_build_numcalc():
     """ test if make for NumCalc works """
     
     # Setup
@@ -34,8 +34,8 @@ def test_build():
 @pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
                                             ("point", (40, -45))])
 @pytest.mark.parametrize("bem_method", [("ml-fmm-bem"), ("fmm-bem"), ("bem")])
-def test_against_reference(boundary_condition, source, bem_method,
-                           range_a, range_b=(-1, 1)):
+def test_numcalc_boundary_conditions_sources_types_bem_methods(
+        boundary_condition, source, bem_method, range_a, range_b=(-1, 1)):
     """
     Test if NumCalc and Output2HRTF.py generate correct output by comparing to
     analytical solutions. Tests different single source types, boundary
@@ -102,7 +102,7 @@ def test_against_reference(boundary_condition, source, bem_method,
                          # ("bothears", (40, -40))
                          ])
 @pytest.mark.parametrize("bem_method", [("ml-fmm-bem")])
-def test_ears(boundary_condition, source, bem_method,
+def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
               range_a, range_b=(-1, 1)):
     """
     Test if NumCalc and Output2HRTF.py generate correct output by comparing to

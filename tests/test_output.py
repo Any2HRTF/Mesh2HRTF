@@ -4,7 +4,7 @@ import shutil
 import os
 
 
-def test_two_sources():
+def test_output2hrtf_two_sources():
     """
     test Output2HRTF.py handling two sound sources ("Both ears" condition)
     """
