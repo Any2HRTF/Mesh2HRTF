@@ -26,9 +26,14 @@ function Output2HRTF_Main(Mesh2HRTF_version, ...
 %                         reference, computeHRIRs, ...
 %                         speedOfSound, densityOfAir)
 %
+%   Process NumCalc output and write data to disk.
+%   All parameters are written to Output2HRTF.m upon exporting a Mesh2HRTF
+%   project from Blender. This function will thus usually be called from an
+%   Output2HRTF.m file.
+%
 %   Input:
 %       Mesh2HRTF_version ... mesh2hrtf version
-%       sourceType .......... 'Point source', 'Left ear', 'Right ear', 'Both ears'
+%       sourceType .......... 'Left ear', 'Right ear', 'Both ears', 'Point source', 'Plane wave'
 %       numSources .......... either 1 or 2 [1x1]
 %       sourceCenter ........ center position of the sound sources, position [numSourcesx3]
 %       sourceArea .......... area of the mesh elements that were used as sound
@@ -38,17 +43,14 @@ function Output2HRTF_Main(Mesh2HRTF_version, ...
 %                             This is the classical HRTF definition (pressure at the ear divided
 %                             by pressure at the center of the head with the head being absent)
 %       computeHRIRs ........ include the conversion to HRIRs [true, false]
-%       speedOfSound ........ speed of sound, constant [1x1]
-%       densityOfAir ........ density of medium, constant [1x1]
+%       speedOfSound ........ speed of sound in m/s, constant [1x1]
+%       densityOfAir ........ density of medium in kg/m^3, constant [1x1]
 
 %% ----------------------------load meta data------------------------------
 % output directory
 if ~exist(fullfile(pwd, 'Output2HRTF'), 'dir')
     mkdir(fullfile(pwd, 'Output2HRTF'))
 end
-
-% number of ears
-ears=max(unique(cpusAndCores));
 
 % get the evaluation grids
 evaluationGrids = dir('EvaluationGrids');
@@ -85,7 +87,7 @@ clear ii tmpNodes tmpElements
 
 %% Read computational effort
 fprintf('\nLoading computational effort data ...');
-for ch=1:ears
+for ch=1:numSources
     computationTime{ch}=[];
     fprintf(['\n    Ear ' num2str(ch) ' ...'])
     for ii=1:size(cpusAndCores,1)
@@ -108,7 +110,7 @@ clear ch ii jj description computationTime
 
 %% Load ObjectMesh data
 fprintf('\nLoading ObjectMesh data ...');
-for ch=1:ears
+for ch=1:numSources
     fprintf(['\n    Ear ' num2str(ch) ' ...'])
     for ii=1:size(cpusAndCores,1)
         fprintf(['\n        CPU ' num2str(ii) ': ']);
@@ -153,7 +155,7 @@ clear pressure nodes elements frequencies ii jj cnt ch idx element_data
 %% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
     fprintf('\nLoading data for the evaluation grids ...');
-    for ch=1:ears
+    for ch=1:numSources
         fprintf(['\n    Ear ' num2str(ch) ' ...'])
         for ii=1:size(cpusAndCores,1)
             fprintf(['\n        CPU ' num2str(ii) ': ']);
