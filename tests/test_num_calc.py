@@ -34,7 +34,7 @@ def test_build_numcalc():
 @pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
                                             ("point", (40, -45))])
 @pytest.mark.parametrize("bem_method", [("ml-fmm-bem"), ("fmm-bem"), ("bem")])
-def test_numcalc_boundary_conditions_sources_types_bem_methods(
+def test_numcalc_boundary_conditions_sources_types_numerical_methods(
         boundary_condition, source, bem_method, range_a, range_b=(-1, 1)):
     """
     Test if NumCalc and Output2HRTF.py generate correct output by comparing to

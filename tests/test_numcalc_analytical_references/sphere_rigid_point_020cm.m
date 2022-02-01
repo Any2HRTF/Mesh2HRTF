@@ -77,4 +77,4 @@ p_total = p_i + p_s;
 % align grid coordinates with simulation results
 % XYZ(:,1:2) = [XYZ(:,2), -XYZ(:,1)];
 
-save('sphere_rigid_point_020cm', 'p_total', 'f_Hz', 'c', 'a', 'R', 'AZ', 'XYZ')
+save('ref_rigid_point', 'p_total', 'f_Hz', 'c', 'a', 'R', 'AZ', 'XYZ')

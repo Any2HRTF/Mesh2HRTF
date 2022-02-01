@@ -62,4 +62,4 @@ p_total = P0 * sum(pre_factor .* radial_term .* legendre_term, 2);
 % align grid coordinates with simulation results
 XYZ(:,1:2) = [XYZ(:,2), -XYZ(:,1)];
 
-save('sphere_soft_plane', 'p_total', 'f_Hz', 'c', 'a', 'R', 'AZ', 'XYZ')
+save('ref_soft_plane', 'p_total', 'f_Hz', 'c', 'a', 'R', 'AZ', 'XYZ')
