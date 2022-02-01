@@ -1,11 +1,25 @@
 import bpy
 import os
 
-# Mesh2HRTF export paths
+# # remove old data
+# if os.path.exists(dir_export):
+#     shutil.rmtree(dir_export)
+# os.mkdir(dir_export)
+
+
+# Define paths
 exportPath = os.getcwd()
 mesh2HRTFpath = os.path.join(os.getcwd(), "..", "..", "mesh2hrtf")
 eval_grid = 'HorPlane'
 # os.path.join(os.getcwd(), "..", "export_project_test", "Evaluation Grids", "HorPlane")
+addonPath = '/home/matheson/Apps/blender-2.91.0/2.91/scripts/addons'
+addonFile = '/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf/Mesh2Input/exportMesh2HRTF.py'
+
+# re-install export addon
+bpy.context.preferences.filepaths.script_directory = addonPath
+bpy.utils.refresh_script_paths()
+bpy.ops.preferences.addon_install(overwrite=True, filepath=addonFile)
+bpy.ops.preferences.addon_enable(module='exportMesh2HRTF')
 
 # switch to object mode
 bpy.ops.object.mode_set(mode='OBJECT', toggle=False)

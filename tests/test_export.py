@@ -22,22 +22,21 @@ def test_blender_export():
                         os.path.join(tmp.name, 'project'))
 
         tmp_path = os.path.join(tmp.name, 'project')
-        blender_file_path = os.path.join(tmp_path, '3dModel.blend')
+        blender_file_path = os.path.join(tmp_path, '3d Model.blend')
         python_file_path = os.path.join(tmp_path, 'blender_script.py')
 
         # Exercise
 
         # run exportMesh2HRTF from Blender with subprocess
         subprocess.run([blender_path[i], blender_file_path,
-                        "--background", "--python",
-                        python_file_path],
-                    cwd=tmp_path, check=True, capture_output=True)
+                        "--background", "--python", python_file_path],
+                       cwd=tmp_path, check=True, capture_output=True)
 
-        # run NumCalc with subprocess
+        # # run NumCalc with subprocess
         # tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
         # subprocess.run(["NumCalc"], cwd=tmp_path, check=True, capture_output=True)
 
-        # run Output2HRTF.py
+        # # run Output2HRTF.py
         # tmp_path = os.path.join(tmp.name, "project")
         # subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True,
         #                capture_output=True)

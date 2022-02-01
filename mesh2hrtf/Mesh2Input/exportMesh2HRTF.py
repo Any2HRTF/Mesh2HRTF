@@ -101,7 +101,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'Mesh2Input' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"/path/to/mesh2hrtf",
+        default=r"/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -275,7 +275,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              speedOfSound='346.18',
              densityOfMedium='1.1839',
              unit='mm',
-             programPath="path/to/mesh2hrtf",
+             programPath="/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf",
              sourceType='Both ears'
              ):
         """Export Mesh2HRTF project."""
