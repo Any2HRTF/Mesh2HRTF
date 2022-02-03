@@ -80,7 +80,7 @@ for ii=1:length(objectMeshes)
     objectMeshesNumNodes = objectMeshesNumNodes + objectMeshes(ii).num_nodes;
 end
 
-% get number of frequency bins
+% get number of frequencies
 tmpFrequencies=fileread('Info.txt');
 [lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: ).\n');
 numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
@@ -107,6 +107,16 @@ for ch=1:numSources
             clear tmp
         end
         fprintf('...');
+    end
+    
+    % check for folder be.out and read computation time from every NC*.out file
+    boundaryElements = dir('be.out');
+    for ii = 1:size(boundaryElements, 1)
+      % print to console which file is being processed
+      fprintf(['Reading ', boundaryElements(ii).name]);
+      % read computation time
+      computationTime{ch}=[computationTime{ch}; ...
+        Output2HRTF_ReadComputationTime(boundaryElements(ii).name)];
     end
 end
 
