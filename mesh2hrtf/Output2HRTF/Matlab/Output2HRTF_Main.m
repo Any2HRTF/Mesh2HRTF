@@ -32,7 +32,7 @@ function Output2HRTF_Main(Mesh2HRTF_version, ...
 %   Output2HRTF.m file.
 %
 %   Input:
-%       Mesh2HRTF_version ... mesh2hrtf version
+%       Mesh2HRTF_version ... mesh2hrtf version [string]
 %       sourceType .......... 'Left ear', 'Right ear', 'Both ears', 'Point source', 'Plane wave'
 %       numSources .......... either 1 or 2 [1x1]
 %       sourceCenter ........ center position of the sound sources, position [numSourcesx3]
@@ -70,9 +70,6 @@ end
 objectMeshes = dir('ObjectMeshes');
 objectMeshes = objectMeshes(~cellfun(@(x) strncmp(x, '.', 1), {objectMeshes.name}));
 
-% evaluationGridNodes=[];
-% evaluationGridElements=[];
-
 objectMeshesNumNodes = 0;
 for ii=1:length(objectMeshes)
     tmpNodes=importdata(fullfile('ObjectMeshes', objectMeshes(ii).name, 'Nodes.txt'),' ',1);
@@ -83,7 +80,16 @@ for ii=1:length(objectMeshes)
     objectMeshesNumNodes = objectMeshesNumNodes + objectMeshes(ii).num_nodes;
 end
 
-clear ii tmpNodes tmpElements
+% get number of frequency bins
+tmpFrequencies=fileread('Info.txt');
+[lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: ).\n');
+numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
+
+if isnan(str2double)
+  error('Info.txt does not contain information about frequency steps. Please specify.')
+end
+
+clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
 
 %% Read computational effort
 fprintf('\nLoading computational effort data ...');
