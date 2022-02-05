@@ -93,36 +93,24 @@ clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
 
 %% Read computational effort
 fprintf('\nLoading computational effort data ...');
-for ch=1:numSources
-    computationTime{ch}=[];
-    fprintf(['\n    Ear ' num2str(ch) ' ...'])
-    for ii=1:size(cpusAndCores,1)
-        fprintf(['\n        CPU ' num2str(ii) ': ']);
-        for jj=1:size(cpusAndCores,2)
-            if cpusAndCores(ii,jj)==ch
-                fprintf([num2str(jj) ', ']);
-                tmp=Output2HRTF_ReadComputationTime(['NumCalc' filesep 'CPU_' num2str(ii) '_Core_' num2str(jj) filesep 'NC.out']);
-                computationTime{ch}=[computationTime{ch}; tmp];
-            end
-            clear tmp
-        end
-        fprintf('...');
-    end
-    
-    % check for folder be.out and read computation time from every NC*.out file
-    boundaryElements = dir('be.out');
-    for ii = 1:size(boundaryElements, 1)
-      % print to console which file is being processed
-      fprintf(['Reading ', boundaryElements(ii).name]);
+% check for folder be.out and read computation time from every NC*.out file
+for ii = 1:numSources
+  computationTime{ii} = [];
+  boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii), filesep, 'be.out']);
+  boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
+    % print to console which file is being processed
+    for jj = 1:size(boundaryElements, 1)
+      fprintf(['Reading ', boundaryElements(jj).name]);
       % read computation time
-      computationTime{ch}=[computationTime{ch}; ...
-        Output2HRTF_ReadComputationTime(boundaryElements(ii).name)];
+      tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', num2str(ii), ...
+        filesep, 'be.out', filesep, boundaryElements(jj).name]);
+      computationTime{ii}=[computationTime{ii}; tmp];
     end
 end
 
 description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total'};
 save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computationTime', '-v6');
-clear ch ii jj description computationTime
+clear ii jj description computationTime tmp
 
 %% Load ObjectMesh data
 fprintf('\nLoading ObjectMesh data ...');
