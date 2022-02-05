@@ -96,14 +96,14 @@ fprintf('\nLoading computational effort data ...');
 % check for folder be.out and read computation time from every NC*.out file
 for ii = 1:numSources
   computationTime{ii} = [];
-  boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii), filesep, 'be.out']);
+  boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii)]);
   boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
     % print to console which file is being processed
     for jj = 1:size(boundaryElements, 1)
       fprintf(['Reading ', boundaryElements(jj).name]);
       % read computation time
-      tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', num2str(ii), ...
-        filesep, 'be.out', filesep, boundaryElements(jj).name]);
+      tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+        num2str(ii), filesep, boundaryElements(jj).name]);
       computationTime{ii}=[computationTime{ii}; tmp];
     end
 end
@@ -114,30 +114,24 @@ clear ii jj description computationTime tmp
 
 %% Load ObjectMesh data
 fprintf('\nLoading ObjectMesh data ...');
-for ch=1:numSources
-    fprintf(['\n    Ear ' num2str(ch) ' ...'])
-    for ii=1:size(cpusAndCores,1)
-        fprintf(['\n        CPU ' num2str(ii) ': ']);
-        for jj=1:size(cpusAndCores,2)
-            if cpusAndCores(ii,jj)==ch
-                fprintf([num2str(jj) ', ']);
-                [tmpData,tmpFrequencies]=Output2HRTF_Load(['NumCalc' filesep 'CPU_' num2str(ii) '_Core_' num2str(jj) filesep 'be.out' filesep],'pBoundary');
-                if exist('tmpPressure','var')
-                    tmpPressure=[tmpPressure; tmpData];
-                    frequencies=[frequencies; tmpFrequencies];
-                else
-                    tmpPressure=tmpData;
-                    frequencies=tmpFrequencies;
-                end
-                clear tmpData tmpFrequencies
-            end
-        end
-        fprintf('...');
+for ii=1:numSources
+  for jj=1:size(boundaryElements,1)
+    [tmpData,tmpFrequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+        filesep, 'be.out', filesep, boundaryElements(jj).name, 'pBoundary']);
+    if exist('tmpPressure','var')
+      tmpPressure=[tmpPressure; tmpData];
+      frequencies=[frequencies; tmpFrequencies];
+    else
+      tmpPressure=tmpData;
+      frequencies=tmpFrequencies;
     end
-    [frequencies,idx]=sort(frequencies);
-    pressure{ch}=tmpPressure(idx,:);
-    
-    clear tmpPressure tmpPhase
+    clear tmpData tmpFrequencies
+    fprintf('...');
+end
+[frequencies,idx]=sort(frequencies);
+pressure{ch}=tmpPressure(idx,:);
+
+clear tmpPressure tmpPhase
 end
 
 fprintf('\nSave ObjectMesh data ...');
