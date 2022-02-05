@@ -85,7 +85,7 @@ tmpFrequencies=fileread('Info.txt');
 [lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: ).\n');
 numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
 
-if isnan(str2double)
+if isnan(numFreq)
   error('Info.txt does not contain information about frequency steps. Please specify.')
 end
 
