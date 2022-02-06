@@ -100,11 +100,13 @@ for ii = 1:numSources
   boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
     % print to console which file is being processed
     for jj = 1:size(boundaryElements, 1)
-      fprintf(['Reading ', boundaryElements(jj).name]);
-      % read computation time
-      tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
-        num2str(ii), filesep, boundaryElements(jj).name]);
-      computationTime{ii}=[computationTime{ii}; tmp];
+      if ~isempty(regexp(boundaryElements(jj).name, '(NC.out)'))
+        fprintf(['Reading ', boundaryElements(jj).name]);
+        % read computation time
+        tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+          num2str(ii), filesep, boundaryElements(jj).name]);
+        computationTime{ii}=[computationTime{ii}; tmp];
+      end
     end
 end
 
