@@ -238,8 +238,8 @@ for ii = 1:numel(evaluationGrids)
     filename = fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']);
     if exist(filename, 'file')
         % if yes, delete and write new object, but ask user
-        prompt = [filename, ' already exists. Replace object? [y/n]'];
-        replace_obj = input(prompt);
+        prompt = [filename, ' already exists. Replace object? [y/n]\n'];
+        replace_obj = input(prompt, 's');
         if strcmp(replace_obj, 'y') || strcmp(replace_obj, 'yes')
             delete filename
         elseif strcmp(replace_obj, 'n') || strcmp(replace_obj, 'no')
@@ -292,7 +292,7 @@ for ii = 1:numel(evaluationGrids)
     SOFAsave(fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']),Obj);
 end
 
-clear Obj ii xyz pressure
+clear Obj ii xyz pressure prompt replace_Obj
 
 
 %% Save time data data as SOFA file
@@ -306,13 +306,33 @@ if computeHRIRs
             error('The frequency vector must start at a frequency > 0.1 and continue in equidistant steps to the end.')
         end
         
+        % check if reference exists
         if ~reference
             error('HRIRs can only be computed if refernce=true')
         end
         
         xyz = evaluationGrids(ii).nodes;
         pressure = evaluationGrids(ii).pressure;
-        fs = 2*frequencies(end);
+        
+        prompt = ['The default sampling frequency is twice the highest occuring frequency. ', ...
+            'In this case fs = ', num2str(2*frequencies(end)), '. \n', ...
+            'Do you want to specify a different sampling frequency? [y/n]\n'];
+        replace_fs = input(prompt, 's');
+        if strcmp(replace_fs, 'y') || strcmp(replace_fs, 'yes')
+            clear prompt
+            prompt = 'Please specify the sampling frequency in Hz: ';
+            fs = input(prompt);
+            if fs < 0
+                error('The sampling frequency has to be positive.');
+            elseif fs < frequencies(end)
+                warning('The sampling frequency is lower than the highest frequency in the signal. Further processing will potentially lead to aliasing.');
+            end
+            clear prompt
+        elseif strcmp(replace_fs, 'n') || strcmp(replace_fs, 'no')
+            fs = 2*frequencies(end);
+        else
+            error('Invalid input. Writing HRIR to SOFA object aborted.');
+        end
         
         % add 0 Hz bin
         pressure = [ones(1, size(pressure,2), size(pressure,3));
