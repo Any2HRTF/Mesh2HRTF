@@ -52,7 +52,10 @@ if ~exist(fullfile(pwd, 'Output2HRTF'), 'dir')
     mkdir(fullfile(pwd, 'Output2HRTF'))
 end
 
+fprintf('Load meta data ...\n');
+
 % get the evaluation grids
+fprintf('Get evaluation grids ...\n');
 evaluationGrids = dir('EvaluationGrids');
 evaluationGrids = evaluationGrids(~cellfun(@(x) strncmp(x, '.', 1), {evaluationGrids.name}));
 
@@ -67,6 +70,7 @@ for ii=1:length(evaluationGrids)
 end
 
 % get the object mesh
+fprintf('Get object meshes ...\n');
 objectMeshes = dir('ObjectMeshes');
 objectMeshes = objectMeshes(~cellfun(@(x) strncmp(x, '.', 1), {objectMeshes.name}));
 
@@ -81,12 +85,13 @@ for ii=1:length(objectMeshes)
 end
 
 % get number of frequencies
+fprintf('Get frequencies ...\n');
 tmpFrequencies=fileread('Info.txt');
 [lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: )\w*\n');
 numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
 
 if isnan(numFreq)
-    error('Info.txt does not contain information about frequency steps. Please specify.')
+    error('Info.txt does not contain information about frequency steps. Please specify.\n')
 end
 
 clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
@@ -101,7 +106,7 @@ for ii = 1:numSources
     % print to console which file is being processed
     for jj = 1:size(boundaryElements, 1)
         if ~isempty(regexp(boundaryElements(jj).name, '(NC.out)'))
-            fprintf(['Reading computation time from source ', num2str(ii)]);
+            fprintf(['Reading computation time from source ', num2str(ii), '\n']);
             % read computation time
             tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
                 num2str(ii), filesep, boundaryElements(jj).name]);
@@ -110,16 +115,17 @@ for ii = 1:numSources
     end
 end
 
+fprintf('Write computation time to .mat file ...');
 description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total'};
 save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computationTime', '-v6');
 clear ii jj description computationTime tmp
 
 %% Load ObjectMesh data
-fprintf('\nLoading ObjectMesh data ...');
+fprintf('\nLoading ObjectMesh data ...\n');
 for ii=1:numSources
+    fprintf(['Source ', num2str(ii), '\n']);
     [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
         filesep, 'be.out', filesep], 'pBoundary', numFreq);
-    fprintf('...');
     [frequencies,idx]=sort(frequencies);
     pressure{ii}=data(idx,:);
     clear data
@@ -147,9 +153,9 @@ clear pressure nodes elements frequencies ii jj cnt idx element_data
 if ~isempty(evaluationGrids)
     fprintf('\nLoading data for the evaluation grids ...');
     for ii=1:numSources
+        fprintf(['Source ', num2str(ii), '\n']);
         [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
             filesep, 'be.out', filesep], 'pEvalGrid', numFreq);
-        fprintf('...');
         [frequencies,idx]=sort(frequencies);
         pressure(:,:,ii)=data(idx,:);
         clear data
@@ -158,6 +164,7 @@ end
 clear ii
 
 % save to struct
+fprintf('\nSave EvaluationGrid data ...\n');
 cnt = 0;
 for ii = 1:numel(evaluationGrids)
     evaluationGrids(ii).pressure = pressure(:, cnt+1:cnt+evaluationGrids(ii).num_nodes, :);
@@ -171,7 +178,7 @@ clear ii pressure cnt idx
 % reference to pressure in the middle of the head with the head absent
 % according to the HRTF definition.
 if reference
-    
+    fprintf('Divide pressure by reference according to HRTF definition ...\n');
     % this might be a parameter in the function call
     refMode = 1;    % 1: reference to only one radius (the smallest found)
     % 2: reference to all indivudal radii
@@ -213,12 +220,11 @@ if reference
             ps = amplitude * exp(1j * 2*pi*freqMatrix/speedOfSound .*r) ./ (4 * pi * r);
             
         elseif strcmp(sourceType, 'Plane wave')
-            error('Referencing for plane wave source type not yet implemented.');
+            error('Referencing for plane wave source type not yet implemented.\n');
         else
-            error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.')
+            error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.\n')
         end
         
-        % here we go...
         evaluationGrids(ii).pressure = pressure ./ ps;
         
     end
@@ -243,9 +249,9 @@ for ii = 1:numel(evaluationGrids)
         if strcmp(replace_obj, 'y') || strcmp(replace_obj, 'yes')
             delete filename
         elseif strcmp(replace_obj, 'n') || strcmp(replace_obj, 'no')
-            error('Object was not replaced. Output2HRTF aborted.');
+            error('Object was not replaced. Output2HRTF aborted.\n');
         else
-            error('Invalid input. Output2HRTF aborted.');
+            error('Invalid input. Output2HRTF aborted.\n');
         end
     end
     
@@ -290,6 +296,7 @@ for ii = 1:numel(evaluationGrids)
     
     Obj=SOFAupdateDimensions(Obj);
     SOFAsave(fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']),Obj);
+    fprintf(['HRTF_' evaluationGrids(ii).name '.sofa saved!\n']);
 end
 
 clear Obj ii xyz pressure prompt replace_Obj
@@ -297,18 +304,16 @@ clear Obj ii xyz pressure prompt replace_Obj
 
 %% Save time data data as SOFA file
 if computeHRIRs
-    
     fprintf('\nSaving time data to SOFA file ...\n')
-    
     for ii = 1:numel(evaluationGrids)        
         % check if the frequency vector has the correct format
         if any(abs(diff(frequencies,2)) > .1) || frequencies(1) < .1
-            error('The frequency vector must start at a frequency > 0.1 and continue in equidistant steps to the end.')
+            error('The frequency vector must start at a frequency > 0.1 and continue in equidistant steps to the end.\n')
         end
         
         % check if reference exists
         if ~reference
-            error('HRIRs can only be computed if refernce=true')
+            error('HRIRs can only be computed if refernce=true\n')
         end
         
         xyz = evaluationGrids(ii).nodes;
@@ -323,7 +328,7 @@ if computeHRIRs
             prompt = 'Please specify the sampling frequency in Hz: ';
             fs = input(prompt);
             if fs < 0
-                error('The sampling frequency has to be positive.');
+                error('The sampling frequency has to be positive.\n');
             elseif fs < frequencies(end)
                 warning('The sampling frequency is lower than the highest frequency in the signal. Further processing will potentially lead to aliasing.');
             end
@@ -331,7 +336,7 @@ if computeHRIRs
         elseif strcmp(replace_fs, 'n') || strcmp(replace_fs, 'no')
             fs = 2*frequencies(end);
         else
-            error('Invalid input. Writing HRIR to SOFA object aborted.');
+            error('Invalid input. Writing HRIR to SOFA object aborted.\n');
         end
         
         % add 0 Hz bin
@@ -386,6 +391,7 @@ if computeHRIRs
         
         Obj=SOFAupdateDimensions(Obj);
         SOFAsave(fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
+        fprintf(['HRIR_' evaluationGrids(ii).name '.sofa saved!\n']);
     end
 end
 
