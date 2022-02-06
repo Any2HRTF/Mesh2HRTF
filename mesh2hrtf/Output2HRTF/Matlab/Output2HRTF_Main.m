@@ -195,7 +195,6 @@ if reference
             
             volumeFlow = .1 * ones(size(pressure));
             if exist('sourceArea', 'var')
-                %has to be fixed for both ears....
                 for nn = 1:numel(sourceArea)
                     volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * sourceArea(nn);
                 end
