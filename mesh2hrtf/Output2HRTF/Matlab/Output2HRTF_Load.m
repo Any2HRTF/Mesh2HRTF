@@ -28,18 +28,18 @@ function [data,frequency]=Output2HRTF_Load(foldername,filename)
 %           dim1: frequency
 %           dim2: datapoints
 
-%% -------------------check and initialize variables-----------------------
-if ~exist('foldername','var') || ~exist('filename','var')
-    error('Not enough input arguments.')
-end
-
-%% ----------------------check number of freq bins-------------------------
-for ii=1:1000000
-    if ~exist([foldername 'be.' num2str(ii) '/' filename],'file')
-        numFrequencies=ii-1;
-        break
-    end
-end
+% %% -------------------check and initialize variables-----------------------
+% if ~exist('foldername','var') || ~exist('filename','var')
+%     error('Not enough input arguments.')
+% end
+% 
+% %% ----------------------check number of freq bins-------------------------
+% for ii=1:1000000
+%     if ~exist([foldername 'be.' num2str(ii) '/' filename],'file')
+%         numFrequencies=ii-1;
+%         break
+%     end
+% end
 
 %% --------------------check number of header lines------------------------
 for ii=1:1000
@@ -55,15 +55,15 @@ for ii=1:1000
 end
 
 %% -----------------------------load data----------------------------------
-temp1 = importdata([foldername 'be.1' '/' filename], ' ', numHeaderlines_BE);
+temp1 = importdata([foldername, 'be.1', filesep, filename], ' ', numHeaderlines_BE);
 
 data=zeros(numFrequencies,size(temp1.data,1));
 frequency=zeros(numFrequencies,1);
 
 for ii=1:numFrequencies
-    tmpData = importdata([foldername 'be.' num2str(ii) '/' filename], ' ', numHeaderlines_BE);
+    tmpData = importdata([foldername, 'be.', num2str(ii), filesep, filename], ' ', numHeaderlines_BE);
     if ~isempty(tmpData)
-        tmpFrequency = importdata([foldername '..' filesep 'fe.out' filesep 'fe.' num2str(ii) '/load'], ' ', 2);
+        tmpFrequency = importdata([foldername, '..', filesep, 'fe.out', filesep, 'fe.', num2str(ii), filesep, 'load'], ' ', 2);
 
         data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
         frequency(ii,1)=tmpFrequency.data(1,1);
