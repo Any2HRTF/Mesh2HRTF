@@ -117,9 +117,9 @@ clear ii jj description computationTime tmp
 %% Load ObjectMesh data
 fprintf('\nLoading ObjectMesh data ...');
 for ii=1:numSources
-  for jj=1:size(boundaryElements,1)
+  for jj=1:numFreq
     [tmpData,tmpFrequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
-        filesep, 'be.out', filesep, boundaryElements(jj).name, 'pBoundary']);
+      filesep, 'be.out', filesep, 'be', numFreq, '.out', filesep, 'pBoundary']);
     if exist('tmpPressure','var')
       tmpPressure=[tmpPressure; tmpData];
       frequencies=[frequencies; tmpFrequencies];
@@ -129,11 +129,11 @@ for ii=1:numSources
     end
     clear tmpData tmpFrequencies
     fprintf('...');
-end
-[frequencies,idx]=sort(frequencies);
-pressure{ch}=tmpPressure(idx,:);
-
-clear tmpPressure tmpPhase
+  end
+  [frequencies,idx]=sort(frequencies);
+  pressure{ch}=tmpPressure(idx,:);
+  
+  clear tmpPressure tmpPhase
 end
 
 fprintf('\nSave ObjectMesh data ...');
