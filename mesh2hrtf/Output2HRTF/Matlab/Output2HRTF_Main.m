@@ -2,11 +2,11 @@
 %                Copyright (C) 2015 by Harald Ziegelwanger,
 %        Acoustics Research Institute, Austrian Academy of Sciences
 %                        mesh2hrtf.sourceforge.net
-% 
+%
 % Mesh2HRTF is licensed under the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 % Mesh2HRTF is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 % You should have received a copy of the GNU LesserGeneral Public License along with Mesh2HRTF. If not, see <http://www.gnu.org/licenses/lgpl.html>.
-% 
+%
 % If you use Mesh2HRTF:
 % - Provide credits:
 %   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
@@ -18,9 +18,9 @@
 % Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin), Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
 
 function Output2HRTF_Main(Mesh2HRTF_version, ...
-  sourceType, numSources, sourceCenter, sourceArea, ...
-  reference, computeHRIRs, ...
-  speedOfSound, densityOfAir)
+    sourceType, numSources, sourceCenter, sourceArea, ...
+    reference, computeHRIRs, ...
+    speedOfSound, densityOfAir)
 %   [] = OUTPUT2HRTF_MAIN(Mesh2HRTF_version, ...
 %                         sourceType, numSources, sourceCenter, sourceArea, ...
 %                         reference, computeHRIRs, ...
@@ -86,7 +86,7 @@ tmpFrequencies=fileread('Info.txt');
 numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
 
 if isnan(numFreq)
-  error('Info.txt does not contain information about frequency steps. Please specify.')
+    error('Info.txt does not contain information about frequency steps. Please specify.')
 end
 
 clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
@@ -95,18 +95,18 @@ clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
 fprintf('\nLoading computational effort data ...');
 % check for folder be.out and read computation time from every NC*.out file
 for ii = 1:numSources
-  computationTime{ii} = [];
-  boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii)]);
-  boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
+    computationTime{ii} = [];
+    boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii)]);
+    boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
     % print to console which file is being processed
     for jj = 1:size(boundaryElements, 1)
-      if ~isempty(regexp(boundaryElements(jj).name, '(NC.out)'))
-        fprintf(['Reading computation time from source ', num2str(ii)]);
-        % read computation time
-        tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
-          num2str(ii), filesep, boundaryElements(jj).name]);
-        computationTime{ii}=[computationTime{ii}; tmp];
-      end
+        if ~isempty(regexp(boundaryElements(jj).name, '(NC.out)'))
+            fprintf(['Reading computation time from source ', num2str(ii)]);
+            % read computation time
+            tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+                num2str(ii), filesep, boundaryElements(jj).name]);
+            computationTime{ii}=[computationTime{ii}; tmp];
+        end
     end
 end
 
@@ -117,12 +117,12 @@ clear ii jj description computationTime tmp
 %% Load ObjectMesh data
 fprintf('\nLoading ObjectMesh data ...');
 for ii=1:numSources
-  [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
-    filesep, 'be.out', filesep], 'pBoundary', numFreq);
-  fprintf('...');
-  [frequencies,idx]=sort(frequencies);
-  pressure{ii}=data(idx,:);
-  clear data
+    [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+        filesep, 'be.out', filesep], 'pBoundary', numFreq);
+    fprintf('...');
+    [frequencies,idx]=sort(frequencies);
+    pressure{ii}=data(idx,:);
+    clear data
 end
 
 clear ii
@@ -145,15 +145,15 @@ clear pressure nodes elements frequencies ii jj cnt idx element_data
 
 %% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
-  fprintf('\nLoading data for the evaluation grids ...');
-  for ii=1:numSources
-    [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
-      filesep, 'be.out', filesep], 'pEvalGrid', numFreq);
-    fprintf('...');
-    [frequencies,idx]=sort(frequencies);
-    pressure{ii}=data(idx,:);
-    clear data
-  end
+    fprintf('\nLoading data for the evaluation grids ...');
+    for ii=1:numSources
+        [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+            filesep, 'be.out', filesep], 'pEvalGrid', numFreq);
+        fprintf('...');
+        [frequencies,idx]=sort(frequencies);
+        pressure(:,:,ii)=data(idx,:);
+        clear data
+    end
 end
 clear ii
 
@@ -165,7 +165,7 @@ for ii = 1:numel(evaluationGrids)
 end
 
 
-clear ii frequencies pressure cnt idx
+clear ii pressure cnt idx
 
 
 % reference to pressure in the middle of the head with the head absent
@@ -174,7 +174,7 @@ if reference
     
     % this might be a parameter in the function call
     refMode = 1;    % 1: reference to only one radius (the smallest found)
-                    % 2: reference to all indivudal radii
+    % 2: reference to all indivudal radii
     
     for ii = 1:numel(evaluationGrids)
         
@@ -191,7 +191,9 @@ if reference
             r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
         end
         
-        if strcmp(sourceType, 'vibratingElement')
+        if strcmp(sourceType, 'Left ear') || ...
+                strcmp(sourceType, 'Right ear') || ...
+                strcmp(sourceType, 'Both ears')
             
             volumeFlow = .1 * ones(size(pressure));
             if exist('sourceArea', 'var')
@@ -205,11 +207,13 @@ if reference
             ps   = -1j * densityOfAir * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
                 exp(1j * 2*pi*freqMatrix/speedOfSound .* r) ./ r;
             
-        elseif strcmp(sourceType, 'pointSource')
+        elseif strcmp(sourceType, 'Point source')
             
             amplitude = .1; % hard coded in Mesh2HRTF
             ps = amplitude * exp(1j * 2*pi*freqMatrix/speedOfSound .*r) ./ (4 * pi * r);
             
+        elseif strcmp(sourceType, 'Plane wave')
+            error('Referencing for plane wave source type not yet implemented.');
         else
             error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.')
         end
@@ -219,7 +223,7 @@ if reference
         
     end
     
-    clear Areceiver r freqMatrix ps ii
+    clear r freqMatrix ps ii jj
 end
 
 %% Save data as SOFA file
@@ -295,7 +299,7 @@ if computeHRIRs
         
         % add 0 Hz bin
         pressure = [ones(1, size(pressure,2), size(pressure,3));
-                    pressure];
+            pressure];
         % make fs/2 real
         pressure(end,:,:) = abs(pressure(end,:,:));
         % mirror the spectrum
