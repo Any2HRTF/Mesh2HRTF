@@ -119,7 +119,7 @@ fprintf('\nLoading ObjectMesh data ...');
 for ii=1:numSources
   for jj=1:numFreq
     [tmpData,tmpFrequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
-      filesep, 'be.out', filesep, 'be', numFreq, '.out', filesep, 'pBoundary']);
+      filesep, 'be.out', filesep], 'pBoundary', numFreq);
     if exist('tmpPressure','var')
       tmpPressure=[tmpPressure; tmpData];
       frequencies=[frequencies; tmpFrequencies];

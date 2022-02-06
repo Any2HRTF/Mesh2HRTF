@@ -14,7 +14,7 @@
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 
-function [data,frequency]=Output2HRTF_Load(foldername,filename)
+function [data,frequency]=Output2HRTF_Load(foldername,filename, numFrequencies)
 %OUTPUT2HRTF_LOAD
 %   [data,frequency]=Output2HRTF_Load(foldername,filename) loads results
 %   of the BEM-HRTF calculation.
@@ -43,7 +43,7 @@ function [data,frequency]=Output2HRTF_Load(foldername,filename)
 
 %% --------------------check number of header lines------------------------
 for ii=1:1000
-    temp1=importdata([foldername 'be.1' '/' filename], ' ', ii);
+    temp1=importdata([foldername, 'be.1', filesep, filename], ' ', ii);
     if ~isempty(temp1)
         if size(temp1.data,2)==3
             if temp1.data(2,1)-temp1.data(1,1)==1
