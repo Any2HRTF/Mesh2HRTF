@@ -97,7 +97,7 @@ end
 clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
 
 %% Read computational effort
-fprintf('\nLoading computational effort data ...');
+fprintf('Loading computational effort data ...\n');
 % check for folder be.out and read computation time from every NC*.out file
 for ii = 1:numSources
     computationTime{ii} = [];
@@ -115,13 +115,13 @@ for ii = 1:numSources
     end
 end
 
-fprintf('Write computation time to .mat file ...');
+fprintf('Write computation time to .mat file ...\n');
 description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total'};
 save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computationTime', '-v6');
 clear ii jj description computationTime tmp
 
 %% Load ObjectMesh data
-fprintf('\nLoading ObjectMesh data ...\n');
+fprintf('Loading ObjectMesh data ...\n');
 for ii=1:numSources
     fprintf(['Source ', num2str(ii), '\n']);
     [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
@@ -133,7 +133,7 @@ end
 
 clear ii
 
-fprintf('\nSave ObjectMesh data ...');
+fprintf('Save ObjectMesh data ...\n');
 cnt = 0;
 for ii = 1:numel(objectMeshes)
     nodes=objectMeshes(ii).nodes;
@@ -151,7 +151,7 @@ clear pressure nodes elements frequencies ii jj cnt idx element_data
 
 %% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
-    fprintf('\nLoading data for the evaluation grids ...');
+    fprintf('Loading data for the evaluation grids ...\n');
     for ii=1:numSources
         fprintf(['Source ', num2str(ii), '\n']);
         [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
@@ -164,7 +164,7 @@ end
 clear ii
 
 % save to struct
-fprintf('\nSave EvaluationGrid data ...\n');
+fprintf('Save EvaluationGrid data ...\n');
 cnt = 0;
 for ii = 1:numel(evaluationGrids)
     evaluationGrids(ii).pressure = pressure(:, cnt+1:cnt+evaluationGrids(ii).num_nodes, :);
@@ -233,7 +233,7 @@ if reference
 end
 
 %% Save data as SOFA file
-fprintf('\nSaving complex pressure to SOFA file ...\n')
+fprintf('Saving complex pressure to SOFA file ...\n')
 SOFAstart;
 
 for ii = 1:numel(evaluationGrids)
@@ -247,7 +247,7 @@ for ii = 1:numel(evaluationGrids)
         prompt = [filename, ' already exists. Replace object? [y/n]\n'];
         replace_obj = input(prompt, 's');
         if strcmp(replace_obj, 'y') || strcmp(replace_obj, 'yes')
-            delete filename
+            delete(filename)
         elseif strcmp(replace_obj, 'n') || strcmp(replace_obj, 'no')
             error('Object was not replaced. Output2HRTF aborted.\n');
         else
@@ -304,7 +304,7 @@ clear Obj ii xyz pressure prompt replace_Obj
 
 %% Save time data data as SOFA file
 if computeHRIRs
-    fprintf('\nSaving time data to SOFA file ...\n')
+    fprintf('Saving HRIR data to SOFA file ...\n')
     for ii = 1:numel(evaluationGrids)        
         % check if the frequency vector has the correct format
         if any(abs(diff(frequencies,2)) > .1) || frequencies(1) < .1
@@ -318,6 +318,22 @@ if computeHRIRs
         
         xyz = evaluationGrids(ii).nodes;
         pressure = evaluationGrids(ii).pressure;
+        
+        % check if .sofa file already exists
+        filename = fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']);
+        if exist(filename, 'file')
+            % if yes, delete and write new object, but ask user
+            prompt = [filename, ' already exists. Replace object? [y/n]\n'];
+            replace_obj = input(prompt, 's');
+            if strcmp(replace_obj, 'y') || strcmp(replace_obj, 'yes')
+                delete(filename)
+            elseif strcmp(replace_obj, 'n') || strcmp(replace_obj, 'no')
+                error('Object was not replaced. Output2HRTF aborted.\n');
+            else
+                error('Invalid input. Output2HRTF aborted.\n');
+            end
+        end
+        clear prompt
         
         prompt = ['The default sampling frequency is twice the highest occuring frequency. ', ...
             'In this case fs = ', num2str(2*frequencies(end)), '. \n', ...
