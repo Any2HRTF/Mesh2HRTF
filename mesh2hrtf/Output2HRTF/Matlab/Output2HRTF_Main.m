@@ -82,7 +82,7 @@ end
 
 % get number of frequencies
 tmpFrequencies=fileread('Info.txt');
-[lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: ).\n');
+[lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: )\w*\n');
 numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
 
 if isnan(numFreq)
