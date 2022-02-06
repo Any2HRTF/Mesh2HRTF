@@ -300,15 +300,14 @@ if computeHRIRs
     
     fprintf('\nSaving time data to SOFA file ...\n')
     
-    for ii = 1:numel(evaluationGrids)
-        
+    for ii = 1:numel(evaluationGrids)        
         % check if the frequency vector has the correct format
-        if ~all(abs(frequencies(1) - diff(frequencies)) < .1)
-            error('The frequency vector must be if the format a:a:fs/2, with a>0 and fs the sampling rate.')
+        if any(abs(diff(frequencies,2)) > .1) || frequencies(1) < .1
+            error('The frequency vector must start at a frequency > 0.1 and continue in equidistant steps to the end.')
         end
         
         if ~reference
-            error('HRIRs can only be computet if refernce=true')
+            error('HRIRs can only be computed if refernce=true')
         end
         
         xyz = evaluationGrids(ii).nodes;
