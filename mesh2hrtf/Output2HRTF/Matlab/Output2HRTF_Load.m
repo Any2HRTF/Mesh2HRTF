@@ -13,33 +13,23 @@
 % - In your publication, cite both articles:
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+%
+% Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
+% Co-Author(s): Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
 
 function [data,frequency]=Output2HRTF_Load(foldername,filename, numFrequencies)
-%OUTPUT2HRTF_LOAD
-%   [data,frequency]=Output2HRTF_Load(foldername,filename) loads results
-%   of the BEM-HRTF calculation.
+%   [data,frequency] = OUTPUT2HRTF_LOAD(foldername,filename)
+%   
+%   Loads results of the BEM-HRTF calculation from the NumCalc folder.
 %
 %   Input:
-%       foldername:
-%       filename:
+%       foldername ... path to NumCalc output
+%       filename ..... either 'pBoundary' or 'pEvalGrid'
 %
 %   Output:
-%       data: Matrix of complex values
-%           dim1: frequency
-%           dim2: datapoints
-
-% %% -------------------check and initialize variables-----------------------
-% if ~exist('foldername','var') || ~exist('filename','var')
-%     error('Not enough input arguments.')
-% end
-% 
-% %% ----------------------check number of freq bins-------------------------
-% for ii=1:1000000
-%     if ~exist([foldername 'be.' num2str(ii) '/' filename],'file')
-%         numFrequencies=ii-1;
-%         break
-%     end
-% end
+%       data ......... Matrix of complex values
+%           dim1: frequencies
+%           dim2: datapoints (complex pressure values)
 
 %% --------------------check number of header lines------------------------
 for ii=1:1000

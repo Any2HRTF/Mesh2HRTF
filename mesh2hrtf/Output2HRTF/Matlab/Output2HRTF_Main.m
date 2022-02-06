@@ -15,7 +15,7 @@
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 %
 % Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
-% Co-Authors: Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin), Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
+% Co-Author(s): Fabian Brinkmann, Robert Pelzer (Audio Communication Group, Technical University Berlin), Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
 
 function Output2HRTF_Main(Mesh2HRTF_version, ...
     sourceType, numSources, sourceCenter, sourceArea, ...

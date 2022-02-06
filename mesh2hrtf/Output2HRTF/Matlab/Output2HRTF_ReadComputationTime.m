@@ -13,17 +13,21 @@
 % - In your publication, cite both articles:
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+%
+% Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
+% Co-Author(s): Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
 
-function data=Output2HRTF_ReadBEMPerformance(filename)
-%OUTPUT2HRTF_READBEMPERFORMANCE
-%   []=Output2HRTF_ReadBEMPerformance(filename) reads
-%   computation time data.
+function data=Output2HRTF_ReadComputationTime(filename)
+%   [] = Output2HRTF_ReadBEMPerformance(filename)
+%
+%   Reads computation time data from NC.out file.
 %
 %   Input:
-%       filename
+%       filename ... read computation time from NC.out (output file from NumCalc)
 %
 %   Output:
-%       data
+%       data ....... computation time in seconds, with columns:
+%                    'Frequency index', 'Frequency', 'Building', 'Solving', 'Postprocessing', 'Total'
 
 fid=fopen(filename);
 count=0;
