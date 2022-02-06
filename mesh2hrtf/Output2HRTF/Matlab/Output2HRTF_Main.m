@@ -234,6 +234,29 @@ for ii = 1:numel(evaluationGrids)
     
     xyz = evaluationGrids(ii).nodes;
     
+    % check if .sofa file already exists
+    filename = ['Output2HRTF_', evaluationGrids(ii).name, '.sofa'];
+    if exist(filename, 'file')
+        % if yes, delete and write new object, but ask user
+        prompt = [filename, ' already exists. Replace object? [y/n]'];
+        replace_obj = input(prompt);
+        if strcmp(replace_obj, 'y') || strcmp(replace_obj, 'yes')
+            delete filename
+        elseif strcmp(replace_obj, 'n') || strcmp(replace_obj, 'no')
+            error('Object was not replaced. Output2HRTF aborted.');
+        else
+            error('Invalid input. Output2HRTF aborted.');
+        end
+    end
+    
+    % make sure convention is written according to number of sources
+    if numSources == 2
+        Obj = SOFAgetConventions('SimpleFreeFieldHRTF');
+    else
+        % Save as GeneralTF
+        Obj = SOFAgetConventions('GeneralTF');
+    end
+    
     % pressure has size N (frequencies) x M (measurements) x R (sources)
     pressure = evaluationGrids(ii).pressure;
     % get dimenson 3 explicitly, because it would be dropped if R=1
@@ -244,9 +267,6 @@ for ii = 1:numel(evaluationGrids)
     pressure = shiftdim(pressure, 1);
     % force dimensions of 1
     pressure = reshape(pressure, NMR(2), NMR(3), NMR(1));
-    
-    % Save as GeneralTF
-    Obj = SOFAgetConventions('GeneralTF');
     
     Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
     Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
