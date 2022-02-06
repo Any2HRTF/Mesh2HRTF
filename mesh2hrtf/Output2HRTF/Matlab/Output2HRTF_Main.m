@@ -195,8 +195,8 @@ if reference
             
             volumeFlow = .1 * ones(size(pressure));
             if exist('sourceArea', 'var')
-                for nn = 1:numel(sourceArea)
-                    volumeFlow(:,:,nn) = volumeFlow(:,:,nn) * sourceArea(nn);
+                for jj = 1:numel(sourceArea)
+                    volumeFlow(:,:,jj) = volumeFlow(:,:,jj) * sourceArea(jj);
                 end
             end
             
