@@ -235,7 +235,7 @@ for ii = 1:numel(evaluationGrids)
     xyz = evaluationGrids(ii).nodes;
     
     % check if .sofa file already exists
-    filename = ['Output2HRTF_', evaluationGrids(ii).name, '.sofa'];
+    filename = fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']);
     if exist(filename, 'file')
         % if yes, delete and write new object, but ask user
         prompt = [filename, ' already exists. Replace object? [y/n]'];
@@ -249,7 +249,7 @@ for ii = 1:numel(evaluationGrids)
         end
     end
     
-    % make sure convention is written according to number of sources
+    % get SOFA template according to number of sources
     if numSources == 2
         Obj = SOFAgetConventions('SimpleFreeFieldHRTF');
     else
@@ -267,28 +267,26 @@ for ii = 1:numel(evaluationGrids)
     pressure = shiftdim(pressure, 1);
     % force dimensions of 1
     pressure = reshape(pressure, NMR(2), NMR(3), NMR(1));
-    
+
     Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
     Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
-    Obj.GLOBAL_Organization = '';
-    Obj.GLOBAL_Title = '';
-    Obj.GLOBAL_DateCreated = date;
-    Obj.GLOBAL_AuthorContact = '';
-    
-    Obj.ReceiverPosition=sourceCenter;
+    Obj.GLOBAL_History = 'numerically calculated data';
+
     Obj.N=frequencies;
-    
     Obj.Data.Real=real(pressure);
     Obj.Data.Imag=imag(pressure);
     Obj.Data.Real_LongName='pressure';
     Obj.Data.Real_Units='pascal';
     Obj.Data.Imag_LongName='pressure';
     Obj.Data.Imag_Units='pascal';
-    
+
     Obj.ListenerPosition = [0 0 0];
+    Obj.SourcePosition=xyz(:,2:4);
     Obj.SourcePosition_Type='cartesian';
     Obj.SourcePosition_Units='metre';
-    Obj.SourcePosition=xyz(:,2:4);
+    Obj.ReceiverPosition=sourceCenter;
+    Obj.ReceiverPosition_Type='cartesian';
+    Obj.ReceiverPosition_Units='metre';
     
     Obj=SOFAupdateDimensions(Obj);
     SOFAsave(fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']),Obj);
