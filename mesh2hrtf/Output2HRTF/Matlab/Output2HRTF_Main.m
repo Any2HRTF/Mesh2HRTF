@@ -360,32 +360,35 @@ if computeHRIRs
         % force dimensions of 1
         hrir = reshape(hrir, NMR(2), NMR(3), NMR(1));
         
-        % Save as GeneralFIR
-        Obj = SOFAgetConventions('GeneralFIR', 'm');
-        
+        % get SOFA template according to number of sources
+        if numSources == 2
+            Obj = SOFAgetConventions('SimpleFreeFieldHRIR');
+        else
+            % Save as GeneralTF
+            Obj = SOFAgetConventions('GeneralFIR');
+        end
+
         Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
         Obj.GLOBAL_ApplicationVersion = Mesh2HRTF_version;
-        Obj.GLOBAL_Organization = '';
-        Obj.GLOBAL_Title = '';
-        Obj.GLOBAL_DateCreated = date;
-        Obj.GLOBAL_AuthorContact = '';
-        
-        Obj.ReceiverPosition=sourceCenter;
+        Obj.GLOBAL_History = 'numerically calculated data';
         
         Obj.Data.IR=hrir;
         Obj.Data.SamplingRate=fs;
         Obj.Data.Delay=zeros(1, size(hrir, 2));
         
         Obj.ListenerPosition = [0 0 0];
+        Obj.SourcePosition=xyz(:,2:4);
         Obj.SourcePosition_Type='cartesian';
         Obj.SourcePosition_Units='metre';
-        Obj.SourcePosition=xyz(:,2:4);
+        Obj.ReceiverPosition=sourceCenter;
+        Obj.ReceiverPosition_Type='cartesian';
+        Obj.ReceiverPosition_Units='metre';
         
         Obj=SOFAupdateDimensions(Obj);
         SOFAsave(fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
     end
 end
 
-clear Obj ii xyz pressure
+clear Obj ii xyz pressure prompt replace_fs
 
 fprintf('Done\n')
