@@ -117,24 +117,15 @@ clear ii jj description computationTime tmp
 %% Load ObjectMesh data
 fprintf('\nLoading ObjectMesh data ...');
 for ii=1:numSources
-  for jj=1:numFreq
-    [tmpData,tmpFrequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
-      filesep, 'be.out', filesep], 'pBoundary', numFreq);
-    if exist('tmpPressure','var')
-      tmpPressure=[tmpPressure; tmpData];
-      frequencies=[frequencies; tmpFrequencies];
-    else
-      tmpPressure=tmpData;
-      frequencies=tmpFrequencies;
-    end
-    clear tmpData tmpFrequencies
-    fprintf('...');
-  end
+  [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+    filesep, 'be.out', filesep], 'pBoundary', numFreq);
+  fprintf('...');
   [frequencies,idx]=sort(frequencies);
-  pressure{ch}=tmpPressure(idx,:);
-  
-  clear tmpPressure tmpPhase
+  pressure{ii}=data(idx,:);
+  clear data
 end
+
+clear ii
 
 fprintf('\nSave ObjectMesh data ...');
 cnt = 0;
@@ -150,37 +141,21 @@ for ii = 1:numel(objectMeshes)
     cnt = cnt + size(elements,1);
 end
 
-clear pressure nodes elements frequencies ii jj cnt ch idx element_data
+clear pressure nodes elements frequencies ii jj cnt idx element_data
 
 %% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
-    fprintf('\nLoading data for the evaluation grids ...');
-    for ch=1:numSources
-        fprintf(['\n    Ear ' num2str(ch) ' ...'])
-        for ii=1:size(cpusAndCores,1)
-            fprintf(['\n        CPU ' num2str(ii) ': ']);
-            for jj=1:size(cpusAndCores,2)
-                if cpusAndCores(ii,jj)==ch
-                    fprintf([num2str(jj) ', ']);
-                    [tmpData,tmpFrequencies]=Output2HRTF_Load(['NumCalc' filesep 'CPU_' num2str(ii) '_Core_' num2str(jj) filesep 'be.out' filesep],'pEvalGrid');
-                    if exist('tmpPressure','var')
-                        tmpPressure=[tmpPressure; tmpData];
-                        frequencies=[frequencies; tmpFrequencies];
-                    else
-                        tmpPressure=tmpData;
-                        frequencies=tmpFrequencies;
-                    end
-                    clear tmpData tmpFrequencies
-                end
-            end
-            fprintf('...');
-        end
-        pressure(:,:,ch)=tmpPressure;
-        clear tmpPressure
-    end
+  fprintf('\nLoading data for the evaluation grids ...');
+  for ii=1:numSources
+    [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+      filesep, 'be.out', filesep], 'pEvalGrid', numFreq);
+    fprintf('...');
     [frequencies,idx]=sort(frequencies);
-    pressure=pressure(idx,:,:);
+    pressure{ii}=data(idx,:);
+    clear data
+  end
 end
+clear ii
 
 % save to struct
 cnt = 0;
@@ -190,7 +165,7 @@ for ii = 1:numel(evaluationGrids)
 end
 
 
-clear ch ii jj tmpData tmpFrequencies tmpPressure pressure cnt idx
+clear ii frequencies pressure cnt idx
 
 
 % reference to pressure in the middle of the head with the head absent
