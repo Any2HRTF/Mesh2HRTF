@@ -57,6 +57,19 @@ while ~feof(fid)
         idx=strfind(line,':');
         data(count,6)=sscanf(line(idx+1:end),'%d');
     end
+    if strfind(line, 'iterations')
+        [startIdx, endIdx] = regexp(line, '(number of iterations = )\S+[,]');
+        data(count,7) = sscanf(line(startIdx+23:endIdx-1), '%d');
+    end
+    if strfind(line, 'relative error')
+        [~, endIdx] = regexp(line, '(relative error = )');
+        data(count,8)=sscanf(line(endIdx+1:end-1), '%f');
+    end
+    if ~isempty(regexp(line, '^\d+\s\d+'))
+        [idx1, idx2] = regexp(line, '\s');
+        data(count,7) = sscanf(line(1:idx1-1), '%d');
+        data(count,8) = sscanf(line(idx2+1:end-1), '%f');
+    end
     if strfind(line,'Address computation ')
         break
     end

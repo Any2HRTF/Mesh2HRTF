@@ -103,22 +103,88 @@ for ii = 1:numSources
     computationTime{ii} = [];
     boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii)]);
     boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
-    % print to console which file is being processed
+
+    NC_all_flag = 0; NC_all_idx = []; NC_all_date = [];
+    NC_single_flag = 0; NC_single_idx = []; NC_single_date = [];
+
+    % read NC*.out configurations
     for jj = 1:size(boundaryElements, 1)
-        if ~isempty(regexp(boundaryElements(jj).name, '(NC.out)'))
-            fprintf(['Reading computation time from source ', num2str(ii), '\n']);
-            % read computation time
-            tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
-                num2str(ii), filesep, boundaryElements(jj).name]);
-            computationTime{ii}=[computationTime{ii}; tmp];
+        if ~isempty(regexp(boundaryElements(jj).name, '^(NC.out)$')) % NC.out exists
+            NC_all_flag = 1;
+            NC_all_idx = jj;
+            NC_all_date = datenum(boundaryElements(jj).date);
+        elseif ~isempty(regexp(boundaryElements(jj).name, '(NC.)\S+(.out)')) % NC*.out exists
+            NC_single_flag = 1;
+            NC_single_idx = [NC_single_idx, jj];
+            NC_single_date = [NC_single_date, datenum(boundaryElements(jj).date)];
         end
     end
+    clear jj
+
+    fprintf(['Reading computation time from source ', num2str(ii), '\n']);
+    % read from .out files according to latest calculation
+    if NC_all_flag && ~NC_single_flag % only NC.out exists
+        % read computation time
+        tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+            num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
+        computationTime{ii}=[computationTime{ii}; tmp];
+    elseif NC_single_flag && ~NC_all_flag % only NC*.out exist
+        % read single files
+        for jj = 1:length(NC_single_idx)
+            % read computation time
+            tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+                num2str(ii), filesep, boundaryElements(NC_single_idx(jj)).name]);
+            computationTime{ii}=[computationTime{ii}; tmp];
+        end
+    elseif (NC_all_flag && NC_single_flag) && any(NC_all_date < NC_single_date) % both exist, at least one NC*.out exists whose frequencies replace the ones in NC.out
+        % start with NC.out ...
+        tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+            num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
+        computationTime{ii}=[computationTime{ii}; tmp];
+        % ... then read single files that are newer than NC.out
+        for jj = 1:length(NC_single_idx)
+            if NC_all_date < NC_single_date(jj)
+                % read computation time
+                tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+                    num2str(ii), filesep, boundaryElements(NC_single_idx(jj)).name]);
+                computationTime{ii}(tmp(:,1),:) = tmp; % replace data only for current frequencies
+            end
+        end
+    elseif (NC_all_flag && NC_single_flag) && all(NC_all_date > NC_single_date) % both exist, NC.out newest file
+        % same as only NC.out exists
+        % read computation time
+        tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
+            num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
+    else % what possible case is this?
+        error('This case is not yet implemented.');
+    end
+    clear jj
+
+    % check for error potential in numerical calculation
+    iter_error_idx = find(computationTime{ii}(:,7) > 1.5e3);
+    rel_error_idx = find(computationTime{ii}(:,8) > 1e-6);
+    warning('off', 'backtrace');
+    if ~isempty(iter_error_idx)
+        for jj=1:length(iter_error_idx)
+            warning(['Number of iterations for frequency ', num2str(computationTime{ii}(iter_error_idx(jj), 2)), ...
+                ' Hz is greater than 1.500.\nContinue with reading computation time...'], '\n');
+        end
+        clear jj
+    end
+    if ~isempty(rel_error_idx)
+        for jj=1:length(rel_error_idx)
+            warning(['Relative error for frequency ', num2str(computationTime{ii}(rel_error_idx(jj), 2)), ...
+                ' Hz is greater than 1e-6.\nContinue reading computation time...'], '\n');
+        end
+    end
+    warning('on', 'backtrace');
 end
+
 
 fprintf('Write computation time to .mat file ...\n');
 description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total'};
 save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computationTime', '-v6');
-clear ii jj description computationTime tmp
+clear ii jj description computationTime tmp iter_error_idx rel_error_idx
 
 %% Load ObjectMesh data
 fprintf('Loading ObjectMesh data ...\n');
@@ -335,26 +401,28 @@ if computeHRIRs
         end
         clear prompt
         
-        prompt = ['The default sampling frequency is twice the highest occuring frequency. ', ...
-            'In this case fs = ', num2str(2*frequencies(end)), '. \n', ...
-            'Do you want to specify a different sampling frequency? [y/n]\n'];
-        replace_fs = input(prompt, 's');
-        if strcmp(replace_fs, 'y') || strcmp(replace_fs, 'yes')
-            clear prompt
-            prompt = 'Please specify the sampling frequency in Hz: ';
-            fs = input(prompt);
-            if fs < 0
-                error('The sampling frequency has to be positive.\n');
-            elseif fs < frequencies(end)
-                warning('The sampling frequency is lower than the highest frequency in the signal. Further processing will potentially lead to aliasing.');
-            end
-            clear prompt
-        elseif strcmp(replace_fs, 'n') || strcmp(replace_fs, 'no')
-            fs = 2*frequencies(end);
-        else
-            error('Invalid input. Writing HRIR to SOFA object aborted.\n');
-        end
+%         prompt = ['The default sampling frequency is twice the highest occuring frequency. ', ...
+%             'In this case fs = ', num2str(2*frequencies(end)), '. \n', ...
+%             'Do you want to specify a different sampling frequency? [y/n]\n'];
+%         replace_fs = input(prompt, 's');
+%         if strcmp(replace_fs, 'y') || strcmp(replace_fs, 'yes')
+%             clear prompt
+%             prompt = 'Please specify the sampling frequency in Hz: ';
+%             fs = input(prompt);
+%             if fs < 0
+%                 error('The sampling frequency has to be positive.\n');
+%             elseif fs < frequencies(end)
+%                 warning('The sampling frequency is lower than the highest frequency in the signal. Further processing will potentially lead to aliasing.');
+%             end
+%             clear prompt
+%         elseif strcmp(replace_fs, 'n') || strcmp(replace_fs, 'no')
+%             fs = 2*frequencies(end);
+%         else
+%             error('Invalid input. Writing HRIR to SOFA object aborted.\n');
+%         end
         
+        fs = 2*frequencies(end);
+
         % add 0 Hz bin
         pressure = [ones(1, size(pressure,2), size(pressure,3));
             pressure];
