@@ -97,13 +97,13 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
 
 
 @pytest.mark.parametrize("boundary_condition", [("rigid")])
-@pytest.mark.parametrize("source,range_a", [# ("leftear", (40, -40)),
+@pytest.mark.parametrize("source,range_a", [("leftear", (40, -40)),
                          ("rightear", (40, -40)),
-                         # ("bothears", (40, -40))
+                         ("bothears", (40, -40))
                          ])
 @pytest.mark.parametrize("bem_method", [("ml-fmm-bem")])
 def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
-              range_a, range_b=(-1, 1)):
+                                  range_a, range_b=(-1, 1)):
     """
     Test if NumCalc and Output2HRTF.py generate correct output by comparing to
     analytical solution. Tests the simulation of HRTF for left, right and both
@@ -153,12 +153,15 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
     hrtf_sim = hrtf_sim[:, :, 0]/numpy.mean(
                 numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]))
 
+    hrtf_sim = numpy.squeeze(hrtf_sim)
+
     # load HRTF data from analytical comparison
     ana_path = os.path.join(os.path.dirname(__file__),
                             'test_numcalc_analytical_references',
                             'ref_'+boundary_condition+'_'+source+'.mat')
     mat_ana = scipy.io.loadmat(ana_path)
     hrtf_ana = mat_ana['p_total_'+source]
+    hrtf_ana = numpy.squeeze(hrtf_ana)
     # normalize because only relative differences of interest
     hrtf_ana = hrtf_ana/numpy.mean(
                 numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]))
@@ -172,3 +175,6 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
     numpy.testing.assert_allclose(
         numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]),
         numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
+
+# test_numcalc_ear_source_types('rigid', 'leftear', 'ml-fmm-bem',
+#                                   (40, -40), range_b=(-1, 1))
