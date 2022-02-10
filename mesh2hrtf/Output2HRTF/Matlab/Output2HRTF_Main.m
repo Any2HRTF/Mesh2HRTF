@@ -162,7 +162,7 @@ for ii = 1:numSources
 
     % check for error potential in numerical calculation
     iter_error_idx = find(computationTime{ii}(:,7) > 1.5e3);
-    rel_error_idx = find(computationTime{ii}(:,8) > 1e-6);
+    rel_error_idx = find(computationTime{ii}(:,8) > 1e-9);
     warning('off', 'backtrace');
     if ~isempty(iter_error_idx)
         for jj=1:length(iter_error_idx)
