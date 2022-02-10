@@ -148,43 +148,43 @@ extern int numNodesOfBoundaryMesh_,                 /* number of nodes of the bo
   numNodesOfEvaluationMesh_,               /* number of nodes of the evaluation mesh */
   numElementsOfBoundaryMesh_,              /* number of elements of the BE mesh */
   numElementsOfEvaluationMesh_,            /* number of elements of the evaluation mesh */
-	       numRowsOfCoefficientMatrix_,             /* number of rows of the coefficient matrix */
-	       numComponentsOfCoefficientMatrix_,       /* number of components of the coefficient matrix */
-	       numReflectionsOfElements_,               /* number of reflections of the elements with respect to the 
-                                                     symmetric planes */
-           numCurvesFrequency_;                     /* number of curves defining the dependance on freuqancy */
+  numRowsOfCoefficientMatrix_,             /* number of rows of the coefficient matrix */
+  numComponentsOfCoefficientMatrix_,       /* number of components of the coefficient matrix */
+  numReflectionsOfElements_,               /* number of reflections of the elements with respect to the 
+					      symmetric planes */
+  numCurvesFrequency_;                     /* number of curves defining the dependance on freuqancy */
 
 extern int methodBEM_,                      // input value for mehod to be used
-                                            // = 0: Traditional BEM
-                                            // = 1: Single level FMBEM (SLFMBEM)
-                                            // = 4: Direct MLFMBEM without interpolation/filtering procedures
-                                            //      (by storing all coef. matrices on all levels)
-		   numNonZeroEntries_,              // number of nonzero entries of the near field matrix
-           numClusterLevels_,               // number of cluster levels
-		   nlevtop_,                        // = numClusterLevels_ - 1;
-		   maxRowNumberD_,                  // maximum row number of the D-matrix in each level
-		   numOriginalClusters_,            // number of original clusters of boundary elements
-		   numOriginalReflectedClusters_,   // sum of original clusters and reflected clusters
-		   numInternalPointsClusters_,      // number of clusters of nodes of the internal points
-		   methodPreconditioner_,           // flag for the preconditioners
-                                            // = -2: incomplete LU-decomposition preconditioner,
-                                            //      second order scanning degree
-                                            // = -1: incomplete LU-decomposition preconditioner,
-                                            //      first order scanning degree
-                                            // = 0: incomplete LU-decomposition preconditioner, 
-                                            //      zero order scanning degree
-                                            // = 1: scaling preconditioner
-                                            // = 2: no preconditioner
-		   scanningDegreeLU_,               // scanning degree for LU-decomposition preconditioning
-                                            // = 0: zero order scanning degree (fewer remainig components)
-                                            // = 1: first order scanning degree (more remainig components)
-                                            // = 2: second order scanning degree (most remaining components)
-		   methodSolver_;                   // = 0: CGS method (A. Meister p 168)
-                                            // = 1: QMRCGSTAB method (A. Meister p 186)
-                                            // = 2: stabilized BiCGSTAB method (Andreas Meister P 173)
-                                            // = 3: BiCGSTAB method (A. Meister P 172)
-                                            // = 4: Gaussean elimination method (direct method)
-
+// = 0: Traditional BEM
+// = 1: Single level FMBEM (SLFMBEM)
+// = 4: Direct MLFMBEM without interpolation/filtering procedures
+//      (by storing all coef. matrices on all levels)
+  numNonZeroEntries_,              // number of nonzero entries of the near field matrix
+  numClusterLevels_,               // number of cluster levels
+  nlevtop_,                        // = numClusterLevels_ - 1;
+  maxRowNumberD_,                  // maximum row number of the D-matrix in each level
+  numOriginalClusters_,            // number of original clusters of boundary elements
+  numOriginalReflectedClusters_,   // sum of original clusters and reflected clusters
+  numInternalPointsClusters_,      // number of clusters of nodes of the internal points
+  methodPreconditioner_,           // flag for the preconditioners
+// = -2: incomplete LU-decomposition preconditioner,
+//      second order scanning degree
+// = -1: incomplete LU-decomposition preconditioner,
+//      first order scanning degree
+// = 0: incomplete LU-decomposition preconditioner, 
+//      zero order scanning degree
+// = 1: scaling preconditioner
+// = 2: no preconditioner
+  scanningDegreeLU_,               // scanning degree for LU-decomposition preconditioning
+// = 0: zero order scanning degree (fewer remainig components)
+// = 1: first order scanning degree (more remainig components)
+// = 2: second order scanning degree (most remaining components)
+  methodSolver_,                   // = 0: CGS method (A. Meister p 168)
+// = 1: QMRCGSTAB method (A. Meister p 186)
+// = 2: stabilized BiCGSTAB method (Andreas Meister P 173)
+// = 3: BiCGSTAB method (A. Meister P 172)
+// = 4: Gaussean elimination method (direct method)
+  niter_max_;
 extern double farFieldClusterFactor_,   // distance factor used to define far field clusters
 			  minClusterDistance_,      // minimum distance between two interacting clusters 
                                         // (in order to guarantee that the spherical Hankel function in (18) 

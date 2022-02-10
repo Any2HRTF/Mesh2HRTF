@@ -81,7 +81,7 @@ void NC_IncompleteLUForBack();
 
 
 double ErroIterSols = 1.0e-9;
-int niter_max = 1500;
+//int niter_max = 1500;
 double *dscaling;// scaling array scaling preconditiner
 Complex *zL_incom, *zU_incom;// arrays for incomplete LU-decompostion preconditioner
 int *nL_colnu, *nL_firnu, *nU_rownu, *nU_firnu;
@@ -1167,7 +1167,7 @@ BeginCGS:
 
 	for(i=0; i<numRowsOfCoefficientMatrix_; i++) zU_j[i] = zR_j[i] = zP_j[i] = zR_0[i] = zrhs[i] - zV_j[i];
     
-	for(j=0; j<niter_max; j++)
+	for(j=0; j<niter_max_; j++)
 	{
 		NC_MatrixVectorMultiplication(zP_j, zV_j);
 
@@ -1203,11 +1203,11 @@ BeginCGS:
 		  cout << j << " Abs Error:" << sqrt(dwk1) << endl;
 		}
         
-		if(err_rel < ErroIterSols || j == niter_max - 1)
+		if(err_rel < ErroIterSols || j == niter_max_ - 1)
 		{
 			if(j/10*10 != j) cout << j << " " << err_rel << "\n" << endl;
 			for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] = zX_j[i];
-			if(j == niter_max - 1) {
+			if(j == niter_max_ - 1) {
 				NC_Error_Warning_0(NCout, "Warning: Maximum number of iterations is reached!");
 			}
 			break;
@@ -1222,7 +1222,7 @@ BeginCGS:
 	NCout << "\nCGS solver: number of iterations = "
 		<< j << ", relative error = " << err_rel << endl; 
 
-	if(j >= niter_max && methodFMM_ == 0)
+	if(j >= niter_max_ && methodFMM_ == 0)
 	{
 DirectCGS:
 		NC_Error_Warning_0(NCout, "Iteration method CGS failed, direct method is used!");

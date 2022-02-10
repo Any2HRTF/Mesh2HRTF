@@ -106,7 +106,18 @@ omega1_, rpfact_, Tao_, delta_, epsilon_, ClusEdgL0_;
 int numNodesOfBoundaryMesh_, numNodesOfEvaluationMesh_, numElementsOfBoundaryMesh_, numElementsOfEvaluationMesh_, numRowsOfCoefficientMatrix_, numComponentsOfCoefficientMatrix_, numReflectionsOfElements_, numCurvesFrequency_;
 int methodBEM_ = 0, numNonZeroEntries_ = 0, numClusterLevels_, nlevtop_,
 maxRowNumberD_, numOriginalClusters_, numOriginalReflectedClusters_, numInternalPointsClusters_, methodPreconditioner_, scanningDegreeLU_, methodSolver_;
-double farFieldClusterFactor_ = sqrt(5.0)/2.0, minClusterDistance_;
+/*
+  set the max number of iterations
+*/
+int niter_max_ = 250;
+double farFieldClusterFactor_ = 2.0/sqrt(3.0), minClusterDistance_;
+/* 
+kreiza 11.2021 
+fabian had some problems with a verrrrrrry big problem with respect to 
+stability. I found a distance factor in darve of 2/sqrt(3) that guarantees
+absolute convergence of the fmm expansion, let's take this now
+*/
+//double farFieldClusterFactor_ = sqrt(5.0)/2.0, minClusterDistance_;
 double maxClusterRadiusBE_, avgClusterRadiusBE_, minClusterRadiusBE_, maxClusterRadiusRM_, avgClusterRadiusRM_, minClusterRadiusRM_;
 int numExpansionTerms_;
 int numIntegrationPointsUnitSphere_, numIntegrationPointsThetaDirection_, numIntegrationPointsPhiDirection_;
@@ -165,8 +176,9 @@ int main(int argc, char **argv)
   i = 1;
   while (i < argc) {
     if(!strcmp(argv[i],"-h")) {
-      printf("-istart int : start index of iteration\n");
-      printf("-iend   int : end index of iteration\n");
+      printf("-istart   int : start index of iteration\n");
+      printf("-iend     int : end index of iteration\n");
+      printf("-nitermax int : max number of CGS iterations\n");
       printf("-h          : this message\n");
       exit(0);
     }
@@ -180,6 +192,11 @@ int main(int argc, char **argv)
       i++;
       if(i<argc)
 	iend=atoi(argv[i]);
+    }
+    if(!strcmp(argv[i],"-nitermax")) {
+      i++;
+      if( i < argc )
+	niter_max_ = atoi( argv[i] );
     }
     i++;
   }
