@@ -161,9 +161,9 @@ for ii = 1:numSources
     clear jj
 
     % check for error potential in numerical calculation
-    iter_error_idx = find(computationTime{ii}(:,7) > 1.5e3);
-    rel_error_idx = find(computationTime{ii}(:,8) > 1e-9);
     warning('off', 'backtrace');
+    iter_error_idx = find(computationTime{ii}(:,9));
+    rel_error_idx = find(computationTime{ii}(:,8) > 1e-9);
     if ~isempty(iter_error_idx)
         for jj=1:length(iter_error_idx)
             warning(['Number of iterations for frequency ', num2str(computationTime{ii}(iter_error_idx(jj), 2)), ...
@@ -182,7 +182,7 @@ end
 
 
 fprintf('Write computation time to .mat file ...\n');
-description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total'};
+description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total', 'relative error', 'number of iterations', 'maximum number of iterations reached'};
 save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computationTime', '-v6');
 clear ii jj description computationTime tmp iter_error_idx rel_error_idx
 
