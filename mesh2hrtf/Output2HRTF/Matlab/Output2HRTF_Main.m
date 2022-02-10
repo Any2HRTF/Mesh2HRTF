@@ -163,18 +163,18 @@ for ii = 1:numSources
     % check for error potential in numerical calculation
     warning('off', 'backtrace');
     iter_error_idx = find(computationTime{ii}(:,9));
-    rel_error_idx = find(computationTime{ii}(:,8) > 1e-9);
+    rel_error_idx = find(computationTime{ii}(:,7) > 1e-9);
     if ~isempty(iter_error_idx)
         for jj=1:length(iter_error_idx)
             warning(['Number of iterations for frequency ', num2str(computationTime{ii}(iter_error_idx(jj), 2)), ...
-                ' Hz is greater than 1.500.\nContinue with reading computation time...'], '\n');
+                ' Hz has reached the maximum.\nContinue with reading computation time...'], '\n');
         end
         clear jj
     end
     if ~isempty(rel_error_idx)
         for jj=1:length(rel_error_idx)
             warning(['Relative error for frequency ', num2str(computationTime{ii}(rel_error_idx(jj), 2)), ...
-                ' Hz is greater than 1e-6.\nContinue reading computation time...'], '\n');
+                ' Hz is greater than 1e-9.\nContinue reading computation time...'], '\n');
         end
     end
     warning('on', 'backtrace');
