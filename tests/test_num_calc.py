@@ -29,6 +29,82 @@ def test_build_numcalc():
 
     # Verify - missing
 
+@pytest.mark.parametrize("nitermax, istart, iend", [(1, 0, 0), (2, 0, 0),
+                                                    (0, 3, 0), (0, 0, 3),
+                                                    (0, 2, 3), (2, 2, 3)])
+def test_numcalc_commandline_parameters(nitermax, istart, iend):
+    """ test if NumCalc's command line parameters behave as expected"""
+    # Setup
+
+    # create temporary directory
+    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
+
+    # copy test directory
+    shutil.copytree(os.path.join(os.path.dirname(__file__),
+                                 'test_numcalc_project'),
+                    os.path.join(tmp.name, 'project'))
+    # copy correct input file and rename it to NC.inp
+    shutil.copyfile(os.path.join(os.path.dirname(__file__),
+                    'test_numcalc_input_files', 'NC_commandline_parameters.inp'),
+                    os.path.join(tmp.name, 'project', 'NumCalc',
+                                 'source_1', 'NC.inp'))                                
+    
+    commandLineArgument = ''
+    if nitermax > 0:
+        commandLineArgument += f' -nitermax {nitermax}'
+    if istart > 0:
+        commandLineArgument += f' -istart {istart}'
+    if iend > 0:
+        commandLineArgument += f' -iend {iend}'
+
+    # Exercise
+
+    # run NumCalc with subprocess
+    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
+    subprocess.run([f'NumCalc{commandLineArgument}'], cwd=tmp_path, check=True,
+                   shell=True)
+
+    # Verify
+    if ((istart == 0) and (iend == 0)):
+        out_filename = 'NC.out'
+    elif ((istart > 0) and (iend == 0)):
+        out_filename = f'NCfrom{istart}.out'
+    elif ((istart == 0) and (iend > 0)):
+        out_filename = f'NCuntil{iend}.out'
+    elif ((istart > 0) and (iend > 0)):
+        out_filename = f'NC{istart}-{iend}.out'
+    else:
+        raise Exception("Wrong istart and/or iend parameters chosen")
+
+    out_filepath = os.path.join(tmp.name, "project", "NumCalc",
+                                "source_1", out_filename)
+
+    reference_filepath = os.path.join(os.path.dirname(__file__),
+                 'test_numcalc_commandline_parameters_reference_files',
+                 f'NC_{nitermax}_{istart}_{iend}.out')
+
+    with open(out_filepath) as f:
+        out_lines = f.readlines()
+
+    with open(reference_filepath) as f:
+        ref_lines = f.readlines()
+
+    istep = 0 # to count correct number of istart iend steps
+    for number, line in enumerate(out_filepath):
+        if line.startswith('Warning'): # check nitermax = 1 condition
+            assert(line == ref_lines[number])
+        if line.startswith('CGS solver'): # check arbitrary nitermax condition
+            assert(line == ref_lines[number])
+        if ((istart > 0) or (iend > 0)): # check istart iend conditions
+            if line.startswith('>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<'):
+                assert(out_lines[number+2] == ref_lines[number+2])
+
+                if (iend > 0) and (istart+istep > iend):
+                    raise Exception("Step number exceeds iend value")
+                else:
+                    assert(out_lines[number+2].startswith(f'Step {istart+istep}'))
+                    istep += 1
+
 
 @pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])
 @pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
