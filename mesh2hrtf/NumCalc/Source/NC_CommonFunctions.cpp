@@ -1203,11 +1203,11 @@ BeginCGS:
 		  cout << j << " Abs Error:" << sqrt(dwk1) << endl;
 		}
 
-		if(err_rel < ErroIterSols || j == niter_max_ - 1)
+		if(err_rel < ErroIterSols || j == niter_max_)
 		{
 			if(j/10*10 != j) cout << j << " " << err_rel << "\n" << endl;
 			for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] = zX_j[i];
-			if(j == niter_max_ - 1) {
+			if(j == niter_max_) {
 				NC_Error_Warning_0(NCout, "Warning: Maximum number of iterations is reached!");
 			}
 			break;
