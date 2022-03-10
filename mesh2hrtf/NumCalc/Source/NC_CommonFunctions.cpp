@@ -91,7 +91,7 @@ int *nL_colnu, *nL_firnu, *nU_rownu, *nU_firnu;
 // print erro message without output parameters
 void NC_Error_Exit_0 // variant 0_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage
 )
 {
@@ -102,7 +102,7 @@ void NC_Error_Exit_0 // variant 0_0
 
 void NC_Error_Warning_0 // variant 1_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage
 )
 {
@@ -130,7 +130,7 @@ void NC_Error_Warning_0 // variant 1_1
 //print erro message with one parameter with 1 out put parameter
 void NC_Error_Exit_1 // variant 0_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const int& int1
@@ -145,7 +145,7 @@ void NC_Error_Exit_1 // variant 0_0
 
 void NC_Error_Exit_1 // variant 1_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const double& d1
@@ -162,7 +162,7 @@ void NC_Error_Exit_1 // variant 2_0
 (
     ofstream& NCout,
     const string& errorMessage,
-    const string& str1 
+    const string& str1
 )
 {
     cout << errorMessage << " " << str1 << endl;
@@ -172,7 +172,7 @@ void NC_Error_Exit_1 // variant 2_0
 
 void NC_Error_Warning_1 // variant 3_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const int& int1
@@ -186,7 +186,7 @@ void NC_Error_Warning_1 // variant 3_0
 
 void NC_Error_Warning_1 // variant 4_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const double& d1
@@ -225,7 +225,7 @@ void NC_Error_Exit_1 // variant 1_1
 void NC_Error_Exit_1 // variant 2_1
 (
     const string& errorMessage,
-    const string& str1 
+    const string& str1
 )
 {
 	cout << errorMessage << " " << str1 << endl;
@@ -257,7 +257,7 @@ void NC_Error_Warning_1 // variant 4_1
 // print erro message with two out put parameters
 void NC_Error_Exit_2 // variant 0_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const int& int1,
@@ -276,7 +276,7 @@ void NC_Error_Exit_2 // variant 0_0
 
 void NC_Error_Exit_2 // variant 1_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const double& d1,
@@ -295,7 +295,7 @@ void NC_Error_Exit_2 // variant 1_0
 
 void NC_Error_Warning_2 // variant 2_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const int& int1,
@@ -313,7 +313,7 @@ void NC_Error_Warning_2 // variant 2_0
 
 void NC_Error_Warning_2 // variant 3_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const double& d1,
@@ -331,7 +331,7 @@ void NC_Error_Warning_2 // variant 3_0
 
 void NC_Error_Warning_2 // variant 4_0
 (
-	ofstream& NCout, 
+	ofstream& NCout,
 	const string& errorMessage,
 	const string& str1,
 	const int& i1,
@@ -407,7 +407,7 @@ void NC_Error_Warning_2 // variant 3_1
 }
 
 // Operator << for complex values
-ostream& operator<<(ostream &s, const Complex &u) 
+ostream& operator<<(ostream &s, const Complex &u)
 {
     s << "(" << u.re() << ", " << u.im() << ")";
     return s;
@@ -422,7 +422,7 @@ double BLdispoi(Vector<double>& pointa, Vector<double>& pointb)
 	if(pointa.size() < NDIM || pointb.size() < NDIM)
 		NC_Error_Exit_0(NCout, "Dimension of the vectors must be not less than NDIM!");
 
-	for(i=0; i<NDIM; i++) 
+	for(i=0; i<NDIM; i++)
 	{
 		dif = pointa[i] - pointb[i];
 		dist += dif*dif;
@@ -1153,7 +1153,7 @@ BeginCGS:
 				{
 					ifmodyprecond = true;
 					methodPreconditioner_ = 1;
-					NC_Error_Warning_0(NCout, 
+					NC_Error_Warning_0(NCout,
 					"ILU preconditioning failed, the row scanning method is used!");
 					goto BeginCGS;
 				}
@@ -1166,12 +1166,12 @@ BeginCGS:
 	}
 
 	for(i=0; i<numRowsOfCoefficientMatrix_; i++) zU_j[i] = zR_j[i] = zP_j[i] = zR_0[i] = zrhs[i] - zV_j[i];
-    
-	for(j=0; j<niter_max_; j++)
+
+	for(j=0; j<=niter_max_; j++)
 	{
 		NC_MatrixVectorMultiplication(zP_j, zV_j);
 
-		if(j==0) {zrjr0 = zR_j*zR_0;} else {zrjr0 = zrjr1;} 
+		if(j==0) {zrjr0 = zR_j*zR_0;} else {zrjr0 = zrjr1;}
 		zalph = zrjr0/(zV_j*zR_0);
 
 		for(i=0; i<numRowsOfCoefficientMatrix_; i++) zQ_j[i] = zU_j[i] - zalph*zV_j[i];
@@ -1193,7 +1193,7 @@ BeginCGS:
 			err_ori = sqrt(dwk1);
 			cout << "\nCGS: err_ori = " << err_ori << endl;
 		}
-		else 
+		else
 		{
             err_rel = sqrt(dwk1)/err_ori;
 		}
@@ -1202,7 +1202,7 @@ BeginCGS:
 		  cout << j << " " << err_rel << endl;
 		  cout << j << " Abs Error:" << sqrt(dwk1) << endl;
 		}
-        
+
 		if(err_rel < ErroIterSols || j == niter_max_ - 1)
 		{
 			if(j/10*10 != j) cout << j << " " << err_rel << "\n" << endl;
@@ -1220,7 +1220,7 @@ BeginCGS:
 	} // end of loop j
 
 	NCout << "\nCGS solver: number of iterations = "
-		<< j << ", relative error = " << err_rel << endl; 
+		<< j << ", relative error = " << err_rel << endl;
 
 	if(j >= niter_max_ && methodFMM_ == 0)
 	{
@@ -1248,7 +1248,7 @@ DirectCGS:
 	}
 
 	if(ifmodyprecond) methodPreconditioner_ = 0;
-    
+
 }
 
 // compute the product of the coefficient matrix and a vector
@@ -1318,7 +1318,7 @@ void NC_MatrixVectorMultiplication
 				for(j=irowsmtx[i]; j<irowsmtx[i + 1]; j++)
 					zresuvect[i] += zsmtx[j]*zvc_d[jcolsmtx[j]];
 			}
-		} 
+		}
 		break;
 	case 3: // DMLFMBEM
 		// contribution of the near fields
@@ -1337,7 +1337,7 @@ void NC_MatrixVectorMultiplication
 			{
 				clulevarry[ilv].zwkT[i].set(0.0, 0.0);
 				for(j=tmtxlev[ilv].irowTmxLv[i]; j<tmtxlev[ilv].irowTmxLv[i + 1]; j++)
-					clulevarry[ilv].zwkT[i] += 
+					clulevarry[ilv].zwkT[i] +=
 					tmtxlev[ilv].zTmxLv[j]*ztmp[tmtxlev[ilv].jcolTmxLv[j]];
 			}
 
@@ -1346,7 +1346,7 @@ void NC_MatrixVectorMultiplication
 			{
 				clulevarry[ilv].zwkS[i].set(0.0, 0.0);
 				for(j=dmtxlev[ilv].irowDmxLv[i]; j<dmtxlev[ilv].irowDmxLv[i+1]; j++)
-					clulevarry[ilv].zwkS[i] += 
+					clulevarry[ilv].zwkS[i] +=
 					dmtxlev[ilv].zDmxLv[j]*clulevarry[ilv].zwkT[dmtxlev[ilv].jcolDmxLv[j]];
 			}
 
@@ -1354,7 +1354,7 @@ void NC_MatrixVectorMultiplication
 			for(i=0; i<numRowsOfCoefficientMatrix_; i++)
 			{
 				for(j=smtxlev[ilv].irowSmxLv[i]; j<smtxlev[ilv].irowSmxLv[i + 1]; j++)
-					zresuvect[i] += 
+					zresuvect[i] +=
 					smtxlev[ilv].zSmxLv[j]*clulevarry[ilv].zwkS[smtxlev[ilv].jcolSmxLv[j]];
 			}
 		} // end of loop ILV
@@ -1506,7 +1506,7 @@ void NC_IncompleteLUDecomposition
 		break;
 	}
 
-	Vector<int> jcol_tru(n_trues), nrow_tru(numRowsOfCoefficientMatrix_ + 1), irow_tru(n_trues), 
+	Vector<int> jcol_tru(n_trues), nrow_tru(numRowsOfCoefficientMatrix_ + 1), irow_tru(n_trues),
 		ncol_tru(numRowsOfCoefficientMatrix_ + 1);
 
 	// compute the vectors to store the column numbers and row numbers of the "TRUES"
@@ -1531,9 +1531,9 @@ void NC_IncompleteLUDecomposition
 		for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
 		{
 			nrow_tru[i] = kl;
-			for(j=irownea[i]; j<irownea[i + 1]; j++) // loop over nonzeros of the row 
+			for(j=irownea[i]; j<irownea[i + 1]; j++) // loop over nonzeros of the row
 			{
-				if(zcoefl[j].norm() > threshfac || jcolnea[j] == i) 
+				if(zcoefl[j].norm() > threshfac || jcolnea[j] == i)
 					jcol_tru[kl++] = jcolnea[j];
 			}
 		}
@@ -1548,7 +1548,7 @@ void NC_IncompleteLUDecomposition
 		ncol_tru[j] = kl;
 		for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
 		{
-			for(k=nrow_tru[i]; k<nrow_tru[i+1]; k++) 
+			for(k=nrow_tru[i]; k<nrow_tru[i+1]; k++)
 			{
 				if(jcol_tru[k] == j)
 				{
@@ -1587,7 +1587,7 @@ void NC_IncompleteLUDecomposition
 
 		nL_firnu[i] = kl;
 		for(j=0; j<=i; j++) if(Mirow[j]) nL_colnu[kl++] = j;
-			
+
 		nU_firnu[i] = ku;
 		for(j=0; j<i; j++) if(Micol[j]) nU_rownu[ku++] = j;
 	}
@@ -1647,11 +1647,11 @@ void NC_IncompleteLUDecomposition
 		{
 			if(!Micol[k]) continue;
 
-			for(j=nL_firnu[k]; j<nL_firnu[k + 1]; j++) 
+			for(j=nL_firnu[k]; j<nL_firnu[k + 1]; j++)
 			{
 				if(nL_colnu[j] == i)
 				{
-					j1 = j; 
+					j1 = j;
 					break;
 				}
 			}
@@ -1660,7 +1660,7 @@ void NC_IncompleteLUDecomposition
 			for(j=nrow_tru[k]; j<nrow_tru[k+1]; j++) Mkvct[jcol_tru[j]] = true;
 
 			ml = mu = 0;
-			for(m=0; m<i; m++) 
+			for(m=0; m<i; m++)
 			{
 				if(Mkvct[m] && Micol[m])
 				{
@@ -1688,7 +1688,7 @@ void NC_IncompleteLUDecomposition
 			for(j=ncol_tru[k]; j<ncol_tru[k+1]; j++) Mkvct[irow_tru[j]] = true;
 
 			ml = mu = 0;
-			for(m=0; m<i; m++) 
+			for(m=0; m<i; m++)
 			{
 				if(Mirow[m] && Mkvct[m])
 				{
