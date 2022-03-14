@@ -13,17 +13,21 @@
 % - In your publication, cite both articles:
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+%
+% Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
+% Co-Author(s): Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
 
-function data=Output2HRTF_ReadBEMPerformance(filename)
-%OUTPUT2HRTF_READBEMPERFORMANCE
-%   []=Output2HRTF_ReadBEMPerformance(filename) reads
-%   computation time data.
+function data=Output2HRTF_ReadComputationTime(filename)
+%   [] = Output2HRTF_ReadBEMPerformance(filename)
+%
+%   Reads computation time data from NC.out file.
 %
 %   Input:
-%       filename
+%       filename ... read computation time from NC.out (output file from NumCalc)
 %
 %   Output:
-%       data
+%       data ....... computation time in seconds, with columns:
+%                    'Frequency index', 'Frequency', 'Building', 'Solving', 'Postprocessing', 'Total'
 
 fid=fopen(filename);
 count=0;
@@ -52,6 +56,24 @@ while ~feof(fid)
     if strfind(line,'Total  ')
         idx=strfind(line,':');
         data(count,6)=sscanf(line(idx+1:end),'%d');
+    end
+    if strfind(line, 'relative error')
+        [~, endIdx] = regexp(line, '(relative error = )');
+        data(count,7)=sscanf(line(endIdx+1:end-1), '%f');
+    end
+    if contains(line, 'iterations') && ~contains(line, 'Warning')
+        [startIdx, endIdx] = regexp(line, '(number of iterations = )\S+[,]');
+        data(count,8) = sscanf(line(startIdx+23:endIdx-1), '%d');
+        data(count,9) = sscanf('0', '%d');
+    end
+    if ~isempty(regexp(line, '^\d+\s\d+'))
+        [idx1, idx2] = regexp(line, '\s');
+        data(count,7) = sscanf(line(idx2+1:end-1), '%f');
+        data(count,8) = sscanf(line(1:idx1-1), '%d');
+        data(count,9) = sscanf('0', '%d');
+    end
+    if strfind(line, 'Warning: Maximum number of iterations')
+        data(count,9) = sscanf('1', '%d');
     end
     if strfind(line,'Address computation ')
         break

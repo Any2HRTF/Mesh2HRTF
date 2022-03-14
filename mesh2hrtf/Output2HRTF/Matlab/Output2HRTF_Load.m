@@ -13,37 +13,27 @@
 % - In your publication, cite both articles:
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
+%
+% Author: Harald Ziegelwanger (Acoustics Research Institute, Austrian Academy of Sciences)
+% Co-Author(s): Katharina Pollack (Acoustics Research Institute, Austrian Academy of Sciences)
 
-function [data,frequency]=Output2HRTF_Load(foldername,filename)
-%OUTPUT2HRTF_LOAD
-%   [data,frequency]=Output2HRTF_Load(foldername,filename) loads results
-%   of the BEM-HRTF calculation.
+function [data,frequency]=Output2HRTF_Load(foldername,filename, numFrequencies)
+%   [data,frequency] = OUTPUT2HRTF_LOAD(foldername,filename)
+%   
+%   Loads results of the BEM-HRTF calculation from the NumCalc folder.
 %
 %   Input:
-%       foldername:
-%       filename:
+%       foldername ... path to NumCalc output
+%       filename ..... either 'pBoundary' or 'pEvalGrid'
 %
 %   Output:
-%       data: Matrix of complex values
-%           dim1: frequency
-%           dim2: datapoints
-
-%% -------------------check and initialize variables-----------------------
-if ~exist('foldername','var') || ~exist('filename','var')
-    error('Not enough input arguments.')
-end
-
-%% ----------------------check number of freq bins-------------------------
-for ii=1:1000000
-    if ~exist([foldername 'be.' num2str(ii) '/' filename],'file')
-        numFrequencies=ii-1;
-        break
-    end
-end
+%       data ......... Matrix of complex values
+%           dim1: frequencies
+%           dim2: datapoints (complex pressure values)
 
 %% --------------------check number of header lines------------------------
 for ii=1:1000
-    temp1=importdata([foldername 'be.1' '/' filename], ' ', ii);
+    temp1=importdata([foldername, 'be.1', filesep, filename], ' ', ii);
     if ~isempty(temp1)
         if size(temp1.data,2)==3
             if temp1.data(2,1)-temp1.data(1,1)==1
@@ -55,15 +45,15 @@ for ii=1:1000
 end
 
 %% -----------------------------load data----------------------------------
-temp1 = importdata([foldername 'be.1' '/' filename], ' ', numHeaderlines_BE);
+temp1 = importdata([foldername, 'be.1', filesep, filename], ' ', numHeaderlines_BE);
 
 data=zeros(numFrequencies,size(temp1.data,1));
 frequency=zeros(numFrequencies,1);
 
 for ii=1:numFrequencies
-    tmpData = importdata([foldername 'be.' num2str(ii) '/' filename], ' ', numHeaderlines_BE);
+    tmpData = importdata([foldername, 'be.', num2str(ii), filesep, filename], ' ', numHeaderlines_BE);
     if ~isempty(tmpData)
-        tmpFrequency = importdata([foldername '..' filesep 'fe.out' filesep 'fe.' num2str(ii) '/load'], ' ', 2);
+        tmpFrequency = importdata([foldername, '..', filesep, 'fe.out', filesep, 'fe.', num2str(ii), filesep, 'load'], ' ', 2);
 
         data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
         frequency(ii,1)=tmpFrequency.data(1,1);
