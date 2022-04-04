@@ -200,8 +200,9 @@ def reference_HRTF(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
 
     Parameters
     ----------
-    sofa : sofar Sofa object
-       Sofa object containing the sound pressure. Must be of the convention
+    sofa : sofar Sofa object, str
+       Sofa object containing the sound pressure or filename of a SOFA file to
+       be loaded. SOFA object/file must be of the convention
        SimpleFreeFieldHRTF or GeneralTF
     sourceType : str
         The referencing depends on the source type used for simulating the
@@ -227,7 +228,10 @@ def reference_HRTF(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
         A copy of the input data with referenced sound pressure
     """
 
-    sofa = sofa.copy()
+    if isinstance(sofa, str):
+        sofa = sf.read_sofa(sofa)
+    else:
+        sofa = sofa.copy()
 
     if sofa.GLOBAL_SOFAConventions not in ["SimpleFreeFieldHRTF", "GeneralTF"]:
         raise ValueError(("Sofa object must have the conventions "
@@ -319,8 +323,9 @@ def compute_HRIR(sofa, n_shift):
 
     Parameters
     ----------
-    sofa : sofar Sofa object
-       Sofa object containing the sound pressure. Must be of the convention
+    sofa : sofar Sofa object, str
+       Sofa object containing the sound pressure or filename of a SOFA file to
+       be loaded. SOFA object/file must be of the convention
        SimpleFreeFieldHRTF or GeneralTF
     n_shift : int
         Amount the HRIRs are shifted to enforce a causal system.
@@ -336,7 +341,10 @@ def compute_HRIR(sofa, n_shift):
     if discarding or adding some data.
     """
 
-    sofa = sofa.copy()
+    if isinstance(sofa, str):
+        sofa = sf.read_sofa(sofa)
+    else:
+        sofa = sofa.copy()
 
     if sofa.GLOBAL_SOFAConventions not in ["SimpleFreeFieldHRTF", "GeneralTF"]:
         raise ValueError(("Sofa object must have the conventions "
