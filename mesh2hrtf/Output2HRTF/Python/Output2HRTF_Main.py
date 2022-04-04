@@ -333,7 +333,7 @@ def compute_HRIR(sofa, n_shift):
     Notes
     -----
     HRIRs for different sampling rates can be generated from a single SOFA file
-    if discarding some data.
+    if discarding or adding some data.
     """
 
     sofa = sofa.copy()
