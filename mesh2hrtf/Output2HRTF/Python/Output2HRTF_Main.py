@@ -374,6 +374,33 @@ def compute_HRIR(sofa, n_shift):
     return sofa
 
 
+def join_sofa_files(left, right, join="both"):
+    """
+    Join HRTFs and HRIRs from separate SOFA-files containing the left and right
+    ear data. The joined data is to SOFA files to the directory/directories
+    containing the left ear data.
+
+    Parameters
+    ----------
+    left, right : str
+        Two strings that specify what SOFA files to load for the left and right
+        ear. There are two options
+
+        1. `left` and `right` are full paths to SOFA files, i.e., the end with
+           ".sofa"
+        2. `left` and `right` give the folders that contain the SOFA files in
+           the subfolders "Output2HRTF". In this case `left` and `right` can
+           contain an asterisk to process data in multiple folders. E.g., if
+           `left` is ``"some/path/*_left"`` and `right` is
+           ``"some/path/*_right"`` all SOFA files in the matching folders
+           will be joined
+    join : str
+        Specifies what data is joined. ``"HRTF"`` joins only the HRTFs,
+        ``"HRIR"`` joins only the HRIRs. The default ``"both"`` joins all data
+    """
+    pass
+
+
 def _read_nodes_and_elements(data):
     """
     Read the nodes and elements of the evaluation grids or object meshes.
