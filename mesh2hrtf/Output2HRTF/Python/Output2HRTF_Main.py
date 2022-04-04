@@ -33,7 +33,7 @@
 # TODO header
 import os
 import csv
-import numpy
+import numpy as np
 import sofar as sf
 
 
@@ -105,7 +105,7 @@ def Output2HRTF_Main(
     #                'Postprocessing', 'Total']
 
     # # save csv file for comparing computation times across simulations
-    # numpy.savetxt(os.path.join('Output2HRTF', 'computationTime.csv'),
+    # np.savetxt(os.path.join('Output2HRTF', 'computationTime.csv'),
     #               computationTime[0],  fmt='%1.5e', delimiter=", ",
     #               header=", ".join(description), comments="")
 
@@ -115,7 +115,7 @@ def Output2HRTF_Main(
     pressure, frequencies = read_pressure(
         numSources, numFrequencies, data='pBoundary')
 
-    print('\nSave ObjectMesh data ...')
+    print('\nSaving ObjectMesh data ...')
     cnt = 0
     for ii in range(len(objectMeshes)):
         nodes = objectMeshes[ii]["nodes"]
@@ -127,9 +127,9 @@ def Output2HRTF_Main(
                 cnt:cnt+elements.shape[0], jj, :]
 
         file = open("ObjectMesh_"+objectMeshes[ii]["name"]+".npz", "w")
-        numpy.savez_compressed(file.name, nodes=nodes, elements=elements,
-                               frequencies=frequencies,
-                               element_data=element_data)
+        np.savez_compressed(file.name, nodes=nodes, elements=elements,
+                            frequencies=frequencies,
+                            element_data=element_data)
         file.close()
 
         cnt = cnt + elements.shape[0]
@@ -195,10 +195,10 @@ def read_nodes_and_elements(data):
     gridsList = os.listdir(data)
     gridsNumNodes = 0
     for ii in range(len(gridsList)):
-        tmpNodes = numpy.loadtxt(os.path.join(
+        tmpNodes = np.loadtxt(os.path.join(
             data, gridsList[ii], 'Nodes.txt'),
             delimiter=' ', skiprows=1)
-        tmpElements = numpy.loadtxt(os.path.join(
+        tmpElements = np.loadtxt(os.path.join(
             data, gridsList[ii], 'Elements.txt'),
             delimiter=' ', skiprows=1)
         grids.append({"name": gridsList[ii], "nodes": tmpNodes,
@@ -223,11 +223,9 @@ def read_pressure(numSources, numFrequencies, data):
         tmpPressure, frequencies = Output2HRTF_Load(
             tmpFilename, data, numFrequencies)
 
-        print('...')
-
         pressure.append(tmpPressure)
 
-    pressure = numpy.transpose(numpy.array(pressure), (2, 0, 1))
+    pressure = np.transpose(np.array(pressure), (2, 0, 1))
 
     return pressure, frequencies
 
@@ -242,23 +240,23 @@ def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
 
         xyz = evaluationGrids[ii]["nodes"]
         pressure = evaluationGrids[ii]["pressure"]
-        freqMatrix = numpy.tile(
+        freqMatrix = np.tile(
             frequencies, (pressure.shape[0], pressure.shape[1], 1))
 
         # distance of source positions from the origin
         if refMode == 1:
-            r = min(numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2))
-            r = numpy.tile(
+            r = min(np.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2))
+            r = np.tile(
                 r,
                 (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
         else:
-            r = numpy.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2)
-            r = numpy.tile(numpy.transpose(r),
-                           (pressure.shape[0], pressure.shape[1], 1))
+            r = np.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2)
+            r = np.tile(np.transpose(r),
+                        (pressure.shape[0], pressure.shape[1], 1))
 
         if sourceType in {'Both ears', 'Left ear', 'Right ear'}:
 
-            volumeFlow = 0.1 * numpy.ones(
+            volumeFlow = 0.1 * np.ones(
                 (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
             if 'sourceArea':
                 # has to be fixed for both ears....
@@ -268,17 +266,16 @@ def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
 
             # point source in the origin evaluated at r
             # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-            ps = -1j * densityOfAir * 2 * numpy.pi * freqMatrix * \
-                volumeFlow / (4 * numpy.pi) * \
-                numpy.exp(1j * 2 * numpy.pi *
-                          freqMatrix / speedOfSound * r) / r
+            ps = -1j * densityOfAir * 2 * np.pi * freqMatrix * \
+                volumeFlow / (4 * np.pi) * \
+                np.exp(1j * 2 * np.pi * freqMatrix / speedOfSound * r) / r
 
         elif sourceType == 'Point source':
 
             amplitude = 0.1  # hard coded in Mesh2HRTF
             ps = amplitude * \
-                numpy.exp(1j * 2 * numpy.pi * freqMatrix /
-                          speedOfSound * r) / (4 * numpy.pi * r)
+                np.exp(1j * 2 * np.pi * freqMatrix /
+                       speedOfSound * r) / (4 * np.pi * r)
 
         elif sourceType == 'Plane wave':
             raise ValueError(
@@ -299,7 +296,7 @@ def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
 def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
     """Compute HRIR from HRTF by means of the inverse Fourier transform"""
     # check if the frequency vector has the correct format
-    if any(numpy.abs(numpy.diff(frequencies, 2)) > .1) or frequencies[0] < .1:
+    if any(np.abs(np.diff(frequencies, 2)) > .1) or frequencies[0] < .1:
         raise ValueError(
             ('The frequency vector must go from f_1 > 0 to'
              'f_2 (half the sampling rate) in equidistant steps.'))
@@ -312,19 +309,18 @@ def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
     fs = round(2*frequencies[-1])
 
     # add 0 Hz bin
-    pressure = numpy.concatenate((numpy.ones((pressure.shape[0],
-                                  pressure.shape[1], 1)), pressure),
-                                 axis=2)
+    pressure = np.concatenate((np.ones((pressure.shape[0],
+                               pressure.shape[1], 1)), pressure), axis=2)
     # make fs/2 real
-    pressure[:, :, -1] = numpy.abs(pressure[:, :, -1])
+    pressure[:, :, -1] = np.abs(pressure[:, :, -1])
     # ifft (take complex conjugate because sign conventions differ)
-    hrir = numpy.fft.irfft(numpy.conj(pressure))
+    hrir = np.fft.irfft(np.conj(pressure))
 
     # shift 30 cm to make causal
     # (path differences between the origin and the ear are usually
     # smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
-    n_shift = int(numpy.round(.30 / (1/fs * speedOfSound)))
-    hrir = numpy.roll(hrir, n_shift, axis=2)
+    n_shift = int(np.round(.30 / (1/fs * speedOfSound)))
+    hrir = np.roll(hrir, n_shift, axis=2)
 
     return hrir, fs
 
@@ -334,7 +330,18 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
                   type='HRTF'):
     """Write complex pressure or impulse responses as SOFA file."""
 
-    xyz = evaluationGrids[ii]["nodes"]
+    # get source coordinates in spherical convention
+    xyz = evaluationGrids[ii]["nodes"][:, 1:4]
+
+    radius = np.sqrt(xyz[:, 0]**2 + xyz[:, 1]**2 + xyz[:, 2]**2)
+    z_div_r = np.where(radius != 0, xyz[:, 2] / radius, 0)
+    elevation = 90 - np.arccos(z_div_r) / np.pi * 180
+    azimuth = np.mod(np.arctan2(xyz[:, 1], xyz[:, 0]), 2 * np.pi) / np.pi * 180
+
+    source_position = np.concatenate(
+        (azimuth[..., np.newaxis],
+         elevation[..., np.newaxis],
+         radius[..., np.newaxis]), axis=-1)
 
     # Save as SOFA file
     path = os.path.join('Output2HRTF',
@@ -358,9 +365,9 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     sofa.GLOBAL_History = "numerically simulated data"
 
     # Source and receiver data
-    sofa.SourcePosition = xyz[:, 1:4]
-    sofa.SourcePosition_Units = "meter"
-    sofa.SourcePosition_Type = "cartesian"
+    sofa.SourcePosition = source_position
+    sofa.SourcePosition_Units = "degree, degree, meter"
+    sofa.SourcePosition_Type = "spherical"
 
     sofa.ReceiverPosition = sourceCenter
     sofa.ReceiverPosition_Units = "meter"
@@ -368,13 +375,13 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
 
     # HRTF/HRIR data
     if type == 'HRTF':
-        sofa.Data_Real = numpy.real(evaluationGrids[ii]["pressure"])
-        sofa.Data_Imag = numpy.imag(evaluationGrids[ii]["pressure"])
+        sofa.Data_Real = np.real(evaluationGrids[ii]["pressure"])
+        sofa.Data_Imag = np.imag(evaluationGrids[ii]["pressure"])
         sofa.N = frequencies
     elif type == 'HRIR':
         sofa.Data_IR = hrir
         sofa.Data_SamplingRate = fs
-        sofa.Data_Delay = numpy.zeros((1, hrir.shape[1]))
+        sofa.Data_Delay = np.zeros((1, hrir.shape[1]))
 
     # Save
     sf.write_sofa(path, sofa)
@@ -430,8 +437,8 @@ def Output2HRTF_Load(foldername, filename, numFrequencies):
                         break
 
     # ------------------------------load data----------------------------------
-    data = numpy.zeros((numFrequencies, numDatalines), dtype=complex)
-    frequency = numpy.zeros(numFrequencies)
+    data = np.zeros((numFrequencies, numDatalines), dtype=complex)
+    frequency = np.zeros(numFrequencies)
 
     for ii in range(numFrequencies):
         tmpData = []
@@ -453,8 +460,8 @@ def Output2HRTF_Load(foldername, filename, numFrequencies):
             data[ii, :] = tmpData
             frequency[ii] = tmpFrequency
         else:
-            data[ii, :] = numpy.nan
-            frequency[ii] = numpy.nan
+            data[ii, :] = np.nan
+            frequency[ii] = np.nan
 
     return data, frequency
 
@@ -508,7 +515,7 @@ def read_computation_time(filename):
         if line.find('Number of frequency steps') != -1:
             idx = line.find('=')
             nSteps = int(line[idx+2])
-            data = numpy.zeros((nSteps, 6), dtype=int)
+            data = np.zeros((nSteps, 6), dtype=int)
 
         if line.find('Frequency') != -1:
             count += 1
