@@ -80,15 +80,15 @@ def Output2HRTF_Main(
         os.makedirs(os.path.join(os.getcwd(), 'Output2HRTF'))
 
     # get the number of frequency steps
-    numFrequencies = get_number_of_frequencies('Info.txt')
+    numFrequencies = _get_number_of_frequencies('Info.txt')
 
     # get the evaluation grids
     evaluationGrids, evaluationGridsNumNodes = \
-        read_nodes_and_elements(data='EvaluationGrids')
+        _read_nodes_and_elements(data='EvaluationGrids')
 
     # get the object mesh
     objectMeshes, objectMeshesNumNodes = \
-        read_nodes_and_elements(data='ObjectMeshes')
+        _read_nodes_and_elements(data='ObjectMeshes')
 
     # # Read computational effort
     # print('\n Loading computational effort data ...')
@@ -97,7 +97,7 @@ def Output2HRTF_Main(
     #     for file in Path(os.path.join('NumCalc',
     #                                   f'source_{source+1}')).glob('NC*.out'):
     #         tmpFilename = os.path.join(file)
-    #         tmp = read_computation_time(tmpFilename)
+    #         tmp = _read_computation_time(tmpFilename)
     #         computationTime.append(tmp)
     #         del tmp
 
@@ -112,7 +112,7 @@ def Output2HRTF_Main(
     # del source, file, description, computationTime
 
     # Load ObjectMesh data
-    pressure, frequencies = read_pressure(
+    pressure, frequencies = _read_pressure(
         numSources, numFrequencies, data='pBoundary')
 
     print('\nSaving ObjectMesh data ...')
@@ -140,7 +140,7 @@ def Output2HRTF_Main(
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
 
-        pressure, frequencies = read_pressure(
+        pressure, frequencies = _read_pressure(
             numSources, numFrequencies, data='pEvalGrid')
 
     # save to struct
@@ -153,36 +153,228 @@ def Output2HRTF_Main(
 
     del ii, pressure, cnt
 
-    # reference to pressure in the middle of the head with the head absent
-    # according to the HRTF definition.
-    if reference:
-        evaluationGrids = reference_HRTF(evaluationGrids, frequencies,
-                                         sourceType, sourceArea, speedOfSound,
-                                         densityOfAir, refMode=1)
-
-    # Save complex pressure as SOFA file
-    print('\nSaving complex pressure to SOFA file ...\n')
-
+    # process BEM data for writing HRTFs and HRIRs to SOFA files
     for ii in range(len(evaluationGrids)):
-        write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
-                      frequencies, numSources, sourceCenter, type='HRTF')
+        eval_grid_name = evaluationGrids[ii]["name"]
+        eval_grid_pressure = evaluationGrids[ii]["pressure"]
+        eval_grid_xzy = evaluationGrids[ii]["nodes"][:, 1:4]
 
-    # Save impulse responses as SOFA file
-    if computeHRIRs:
+        print(f'\nSaving HRTFs for EvaluationGrid {eval_grid_name} ...\n')
 
-        print('\nSaving time data to SOFA file ...\n')
+        # get pressure as SOFA object (all following steps are run on SOFA
+        # objects. This way they are available to other users as well)
+        sofa = _get_sofa_object(
+            eval_grid_pressure, eval_grid_xzy, "cartesian", sourceCenter,
+            "HRTF", Mesh2HRTF_version, frequencies=frequencies)
 
-        for ii in range(len(evaluationGrids)):
-            hrir, fs = compute_HRIR(ii, evaluationGrids, frequencies,
-                                    reference, speedOfSound)
+        # reference to sound pressure at the center of the head
+        if reference:
+            sofa = reference_HRTF(sofa, sourceType, sourceArea, speedOfSound,
+                                  densityOfAir, mode="min")
 
-            write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version, frequencies,
-                          numSources, sourceCenter, fs, hrir, type='HRIR')
+        # write HRTF data to SOFA file
+        sf.write_sofa(os.path.join(
+            'Output2HRTF', f'HRTF_{eval_grid_name}.sofa'), sofa)
+
+        # calculate and write HRIRs
+        if computeHRIRs:
+            if not reference:
+                raise ValueError("Computing HRIRs requires prior referencing")
+
+            # calculate shift value (equivalent to a 30 cm shift)
+            fs = round(2*sofa.frequencies[-1])
+            n_shift = int(np.round(.30 / (1/fs * speedOfSound)))
+
+            sofa = compute_HRIR(sofa, n_shift)
+            sf.write_sofa(os.path.join(
+                'Output2HRTF', f'HRIR_{eval_grid_name}.sofa'), sofa)
 
     print('Done\n')
 
 
-def read_nodes_and_elements(data):
+def reference_HRTF(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
+                   mode="min"):
+    """
+    Reference HRTF to the sound pressure in the center of the head. After
+    referencing the sound pressure approaches 1 (0 dB) for low frequencies.
+
+    Parameters
+    ----------
+    sofa : sofar Sofa object
+       Sofa object containing the sound pressure. Must be of the convention
+       SimpleFreeFieldHRTF or GeneralTF
+    sourceType : str
+        The referencing depends on the source type used for simulating the
+        sound pressure. Can be "Both ears", "Left ear", "Right ear",
+        "Point source", or "Plane wave"
+    sourceArea : array like
+        The area of the source is required if `sourceType` is "Both ears" in
+        which case `sourceAre` is a list with two values or if `sourceType` is
+        "Left ear" or "Right ear" in which case `sourceArea` is a list with one
+        value.
+    speedOfSound : number
+        The speed of sound in m/s
+    densityOfAir : number
+        The density of air in kg / m**3
+    mode : str, optional
+        Pass "min", "max", or "mean" to reference to the minmum, maximum, or
+        mean radius in `sofa.SourcePosition`. Pass "all" to normalize each
+        HRTF to the radius of the corresponding source.
+
+    Returns
+    -------
+    sofa : sofar Sofa.object
+        A copy of the input data with referenced sound pressure
+    """
+
+    sofa = sofa.copy()
+
+    if sofa.GLOBAL_SOFAConventions not in ["SimpleFreeFieldHRTF", "GeneralTF"]:
+        raise ValueError(("Sofa object must have the conventions "
+                          "SimpleFreeFieldHRTF or GeneralTF"))
+
+    if sofa.SourcePosition_Type == "spherical":
+        radius = sofa.SourcePosition[:, 2]
+    else:
+        radius = np.sqrt(sofa.SourcePosition[:, 0]**2 +
+                         sofa.SourcePosition[:, 1]**2 +
+                         sofa.SourcePosition[:, 2]**2)
+
+    pressure = sofa.Data_Real + 1j * sofa.Data_Imag
+    frequencies = sofa.N
+
+    # distance of source positions from the origin
+    if mode == "min":
+        r = np.min(radius)
+    elif mode == "mean":
+        r = np.mean(radius)
+    elif mode == "max":
+        r = np.max(radius)
+    else:
+        r = radius[..., np.newaxis, np.newaxis]
+
+    if sourceType in {'Both ears', 'Left ear', 'Right ear'}:
+
+        volumeFlow = 0.1 * np.ones(pressure.shape)
+        if 'sourceArea':
+            # has to be fixed for both ears....
+            for nn in range(len(sourceArea)):
+                volumeFlow[:, nn, :] = \
+                    volumeFlow[:, nn, :] * sourceArea[nn]
+
+        # point source in the origin evaluated at r
+        # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
+        ps = -1j * densityOfAir * 2 * np.pi * frequencies * \
+            volumeFlow / (4 * np.pi) * \
+            np.exp(1j * 2 * np.pi * frequencies / speedOfSound * r) / r
+
+    elif sourceType == 'Point source':
+
+        amplitude = 0.1  # hard coded in Mesh2HRTF
+        ps = amplitude * \
+            np.exp(1j * 2 * np.pi * frequencies /
+                   speedOfSound * r) / (4 * np.pi * r)
+
+    elif sourceType == 'Plane wave':
+        raise ValueError(
+            ("Plane wave not implemented yet."))
+
+    else:
+        raise ValueError(
+            ("Referencing is currently only implemented for "
+                "sourceType 'Both ears', 'Left ear', 'Right ear',"
+                "'Point source' and 'Plane wave'."))
+
+    # here we go...
+    pressure /= ps
+    sofa.Data_Real = np.real(pressure)
+    sofa.Data_Imag = np.imag(pressure)
+
+    return sofa
+
+
+def compute_HRIR(sofa, n_shift):
+    """
+    Compute HRIR from HRTF by means of the inverse Fourier transform.
+
+    This requires the following:
+
+    1. The HRTFs contained in `sofa` have been referenced using
+       `reference_HRTFs()`.
+    2. HRTF must be available for frequencies f_0 to f_1 in constant steps.
+       f_0 must be > 0 Hz and f_1 is assumed to be half the sampling rate.
+
+    HRIRs are computed with the following steps
+
+    1. Add data for 0 Hz. The HRTF at 0 Hz is 1 (0 dB) by definition because
+       the HRTF describes the filtering of incoming sound by the human
+       anthropometry (which does not change the sound at 0 Hz).
+    2. Only the absolute value for the data at half the sampling rate is used.
+       Otherwise the next step would produce complex output
+    3. The HRTF spectrum is mirrored and the HRIR is obtained through the
+       inverse Fourier transform
+    4. The HRIRs are circularly shifted by `n_shift` samples to enforce a
+       causal system. A good shift value for a sampling rate of 44.1 kHz might
+       be between 20 and 40 samples.
+
+    Parameters
+    ----------
+    sofa : sofar Sofa object
+       Sofa object containing the sound pressure. Must be of the convention
+       SimpleFreeFieldHRTF or GeneralTF
+    n_shift : int
+        Amount the HRIRs are shifted to enforce a causal system.
+
+    Returns
+    -------
+    sofa : sofar Sofa.object
+        HRIRs
+
+    Notes
+    -----
+    HRIRs for different sampling rates can be generated from a single SOFA file
+    if discarding some data.
+    """
+
+    sofa = sofa.copy()
+
+    if sofa.GLOBAL_SOFAConventions not in ["SimpleFreeFieldHRTF", "GeneralTF"]:
+        raise ValueError(("Sofa object must have the conventions "
+                          "SimpleFreeFieldHRTF or GeneralTF"))
+
+    # check if the frequency vector has the correct format
+    frequencies = sofa.N
+    if any(np.abs(np.diff(frequencies, 2)) > .1) or frequencies[0] < .1:
+        raise ValueError(
+            ('The frequency vector must go from f_1 > 0 to'
+             'f_2 (half the sampling rate) in equidistant steps.'))
+
+    pressure = sofa.Data_Real + 1j * sofa.Data_Imag
+
+    fs = round(2*frequencies[-1])
+
+    # add 0 Hz bin
+    pressure = np.concatenate((np.ones((pressure.shape[0],
+                               pressure.shape[1], 1)), pressure), axis=2)
+    # make fs/2 real
+    pressure[:, :, -1] = np.abs(pressure[:, :, -1])
+    # ifft (take complex conjugate because sign conventions differ)
+    hrir = np.fft.irfft(np.conj(pressure))
+
+    # shift to make causal
+    # (path differences between the origin and the ear are usually
+    # smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
+    hrir = np.roll(hrir, n_shift, axis=-1)
+
+    sofa = _get_sofa_object(
+        hrir, sofa.SourcePosition, sofa.SourcePosition_Type,
+        sofa.ReceiverPosition, "HRIR", sofa.GLOBAL_ApplicationVersion,
+        sampling_rate=fs)
+
+    return sofa
+
+
+def _read_nodes_and_elements(data):
     """
     Read the nodes and elements of the evaluation grids or object meshes.
     """
@@ -208,7 +400,7 @@ def read_nodes_and_elements(data):
     return grids, gridsNumNodes
 
 
-def read_pressure(numSources, numFrequencies, data):
+def _read_pressure(numSources, numFrequencies, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
     pressure = []
 
@@ -220,7 +412,7 @@ def read_pressure(numSources, numFrequencies, data):
         print('\n    Source %d ...' % (source+1))
 
         tmpFilename = os.path.join('NumCalc', f'source_{source+1}', 'be.out')
-        tmpPressure, frequencies = Output2HRTF_Load(
+        tmpPressure, frequencies = _output_to_hrtf_load(
             tmpFilename, data, numFrequencies)
 
         pressure.append(tmpPressure)
@@ -230,131 +422,56 @@ def read_pressure(numSources, numFrequencies, data):
     return pressure, frequencies
 
 
-def reference_HRTF(evaluationGrids, frequencies, sourceType, sourceArea,
-                   speedOfSound, densityOfAir, refMode):
-    """Reference HRTF to the sound pressure in the center of the head."""
-    # refmode
-    # 1: reference to only one radius (the smallest found)
-    # 2: reference to all individual radii
-    for ii in range(len(evaluationGrids)):
+def _get_sofa_object(data, source_position, source_position_type,
+                     receiver_position, mode, Mesh2HRTF_version,
+                     frequencies=None, sampling_rate=None):
+    """
+    Write complex pressure or impulse responses to a SOFA object.
 
-        xyz = evaluationGrids[ii]["nodes"]
-        pressure = evaluationGrids[ii]["pressure"]
-        freqMatrix = np.tile(
-            frequencies, (pressure.shape[0], pressure.shape[1], 1))
+    Parameters
+    ----------
+    data : numpy array
+        The data as an array of shape (MRE)
+    evaluation_grid : numpy array
+        The evaluation grid in Cartesian coordinates as an array of shape (MC)
+    receiver_position : numpy array
+        The position of the receivers (ears) in Cartesian coordinates
+    mode : str
+        "HRTF" to save HRTFs, "HRIR" to save HRIRs
+    Mesh2HRTF_version : str
+    frequencies : numpy array
+        The frequencies at which the HRTFs were calculated. Required if mode is
+        "HRTF"
+    sampling_rate :
+        The sampling rate. Required if mode is "HRIR"
 
-        # distance of source positions from the origin
-        if refMode == 1:
-            r = min(np.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2))
-            r = np.tile(
-                r,
-                (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
-        else:
-            r = np.sqrt(xyz[:, 1]**2 + xyz[:, 2]**2 + xyz[:, 3]**2)
-            r = np.tile(np.transpose(r),
-                        (pressure.shape[0], pressure.shape[1], 1))
-
-        if sourceType in {'Both ears', 'Left ear', 'Right ear'}:
-
-            volumeFlow = 0.1 * np.ones(
-                (pressure.shape[0], pressure.shape[1], pressure.shape[2]))
-            if 'sourceArea':
-                # has to be fixed for both ears....
-                for nn in range(len(sourceArea)):
-                    volumeFlow[:, nn, :] = \
-                        volumeFlow[:, nn, :] * sourceArea[nn]
-
-            # point source in the origin evaluated at r
-            # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-            ps = -1j * densityOfAir * 2 * np.pi * freqMatrix * \
-                volumeFlow / (4 * np.pi) * \
-                np.exp(1j * 2 * np.pi * freqMatrix / speedOfSound * r) / r
-
-        elif sourceType == 'Point source':
-
-            amplitude = 0.1  # hard coded in Mesh2HRTF
-            ps = amplitude * \
-                np.exp(1j * 2 * np.pi * freqMatrix /
-                       speedOfSound * r) / (4 * np.pi * r)
-
-        elif sourceType == 'Plane wave':
-            raise ValueError(
-                ("Plane wave not implemented yet."))
-
-        else:
-            raise ValueError(
-                ("Referencing is currently only implemented for "
-                    "sourceType 'Both ears', 'Left ear', 'Right ear',"
-                    "'Point source' and 'Plane wave'."))
-
-        # here we go...
-        evaluationGrids[ii]["pressure"] = pressure / ps
-
-    return evaluationGrids
-
-
-def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
-    """Compute HRIR from HRTF by means of the inverse Fourier transform"""
-    # check if the frequency vector has the correct format
-    if any(np.abs(np.diff(frequencies, 2)) > .1) or frequencies[0] < .1:
-        raise ValueError(
-            ('The frequency vector must go from f_1 > 0 to'
-             'f_2 (half the sampling rate) in equidistant steps.'))
-
-    if not reference:
-        raise ValueError('HRIRs can only be computed if reference=true')
-
-    pressure = evaluationGrids[ii]["pressure"]
-
-    fs = round(2*frequencies[-1])
-
-    # add 0 Hz bin
-    pressure = np.concatenate((np.ones((pressure.shape[0],
-                               pressure.shape[1], 1)), pressure), axis=2)
-    # make fs/2 real
-    pressure[:, :, -1] = np.abs(pressure[:, :, -1])
-    # ifft (take complex conjugate because sign conventions differ)
-    hrir = np.fft.irfft(np.conj(pressure))
-
-    # shift 30 cm to make causal
-    # (path differences between the origin and the ear are usually
-    # smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
-    n_shift = int(np.round(.30 / (1/fs * speedOfSound)))
-    hrir = np.roll(hrir, n_shift, axis=2)
-
-    return hrir, fs
-
-
-def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
-                  frequencies, numSources, sourceCenter, fs=None, hrir=None,
-                  type='HRTF'):
-    """Write complex pressure or impulse responses as SOFA file."""
+    Returns
+    -------
+    sofa : sofar.Sofa object
+    """
 
     # get source coordinates in spherical convention
-    xyz = evaluationGrids[ii]["nodes"][:, 1:4]
+    if source_position_type == "cartesian":
+        xyz = source_position
 
-    radius = np.sqrt(xyz[:, 0]**2 + xyz[:, 1]**2 + xyz[:, 2]**2)
-    z_div_r = np.where(radius != 0, xyz[:, 2] / radius, 0)
-    elevation = 90 - np.arccos(z_div_r) / np.pi * 180
-    azimuth = np.mod(np.arctan2(xyz[:, 1], xyz[:, 0]), 2 * np.pi) / np.pi * 180
+        radius = np.sqrt(xyz[:, 0]**2 + xyz[:, 1]**2 + xyz[:, 2]**2)
+        z_div_r = np.where(radius != 0, xyz[:, 2] / radius, 0)
+        elevation = 90 - np.arccos(z_div_r) / np.pi * 180
+        azimuth = np.mod(np.arctan2(xyz[:, 1], xyz[:, 0]), 2 * np.pi) \
+            / np.pi * 180
 
-    source_position = np.concatenate(
-        (azimuth[..., np.newaxis],
-         elevation[..., np.newaxis],
-         radius[..., np.newaxis]), axis=-1)
+        source_position = np.concatenate(
+            (azimuth[..., np.newaxis],
+             elevation[..., np.newaxis],
+             radius[..., np.newaxis]), axis=-1)
 
-    # Save as SOFA file
-    path = os.path.join('Output2HRTF',
-                        f'{type}_{evaluationGrids[ii]["name"]}.sofa')
-
-    # Need to delete it first if file already exists
-    if os.path.exists(path):
-        os.remove(path)
+    # get number of sources from data
+    numSources = data.shape[1]
 
     # create empty SOFA object
-    if type == 'HRTF':
+    if mode == "HRTF":
         convention = "SimpleFreeFieldHRTF" if numSources == 2 else "GeneralTF"
-    elif type == 'HRIR':
+    else:
         convention = "SimpleFreeFieldHRIR" if numSources == 2 else "GeneralFIR"
 
     sofa = sf.Sofa(convention)
@@ -369,25 +486,24 @@ def write_to_sofa(ii, evaluationGrids, Mesh2HRTF_version,
     sofa.SourcePosition_Units = "degree, degree, meter"
     sofa.SourcePosition_Type = "spherical"
 
-    sofa.ReceiverPosition = sourceCenter
+    sofa.ReceiverPosition = receiver_position
     sofa.ReceiverPosition_Units = "meter"
     sofa.ReceiverPosition_Type = "cartesian"
 
     # HRTF/HRIR data
-    if type == 'HRTF':
-        sofa.Data_Real = np.real(evaluationGrids[ii]["pressure"])
-        sofa.Data_Imag = np.imag(evaluationGrids[ii]["pressure"])
+    if mode == "HRTF":
+        sofa.Data_Real = np.real(data)
+        sofa.Data_Imag = np.imag(data)
         sofa.N = frequencies
-    elif type == 'HRIR':
-        sofa.Data_IR = hrir
-        sofa.Data_SamplingRate = fs
-        sofa.Data_Delay = np.zeros((1, hrir.shape[1]))
+    else:
+        sofa.Data_IR = data
+        sofa.Data_SamplingRate = sampling_rate
+        sofa.Data_Delay = np.zeros((1, data.shape[1]))
 
-    # Save
-    sf.write_sofa(path, sofa)
+    return sofa
 
 
-def Output2HRTF_Load(foldername, filename, numFrequencies):
+def _output_to_hrtf_load(foldername, filename, numFrequencies):
     """
     Load results of the BEM calculation.
 
@@ -466,7 +582,7 @@ def Output2HRTF_Load(foldername, filename, numFrequencies):
     return data, frequency
 
 
-def get_number_of_frequencies(path):
+def _get_number_of_frequencies(path):
     """
     Read number of simulated frequency steps from Info.txt
 
@@ -495,7 +611,7 @@ def get_number_of_frequencies(path):
     return int(line.strip()[len(key):])
 
 
-def read_computation_time(filename):
+def _read_computation_time(filename):
     """
     Read compuation time
 
