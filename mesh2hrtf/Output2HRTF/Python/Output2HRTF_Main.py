@@ -305,7 +305,7 @@ def compute_HRIR(ii, evaluationGrids, frequencies, reference, speedOfSound):
              'f_2 (half the sampling rate) in equidistant steps.'))
 
     if not reference:
-        raise ValueError('HRIRs can only be computet if reference=true')
+        raise ValueError('HRIRs can only be computed if reference=true')
 
     pressure = evaluationGrids[ii]["pressure"]
 
