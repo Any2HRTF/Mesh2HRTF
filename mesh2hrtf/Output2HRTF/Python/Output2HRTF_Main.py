@@ -34,6 +34,7 @@
 import os
 import csv
 import numpy as np
+import glob
 import sofar as sf
 
 
@@ -386,7 +387,7 @@ def join_sofa_files(left, right, join="both"):
     """
     Join HRTFs and HRIRs from separate SOFA-files containing the left and right
     ear data. The joined data is to SOFA files to the directory/directories
-    containing the left ear data.
+    containing the left ear data. The file names is extended by ``"_joined"``.
 
     Parameters
     ----------
@@ -401,12 +402,114 @@ def join_sofa_files(left, right, join="both"):
            contain an asterisk to process data in multiple folders. E.g., if
            `left` is ``"some/path/*_left"`` and `right` is
            ``"some/path/*_right"`` all SOFA files in the matching folders
-           will be joined
+           will be joined. Note that the Output2HRTF folder pairs given be
+           `left` and `right` must contain SOFA files with identical names.
     join : str
         Specifies what data is joined. ``"HRTF"`` joins only the HRTFs,
-        ``"HRIR"`` joins only the HRIRs. The default ``"both"`` joins all data
+        ``"HRIR"`` joins only the HRIRs. ``"both"`` joins all data. This is
+        only required if `left` and `right` contain folder names.
     """
-    pass
+
+    # join single SOFA files
+    if left.lower().endswith(".sofa") and right.lower().endswith(".sofa"):
+
+        # filename of joined data
+        head, tail = os.path.split(left)
+        tail = tail[:-len(".sofa")] + "_joined.sofa"
+
+        # join data
+        _join_sofa_files(left, right, os.path.join(head, tail))
+
+    # join SOFA files contained in one or more folders
+    else:
+        # get all directories containing SOFA files
+        lefts = glob.glob(left)
+        rights = glob.glob(right)
+
+        if len(lefts) != len(rights):
+            raise ValueError(("The umber of directories found with glob.glob()"
+                              f" does not match for {left} and {right}"))
+
+        # loop directories
+        for L, R in zip(lefts, rights):
+
+            # check if Output2HRTF folder exists
+            L = os.path.join(L, "Output2HRTF")
+            R = os.path.join(R, "Output2HRTF")
+
+            if not os.path.isdir(L) or not os.path.isdir(R):
+                raise ValueError(f"Directory {L} and/or {R} does not exist")
+
+            # check which data to join
+            join = ["HRIR", "HRTF"] if join == "both" else [join]
+
+            for data in join:
+                # get and check all SOFA files in Output2HRTF folder
+                Ls = glob.glob(os.path.join(L, data + "*.sofa"))
+                Rs = glob.glob(os.path.join(R, data + "*.sofa"))
+
+                if len(Ls) != len(Rs):
+                    raise ValueError((
+                        "The umber of sofa files found with glob.glob()"
+                        f" does not match for {L} and {R}"))
+
+                # loop all SOFA files
+                for left_file, right_file in zip(Ls, Rs):
+
+                    # check file names
+                    if (os.path.basename(left_file)
+                            != os.path.basename(right_file)):
+                        raise ValueError((
+                            "Found mismatching. Each Output2HRTF folder must "
+                            "contain SOFA files with the same names. Error for"
+                            f" {left_file} and {right_file}"))
+
+                    # join
+                    join_sofa_files(left_file, right_file)
+
+
+def _join_sofa_files(left, right, savename):
+    """read two sofa files, join the data, and save the result"""
+
+    left = sf.read_sofa(left)
+    right = sf.read_sofa(right)
+
+    # join Data
+    if left.GLOBAL_DataType.startswith("TF"):
+
+        # check if data can be joined
+        if left.N.size != right.N.size or \
+                np.any(np.abs(left.N - right.N)) > 1e-6:
+            raise ValueError(("Number of frequencies or frequencies do not "
+                              f"agree for {left} and {right}"))
+
+        # join data
+        left.Data_Real = np.concatenate(
+            (left.Data_Real, right.Data_Real), axis=1)
+        left.Data_Imag = np.concatenate(
+            (left.Data_Imag, right.Data_Imag), axis=1)
+
+    elif left.GLOBAL_DataType.startswith("FIR"):
+
+        # check if data can be joined
+        if left.get_dimension("N") != right.get_dimension("N") or \
+                left.Data_SamplingRate != right.Data_SamplingRate:
+            raise ValueError(("Number of samples or sampling rates do not"
+                              f"agree for {left} and {right}"))
+
+        # join data
+        left.Data_IR = np.concatenate(
+            (left.Data_IR, right.Data_IR), axis=1)
+        left.Data_Delay = np.zeros((1, left.Data_IR.shape[1]))
+    else:
+        raise ValueError("Joining only works for DataTypes 'TF' and 'FIR'")
+
+    left.ReceiverPosition = np.concatenate(
+        (np.atleast_2d(left.ReceiverPosition),
+         np.atleast_2d(right.ReceiverPosition)), axis=0)
+
+    # write joined data to disk
+    sf.write_sofa(savename, left)
 
 
 def _read_nodes_and_elements(data):
