@@ -40,58 +40,46 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
     plt.figure(figsize=(30/2.54, 8/2.54))
 
     # Plot simulated and analytical data data
-    if source=='leftear' or source=='rightear':
-    
-        for n, (p, title, clabel, crange) in enumerate(zip(
-                [p_num, p_ana, p_num / p_ana],           # pressure arrays
-                ["Numerical solution",                   # titles
-                "Analytical solution",
-                "Difference (max. deviation {:.2f} dB)".format(
-                    np.nanmax(np.abs(20*np.log10(np.abs(p_num / p_ana)))))],
-                ["pressure", "pressure", "difference"],  # colorbar labels
-                [range_a, range_a, range_b]              # range of the colormap
-                )):
-            ax = plt.subplot(1, 3, n+1)
-            sc = plt.scatter(x, y, c=20*np.log10(np.abs(p)),
-                            edgecolors=None, s=1, vmax=crange[0], vmin=crange[1],
-                            cmap="RdBu_r")
-            cb = plt.colorbar(sc)
-            plt.axis("off")
-            cb.set_label(clabel + ' in dB')
-            ax.set_aspect("equal")
-            ax.set_title(title)
+    if source=='bothears':
+        for iEar in range(2):
+            plot_subfun(p_num[:, iEar], p_ana[:, iEar], range_a, range_b, x, y,
+                        boundary_condition, source, bem_method, iEar)
+    else:
+        plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
+                    source, bem_method)
 
-        plt.tight_layout()
+def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
+                source, bem_method, iEar=0):
+
+    for n, (p, title, clabel, crange) in enumerate(zip(
+            [p_num, p_ana, p_num / p_ana],          # pressure arrays
+            ["Numerical solution",                  # titles
+            "Analytical solution",
+            "Difference (max. deviation {:.2f} dB)".format(
+                np.nanmax(np.abs(20*np.log10(np.abs(p_num / p_ana)))))],
+            ["pressure", "pressure", "difference"], # colorbar labels
+            [range_a, range_a, range_b]             # range of colormap
+            )):
+        ax = plt.subplot(1, 3, n+1)
+        sc = plt.scatter(x, y, c=20*np.log10(np.abs(p)),
+                            edgecolors=None, s=1, vmax=crange[0],
+                            vmin=crange[1], cmap="RdBu_r")
+        cb = plt.colorbar(sc)
+        plt.axis("off")
+        cb.set_label(clabel + ' in dB')
+        ax.set_aspect("equal")
+        ax.set_title(title)
+
+    plt.tight_layout()
+    if source=='bothears':
+        plt.savefig(os.path.dirname(__file__) +
+                    "/test_numcalc_analytical_references/comparisonplot_"+
+                    boundary_condition+"_"+source+"_"+str(iEar+1)+"_"+
+                    bem_method+".jpg")
+    else:
         plt.savefig(os.path.dirname(__file__) +
                     "/test_numcalc_analytical_references/comparisonplot_" +
                     boundary_condition+"_"+source+"_"+bem_method+".jpg")
-
-    elif source=='bothears':
-        for iEar in range(2):
-            for n, (p, title, clabel, crange) in enumerate(zip(
-                    [p_num, p_ana, p_num / p_ana],           # pressure arrays
-                    ["Numerical solution",                   # titles
-                    "Analytical solution",
-                    "Difference (max. deviation {:.2f} dB)".format(
-                        np.nanmax(np.abs(20*np.log10(np.abs(p_num / p_ana)))))],
-                    ["pressure", "pressure", "difference"],  # colorbar labels
-                    [range_a, range_a, range_b]              # range of the colormap
-                    )):
-                ax = plt.subplot(1, 3, n+1)
-                sc = plt.scatter(x, y, c=20*np.log10(np.abs(p[:, iEar])),
-                                edgecolors=None, s=1, vmax=crange[0], vmin=crange[1],
-                                cmap="RdBu_r")
-                cb = plt.colorbar(sc)
-                plt.axis("off")
-                cb.set_label(clabel + ' in dB')
-                ax.set_aspect("equal")
-                ax.set_title(title)
-
-            plt.tight_layout()
-            plt.savefig(os.path.dirname(__file__) +
-                        "/test_numcalc_analytical_references/comparisonplot_" +
-                        boundary_condition+"_"+source+"_"+str(iEar+1)+'_'+bem_method+".jpg")
-
 
 # load data
 # ref = (r"C:\Users\panik\Documents\Code\Third_party\mesh2hrtf-git\tests"

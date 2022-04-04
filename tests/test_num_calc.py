@@ -9,30 +9,17 @@ import utils
 
 create_baseline = False
 
-
-def test_build_numcalc():
-    """ test if make for NumCalc works """
-    
-    # Setup
-
-    # create a temporary directory
-    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
-
-    shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 "..", "mesh2hrtf", "NumCalc", "Source"),
-                    tmp.name+"/NumCalc")
-    tmp_path = os.path.join(tmp.name, "NumCalc")
-    
-    # Exerecise
-    
-    subprocess.run(["make"], cwd=tmp_path, check=True)
-
-    # Verify - missing
+# Build NumCalc locally to use for testing
+tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
+shutil.copytree(os.path.join(os.path.dirname(__file__), "..", "mesh2hrtf",
+                             "NumCalc", "Source"), tmp.name+"/NumCalc")
+tmp_numcalc_path = os.path.join(tmp.name, "NumCalc")
+subprocess.run(["make"], cwd=tmp_numcalc_path, check=True)
 
 @pytest.mark.parametrize("nitermax, use", [(0, True), (1, True), (2, True), 
-                                             ([], False)])
+                                           ([], False)])
 def test_numcalc_commandline_nitermax(nitermax, use):
-    """ test if NumCalc's command line parameter nitermax behaves as expected"""
+    """ test if command line parameter nitermax behaves as expected"""
     # Setup
 
     # create temporary directory
@@ -44,9 +31,10 @@ def test_numcalc_commandline_nitermax(nitermax, use):
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
     shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_input_files', 'NC_commandline_parameters.inp'),
-                    os.path.join(tmp.name, 'project', 'NumCalc',
-                                 'source_1', 'NC.inp'))                                
+                    'test_numcalc_input_files',
+                    'NC_commandline_parameters.inp'),
+                    os.path.join(tmp.name, 'project', 'NumCalc', 'source_1',
+                                 'NC.inp'))                                
     
     if use:
         commandLineArgument = f' -nitermax {nitermax}'
@@ -57,8 +45,8 @@ def test_numcalc_commandline_nitermax(nitermax, use):
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'NumCalc{commandLineArgument}'], cwd=tmp_path, check=True,
-                   shell=True)
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'], 
+                   cwd=tmp_path, check=True, shell=True)
 
     # Verify
     out_filename = 'NC.out'
@@ -77,7 +65,7 @@ def test_numcalc_commandline_nitermax(nitermax, use):
 @pytest.mark.parametrize("istart, iend", [(False, False), (3, False),
                                           (False, 3), (2, 3)])
 def test_numcalc_commandline_istart_iend(istart, iend):
-    """ test if NumCalc's command line parameters istart and iend behave as expected"""
+    """ test if command line parameters istart and iend behave as expected"""
     # Setup
 
     # create temporary directory
@@ -89,9 +77,10 @@ def test_numcalc_commandline_istart_iend(istart, iend):
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
     shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_input_files', 'NC_commandline_parameters.inp'),
-                    os.path.join(tmp.name, 'project', 'NumCalc',
-                                 'source_1', 'NC.inp'))                                
+                    'test_numcalc_input_files',
+                    'NC_commandline_parameters.inp'),
+                    os.path.join(tmp.name, 'project', 'NumCalc','source_1',
+                                 'NC.inp'))                                
     
     commandLineArgument = ''
     if istart > 0:
@@ -103,8 +92,8 @@ def test_numcalc_commandline_istart_iend(istart, iend):
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'NumCalc{commandLineArgument}'], cwd=tmp_path, check=True,
-                   shell=True)
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'], 
+                   cwd=tmp_path, check=True, shell=True)
 
     # Verify
     if (not istart and not iend):
@@ -135,7 +124,8 @@ def test_numcalc_commandline_istart_iend(istart, iend):
         assert f'Step {iend+1}' not in out_text
 
     if istart>0 and iend>0:
-        nStepsActual = out_text.count('>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<')
+        nStepsActual = out_text.count(('>> S T E P   N U M B E R   A N D   F R'
+                                       ' E Q U E N C Y <<'))
         nStepsExpected = iend - istart + 1
         assert nStepsActual == nStepsExpected
 
@@ -171,7 +161,7 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
     subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
@@ -245,10 +235,10 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
     if source == "bothears":
         tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_2")
-        subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
+        subprocess.run([f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
     subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
@@ -286,6 +276,7 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
         numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]),
         numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
 
+# just for debugging
 # test_numcalc_ear_source_types('rigid', 'leftear', 'ml-fmm-bem',
 #                                   (40, -40), range_b=(-1, 1))
 # nitermax = 1
