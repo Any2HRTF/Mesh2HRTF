@@ -383,7 +383,7 @@ def compute_HRIR(sofa, n_shift):
     return sofa
 
 
-def join_sofa_files(left, right, join="both"):
+def merge_sofa_files(left, right, join="both"):
     """
     Join HRTFs and HRIRs from separate SOFA-files containing the left and right
     ear data. The joined data is to SOFA files to the directory/directories
@@ -418,7 +418,7 @@ def join_sofa_files(left, right, join="both"):
         tail = tail[:-len(".sofa")] + "_joined.sofa"
 
         # join data
-        _join_sofa_files(left, right, os.path.join(head, tail))
+        _merge_sofa_files(left, right, os.path.join(head, tail))
 
     # join SOFA files contained in one or more folders
     else:
@@ -465,10 +465,10 @@ def join_sofa_files(left, right, join="both"):
                             f" {left_file} and {right_file}"))
 
                     # join
-                    join_sofa_files(left_file, right_file)
+                    merge_sofa_files(left_file, right_file)
 
 
-def _join_sofa_files(left, right, savename):
+def _merge_sofa_files(left, right, savename):
     """read two sofa files, join the data, and save the result"""
 
     left = sf.read_sofa(left)
