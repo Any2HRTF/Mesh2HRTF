@@ -17,14 +17,14 @@ with open('VERSION') as version_file:
 requirements = [
     'numpy>=1.14.0',
     'scipy>=1.5.0',
-    'sofar'
+    'sofar',
+    'pyfar'
 ]
 
 setup_requirements = ['pytest-runner', ]
 
 test_requirements = [
     'pytest',
-    'matplotlib'
 ]
 
 setup(
