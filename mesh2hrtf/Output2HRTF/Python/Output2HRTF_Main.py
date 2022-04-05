@@ -86,11 +86,13 @@ def Output2HRTF_Main(
     numFrequencies = _get_number_of_frequencies('Info.txt')
 
     # get the evaluation grids
-    evaluationGrids, evaluationGridsNumNodes = \
+    print('\n Loading the EvaluationGrids ...')
+    evaluationGrids, _ = \
         _read_nodes_and_elements(data='EvaluationGrids')
 
     # get the object mesh
-    objectMeshes, objectMeshesNumNodes = \
+    print('\n Loading the ObjectMeshes ...')
+    objectMeshes, _ = \
         _read_nodes_and_elements(data='ObjectMeshes')
 
     # # Read computational effort
@@ -162,7 +164,7 @@ def Output2HRTF_Main(
         eval_grid_pressure = evaluationGrids[ii]["pressure"]
         eval_grid_xzy = evaluationGrids[ii]["nodes"][:, 1:4]
 
-        print(f'\nSaving HRTFs for EvaluationGrid {eval_grid_name} ...\n')
+        print(f'\nSaving HRTFs for EvaluationGrid "{eval_grid_name}" ...\n')
 
         # get pressure as SOFA object (all following steps are run on SOFA
         # objects. This way they are available to other users as well)
@@ -720,7 +722,6 @@ def _read_nodes_and_elements(data):
     if not (data == 'EvaluationGrids' or data == 'ObjectMeshes'):
         raise ValueError('data must be EvaluationGrids or ObjectMeshes!')
 
-    print('\n Loading the %s ...' % data)
     grids = []
     gridsList = os.listdir(data)
     gridsNumNodes = 0
