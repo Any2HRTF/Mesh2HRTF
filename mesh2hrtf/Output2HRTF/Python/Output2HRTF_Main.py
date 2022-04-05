@@ -538,6 +538,52 @@ def merge_sofa_files(left, right, pattern=None, savedir=None):
             _merge_sofa_files(left_file, right_file, os.path.join(head, tail))
 
 
+def get_project_info(folder):
+
+    # get sources and number of sources and frequencies
+    sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
+    num_sources = len(sources)
+    num_frequencies = _get_number_of_frequencies(
+        os.path.join(folder, "info.txt"))
+
+    # loop sources
+    for source in sources:
+
+        # list of NC*.inp files for parsing
+        files = glob.glob(os.path.join(source, "NC*.out"))
+
+        # frequency steps simulated in each file
+        # steps = []
+        # for file in files:
+        #     parts = os.path.basename(file).split('-')
+        #     if len(parts) == 1:
+        #         steps.append([1, num_frequencies])
+        #     else:
+        #         steps.append([int(parts[0][2:]), int(parts[1][:-4])])
+
+        # make sure that NC.out is first
+        nc_out = os.path.join(source, "NC.out")
+        if nc_out in files and files.index(nc_out):
+            files = [files.pop(files.index(nc_out))] + files
+
+        # get content from all NC*.inp files separately for header and body
+        header = []
+        body = []
+
+        for file in files:
+
+            # read the file and join all lines
+            with open(file, "r") as f_id:
+                lines = f_id.readlines()
+            lines = "".join(lines)
+
+            # split header and body
+            idx = lines.index(
+                ">> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<")
+            header.append(lines[:idx])
+            body.append(lines[idx:])
+
+
 def _inspect_sofa_files(file, savedir, atol, plot):
 
     with Dataset(file, "r", format="NETCDF4") as sofa_file:
