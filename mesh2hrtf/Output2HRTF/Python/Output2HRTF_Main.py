@@ -25,17 +25,19 @@
 #       sound localization: Microphone model and mesh discretization," The
 #       Journal of the Acoustical Society of America, 138, 208-222.
 #
-# Author: Harald Ziegelwanger
-#        (Acoustics Research Institute, Austrian Academy of Sciences)
-#        Fabian Brinkmann, Robert Pelzer, Jeffrey Thomsen
+# Author: Fabian Brinkmann, Jeffrey Thomsen
 #        (Audio Communication Group, Technical University Berlin)
 
 # TODO header
 import os
 import csv
+import warnings
 import numpy as np
 import glob
+import matplotlib.pyplot as plt
+from netCDF4 import Dataset
 import sofar as sf
+import pyfar as pf
 
 
 def Output2HRTF_Main(
@@ -183,7 +185,7 @@ def Output2HRTF_Main(
                 raise ValueError("Computing HRIRs requires prior referencing")
 
             # calculate shift value (equivalent to a 30 cm shift)
-            fs = round(2*sofa.frequencies[-1])
+            fs = round(2*sofa.N[-1])
             n_shift = int(np.round(.30 / (1/fs * speedOfSound)))
 
             sofa = compute_HRIR(sofa, n_shift)
@@ -383,89 +385,287 @@ def compute_HRIR(sofa, n_shift):
     return sofa
 
 
-def merge_sofa_files(left, right, join="both"):
+def inspect_sofa_files(folder, pattern=None, atol=0.1, plot=None,
+                       savedir=None):
     """
-    Join HRTFs and HRIRs from separate SOFA-files containing the left and right
-    ear data. The joined data is to SOFA files to the directory/directories
-    containing the left ear data. The file names is extended by ``"_joined"``.
+    Inspect SOFA files through plots.
+
+    Generate and save plots for horizontal plane HRIRs (time domain) and HRTFs
+    (frequency domain) for one or multiple SOFA files.
+
+    Parameters
+    ----------
+    folder : str
+        Name of a folder. SOFA files are searched in folder/Output2HRTF if it
+        exist and directly in `folder` otherwise.
+
+        The name may contain an asterisk to process data in multiple folders.
+        E.g., if `folder` is ``"some/path/HRIRs_*"``files in all folder
+        starting with "HRIRs" would be scanned for SOFA files.
+    pattern : str
+        Merge only files that contain `pattern` in their filename. The default
+        ``None`` merges all SOFA files.
+    plot : str, optional
+        "2D" - generate line plots of four sources on the horizontal plane
+              (front, back, left, right). The closest sources to the ideal
+              positoins are used for plotting.
+        "3D" - generate color coded plots of all sources on the horizontal
+               plane. See also parameter `atol` below.
+
+        The default ``None`` generate both plots.
+    atol : float
+        Sources on the horizontal plane are searched within a range of zero
+        degree elevation +/- `atol` degree.
+    savedir : str
+        Directory for saving the merged SOFA files. The default ``None`` saves
+        the files to the directory given by `folder`.
+    """
+
+    if plot is None:
+        plot = ["2D", "3D"]
+    elif plot not in ["2D", "3D"]:
+        raise ValueError(
+            f"plot is {plot} but must be 2D, 3D, or all")
+
+    # get all directories containing SOFA files
+    folders = glob.glob(folder)
+
+    # loop directories
+    for folder in folders:
+
+        # check if Output2HRTF folder exists
+        if os.path.isdir(os.path.join(folder, "Output2HRTF")):
+            folder = os.path.join(folder, "Output2HRTF")
+
+        # find matching SOFA files
+        pattern = "*.sofa" if pattern is None else f"*{pattern}*.sofa"
+        files = glob.glob(os.path.join(folder, pattern))
+        if not files:
+            raise ValueError((f"Did not find any SOFA files in {folder} "
+                              f"that are matching *{pattern}*.sofa"))
+
+        # loop and inspect all SOFA files
+        for file in files:
+
+            if savedir is None:
+                savedir = folder
+
+            # inspect data
+            _inspect_sofa_files(file, savedir, atol, plot)
+
+
+def merge_sofa_files(left, right, pattern=None, savedir=None):
+    """
+    Merge HRTFs and HRIRs from SOFA-files containing left and right ear data.
 
     Parameters
     ----------
     left, right : str
-        Two strings that specify what SOFA files to load for the left and right
-        ear. There are two options
+        `left` and `right` are folder names. SOFA files are searched in
+        folder/Output2HRTF if it exist and directly in `folder` otherwise.
 
-        1. `left` and `right` are full paths to SOFA files, i.e., the end with
-           ".sofa"
-        2. `left` and `right` give the folders that contain the SOFA files in
-           the subfolders "Output2HRTF". In this case `left` and `right` can
-           contain an asterisk to process data in multiple folders. E.g., if
-           `left` is ``"some/path/*_left"`` and `right` is
-           ``"some/path/*_right"`` all SOFA files in the matching folders
-           will be joined. Note that the Output2HRTF folder pairs given be
-           `left` and `right` must contain SOFA files with identical names.
-    join : str
-        Specifies what data is joined. ``"HRTF"`` joins only the HRTFs,
-        ``"HRIR"`` joins only the HRIRs. ``"both"`` joins all data. This is
-        only required if `left` and `right` contain folder names.
+        The names may contain an asterisk to process data in multiple folders.
+        E.g., if `left` is ``"some/path/*_left"`` and `right` is
+        ``"some/path/*_right"`` all SOFA files in the matching folders will be
+        merged. Note that the Output2HRTF folder pairs given by `left` and
+        `right` must contain SOFA files with identical names.
+    pattern : str
+        Merge only files that contain `pattern` in their filename. The default
+        ``None`` merges all SOFA files.
+    savedir : str
+        Directory for saving the merged SOFA files. The default ``None`` saves
+        the files to the directory given by `left`.
+
+    Returns
+    -------
+    Names of merged SOFA files names and with "_merged.sofa".
     """
 
-    # join single SOFA files
-    if left.lower().endswith(".sofa") and right.lower().endswith(".sofa"):
+    if savedir is not None and not os.path.isdir(savedir):
+        raise ValueError(f"savedir {savedir} is not a directory")
 
-        # filename of joined data
-        head, tail = os.path.split(left)
-        tail = tail[:-len(".sofa")] + "_joined.sofa"
 
-        # join data
-        _merge_sofa_files(left, right, os.path.join(head, tail))
+    # get all search directories
+    left_dirs = glob.glob(left)
+    right_dirs = glob.glob(right)
 
-    # join SOFA files contained in one or more folders
+    if len(left_dirs) != len(right_dirs):
+        raise ValueError(("The number of directories found with glob.glob()"
+                          f" does not match for {left} and {right}"))
+
+    # loop directories
+    for left_dir, right_dir in zip(left_dirs, right_dirs):
+
+        # check if Output2HRTF folder exists
+        if os.path.isdir(os.path.join(left_dir, "Output2HRTF")) \
+                and os.path.isdir(os.path.join(right_dir, "Output2HRTF")):
+            left_dir = os.path.join(left_dir, "Output2HRTF")
+            right_dir = os.path.join(right_dir, "Output2HRTF")
+
+        # check which data to merge
+        pattern = "*.sofa" if pattern is None else f"*{pattern}*.sofa"
+
+        # get and check all SOFA files in Output2HRTF folder
+        left_files = glob.glob(os.path.join(left_dir, pattern))
+        right_files = glob.glob(os.path.join(right_dir, pattern))
+
+        if len(left_files) != len(right_files):
+            raise ValueError((
+                "The umber of sofa files found with glob.glob()"
+                f" does not match for {left_dir} and {right_dir}"))
+
+        # loop all SOFA files
+        for left_file, right_file in zip(left_files, right_files):
+
+            # check file names
+            if (os.path.basename(left_file)
+                    != os.path.basename(right_file)):
+                raise ValueError((
+                    "Found mismatching. Each Output2HRTF folder must "
+                    "contain SOFA files with the same names. Error for"
+                    f" {left_file} and {right_file}"))
+
+            # filename of merged data
+            head, tail = os.path.split(left_file)
+            tail = tail[:-len(".sofa")] + "_merged.sofa"
+
+            if savedir is not None:
+                head = savedir
+
+            # merge data
+            _merge_sofa_files(left_file, right_file, os.path.join(head, tail))
+
+
+def _inspect_sofa_files(file, savedir, atol, plot):
+
+    with Dataset(file, "r", format="NETCDF4") as sofa_file:
+        data_type = getattr(sofa_file, "DataType")
+
+    if data_type == "FIR":
+        mode = "hrir"
+    elif data_type == "TF":
+        mode = "hrtf"
     else:
-        # get all directories containing SOFA files
-        lefts = glob.glob(left)
-        rights = glob.glob(right)
+        raise ValueError(
+            f"The DataType of {file} is {data_type} but must 'FIR' or 'TF'")
 
-        if len(lefts) != len(rights):
-            raise ValueError(("The umber of directories found with glob.glob()"
-                              f" does not match for {left} and {right}"))
+    # load sofa file and source positions
+    signal, sources, _ = pf.io.read_sofa(file)
+    tail = os.path.basename(file)
 
-        # loop directories
-        for L, R in zip(lefts, rights):
+    if "2D" in plot:
+        with pf.plot.context():
 
-            # check if Output2HRTF folder exists
-            L = os.path.join(L, "Output2HRTF")
-            R = os.path.join(R, "Output2HRTF")
+            # generate plot layout and axes
+            if mode == "hrir":
+                _, ax = plt.subplots(2, 4, figsize=(16, 6), sharey="row")
+                ax_time = ax[0]
+                ax_freq = ax[1]
+            else:
+                _, ax_freq = plt.subplots(1, 4, figsize=(16, 3), sharey="row")
 
-            if not os.path.isdir(L) or not os.path.isdir(R):
-                raise ValueError(f"Directory {L} and/or {R} does not exist")
+            # loop sources
+            for nn, (az, name) in enumerate(zip(
+                    [0, 180, 90, 270],
+                    ["front", "back", "left", "right"])):
 
-            # check which data to join
-            join = ["HRIR", "HRTF"] if join == "both" else [join]
+                # find current source
+                idx, _ = sources.find_nearest_k(
+                    az, 0, 1, 1, 'sph', 'top_elev', 'deg')
 
-            for data in join:
-                # get and check all SOFA files in Output2HRTF folder
-                Ls = glob.glob(os.path.join(L, data + "*.sofa"))
-                Rs = glob.glob(os.path.join(R, data + "*.sofa"))
+                # exact position for plotting
+                source = sources.get_sph('top_elev', 'deg')[idx]
+                name += (f" (az. {np.round(source[0])}, "
+                         f"el. {np.round(source[1])} deg.)")
 
-                if len(Ls) != len(Rs):
-                    raise ValueError((
-                        "The umber of sofa files found with glob.glob()"
-                        f" does not match for {L} and {R}"))
+                # plot
+                if mode == "hrir":
+                    pf.plot.time_freq(
+                        signal[idx], ax=[ax_time[nn], ax_freq[nn]])
+                    ax_time[nn].set_title(name)
+                else:
+                    pf.plot.freq(signal[idx], ax=ax_freq[nn])
+                    ax_freq[nn].set_title(name)
 
-                # loop all SOFA files
-                for left_file, right_file in zip(Ls, Rs):
+            # format axis and legend
+            y_lim = ax_freq[nn].get_ylim()
+            ax_freq[nn].set_ylim(y_lim[1] - 50, y_lim[1])
 
-                    # check file names
-                    if (os.path.basename(left_file)
-                            != os.path.basename(right_file)):
-                        raise ValueError((
-                            "Found mismatching. Each Output2HRTF folder must "
-                            "contain SOFA files with the same names. Error for"
-                            f" {left_file} and {right_file}"))
+            if signal.cshape[-1] == 2:
+                ax_freq[nn].legend(["left ear", "right ear"], loc=3)
+            elif signal.cshape[-1] > 2:
+                ax_freq[nn].legend(
+                    [f"ch. {cc+1}" for cc in range(signal.cshape[-1])], loc=3)
 
-                    # join
-                    merge_sofa_files(left_file, right_file)
+            # save
+            plt.tight_layout()
+            plt.savefig(os.path.join(savedir, tail[:-5] + "_2D.pdf"),
+                        bbox_inches="tight")
+
+    if "3D" in plot:
+
+        num_chanel = signal.cshape[-1]
+
+        with pf.plot.context():
+
+            # generate plot layout and axes
+            if mode == "hrir":
+                _, ax = plt.subplots(2, num_chanel, sharex=True, sharey="row",
+                                     figsize=(4*num_chanel, 6),
+                                     )
+                ax_time = np.atleast_1d(ax[0])
+                ax_freq = np.atleast_1d(ax[1])
+            else:
+                _, ax_freq = plt.subplots(
+                    1, num_chanel, figsize=(4*num_chanel, 3),
+                    sharex=True, sharey="row")
+                ax_freq = np.atleast_1d(ax_freq)
+
+            # find sources on horizontal plane
+            _, mask = sources.find_slice("elevation", "deg", 0, atol)
+            if not np.any(mask):
+                warnings.warn((
+                    "Did not find and sources on the horizontal plane for "
+                    f"within +/-{atol} deg. for {file}"))
+                return
+
+            az = sources.get_sph('top_elev', 'deg')[..., 0]
+            # plot titles
+            names = ["left ear", "right ear"] if signal.cshape[-1] == 2 \
+                else [f"ch. {cc+1}" for cc in range(signal.cshape[-1])]
+
+            # loop sources
+            for cc, name in enumerate(names):
+
+                # plot time data
+                if mode == "hrir":
+                    _, qm, _ = pf.plot.time_2d(signal[mask, cc], indices=az,
+                                               ax=ax_time[cc], cmap="coolwarm")
+                    ax_time[cc].set_title(name)
+
+                    # set limits of time plot symmetric
+                    c_lim = qm.get_clim()
+                    c_lim = np.round(np.max(np.abs(c_lim)), 1)
+                    qm.set_clim(-c_lim, c_lim)
+
+                # plot frequency data
+                _, qm, _ = pf.plot.freq_2d(signal[mask, cc], ax=ax_freq[cc],
+                                           indices=az, cmap="Reds")
+                if mode == "hrir":
+                    ax_freq[cc].set_xlabel("azimuth in degree")
+                    ax_time[cc].set_xlabel("")
+                else:
+                    ax_freq[cc].set_title(name)
+                    ax_freq[cc].set_xlabel("azimuth in degree")
+
+                c_lim = qm.get_clim()
+                c_lim = np.round(np.max(c_lim))
+                qm.set_clim(c_lim - 50, c_lim)
+
+            # save
+            plt.tight_layout()
+            plt.savefig(os.path.join(savedir, tail[:-5] + "_3D.pdf"),
+                        bbox_inches="tight")
 
 
 def _merge_sofa_files(left, right, savename):
