@@ -4,7 +4,7 @@ from .Output2HRTF.Python.Output2HRTF_Main import (
     compute_HRIR,
     inspect_sofa_files,
     merge_sofa_files,
-    get_project_info)
+    project_report)
 
 __all__ = [
     'Output2HRTF_Main',
@@ -12,4 +12,4 @@ __all__ = [
     'compute_HRIR',
     'inspect_sofa_files',
     'merge_sofa_files',
-    'get_project_info']
+    'project_report']
