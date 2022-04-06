@@ -110,8 +110,8 @@ def test_numcalc_commandline_istart_iend(istart, iend):
     out_filepath = os.path.join(tmp.name, "project", "NumCalc",
                                 "source_1", out_filename)
 
-    out_file = open(out_filepath)
-    out_text = out_file.read()
+    with open(out_filepath) as out_file:
+        out_text = out_file.read()
 
     if istart > 0:
         assert f'Step {istart-1}' not in out_text
