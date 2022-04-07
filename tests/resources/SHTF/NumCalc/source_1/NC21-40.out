@@ -1,0 +1,798 @@
+
+Start time: 7/4/2022 12:28:32
+
+
+>> G E N E R A L   P A R A M E T E R S <<
+
+
+3D analysis
+Mesh2HRTF 1.0.0
+SHTF for testing
+
+Number of frequency steps ................... = 60
+
+First step .................................. = 0
+Number of steps ............................. = 60
+Step increment .............................. = 1e-06
+Highest allowable frequency .................. = 7854.92
+
+
+
+>> B A S I C   P A R A M E T E R S   F O R   B E M <<
+
+Number of element groups .................... = 2
+Total number of elements .................... = 2414
+Number of boundary elements ................. = 2412
+Number of evaluation elements ............... = 2
+Maximum edge length of boundary elements .... = 0.0140849
+Average edge length of boundary elements .... = 0.0097297
+Minimum edge length of boundary elements .... = 0.00705479
+
+Total number of nodes ....................... = 1212
+Number of nodes of the boundary elements .... = 1208
+Number of nodes of the evaluation elements .. = 4
+
+Number of symmetric planes .................. = 0
+
+Number of incident plane waves .............. = 0
+Number of incident spharic waves ............ = 0
+
+Sound speed ................................. = 343
+Density of the medium ....................... = 1.1839
+
+Diameter of the BE-mesh ..................... = 0.302769
+
+Minimum number of terms in the FMM expansion. = 8
+
+Exterior domain problem
+
+Harmonic time factor = EXP(-i*omega*t)
+
+methodSolver_  = 0: CGS iterative solver
+methodPreconditioner_ = 0: incomplete LU-decomposition preconditioner
+
+ No.   Freq.   Lambda/L_BE_Mesh  Lambda/L_Element
+  1     100      11.3288             544.3
+  2     200      5.66438            272.15
+  3     300      3.77625           181.433
+  4     400      2.83219           136.075
+  5     500      2.26575            108.86
+  6     600      1.88813           90.7167
+  7     700      1.61839           77.7572
+  8     800      1.41609           68.0375
+  9     900      1.25875           60.4778
+ 10    1000      1.13288             54.43
+ 11    1100      1.02989           49.4818
+ 12    1200     0.944063           45.3583
+ 13    1300     0.871442           41.8692
+ 14    1400     0.809197           38.8786
+ 15    1500      0.75525           36.2867
+ 16    1600     0.708047           34.0188
+ 17    1700     0.666397           32.0177
+ 18    1800     0.629375           30.2389
+ 19    1900      0.59625           28.6474
+ 20    2000     0.566438            27.215
+ 21    2100     0.539464           25.9191
+ 22    2200     0.514943           24.7409
+ 23    2300     0.492554           23.6652
+ 24    2400     0.472031           22.6792
+ 25    2500      0.45315            21.772
+ 26    2600     0.435721           20.9346
+ 27    2700     0.419583           20.1593
+ 28    2800     0.404598           19.4393
+ 29    2900     0.390647            18.769
+ 30    3000     0.377625           18.1433
+ 31    3100     0.365444           17.5581
+ 32    3200     0.354023           17.0094
+ 33    3300     0.343295           16.4939
+ 34    3400     0.333199           16.0088
+ 35    3500     0.323679           15.5514
+ 36    3600     0.314688           15.1194
+ 37    3700     0.306182           14.7108
+ 38    3800     0.298125           14.3237
+ 39    3900     0.290481           13.9564
+ 40    4000     0.283219           13.6075
+ 41    4100     0.276311           13.2756
+ 42    4200     0.269732           12.9595
+ 43    4300     0.263459           12.6581
+ 44    4400     0.257472           12.3705
+ 45    4500      0.25175           12.0956
+ 46    4600     0.246277           11.8326
+ 47    4700     0.241037           11.5809
+ 48    4800     0.236016           11.3396
+ 49    4900     0.231199           11.1082
+ 50    5000     0.226575            10.886
+ 51    5100     0.222132           10.6726
+ 52    5200     0.217861           10.4673
+ 53    5300      0.21375           10.2698
+ 54    5400     0.209792           10.0796
+ 55    5500     0.205977           9.89637
+ 56    5600     0.202299           9.71964
+ 57    5700      0.19875           9.54912
+ 58    5800     0.195323           9.38448
+ 59    5900     0.192013           9.22543
+ 60    6000     0.188813           9.07167
+
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 21, Frequency = 2100 Hz
+
+Direct multilevel fast multipole BEM
+
+Number of equations = 2412
+
+Informations about clusters:
+   Level    Num. of clusters    Maximum radius   Minimum radius
+     0           56                0.0406034         0.0131474
+     1          223                0.0279825         0.00586318
+ resu. nets       4                     0              0
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 16, relative error = 8.70844e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 22, Frequency = 2200 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 18, relative error = 2.06347e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 23, Frequency = 2300 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 18, relative error = 1.5096e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 24, Frequency = 2400 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 16, relative error = 5.9724e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 25, Frequency = 2500 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 16, relative error = 4.99053e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 26, Frequency = 2600 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 16, relative error = 5.43386e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 27, Frequency = 2700 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 8.90706e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 28, Frequency = 2800 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 7.71266e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 29, Frequency = 2900 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 16, relative error = 9.21361e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 30, Frequency = 3000 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 9.85257e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 31, Frequency = 3100 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 3.91621e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 32, Frequency = 3200 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 2.53093e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 33, Frequency = 3300 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 1.86126e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 34, Frequency = 3400 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 16, relative error = 3.48498e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 35, Frequency = 3500 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 5.37394e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 36, Frequency = 3600 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 15, relative error = 2.21303e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 37, Frequency = 3700 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 14, relative error = 7.17279e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 1
+Solving the equation system            : 0
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 38, Frequency = 3800 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 14, relative error = 2.0159e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 0
+Solving the equation system            : 1
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 39, Frequency = 3900 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 14, relative error = 1.60937e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 0
+Solving the equation system            : 1
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 40, Frequency = 4000 Hz
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 311920
+Nonzeros of the T-matrix .............................. = 617472
+    Nonzeros of T_lev_0 ............................... = 308736
+    Nonzeros of T_lev_1 ............................... = 308736
+Nonzeros of the D-matrices ............................ = 1197568
+    Nonzeros of D_lev_0 ............................... = 331520
+    Nonzeros of D_lev_1 ............................... = 866048
+Nonzeros of the S-matrix .............................. = 617472
+    Nonzeros of S_lev_0 ............................... = 308736
+    Nonzeros of S_lev_1 ............................... = 308736
+Sum of nonzeros of the FMBEM matrices ................. = 2744432
+
+CGS solver: number of iterations = 14, relative error = 1.54317e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 0
+Solving the equation system            : 1
+Post processing                        : 0
+Total                                  : 1
+
+
+
+>> T I M E   S T A T I S T I C   (In   Second) <<
+
+Input                                  : 0
+Address computation                    : 0
+Assembling the equation system         : 17
+Solving the equation system            : 3
+Post processing                        : 0
+The whole job                          : 20
+
+End time: 7/4/2022 12:28:52

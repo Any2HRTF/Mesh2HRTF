@@ -1,36 +1,46 @@
+# %%
 import subprocess
-import tempfile
+from tempfile import TemporaryDirectory
 import shutil
 import os
+import sofar as sf
 
 
-def test_output2hrtf_two_sources():
+data_shtf = os.path.join(
+    os.path.dirname(__file__), 'resources', 'SHTF')
+
+
+def test_Output2HRTF_Main_and_Output2HRTF():
     """
-    test Output2HRTF.py handling two sound sources ("Both ears" condition)
+    Run Output2HRTF.py script to do a round trip test
     """
-    # Setup
 
-    # create temporary directory
-    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
-
-    # copy test directory
-    shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 'test_2sources_project'),
-                    os.path.join(tmp.name, 'project'))
-
-    # Exercise
-
-    # # run NumCalc with subprocess
-    # for iSource in (1, 2):
-    #     tmp_path = os.path.join(tmp.name, "project", "NumCalc", f"source_{iSource+1}")
-    #     subprocess.run(["NumCalc"], cwd=tmp_path, check=True)
+    # copy test data to new directory and delete output data
+    tmp = TemporaryDirectory()
+    tmp_shtf = os.path.join(tmp.name, "SHTF")
+    shutil.copytree(data_shtf, tmp_shtf)
+    shutil.rmtree(os.path.join(tmp_shtf, "Output2HRTF"))
 
     # run Output2HRTF.py
-    tmp_path = os.path.join(tmp.name, "project")
-    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
+    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_shtf, check=True)
 
-# Only used for debugging
-# test_blender_export()
-# test_build()
-# test_numcalc("rigid", "point", "ml-fmm-bem", (10, -20), range_b=(-1, 1))
-# test_two_sources()
+    # compare reports
+    reports = ["report_source_1.csv", "report_source_2.csv"]
+    for report in reports:
+
+        with open(os.path.join(data_shtf, "Output2HRTF", report), "r") as r:
+            ref = r.readlines()
+        with open(os.path.join(tmp_shtf, "Output2HRTF", report), "r") as r:
+            test = r.readlines()
+
+        assert "".join(test) == "".join(ref)
+
+    # compare sofa files
+    sofas = ["HRTF_FourPointHorPlane_r100cm.sofa",
+             "HRIR_FourPointHorPlane_r100cm.sofa"]
+    for sofa in sofas:
+
+        ref = sf.read_sofa(os.path.join(data_shtf, "Output2HRTF", sofa))
+        test = sf.read_sofa(os.path.join(tmp_shtf, "Output2HRTF", sofa))
+
+        assert sf.equals(test, ref, exclude="DATE")

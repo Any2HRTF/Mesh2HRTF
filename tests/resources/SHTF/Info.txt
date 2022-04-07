@@ -1,0 +1,18 @@
+#####################################
+######## General information ########
+#####################################
+
+Program: Mesh2HRTF 1.0.0
+Title: SHTF for testing
+Source type: Both ears
+Evaluation Grids:
+    /home/chef/Desktop/Applications/mesh2hrtf/mesh2hrtfGrids/FourPointHorPlane_r100cm
+
+#####################################
+####### Frequency information #######
+#####################################
+
+Minimum evaluated Frequency: 100.000000
+Highest evaluated Frequency: 6000.000000
+Frequency Stepsize: 100.000000
+Frequency Steps: 60
