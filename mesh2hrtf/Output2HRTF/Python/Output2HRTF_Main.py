@@ -859,11 +859,11 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
                         line[idx.start()+12:idx.end()-3])
 
                 # check if the input data was ok
-                if "Too many integral points in the theta" not in lines:
+                if "Too many integral points in the theta" not in line:
                     out[step-1, 3, ss] = 1
 
                 # check and write convergence
-                if 'Maximum number of iterations is reached!' not in lines:
+                if 'Maximum number of iterations is reached!' not in line:
                     out[step-1, 4, ss] = 1
 
                 # check iterations
@@ -948,7 +948,8 @@ def _write_project_reports(folder, all_files, out, out_names):
 def _check_project_report(folder, fundamentals, out):
 
     # return if there are no fundamental errors or other issues
-    if not all([all(f) for f in fundamentals]) and not np.any(out == -1):
+    if not all([all(f) for f in fundamentals]) and not np.any(out == -1) \
+            and np.all(out[:, 3:5]):
         return
 
     # report detailed errors
@@ -987,15 +988,15 @@ def _check_project_report(folder, fundamentals, out):
                 any_convergence = True
                 convergence += f"{int(f[0])}, "
 
-        if any_missing or any_convergence:
+        if any_missing or any_input_failed or any_convergence:
             report += f"Detected issues for source {ss+1}\n"
             report += "----------------------------\n"
             if any_missing:
-                report += missing[:-2] + "\n"
+                report += missing[:-2] + "\n\n"
             if any_input_failed:
-                report += input_test[:-2] + "\n"
+                report += input_test[:-2] + "\n\n"
             if any_convergence:
-                report += "\n" + convergence[:-2] + "\n"
+                report += convergence[:-2] + "\n\n"
 
     if not report:
         report = ("\nDetected unknown issues\n"

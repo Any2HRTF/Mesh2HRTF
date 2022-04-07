@@ -1,0 +1,11 @@
+nc.out
+------
+
+Contains NC*.out files for testing the project report
+
+SHTF
+----
+
+Contains a complete Mesh2HRTF project with spherical head transfer functions
+calculated up to 6 kHz. The output was generated manually by running
+Output2HRTF.py an inspect_sofa_files

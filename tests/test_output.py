@@ -1,4 +1,3 @@
-# %%
 import pytest
 import numpy.testing as npt
 import subprocess
@@ -9,9 +8,9 @@ import glob
 import sofar as sf
 import mesh2hrtf as m2h
 
-
-data_shtf = os.path.join(
-    os.path.dirname(__file__), 'resources', 'SHTF')
+cwd = os.path.dirname(__file__)
+data_shtf = os.path.join(cwd, 'resources', 'SHTF')
+data_nc = os.path.join(cwd, 'resources', 'nc.out')
 
 
 @pytest.mark.parametrize("num_sources", ([1], [2]))
@@ -36,8 +35,8 @@ def test_Output2HRTF_Main_and_Output2HRTF(num_sources):
         with open(os.path.join(tmp_shtf, "Output2HRTF.py"), "r") as f:
             script = "".join(f.readlines())
 
-        script.replace("num_sources = 2", "num_sources = 1")
-        assert "num_sources = 1" in script
+        script.replace("numSources = 2", "numSources = 1")
+        assert "numSources = 1" in script
 
         with open(os.path.join(tmp_shtf, "Output2HRTF.py"), "w") as f:
             f.write(script)
@@ -146,3 +145,56 @@ def test_merge_sofa_files(pattern):
         if p == "HRIR":
             npt.assert_equal(test.Data_IR[:, :2], ref.Data_IR)
             npt.assert_equal(test.Data_IR[:, 2:], ref.Data_IR)
+
+
+@pytest.mark.parametrize("folders,issue,errors,nots", (
+    # no issues single NC.inp file
+    [["case_0"], False, [], []],
+    # issues in NC.inp that are corrected by second file NC1-1.inp
+    [["case_4"], False, [], []],
+    # missing frequencies
+    [["case_1"], True,
+     ["Frequency steps that were not calculated:\n59, 60"], []],
+    # convergence issues
+    [["case_2"], True,
+     ["Frequency steps that did not converge:\n18, 42"], []],
+    # input/mesh issues
+    [["case_3"], True,
+     ["Frequency steps that were not calculated:\n59, 60",
+      "Frequency steps with bad input:\n58"], []],
+    # no isses in source 1 but issues in source 2
+    [["case_0", "case_1"], True,
+     ["Detected issues for source 2",
+      "Frequency steps that were not calculated:\n59, 60"],
+     ["Detected issues for source 1"]]
+))
+def test_project_report(folders, issue, errors, nots):
+    """Test issues found by the project report"""
+
+    # create fake project structure
+    tmp = TemporaryDirectory()
+    os.mkdir(os.path.join(tmp.name, "NumCalc"))
+    os.mkdir(os.path.join(tmp.name, "Output2HRTF"))
+    shutil.copyfile(os.path.join(data_nc, "Info.txt"),
+                    os.path.join(tmp.name, "Info.txt"))
+    for ff, folder in enumerate(folders):
+        shutil.copytree(os.path.join(data_nc, folder),
+                        os.path.join(tmp.name, "NumCalc", f"source_{ff + 1}"))
+
+    # run the project report
+    issues, report = m2h.project_report(tmp.name)
+
+    # test the output
+    assert issues is issue
+    for error in errors:
+        assert error in report
+    for no in nots:
+        assert no not in report
+    if issue:
+        assert os.path.isfile(os.path.join(
+            tmp.name, "Output2HRTF", "report_issues.txt"))
+        assert ("For more information check Output2HRTF/report_source_*.csv "
+                "and the NC*.inp files located at NumCalc/source_*") in report
+    else:
+        assert not os.path.isfile(os.path.join(
+            tmp.name, "Output2HRTF", "report_issues.txt"))
