@@ -174,7 +174,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Maximum frequency in Hz to be simulated",
         default=20000,
         min=1,
-        max=24000,
+        max=96000,
         )
     frequencyVectorType: EnumProperty(
         name="Frequencies",
