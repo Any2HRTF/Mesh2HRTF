@@ -94,7 +94,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                ('Plane wave', 'Plane wave',
                     ("Analytical plane wave. Coordinates taken from the "
                     "location (not rotation) of the user placed "
-                     "placed area light named 'Plane wave'"))],
+                     "area light named 'Plane wave'"))],
         default='Both ears',
         )
     programPath: StringProperty(
