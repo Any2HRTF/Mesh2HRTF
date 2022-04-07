@@ -924,7 +924,7 @@ def _write_project_reports(folder, all_files, out, out_names):
 
         # write to disk
         report_name = os.path.join(
-            folder, "output2HRTF", f"report_source_{ss + 1}.csv")
+            folder, "Output2HRTF", f"report_source_{ss + 1}.csv")
         with open(report_name, "w") as f_id:
             f_id.write(report)
 
