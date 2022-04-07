@@ -27,6 +27,18 @@ def Output2HRTF_Main(
     project from Blender. This function will thus usually be called from an
     Output2HRTF.py file.
 
+    Processing the data is done in the following steps
+
+    1. use :py:func:`~project_report` to parse files in
+       project_folder/NumCalc/source_*/NC*.out, write project report to
+       project_folder/Output2HRTF/report_source_*.csv. Raise a warning if any
+       issues were detected and write report_issues.txt to the same folder
+    2. Read simulated pressures from project_folder/NumCalc/source_*/be.out.
+       This and the following steps are done, even if an issue was detected in
+       the previous step
+    3. use :py:func:`~reference_hrtf` and :py:func:`~compute_hrir` to save the
+       results to SOFA files
+
     Parameters
     ----------
     Mesh2HRTF_version : string
@@ -71,7 +83,10 @@ def Output2HRTF_Main(
 
     # write the project report and check for issues
     print('\n Writing the project report ...')
-    found_isses, report = project_report(folder)
+    found_issues, report = project_report(folder)
+
+    if found_issues:
+        warnings.warn(report)
 
     # get the evaluation grids
     print('\n Loading the EvaluationGrids ...')
@@ -544,7 +559,7 @@ def project_report(folder=None):
     sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
     num_sources = len(sources)
     num_frequencies = _get_number_of_frequencies(
-        os.path.join(folder, "info.txt"))
+        os.path.join(folder, "Info.txt"))
 
     # parse all NC*.out files for all sources
     all_files, fundamentals, out, out_names = _parse_nc_out_files(
@@ -728,12 +743,6 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
 
     Parameters
     ----------
-    all_files : nested list of strings
-        list of len(num_sources) and nested len(num_nc*.inp_files_per_source)
-        containing the exact name of the NC*.inp files
-    fundamentals : nested list of ints
-        list of same length as `all_files` containing 1 if a fundamental error
-        occurred (no BEM performed) and 0 otherwise
     sources : list of strings
         full path to the source folders
     num_sources : int
@@ -757,18 +766,20 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
     out_names = ["frequency step",         # 0
                  "frequency in Hz",        # 1
                  "NC input file",          # 2
-                 "Converged",              # 3
-                 "Num. iterations",        # 4
-                 "relative error",         # 5
-                 "Comp. time total",       # 6
-                 "Comp. time assembling",  # 7
-                 "Comp. time solving",     # 8
-                 "Comp. time post-proc."]  # 9
-    out = -np.ones((num_frequencies, 10, num_sources))
+                 "Input check passed",     # 3
+                 "Converged",              # 4
+                 "Num. iterations",        # 5
+                 "relative error",         # 6
+                 "Comp. time total",       # 7
+                 "Comp. time assembling",  # 8
+                 "Comp. time solving",     # 9
+                 "Comp. time post-proc."]  # 10
+    out = -np.ones((num_frequencies, 11, num_sources))
     # values for steps
     out[:, 0] = np.arange(1, num_frequencies + 1)[..., np.newaxis]
-    # values indicating non-convergence
+    # values indicating failed input check and non-convergence
     out[:, 3] = 0
+    out[:, 4] = 0
 
     # regular expression for finding a number that can be int or float
     re_number = r"(\d+(?:\.\d+)?)"
@@ -819,68 +830,64 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
 
                 # find frequency step
                 idx = re.search(r'Step \d+,', line)
-                if not idx:
-                    break
-                step = int(line[idx.start()+5:idx.end()-1])
+                if idx:
+                    step = int(line[idx.start()+5:idx.end()-1])
 
                 # write number of input file (replaced by string later)
                 out[step-1, 2, ss] = ff
 
                 # find frequency
                 idx = re.search(f'Frequency = {re_number} Hz', line)
-                if not idx:
-                    break
-                out[step-1, 1, ss] = float(line[idx.start()+12:idx.end()-3])
+                if idx:
+                    out[step-1, 1, ss] = float(
+                        line[idx.start()+12:idx.end()-3])
+
+                # check if the input data was ok
+                if "Too many integral points in the theta" not in lines:
+                    out[step-1, 3, ss] = 1
 
                 # check and write convergence
-                if 'Maximum number of iterations is reached!' in lines:
-                    continue
-                out[step-1, 3, ss] = 1
+                if 'Maximum number of iterations is reached!' not in lines:
+                    out[step-1, 4, ss] = 1
 
                 # check iterations
                 idx = re.search(r'number of iterations = \d+,', line)
-                if not idx:
-                    break
-                out[step-1, 4, ss] = int(line[idx.start()+23:idx.end()-1])
+                if idx:
+                    out[step-1, 5, ss] = int(line[idx.start()+23:idx.end()-1])
 
                 # check relative error
                 idx = re.search('relative error = .+', line)
-                if not idx:
-                    break
-                out[step-1, 5, ss] = float(line[idx.start()+17:idx.end()])
+                if idx:
+                    out[step-1, 6, ss] = float(line[idx.start()+17:idx.end()])
 
                 # check time stats
                 # -- assembling
                 idx = re.search(
                     r'Assembling the equation system         : \d+',
                     line)
-                if not idx:
-                    break
-                out[step-1, 7, ss] = float(line[idx.start()+41:idx.end()])
+                if idx:
+                    out[step-1, 8, ss] = float(line[idx.start()+41:idx.end()])
 
                 # -- solving
                 idx = re.search(
                     r'Solving the equation system            : \d+',
                     line)
-                if not idx:
-                    break
-                out[step-1, 8, ss] = float(line[idx.start()+41:idx.end()])
+                if idx:
+                    out[step-1, 9, ss] = float(line[idx.start()+41:idx.end()])
 
                 # -- post-pro
                 idx = re.search(
                     r'Post processing                        : \d+',
                     line)
-                if not idx:
-                    break
-                out[step-1, 9, ss] = float(line[idx.start()+41:idx.end()])
+                if idx:
+                    out[step-1, 10, ss] = float(line[idx.start()+41:idx.end()])
 
                 # -- total
                 idx = re.search(
                     r'Total                                  : \d+',
                     line)
-                if not idx:
-                    break
-                out[step-1, 6, ss] = float(line[idx.start()+41:idx.end()])
+                if idx:
+                    out[step-1, 7, ss] = float(line[idx.start()+41:idx.end()])
 
     return all_files, fundamentals, out, out_names
 
@@ -905,13 +912,14 @@ def _write_project_reports(folder, all_files, out, out_names):
                 f"{int(f[0])}, "                # frequency step
                 f"{float(f[1])}, "              # frequency in Hz
                 f"{all_files[ss][int(f[2])]},"  # NC*.inp file
-                f"{int(f[3])}, "                # convergence
-                f"{int(f[4])}, "                # number of iterations
-                f"{float(f[5])}, "              # relative error
-                f"{int(f[6])}, "                # total computation time
-                f"{int(f[7])}, "                # assembling equations time
-                f"{int(f[8])}, "                # solving equations time
-                f"{int(f[9])}\n"                # post-processing time
+                f"{int(f[3])}, "                # input check
+                f"{int(f[4])}, "                # convergence
+                f"{int(f[5])}, "                # number of iterations
+                f"{float(f[6])}, "              # relative error
+                f"{int(f[7])}, "                # total computation time
+                f"{int(f[8])}, "                # assembling equations time
+                f"{int(f[9])}, "                # solving equations time
+                f"{int(f[10])}\n"               # post-processing time
                 )
 
         # write to disk
@@ -935,9 +943,11 @@ def _check_project_report(folder, fundamentals, out):
         # currently we detect frequencies that were not calculated and
         # frequencies with convergence issues
         missing = "Frequency steps that were not calculated:\n"
+        input_test = "Frequency steps with bad input:\n"
         convergence = "Frequency steps that did not converge:\n"
 
         any_missing = False
+        any_input_failed = False
         any_convergence = False
 
         # loop frequencies
@@ -951,8 +961,13 @@ def _check_project_report(folder, fundamentals, out):
                 missing += f"{f[0]}, "
                 continue
 
-            # convergence value is zero
+            # input data failed
             if f[3] == 0:
+                any_input_failed = True
+                input_test += f"{f[0]}, "
+
+            # convergence value is zero
+            if f[4] == 0:
                 any_convergence = True
                 convergence += f"{f[0]}, "
 
@@ -960,9 +975,11 @@ def _check_project_report(folder, fundamentals, out):
             report += f"Detected issues for source {ss+1}\n"
             report += "----------------------------\n"
             if any_missing:
-                report += missing[:-1] + "\n"
+                report += missing[:-2] + "\n"
+            if any_input_failed:
+                report += input_test[:-2] + "\n"
             if any_convergence:
-                report += "\n" + convergence[:-1] + "\n"
+                report += "\n" + convergence[:-2] + "\n"
 
     if not report:
         report = ("\nDetected unknown issues\n"
@@ -975,7 +992,7 @@ def _check_project_report(folder, fundamentals, out):
 
     # write to disk
     report_name = os.path.join(
-        folder, "output2HRTF", "report_issues.csv")
+        folder, "output2HRTF", "report_issues.txt")
     with open(report_name, "w") as f_id:
         f_id.write(report)
 
