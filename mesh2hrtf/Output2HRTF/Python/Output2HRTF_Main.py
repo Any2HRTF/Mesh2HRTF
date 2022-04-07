@@ -429,6 +429,8 @@ def merge_sofa_files(left, right, pattern=None, savedir=None):
     """
     Merge HRTFs and HRIRs from SOFA-files containing left and right ear data.
 
+    The names of the merged SOFA files and with the "merged.sofa".
+
     Parameters
     ----------
     left, right : str
@@ -446,10 +448,6 @@ def merge_sofa_files(left, right, pattern=None, savedir=None):
     savedir : str
         Directory for saving the merged SOFA files. The default ``None`` saves
         the files to the directory given by `left`.
-
-    Returns
-    -------
-    Names of merged SOFA files names and with "_merged.sofa".
     """
 
     if savedir is not None and not os.path.isdir(savedir):
