@@ -1,16 +1,19 @@
 import pytest
+import numpy as np
 import numpy.testing as npt
 import subprocess
 from tempfile import TemporaryDirectory
 import shutil
 import os
 import glob
+import pyfar as pf
 import sofar as sf
 import mesh2hrtf as m2h
 
 cwd = os.path.dirname(__file__)
 data_shtf = os.path.join(cwd, 'resources', 'SHTF')
 data_nc = os.path.join(cwd, 'resources', 'nc.out')
+data_grids = os.path.join(cwd, 'resources', 'evaluation_grids')
 
 
 @pytest.mark.parametrize("num_sources", ([1], [2]))
@@ -198,3 +201,62 @@ def test_project_report(folders, issue, errors, nots):
     else:
         assert not os.path.isfile(os.path.join(
             tmp.name, "Output2HRTF", "report_issues.txt"))
+
+
+@pytest.mark.parametrize("n_dim", [3, 2])
+@pytest.mark.parametrize("coordinates,show", [[False, True], [True, False]])
+def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
+
+    tmp = TemporaryDirectory()
+
+    # sampling grids
+    if n_dim == 3:
+        # 3D sampling grid (Lebedev, first order)
+        points = np.array([
+            [1., 0., 0.],
+            [-1., 0., 0.],
+            [0, 1., 0.],
+            [0, -1., 0.],
+            [0, 0., 1.],
+            [0, 0., -1.]])
+        discard = None
+    else:
+        # 2D sampling grid (all z = 0)
+        points = np.array([
+            [1., 0., 0.],
+            [-1., 0., 0.],
+            [0, 1., 0.],
+            [0, -1., 0.]])
+        discard = "z"
+
+    # pass as Coordinates object
+    if coordinates:
+        points = pf.Coordinates(points[:, 0], points[:, 1], points[:, 2])
+
+    # write grid
+    m2h.write_evaluation_grid(points, os.path.join(tmp.name, "test"),
+                              discard=discard, show=show)
+
+    # check if the plot exists
+    if show:
+        assert os.path.isfile(
+            os.path.join(tmp.name, "test", "evaluation_grid.png"))
+    else:
+        assert not os.path.isfile(
+            os.path.join(tmp.name, "test", "evaluation_grid.png"))
+
+    # check the nodes and elements
+    for file in ["Nodes.txt", "Elements.txt"]:
+        with open(os.path.join(data_grids, f"{n_dim}D", file), "r") as f:
+            ref = "".join(f.readlines())
+        with open(os.path.join(tmp.name, "test", file), "r") as f:
+            test = "".join(f.readlines())
+
+        assert test == ref
+
+    # read the grid
+    coordinates = m2h.read_evaluation_grid(os.path.join(tmp.name, "test"))
+
+    # check grid
+    assert isinstance(coordinates, pf.Coordinates)
+    npt.assert_equal(coordinates.get_cart(), points)

@@ -816,6 +816,7 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
         all_files.append([os.path.basename(f) for f in files])
 
         # frequency steps simulated in each file
+        # (code not needed and does not yet catch NCuntil*.inp and NCfrom*.inp)
         # steps = []
         # for file in files:
         #     parts = os.path.basename(file).split('-')
