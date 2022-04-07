@@ -734,6 +734,22 @@ def read_evaluation_grid(name, show=False):
     return coordinates
 
 
+def export_to_vtk(folder=None, object_mesh=None):
+
+    if folder is None:
+        folder = os.getcwd()
+
+    if object_mesh is None:
+        object_mesh = "Reference"
+
+    # check if npz file exists
+    # if not os.path.isfile()
+
+    # read nodes and elements
+
+    # write vtk files
+
+
 def _parse_nc_out_files(sources, num_sources, num_frequencies):
     """
     Parse all NC*.out files for all sources.
@@ -958,18 +974,18 @@ def _check_project_report(folder, fundamentals, out):
             # no value for frequency
             if f[1] == -1:
                 any_missing = True
-                missing += f"{f[0]}, "
+                missing += f"{int(f[0])}, "
                 continue
 
             # input data failed
             if f[3] == 0:
                 any_input_failed = True
-                input_test += f"{f[0]}, "
+                input_test += f"{int(f[0])}, "
 
             # convergence value is zero
             if f[4] == 0:
                 any_convergence = True
-                convergence += f"{f[0]}, "
+                convergence += f"{int(f[0])}, "
 
         if any_missing or any_convergence:
             report += f"Detected issues for source {ss+1}\n"
@@ -992,7 +1008,7 @@ def _check_project_report(folder, fundamentals, out):
 
     # write to disk
     report_name = os.path.join(
-        folder, "output2HRTF", "report_issues.txt")
+        folder, "Output2HRTF", "report_issues.txt")
     with open(report_name, "w") as f_id:
         f_id.write(report)
 
