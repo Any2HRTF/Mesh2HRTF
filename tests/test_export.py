@@ -22,18 +22,18 @@ import re
     {"pictures": False},
     [["##\nHead-Related Transfer Functions",
     "Controlparameter II\n1 200 0.000001 0.00e+00 1 0 0",
-    "Main Parameters I\n2 23576 11792 0 0 2 1 4",
+    "Main Parameters I\n2 24176 12092 0 0 2 1 4",
     "Main Parameters IV\n346.18 1.1839e+00",
-    "/EvaluationGrids/ARI/Nodes.txt",
+    "../../EvaluationGrids/Default/Nodes.txt",
     "BOUNDARY\n"
     "# Left ear velocity source\n"
     "ELEM 20479 TO 20479 VELO 0.1 -1 0.0 -1\n"
     "RETU"],
     ["##\nHead-Related Transfer Functions",
     "Controlparameter II\n1 200 0.000001 0.00e+00 1 0 0",
-    "Main Parameters I\n2 23576 11792 0 0 2 1 4",
+    "Main Parameters I\n2 24176 12092 0 0 2 1 4",
     "Main Parameters IV\n346.18 1.1839e+00",
-    "/EvaluationGrids/ARI/Nodes.txt",
+    "../../EvaluationGrids/Default/Nodes.txt",
     "BOUNDARY\n"
     "# Right ear velocity source\n"
     "ELEM 20478 TO 20478 VELO 0.1 -1 0.0 -1\n"
@@ -50,11 +50,11 @@ import re
     # test varying most parameters
     ('test_export.blend',
     {"title": "test title", "sourceType": "Point source",
-    "method": "SL-FMM BEM", "evaluationGrids": "HorPlane",
+    "method": "SL-FMM BEM", "evaluationGrids": "PlaneHorizontal",
     "speedOfSound": "300", "densityOfMedium": "1", "pictures": False},
     ["##\ntest title", "POINT SOURCES",
-    "Main Parameters I\n2 35418 17802 0 0 2 1 1",
-    "/EvaluationGrids/HorPlane/Nodes.txt",
+    "Main Parameters I\n2 45313 23132 0 0 2 1 1 0",
+    "/EvaluationGrids/PlaneHorizontal/Nodes.txt",
     "Main Parameters IV\n300 1e+00"],
     ["sourceType = 'Point source'\n"
     "numSources = 1\n"
@@ -72,7 +72,7 @@ import re
     ('test_export.blend',
     {"sourceType": "Point source", "method": "BEM", "pictures": False},
     ["POINT SOURCES",
-    "Main Parameters I\n2 23576 11792 0 0 2 1 0"],[]),
+    "Main Parameters I\n2 24176 12092 0 0 2 1 0 0"],[]),
 
     # test point source
     ('test_export.blend',
@@ -208,22 +208,17 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                    'test_blender_export_project'),
+                                 'resources',
+                                 'test_blender_export'),
                     os.path.join(tmp.name, 'project'))
 
     tmp_path = os.path.join(tmp.name, 'project')
     blender_file_path = os.path.join(tmp_path, blender_file_name)
     python_file_path = os.path.join(tmp_path, 'blender_script.py')
 
-        # copy test directory
-        shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                     'resources',
-                                     'test_blender_export'),
-                        os.path.join(tmp.name, 'project'))
-    # CONFLICT
     # adapt Blender Python script according to export arguments passed in params
-    # with open(python_file_path, 'r') as file :
-    #     python_file_text = file.read()
+    with open(python_file_path, 'r') as file :
+        python_file_text = file.read()
 
     # write addon path into Blender Python script
     python_file_text = python_file_text.replace('addonPath = ',
@@ -338,9 +333,9 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
 #     "0.000009 0.377778e+04 0.0\n"
 #     "0.000010 0.400000e+04 0.0\n"})
 
-# test_blender_export(
-#     os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-2.91.0'),
-#     os.path.join('2.91', 'scripts', 'addons'),
-#     'test_export.blend',
-#     {"pictures": False},
-#     [],[])
+test_blender_export(
+    os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-2.91.0'),
+    os.path.join('2.91', 'scripts', 'addons'),
+    'test_export.blend',
+    {"sourceType": "Point source", "method": "BEM", "pictures": False},
+    [],[])
