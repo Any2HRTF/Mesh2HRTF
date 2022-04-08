@@ -92,12 +92,12 @@ def Output2HRTF_Main(
     # get the evaluation grids
     print('\n Loading the EvaluationGrids ...')
     evaluationGrids, _ = _read_nodes_and_elements(
-        data=os.path.join(folder, 'EvaluationGrids'))
+        os.path.join(folder, 'EvaluationGrids'))
 
     # get the object mesh
     print('\n Loading the ObjectMeshes ...')
     objectMeshes, _ = _read_nodes_and_elements(
-        data=os.path.join(folder, 'ObjectMeshes'))
+        os.path.join(folder, 'ObjectMeshes'))
 
     # Load ObjectMesh data
     pressure, frequencies = _read_pressure(
@@ -105,9 +105,9 @@ def Output2HRTF_Main(
 
     print('\nSaving ObjectMesh data ...')
     cnt = 0
-    for ii in range(len(objectMeshes)):
-        nodes = objectMeshes[ii]["nodes"]
-        elements = objectMeshes[ii]["elements"]
+    for mesh in objectMeshes:
+        nodes = objectMeshes[mesh]["nodes"]
+        elements = objectMeshes[mesh]["elements"]
         element_data = pressure
 
         for jj in range(pressure.shape[1]):
@@ -116,14 +116,14 @@ def Output2HRTF_Main(
 
         file = open(os.path.join(
             folder, "Output2HRTF",
-            "ObjectMesh_" + objectMeshes[ii]["name"] + ".npz"), "w")
+            "ObjectMesh_" + mesh + ".npz"), "w")
         np.savez_compressed(file.name, nodes=nodes, elements=elements,
                             frequencies=frequencies, element_data=element_data)
         file.close()
 
         cnt = cnt + elements.shape[0]
 
-    del pressure, nodes, elements, frequencies, ii, jj, cnt, element_data
+    del pressure, nodes, elements, frequencies, mesh, jj, cnt, element_data
 
     # Load EvaluationGrid data
     if not len(evaluationGrids) == 0:
@@ -134,26 +134,24 @@ def Output2HRTF_Main(
 
     # save to struct
     cnt = 0
-    for ii in range(len(evaluationGrids)):
-        evaluationGrids[ii]["pressure"] = pressure[
-            cnt:cnt+evaluationGrids[ii]["num_nodes"], :, :]
+    for grid in evaluationGrids:
+        evaluationGrids[grid]["pressure"] = pressure[
+            cnt:cnt+evaluationGrids[grid]["num_nodes"], :, :]
 
-        cnt = cnt + evaluationGrids[ii]["num_nodes"]
+        cnt = cnt + evaluationGrids[grid]["num_nodes"]
 
-    del ii, pressure, cnt
+    del grid, pressure, cnt
 
     # process BEM data for writing HRTFs and HRIRs to SOFA files
-    for ii in range(len(evaluationGrids)):
-        eval_grid_name = evaluationGrids[ii]["name"]
-        eval_grid_pressure = evaluationGrids[ii]["pressure"]
-        eval_grid_xzy = evaluationGrids[ii]["nodes"][:, 1:4]
+    for grid in evaluationGrids:
 
-        print(f'\nSaving HRTFs for EvaluationGrid "{eval_grid_name}" ...\n')
+        print(f'\nSaving HRTFs for EvaluationGrid "{grid}" ...\n')
 
         # get pressure as SOFA object (all following steps are run on SOFA
         # objects. This way they are available to other users as well)
         sofa = _get_sofa_object(
-            eval_grid_pressure, eval_grid_xzy, "cartesian", sourceCenter,
+            evaluationGrids[grid]["pressure"],
+            evaluationGrids[grid]["nodes"][:, 1:4], "cartesian", sourceCenter,
             "HRTF", Mesh2HRTF_version, frequencies=frequencies)
 
         # reference to sound pressure at the center of the head
@@ -163,7 +161,7 @@ def Output2HRTF_Main(
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
-            'Output2HRTF', f'HRTF_{eval_grid_name}.sofa'), sofa)
+            'Output2HRTF', f'HRTF_{grid}.sofa'), sofa)
 
         # calculate and write HRIRs
         if computeHRIRs:
@@ -176,7 +174,7 @@ def Output2HRTF_Main(
 
             sofa = compute_HRIR(sofa, n_shift)
             sf.write_sofa(os.path.join(
-                'Output2HRTF', f'HRIR_{eval_grid_name}.sofa'), sofa)
+                'Output2HRTF', f'HRIR_{grid}.sofa'), sofa)
 
     print('Done\n')
 
@@ -742,6 +740,7 @@ def export_to_vtk(folder=None, object_mesh=None):
     if object_mesh is None:
         object_mesh = "Reference"
 
+    # load object mesh data
     object_data = os.path.join(
             folder, "Output2HRTF", f"ObjectMesh_{object_mesh}.npz")
     if os.path.isfile(object_data):
@@ -749,6 +748,9 @@ def export_to_vtk(folder=None, object_mesh=None):
     else:
         raise ValueError((f"{object_data} does not exist. "
                           "Run Output2HRTF_Main to create it"))
+
+    # load object mesh
+    grid, _ = _read_nodes_and_elements(os.path.join(folder, 'ObjectMeshes'))
 
     # np.savez_compressed(file.name, nodes=nodes, elements=elements,
     #                         frequencies=frequencies, element_data=element_data)
@@ -1208,19 +1210,25 @@ def _read_nodes_and_elements(data):
     if os.path.basename(data) not in ['EvaluationGrids', 'ObjectMeshes']:
         raise ValueError('data must be EvaluationGrids or ObjectMeshes!')
 
-    grids = []
+    grids = {}
     gridsList = os.listdir(data)
     gridsNumNodes = 0
-    for ii in range(len(gridsList)):
+
+    for grid in gridsList:
         tmpNodes = np.loadtxt(os.path.join(
-            data, gridsList[ii], 'Nodes.txt'),
+            data, grid, 'Nodes.txt'),
             delimiter=' ', skiprows=1)
+
         tmpElements = np.loadtxt(os.path.join(
-            data, gridsList[ii], 'Elements.txt'),
+            data, grid, 'Elements.txt'),
             delimiter=' ', skiprows=1)
-        grids.append({"name": gridsList[ii], "nodes": tmpNodes,
-                      "elements": tmpElements, "num_nodes": tmpNodes.shape[0]})
-        gridsNumNodes += grids[ii]['num_nodes']
+
+        grids[grid] = {
+            "nodes": tmpNodes,
+            "elements": tmpElements,
+            "num_nodes": tmpNodes.shape[0]}
+
+        gridsNumNodes += grids[grid]['num_nodes']
 
     return grids, gridsNumNodes
 
