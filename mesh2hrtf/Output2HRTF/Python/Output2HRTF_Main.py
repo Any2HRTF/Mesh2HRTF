@@ -383,17 +383,19 @@ def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
         exist and directly in `folder` otherwise.
 
         The name may contain an asterisk to process data in multiple folders.
-        E.g., if `folder` is ``"some/path/HRIRs_*"``files in all folder
+        E.g., if `folder` is ``"some/path/HRIRs_*"`` files in all folder
         starting with "HRIRs" would be scanned for SOFA files.
     pattern : str
         Merge only files that contain `pattern` in their filename. The default
         ``None`` merges all SOFA files.
     plot : str, optional
-        "2D" - generate line plots of four sources on the horizontal plane
-              (front, back, left, right). The closest sources to the ideal
-              positoins are used for plotting.
-        "3D" - generate color coded plots of all sources on the horizontal
-               plane. See also parameter `atol` below.
+        ``"2D"``
+            generate line plots of four sources on the horizontal plane
+            (front, back, left, right). The closest sources to the ideal
+            positoins are used for plotting.
+        ``"3D"``
+            generate color coded plots of all sources on the horizontal
+            plane. See also parameter `atol` below.
 
         The default ``None`` generate both plots.
     plane : str, optional
@@ -524,22 +526,22 @@ def merge_sofa_files(left, right, pattern=None, savedir=None):
 
 
 def project_report(folder=None):
-    """
+    r"""
     Analyze output files written by NumCalc, generate project report, and
     scan report for issues.
 
     NumCalc (Mesh2HRTF's numerical core) writes information about the
-    simulations to the files NC*.inp located under NumCalc/source_*. The file
-    NC.inp exists if NumCalc was ran without the additional command line
-    parameters `-istart` and `-iend`. If these parameters were used, there is
-    at least one NC*-*.inp. If this is the case, information from NC*-*.inp
-    overwrites information from NC.inp in the project report.
+    simulations to the files `NC*.inp` located under `NumCalc/source_*`. The
+    file `NC.inp` exists if NumCalc was ran without the additional command line
+    parameters ``-istart`` and ``-iend``. If these parameters were used, there
+    is at least one `NC\*-\*.inp`. If this is the case, information from
+    `NC\*-\*.inp` overwrites information from NC.inp in the project report.
 
     .. note::
 
         The project reports are written to the files
-        Output2HRTF/report_source_*.csv. If issues were detected, they are
-        listed in Output2HRTF/report_issues.csv.
+        `Output2HRTF/report_source_*.csv`. If issues were detected, they are
+        listed in `Output2HRTF/report_issues.csv`.
 
     Parameters
     ----------
@@ -619,13 +621,14 @@ def write_evaluation_grid(
     Generate a spherical sampling grid with pyfar and write it to the current
     working directory
 
-    .. code-block:: python
+    .. plot::
 
-        import mesh2hrtf as m2h
-        import pyfar as pf
-
-        points = pf.samplings.sph_lebedev(sh_order=10)
-        m2h.write_evaluation_grid(points, name, discard=None, show=True)
+        >>> import mesh2hrtf as m2h
+        >>> import pyfar as pf
+        >>>
+        >>> points = pf.samplings.sph_lebedev(sh_order=10)
+        >>> m2h.write_evaluation_grid(
+        ...     points, "Lebedev_N10", discard=None, show=True)
     """
 
     if isinstance(points, pf.Coordinates):

@@ -25,6 +25,7 @@ setup_requirements = ['pytest-runner', ]
 
 test_requirements = [
     'pytest',
+    'flake8'
 ]
 
 setup(

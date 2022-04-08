@@ -1,0 +1,529 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Mesh2HRTF Python API &#8212; Mesh2HRTF 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/insipid.css" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script defer src="_static/insipid.js"></script>
+    <script defer src="_static/insipid-sidebar.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Documentation" href="index.html" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+  </head>
+  <body class="sidebar-visible">
+    <script type="text/javascript">
+        (function() {
+            var $body = $(document.body);
+            $body.addClass('js');
+            $body.addClass('sidebar-resizing');  // avoid transitions on load
+            $body.removeClass('sidebar-visible');
+            try {
+                var sidebar = localStorage.getItem('sphinx-sidebar');
+                if (sidebar === 'visible') {
+                    $body.addClass('sidebar-visible');
+                }
+                var sidebar_width = localStorage.getItem('sphinx-sidebar-width');
+                if (sidebar_width) {
+                    $(':root').css('--sidebar-width', sidebar_width);
+                }
+            } catch(e) {
+            }
+        })();
+    </script>
+    <header id="topbar-placeholder">
+      <div id="topbar">
+        <div id="titlebar">
+          <div class="buttons">
+            <button id="sidebar-button" type="button" aria-controls="sphinxsidebar" accesskey="M">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"/></svg>
+            </button>
+            <button id="search-button" type="button" title="Search" aria-label="Search" aria-expanded="false" aria-controls="search-form" accesskey="S">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"/></svg>
+            </button>
+          </div>
+          <div class="title">
+            <a class="parent" href="index.html" accesskey="U">Mesh2HRTF 1.0.0 documentation</a>
+            <a class="top" href="#">Mesh2HRTF Python API</a>
+          </div>
+          <div class="buttons">
+            <button id="fullscreen-button" type="button" aria-hidden="true">
+              <span class="enable">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M212.686 315.314L120 408l32.922 31.029c15.12 15.12 4.412 40.971-16.97 40.971h-112C10.697 480 0 469.255 0 456V344c0-21.382 25.803-32.09 40.922-16.971L72 360l92.686-92.686c6.248-6.248 16.379-6.248 22.627 0l25.373 25.373c6.249 6.248 6.249 16.378 0 22.627zm22.628-118.628L328 104l-32.922-31.029C279.958 57.851 290.666 32 312.048 32h112C437.303 32 448 42.745 448 56v112c0 21.382-25.803 32.09-40.922 16.971L376 152l-92.686 92.686c-6.248 6.248-16.379 6.248-22.627 0l-25.373-25.373c-6.249-6.248-6.249-16.378 0-22.627z"/></svg>
+              </span>
+              <span class="disable">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M4.686 427.314L104 328l-32.922-31.029C55.958 281.851 66.666 256 88.048 256h112C213.303 256 224 266.745 224 280v112c0 21.382-25.803 32.09-40.922 16.971L152 376l-99.314 99.314c-6.248 6.248-16.379 6.248-22.627 0L4.686 449.941c-6.248-6.248-6.248-16.379 0-22.627zM443.314 84.686L344 184l32.922 31.029c15.12 15.12 4.412 40.971-16.97 40.971h-112C234.697 256 224 245.255 224 232V120c0-21.382 25.803-32.09 40.922-16.971L296 136l99.314-99.314c6.248-6.248 16.379-6.248 22.627 0l25.373 25.373c6.248 6.248 6.248 16.379 0 22.627z"/></svg>
+              </span>
+            </button>
+          </div>
+        </div>
+        <div id="searchbox" role="search">
+          <form id="search-form" class="search" style="display: none" action="search.html" method="get">
+            <input type="search" name="q" placeholder="Search ..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+            <button>Go</button>
+          </form>
+        </div>
+      </div>
+    </header>
+    <nav>
+      <a href="index.html" class="nav-icon previous" title="previous:&#13;Documentation" aria-label="Previous topic" accesskey="P" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M31.7 239l136-136c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9L127.9 256l96.4 96.4c9.4 9.4 9.4 24.6 0 33.9L201.7 409c-9.4 9.4-24.6 9.4-33.9 0l-136-136c-9.5-9.4-9.5-24.6-.1-34z"/></svg>
+      </a>
+    </nav>
+
+    <nav class="relbar">
+      <a class="previous" href="index.html" aria-label="Previous topic" >
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg>
+        </div>
+        <div class="title">
+          <span class="text">
+            <span class="direction">previous</span>
+            Documentation
+          </span>
+        </div>
+      </a>
+    </nav>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+<section id="mesh2hrtf-python-api">
+<h1>Mesh2HRTF Python API<a class="headerlink" href="#mesh2hrtf-python-api" title="Permalink to this headline">¶</a></h1>
+<p>This is the documentation. Of the Python API for Mesh2HRTF. For everything else
+visit the
+<a class="reference external" href="https://sourceforge.net/p/mesh2hrtf/wiki/Home/">Mesh2HRTF Wiki text</a></p>
+<p>The main function of the Python API is <code class="docutils literal notranslate"><span class="pre">Output2HRTF_Main</span></code> which reads
+the raw simulation results and saves them as SOFA files. It is usually called
+from the script <code class="docutils literal notranslate"><span class="pre">Output2HRTF.py</span></code> which is generated upon exporting a
+Mesh2HRTF project from Blender.</p>
+<span class="target" id="module-mesh2hrtf"></span><p><strong>Functions:</strong></p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mesh2hrtf.Output2HRTF_Main" title="mesh2hrtf.Output2HRTF_Main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Output2HRTF_Main</span></code></a>(Mesh2HRTF_version, ...[, ...])</p></td>
+<td><p>Process NumCalc output and write data to disk.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mesh2hrtf.compute_HRIR" title="mesh2hrtf.compute_HRIR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_HRIR</span></code></a>(sofa, n_shift)</p></td>
+<td><p>Compute HRIR from HRTF by means of the inverse Fourier transform.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mesh2hrtf.export_to_vtk" title="mesh2hrtf.export_to_vtk"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_to_vtk</span></code></a>([folder, object_mesh, ...])</p></td>
+<td><p>Export pressure on the (head) mesh to vtk files for importing in ParaView</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mesh2hrtf.inspect_sofa_files" title="mesh2hrtf.inspect_sofa_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inspect_sofa_files</span></code></a>(folder[, pattern, plot, ...])</p></td>
+<td><p>Inspect SOFA files through plots.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mesh2hrtf.merge_sofa_files" title="mesh2hrtf.merge_sofa_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_sofa_files</span></code></a>(left, right[, pattern, savedir])</p></td>
+<td><p>Merge HRTFs and HRIRs from SOFA-files containing left and right ear data.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mesh2hrtf.project_report" title="mesh2hrtf.project_report"><code class="xref py py-obj docutils literal notranslate"><span class="pre">project_report</span></code></a>([folder])</p></td>
+<td><p>Analyze output files written by NumCalc, generate project report, and scan report for issues.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mesh2hrtf.read_evaluation_grid" title="mesh2hrtf.read_evaluation_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_evaluation_grid</span></code></a>(name[, show])</p></td>
+<td><p>Read Mesh2HRTF evaluation grid.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mesh2hrtf.reference_HRTF" title="mesh2hrtf.reference_HRTF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reference_HRTF</span></code></a>(sofa, sourceType, sourceArea, ...)</p></td>
+<td><p>Reference HRTF to the sound pressure in the center of the head.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mesh2hrtf.write_evaluation_grid" title="mesh2hrtf.write_evaluation_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_evaluation_grid</span></code></a>(points, name[, start, ...])</p></td>
+<td><p>Write evaluation grid for use in Mesh2HRTF.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.Output2HRTF_Main">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">Output2HRTF_Main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Mesh2HRTF_version</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sourceType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">numSources</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sourceCenter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sourceArea</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">computeHRIRs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speedOfSound</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">densityOfAir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#Output2HRTF_Main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.Output2HRTF_Main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process NumCalc output and write data to disk.</p>
+<p>All parameters are written to Output2HRTF.py upon exporting a Mesh2HRTF
+project from Blender. This function will thus usually be called from an
+Output2HRTF.py file.</p>
+<p>Processing the data is done in the following steps</p>
+<ol class="arabic simple">
+<li><p>use <a class="reference internal" href="#mesh2hrtf.project_report" title="mesh2hrtf.project_report"><code class="xref py py-func docutils literal notranslate"><span class="pre">project_report</span></code></a> to parse files in
+project_folder/NumCalc/source_*/NC*.out, write project report to
+project_folder/Output2HRTF/report_source_*.csv. Raise a warning if any
+issues were detected and write report_issues.txt to the same folder</p></li>
+<li><p>Read simulated pressures from project_folder/NumCalc/source_*/be.out.
+This and the following steps are done, even if an issue was detected in
+the previous step</p></li>
+<li><p>use <code class="xref py py-func docutils literal notranslate"><span class="pre">reference_hrtf</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">compute_hrir</span></code> to save the
+results to SOFA files</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Mesh2HRTF_version</strong> (<em>string</em>) – Mesh2HRTF version as string</p></li>
+<li><p><strong>numSources</strong> (<em>integer</em>) – Number of sound sources in the simulation</p></li>
+<li><p><strong>sourceType</strong> (<em>string</em>) – <dl class="simple">
+<dt>The source type (‘Both ears’, ‘Left ear’, ‘Right ear’,</dt><dd><p>’Point source’, ‘Plane wave’)</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>sourceCenter</strong> (<em>array</em>) – The source position</p></li>
+<li><p><strong>sourceArea</strong> (<em>array</em>) – The area of the source(s) if using vibrating elements as sourceType.
+This is required for referencing the HRTFs. Use an area of 1 for a
+point source.</p></li>
+<li><p><strong>reference</strong> (<em>boolean</em>) – Indicate if the HRTF are referenced to the pressure in the center of
+the head with the head absent.</p></li>
+<li><p><strong>computeHRIRs</strong> (<em>boolean</em>) – Indicate if the HRIRs should be calculated by means of the inverse
+Fourier transform.</p></li>
+<li><p><strong>speedOfSound</strong> (<em>float</em>) – The speed of sound in m/s</p></li>
+<li><p><strong>densityOfAir</strong> (<em>float</em>) – The density of air in kg/m^3</p></li>
+<li><p><strong>folder</strong> (<em>str</em><em>, </em><em>optional</em>) – The path of the Mesh2HRTF project folder, i.e., the folder containing
+the subfolders EvaluationsGrids, NumCalc, and ObjectMeshes. The
+default, <code class="docutils literal notranslate"><span class="pre">None</span></code> uses the current working directory.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.compute_HRIR">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">compute_HRIR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sofa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_shift</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#compute_HRIR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.compute_HRIR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute HRIR from HRTF by means of the inverse Fourier transform.</p>
+<p>This requires the following:</p>
+<ol class="arabic simple">
+<li><p>The HRTFs contained in <cite>sofa</cite> have been referenced using
+<cite>reference_HRTFs()</cite>.</p></li>
+<li><p>HRTF must be available for frequencies f_0 to f_1 in constant steps.
+f_0 must be &gt; 0 Hz and f_1 is assumed to be half the sampling rate.</p></li>
+</ol>
+<p>HRIRs are computed with the following steps</p>
+<ol class="arabic simple">
+<li><p>Add data for 0 Hz. The HRTF at 0 Hz is 1 (0 dB) by definition because
+the HRTF describes the filtering of incoming sound by the human
+anthropometry (which does not change the sound at 0 Hz).</p></li>
+<li><p>Only the absolute value for the data at half the sampling rate is used.
+Otherwise the next step would produce complex output</p></li>
+<li><p>The HRTF spectrum is mirrored and the HRIR is obtained through the
+inverse Fourier transform</p></li>
+<li><p>The HRIRs are circularly shifted by <cite>n_shift</cite> samples to enforce a
+causal system. A good shift value for a sampling rate of 44.1 kHz might
+be between 20 and 40 samples.</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sofa</strong> (<em>sofar Sofa object</em><em>, </em><em>str</em>) – Sofa object containing the sound pressure or filename of a SOFA file to
+be loaded. SOFA object/file must be of the convention
+SimpleFreeFieldHRTF or GeneralTF</p></li>
+<li><p><strong>n_shift</strong> (<em>int</em>) – Amount the HRIRs are shifted to enforce a causal system.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sofa</strong> – HRIRs</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>sofar Sofa.object</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>HRIRs for different sampling rates can be generated from a single SOFA file
+if discarding or adding some data.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.export_to_vtk">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">export_to_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">object_mesh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequency_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#export_to_vtk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.export_to_vtk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export pressure on the (head) mesh to vtk files for importing in ParaView</p>
+<p>The exported vtk files are written to folder/Output2HRTF/Reference_vtk
+where ‘Reference’ is given by <cite>object_mesh</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>str</em><em>, </em><em>optional</em>) – The Mesh2HRTF project folder. The default <code class="docutils literal notranslate"><span class="pre">None</span></code> uses the current
+folder</p></li>
+<li><p><strong>object_mesh</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the mesh for which the pressure is exported. The default
+<code class="docutils literal notranslate"><span class="pre">None</span></code> selects the <cite>Reference</cite> mesh.</p></li>
+<li><p><strong>frequency_steps</strong> (<em>list</em><em>, </em><em>optional</em>) – List with first and last frequency step for which the data is
+exported. The default <code class="docutils literal notranslate"><span class="pre">None</span></code> exports the data for all frequency
+steps.</p></li>
+<li><p><strong>dB</strong> (<em>bool</em><em>, </em><em>optional</em>) – Save pressure in dB if <code class="docutils literal notranslate"><span class="pre">True</span></code> (default) and linear otherwise.</p></li>
+<li><p><strong>log_prefix</strong> (<em>number</em><em>, </em><em>optional</em>) – The pressure in dB is calculated as
+<code class="docutils literal notranslate"><span class="pre">log_prefix</span> <span class="pre">*</span> <span class="pre">log_10(pressure/log_reference)</span></code>. The default values
+are <code class="docutils literal notranslate"><span class="pre">20</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><strong>log_reference</strong> (<em>number</em><em>, </em><em>optional</em>) – The pressure in dB is calculated as
+<code class="docutils literal notranslate"><span class="pre">log_prefix</span> <span class="pre">*</span> <span class="pre">log_10(pressure/log_reference)</span></code>. The default values
+are <code class="docutils literal notranslate"><span class="pre">20</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.inspect_sofa_files">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">inspect_sofa_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plane</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'horizontal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savedir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#inspect_sofa_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.inspect_sofa_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inspect SOFA files through plots.</p>
+<p>Generate and save plots for horizontal plane HRIRs (time domain) and HRTFs
+(frequency domain) for one or multiple SOFA files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder</strong> (<em>str</em>) – <p>Name of a folder. SOFA files are searched in folder/Output2HRTF if it
+exist and directly in <cite>folder</cite> otherwise.</p>
+<p>The name may contain an asterisk to process data in multiple folders.
+E.g., if <cite>folder</cite> is <code class="docutils literal notranslate"><span class="pre">&quot;some/path/HRIRs_*&quot;</span></code> files in all folder
+starting with “HRIRs” would be scanned for SOFA files.</p>
+</p></li>
+<li><p><strong>pattern</strong> (<em>str</em>) – Merge only files that contain <cite>pattern</cite> in their filename. The default
+<code class="docutils literal notranslate"><span class="pre">None</span></code> merges all SOFA files.</p></li>
+<li><p><strong>plot</strong> (<em>str</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">&quot;2D&quot;</span></code></dt><dd><p>generate line plots of four sources on the horizontal plane
+(front, back, left, right). The closest sources to the ideal
+positoins are used for plotting.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">&quot;3D&quot;</span></code></dt><dd><p>generate color coded plots of all sources on the horizontal
+plane. See also parameter <cite>atol</cite> below.</p>
+</dd>
+</dl>
+<p>The default <code class="docutils literal notranslate"><span class="pre">None</span></code> generate both plots.</p>
+</p></li>
+<li><p><strong>plane</strong> (<em>str</em><em>, </em><em>optional</em>) – Select the plane for which is shown in the 3D plot. Can be
+<code class="docutils literal notranslate"><span class="pre">&quot;horizontal&quot;</span></code> (default), <code class="docutils literal notranslate"><span class="pre">&quot;median&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;frontal&quot;</span></code></p></li>
+<li><p><strong>atol</strong> (<em>float</em><em>, </em><em>optional</em>) – Sources on the <cite>plane</cite> are searched within a range +/- <cite>atol</cite> degree.
+The default is <code class="docutils literal notranslate"><span class="pre">0.1</span></code>.</p></li>
+<li><p><strong>savedir</strong> (<em>str</em>) – Directory for saving the merged SOFA files. The default <code class="docutils literal notranslate"><span class="pre">None</span></code> saves
+the files to the directory given by <cite>folder</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.merge_sofa_files">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">merge_sofa_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">left</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savedir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#merge_sofa_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.merge_sofa_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge HRTFs and HRIRs from SOFA-files containing left and right ear data.</p>
+<p>The names of the merged SOFA files and with the “merged.sofa”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>left</strong> (<em>str</em>) – <p><cite>left</cite> and <cite>right</cite> are folder names. SOFA files are searched in
+folder/Output2HRTF if it exist and directly in <cite>folder</cite> otherwise.</p>
+<p>The names may contain an asterisk to process data in multiple folders.
+E.g., if <cite>left</cite> is <code class="docutils literal notranslate"><span class="pre">&quot;some/path/*_left&quot;</span></code> and <cite>right</cite> is
+<code class="docutils literal notranslate"><span class="pre">&quot;some/path/*_right&quot;</span></code> all SOFA files in the matching folders will be
+merged. Note that the Output2HRTF folder pairs given by <cite>left</cite> and
+<cite>right</cite> must contain SOFA files with identical names.</p>
+</p></li>
+<li><p><strong>right</strong> (<em>str</em>) – <p><cite>left</cite> and <cite>right</cite> are folder names. SOFA files are searched in
+folder/Output2HRTF if it exist and directly in <cite>folder</cite> otherwise.</p>
+<p>The names may contain an asterisk to process data in multiple folders.
+E.g., if <cite>left</cite> is <code class="docutils literal notranslate"><span class="pre">&quot;some/path/*_left&quot;</span></code> and <cite>right</cite> is
+<code class="docutils literal notranslate"><span class="pre">&quot;some/path/*_right&quot;</span></code> all SOFA files in the matching folders will be
+merged. Note that the Output2HRTF folder pairs given by <cite>left</cite> and
+<cite>right</cite> must contain SOFA files with identical names.</p>
+</p></li>
+<li><p><strong>pattern</strong> (<em>str</em>) – Merge only files that contain <cite>pattern</cite> in their filename. The default
+<code class="docutils literal notranslate"><span class="pre">None</span></code> merges all SOFA files.</p></li>
+<li><p><strong>savedir</strong> (<em>str</em>) – Directory for saving the merged SOFA files. The default <code class="docutils literal notranslate"><span class="pre">None</span></code> saves
+the files to the directory given by <cite>left</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.project_report">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">project_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#project_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.project_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyze output files written by NumCalc, generate project report, and
+scan report for issues.</p>
+<p>NumCalc (Mesh2HRTF’s numerical core) writes information about the
+simulations to the files <cite>NC*.inp</cite> located under <cite>NumCalc/source_*</cite>. The
+file <cite>NC.inp</cite> exists if NumCalc was ran without the additional command line
+parameters <code class="docutils literal notranslate"><span class="pre">-istart</span></code> and <code class="docutils literal notranslate"><span class="pre">-iend</span></code>. If these parameters were used, there
+is at least one <cite>NC*-*.inp</cite>. If this is the case, information from
+<cite>NC*-*.inp</cite> overwrites information from NC.inp in the project report.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The project reports are written to the files
+<cite>Output2HRTF/report_source_*.csv</cite>. If issues were detected, they are
+listed in <cite>Output2HRTF/report_issues.csv</cite>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>folder</strong> (<em>str</em><em>, </em><em>optional</em>) – The path of the Mesh2HRTF project folder, i.e., the folder containing
+the subfolders EvaluationsGrids, NumCalc, and ObjectMeshes. The
+default, <code class="docutils literal notranslate"><span class="pre">None</span></code> uses the current working directory.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>found_issues</strong> (<em>bool</em>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> if issues were found, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise</p></li>
+<li><p><strong>report</strong> (<em>str</em>) – The report or an empty string if no issues were found</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.read_evaluation_grid">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">read_evaluation_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#read_evaluation_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.read_evaluation_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read Mesh2HRTF evaluation grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – Name of the folder containing the nodes of the evaluation grid in
+Nodes.txt</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> the points of the evaluation grid are plotted. The default
+is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>coordinates</strong> – The points of the evaluation grid as a pyfar Coordinates object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pyfar Coordinates</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.reference_HRTF">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">reference_HRTF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sofa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sourceType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sourceArea</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speedOfSound</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">densityOfAir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'min'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#reference_HRTF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.reference_HRTF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reference HRTF to the sound pressure in the center of the head. After
+referencing the sound pressure approaches 1 (0 dB) for low frequencies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sofa</strong> (<em>sofar Sofa object</em><em>, </em><em>str</em>) – Sofa object containing the sound pressure or filename of a SOFA file to
+be loaded. SOFA object/file must be of the convention
+SimpleFreeFieldHRTF or GeneralTF</p></li>
+<li><p><strong>sourceType</strong> (<em>str</em>) – The referencing depends on the source type used for simulating the
+sound pressure. Can be “Both ears”, “Left ear”, “Right ear”,
+“Point source”, or “Plane wave”</p></li>
+<li><p><strong>sourceArea</strong> (<em>array like</em>) – The area of the source is required if <cite>sourceType</cite> is “Both ears” in
+which case <cite>sourceAre</cite> is a list with two values or if <cite>sourceType</cite> is
+“Left ear” or “Right ear” in which case <cite>sourceArea</cite> is a list with one
+value.</p></li>
+<li><p><strong>speedOfSound</strong> (<em>number</em>) – The speed of sound in m/s</p></li>
+<li><p><strong>densityOfAir</strong> (<em>number</em>) – The density of air in kg / m**3</p></li>
+<li><p><strong>mode</strong> (<em>str</em><em>, </em><em>optional</em>) – Pass “min”, “max”, or “mean” to reference to the minmum, maximum, or
+mean radius in <cite>sofa.SourcePosition</cite>. Pass “all” to normalize each
+HRTF to the radius of the corresponding source.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sofa</strong> – A copy of the input data with referenced sound pressure</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>sofar Sofa.object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mesh2hrtf.write_evaluation_grid">
+<span class="sig-prename descclassname"><span class="pre">mesh2hrtf.</span></span><span class="sig-name descname"><span class="pre">write_evaluation_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">discard</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mesh2hrtf/Output2HRTF/Python/Output2HRTF_Main.html#write_evaluation_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mesh2hrtf.write_evaluation_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write evaluation grid for use in Mesh2HRTF.</p>
+<p>Mesh2HRTF evaluation grids consist of the two text files Nodes.txt and
+Elements.txt. Evaluations grids are always triangularized.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>pyfar Coordinates</em><em>, </em><em>numpy array</em>) – pyfar Coordinates object or 2D numpy array containing the cartesian
+points of the evaluation grid in meter. The array must be of shape
+(N, 3) with N &gt; 2.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – Name of the folder under which the evaluation grid is saved. If the
+folder does not exist, it is created.</p></li>
+<li><p><strong>start</strong> (<em>int</em><em>, </em><em>optional</em>) – The nodes and elements of the evaluation grid are numbered and the
+first element will have the number <cite>start</cite>. In Mesh2HRTF, each Node
+must have a unique number. The nodes/elements of the mesh for which the
+HRTFs are simulated start at 1. Thus <cite>start</cite> must at least be greater
+than the number of nodes/elements in the evaluation grid.</p></li>
+<li><p><strong>discard</strong> (<em>&quot;x&quot;</em><em>, </em><em>&quot;y&quot;</em><em>, </em><em>&quot;z&quot;</em><em>, </em><em>optional</em>) – In case all values of the evaluation grid are constant for one
+dimension, this dimension has to be discarded during the
+triangularization. E.g. if all points have a z-value of 0 (or any other
+constant), discarded must be “z”. The default <code class="docutils literal notranslate"><span class="pre">None</span></code> does not discard
+any dimension.</p></li>
+<li><p><strong>show</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> the evaluation grid is plotted and the plot is saved to
+the folder given by <cite>name</cite></p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Generate a spherical sampling grid with pyfar and write it to the current
+working directory</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">mesh2hrtf</span> <span class="k">as</span> <span class="nn">m2h</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyfar</span> <span class="k">as</span> <span class="nn">pf</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">points</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">samplings</span><span class="o">.</span><span class="n">sph_lebedev</span><span class="p">(</span><span class="n">sh_order</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">m2h</span><span class="o">.</span><span class="n">write_evaluation_grid</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">points</span><span class="p">,</span> <span class="s2">&quot;Lebedev_N10&quot;</span><span class="p">,</span> <span class="n">discard</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>(<a class="reference external" href=".//mesh2hrtf-1.py">Source code</a>, <a class="reference external" href=".//mesh2hrtf-1.png">png</a>, <a class="reference external" href=".//mesh2hrtf-1.hires.png">hires.png</a>, <a class="reference external" href=".//mesh2hrtf-1.pdf">pdf</a>)</p>
+<figure class="align-default">
+<img alt="_images/mesh2hrtf-1.png" class="plot-directive" src="_images/mesh2hrtf-1.png" />
+</figure>
+</dd></dl>
+
+</section>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+    <nav class="relbar">
+      <a class="previous" href="index.html" aria-label="Previous topic" >
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!-- Font Awesome Free 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M257.5 445.1l-22.2 22.2c-9.4 9.4-24.6 9.4-33.9 0L7 273c-9.4-9.4-9.4-24.6 0-33.9L201.4 44.7c9.4-9.4 24.6-9.4 33.9 0l22.2 22.2c9.5 9.5 9.3 25-.4 34.3L136.6 216H424c13.3 0 24 10.7 24 24v32c0 13.3-10.7 24-24 24H136.6l120.5 114.8c9.8 9.3 10 24.8.4 34.3z"/></svg>
+        </div>
+        <div class="title">
+          <span class="text">
+            <span class="direction">previous</span>
+            Documentation
+          </span>
+        </div>
+      </a>
+    </nav>
+
+
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+          <div class="sidebar-resize-handle"></div>
+
+<h3><a href="index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Mesh2HRTF Python API</a></li>
+</ul>
+
+<hr class="docutils" />
+<ul>
+  <li class="toctree-l1"><a class="reference internal" href="genindex.html" accesskey="I">General Index</a></li>
+  <li class="toctree-l1"><a class="reference internal" href="py-modindex.html">Python Module Index</a></li>
+</ul>
+<div id="ethical-ad-placement"></div>
+        </div>
+      </div>
+    <footer role="contentinfo">
+      &#169; Copyright 2020, the Mesh2HRTF developers.
+      Created using <a class="reference external" href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+      <a class="reference external" href="https://insipid-sphinx-theme.readthedocs.io/">Insipid Theme</a>.
+<a class="reference internal" href="_sources/mesh2hrtf.rst.txt" rel="nofollow">Show Source</a>.
+    </footer>
+    <div class="sidebar-resize-handle"></div>
+    <div id="overlay"></div>
+  </body>
+</html>
