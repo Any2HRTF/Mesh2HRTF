@@ -106,7 +106,6 @@ def Output2HRTF_Main(
     print('\nSaving ObjectMesh data ...')
     cnt = 0
     for mesh in objectMeshes:
-        nodes = objectMeshes[mesh]["nodes"]
         elements = objectMeshes[mesh]["elements"]
         element_data = pressure
 
@@ -117,13 +116,13 @@ def Output2HRTF_Main(
         file = open(os.path.join(
             folder, "Output2HRTF",
             "ObjectMesh_" + mesh + ".npz"), "w")
-        np.savez_compressed(file.name, nodes=nodes, elements=elements,
-                            frequencies=frequencies, element_data=element_data)
+        np.savez_compressed(
+            file.name, frequencies=frequencies, pressure=element_data)
         file.close()
 
         cnt = cnt + elements.shape[0]
 
-    del pressure, nodes, elements, frequencies, mesh, jj, cnt, element_data
+    del pressure, elements, frequencies, mesh, jj, cnt, element_data
 
     # Load EvaluationGrid data
     if not len(evaluationGrids) == 0:
@@ -741,21 +740,23 @@ def export_to_vtk(folder=None, object_mesh=None):
         object_mesh = "Reference"
 
     # load object mesh data
-    object_data = os.path.join(
+    object_name = os.path.join(
             folder, "Output2HRTF", f"ObjectMesh_{object_mesh}.npz")
-    if os.path.isfile(object_data):
-        np.load(object_data)
+    if os.path.isfile(object_name):
+        # contains: nodes, elements=elements, frequencies, and element_data
+        data = np.load(object_name, allow_pickle=False)
     else:
-        raise ValueError((f"{object_data} does not exist. "
+        raise ValueError((f"{object_name} does not exist. "
                           "Run Output2HRTF_Main to create it"))
 
     # load object mesh
     grid, _ = _read_nodes_and_elements(os.path.join(folder, 'ObjectMeshes'))
+    grid = grid[object_mesh]
 
-    # np.savez_compressed(file.name, nodes=nodes, elements=elements,
-    #                         frequencies=frequencies, element_data=element_data)
-
-    # read nodes and elements
+    # create output folder
+    savedir = os.path.join(folder, "Output2HRTF", f"{object_name}_vtk")
+    if not os.path.isdir(savedir):
+        os.mkdir(savedir)
 
     # write vtk files
 
