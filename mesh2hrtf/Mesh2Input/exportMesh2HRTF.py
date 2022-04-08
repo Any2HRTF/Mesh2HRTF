@@ -149,7 +149,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description=("Name of evalation grid inside "
             "Mesh2Input/EvaluationsGrids or absolute path to user grid. "
             "Multiple grids can be separated by semicolons (;)"),
-        default='ARI',
+        default='Default',
         )
     # material seach paths ----------------------------------------------------
     materialSearchPaths: StringProperty(
