@@ -275,12 +275,25 @@ def test_export_to_vtk(frequency_steps, dB):
     # export to vtk
     m2h.export_to_vtk(cwd, frequency_steps=frequency_steps, dB=dB)
 
-    # check if all files are there
+    # check results
     if frequency_steps is None:
         frequency_steps = [1, 60]
 
-    prefix = "db" if dB else "lin"
+    prefix = "db_frequency_step_" if dB else "lin_frequency_step_"
+
     for ff in range(frequency_steps[0], frequency_steps[1]+1):
-        assert os.path.isfile(os.path.join(
-            cwd, "Output2HRTF", "Reference_vtk",
-            f"{prefix}_frequency_step_{ff}.vtk"))
+
+        file = os.path.join(
+            "Output2HRTF", "Reference_vtk", f"{prefix}{ff}.vtk")
+
+        # check if all files are there
+        assert os.path.isfile(os.path.join(cwd, file))
+
+        # test file content against reference
+        # (references only exist for steps 1 and 2 to save space)
+        if ff == 1 or (ff == 2 and 2 in frequency_steps):
+            with open(os.path.join(data_shtf, file), "r") as f:
+                ref = "".join(f.readlines())
+            with open(os.path.join(cwd, file), "r") as f:
+                test = "".join(f.readlines())
+            assert test == ref
