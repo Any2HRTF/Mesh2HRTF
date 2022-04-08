@@ -794,12 +794,12 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
     vtk += nodes_txt
 
     # write elements
-    vtk += f"POLYGONS {elements.shape[0]} {elements.size}\n"
+    vtk += f"POLYGONS {elements.shape[0]} {elements.shape[0]*4}\n"
     elements_txt = ""
     for nn in range(elements.shape[0]):
-        elements_txt += (f"6 {int(elements[nn, 1])} "
+        elements_txt += (f"3 {int(elements[nn, 1])} "
                          f"{int(elements[nn, 2])} "
-                         f"{int(elements[nn, 3])} 0 0 0\n")
+                         f"{int(elements[nn, 3])}\n")
     vtk += elements_txt
 
     vtk += "CELL_DATA 2412\n\n"
@@ -811,7 +811,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
 
         for ss in range(pressure.shape[1]):
             pressure_txt += f"SCALARS source_{ss + 1} float 1\n"
-            pressure_txt +="LOOKUP_TABLE default\n"
+            pressure_txt += "LOOKUP_TABLE default\n"
 
             pp = np.round(pressure[:, ss, ff], 5)
             for p in pp:
