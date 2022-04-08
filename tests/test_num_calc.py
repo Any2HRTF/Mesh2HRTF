@@ -27,11 +27,12 @@ def test_numcalc_commandline_nitermax(nitermax, use):
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 'test_numcalc_project'),
+                                 'resources', 'test_numcalc',
+                                 'project_folder_pspw'),
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
     shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_input_files',
+                    'resources', 'test_numcalc', 'ncinp_files',
                     'NC_commandline_parameters.inp'),
                     os.path.join(tmp.name, 'project', 'NumCalc', 'source_1',
                                  'NC.inp'))                                
@@ -73,11 +74,12 @@ def test_numcalc_commandline_istart_iend(istart, iend):
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 'test_numcalc_project'),
+                                 'resources', 'test_numcalc',
+                                 'project_folder_pspw'),
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
     shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_input_files',
+                    'resources', 'test_numcalc', 'ncinp_files',
                     'NC_commandline_parameters.inp'),
                     os.path.join(tmp.name, 'project', 'NumCalc','source_1',
                                  'NC.inp'))                                
@@ -148,12 +150,13 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 'test_numcalc_project'),
+                                 'resources', 'test_numcalc',
+                                 'project_folder_pspw'),
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
     shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_input_files', 'NC_'+boundary_condition+'_' +
-                                 source+'_'+bem_method+'.inp'),
+                    'resources', 'test_numcalc', 'ncinp_files',
+                    f'NC_{boundary_condition}_{source}_{bem_method}.inp'),
                     os.path.join(tmp.name, 'project', 'NumCalc',
                                  'source_1', 'NC.inp'))
 
@@ -177,8 +180,9 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
 
     # load HRTF data from analytical comparison
     ana_path = os.path.join(os.path.dirname(__file__),
-                            'test_numcalc_analytical_references',
-                            'ref_'+boundary_condition+'_'+source+'.mat')
+                            'resources', 'test_numcalc',
+                            'analytical_references',
+                            f'ref_{boundary_condition}_{source}.mat')
     mat_ana = scipy.io.loadmat(ana_path)
     hrtf_ana = mat_ana['p_total']
     # normalize because only relative differences of interest
@@ -216,18 +220,22 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
 
     # copy basic test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_ear_projects', 'ears_basic_project'),
+                    'resources', 'test_numcalc',
+                    'project_folder_ears', 'ears_basic_project'),
                     os.path.join(tmp.name, 'project'))
 
     # copy correct input files for the source type
     shutil.copy(os.path.join(os.path.dirname(__file__),
-                'test_numcalc_ear_projects', source, 'Info.txt'),
+                'resources', 'test_numcalc',
+                'project_folder_ears', source, 'Info.txt'),
                 os.path.join(tmp.name, 'project'))
     shutil.copy(os.path.join(os.path.dirname(__file__),
-                'test_numcalc_ear_projects', source, 'Output2HRTF.py'),
+                'resources', 'test_numcalc',
+                'project_folder_ears', source, 'Output2HRTF.py'),
                 os.path.join(tmp.name, 'project'))
     shutil.copytree(os.path.join(os.path.dirname(__file__),
-                    'test_numcalc_ear_projects', source, 'NumCalc'),
+                    'resources', 'test_numcalc',
+                    'project_folder_ears', source, 'NumCalc'),
                     os.path.join(tmp.name, 'project', 'NumCalc'))
 
 
@@ -257,8 +265,9 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
 
     # load HRTF data from analytical comparison
     ana_path = os.path.join(os.path.dirname(__file__),
-                            'test_numcalc_analytical_references',
-                            'ref_'+boundary_condition+'_'+source+'.mat')
+                            'resources', 'test_numcalc',
+                            'analytical_references',
+                            f'ref_{boundary_condition}_{source}.mat')
     mat_ana = scipy.io.loadmat(ana_path)
     hrtf_ana = mat_ana['p_total_'+source]
     hrtf_ana = numpy.squeeze(hrtf_ana)

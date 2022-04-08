@@ -18,7 +18,8 @@ def test_blender_export():
 
         # copy test directory
         shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                     'test_blender_export_project'),
+                                     'resources',
+                                     'test_blender_export'),
                         os.path.join(tmp.name, 'project'))
 
         tmp_path = os.path.join(tmp.name, 'project')

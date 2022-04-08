@@ -73,13 +73,14 @@ def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
     plt.tight_layout()
     if source=='bothears':
         plt.savefig(os.path.dirname(__file__) +
-                    "/test_numcalc_analytical_references/comparisonplot_"+
-                    boundary_condition+"_"+source+"_"+str(iEar+1)+"_"+
-                    bem_method+".jpg")
+                    "/resources/test_numcalc/analytical_references/"+
+                    "comparisonplot_"+boundary_condition+"_"+source+"_"+
+                    str(iEar+1)+"_"+bem_method+".jpg")
     else:
         plt.savefig(os.path.dirname(__file__) +
-                    "/test_numcalc_analytical_references/comparisonplot_" +
-                    boundary_condition+"_"+source+"_"+bem_method+".jpg")
+                    "/resources/test_numcalc/analytical_references/"+
+                    "comparisonplot_"+boundary_condition+"_"+source+"_"+
+                    bem_method+".jpg")
 
 # load data
 # ref = (r"C:\Users\panik\Documents\Code\Third_party\mesh2hrtf-git\tests"
