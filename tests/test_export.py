@@ -19,7 +19,8 @@ import re
 @pytest.mark.parametrize("blender_file_name, params, match_nc, match_o2hrtf",[
     # test default paramters - pictures disabled due to long rendering time
     ('test_export.blend',
-    {"pictures": False},
+    {"pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     [["##\nHead-Related Transfer Functions",
     "Controlparameter II\n1 200 0.000001 0.00e+00 1 0 0",
     "Main Parameters I\n2 24176 12092 0 0 2 1 4",
@@ -51,7 +52,8 @@ import re
     ('test_export.blend',
     {"title": "test title", "sourceType": "Point source",
     "method": "SL-FMM BEM", "evaluationGrids": "PlaneHorizontal",
-    "speedOfSound": "300", "densityOfMedium": "1", "pictures": False},
+    "speedOfSound": "300", "densityOfMedium": "1", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["##\ntest title", "POINT SOURCES",
     "Main Parameters I\n2 45313 23132 0 0 2 1 1 0",
     "/EvaluationGrids/PlaneHorizontal/Nodes.txt",
@@ -64,29 +66,34 @@ import re
 
     # test unit m (default is mm)
     ('test_export.blend',
-    {"sourceType": "Point source", "unit": "m", "pictures": False},
+    {"sourceType": "Point source", "unit": "m", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["POINT SOURCES\n0 0.20000000298023224 0.0 0.0 0.1 -1 0.0 -1"],
     ["sourceCenter[0, :] = [0.20000000298023224, 0.0, 0.0]\n"]),
 
     # test remaining BEM method
     ('test_export.blend',
-    {"sourceType": "Point source", "method": "BEM", "pictures": False},
+    {"sourceType": "Point source", "method": "BEM", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["POINT SOURCES",
     "Main Parameters I\n2 24176 12092 0 0 2 1 0 0"],[]),
 
     # test point source
     ('test_export.blend',
-    {"sourceType": "Point source", "pictures": False},
+    {"sourceType": "Point source", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["POINT SOURCES"],
     ["sourceType = 'Point source'"]),
     # test plane wave
     ('test_export.blend',
-    {"sourceType": "Plane wave", "pictures": False},
+    {"sourceType": "Plane wave", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["PLANE WAVE"],
     ["sourceType = 'Plane wave'"]),
     # test left ear
     ('test_export.blend',
-    {"sourceType": "Left ear", "pictures": False},
+    {"sourceType": "Left ear", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["BOUNDARY\n"
     "# Left ear velocity source\n"
     "ELEM 20479 TO 20479 VELO 0.1 -1 0.0 -1\n"
@@ -94,7 +101,8 @@ import re
     ["sourceType = 'Left ear'"]),
     # test right ear
     ('test_export.blend',
-    {"sourceType": "Right ear", "pictures": False},
+    {"sourceType": "Right ear", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["BOUNDARY\n"
     "# Right ear velocity source\n"
     "ELEM 20478 TO 20478 VELO 0.1 -1 0.0 -1\n"
@@ -102,7 +110,8 @@ import re
     ["sourceType = 'Right ear'"]),
     # test both ears
     ('test_export.blend',
-    {"sourceType": "Both ears", "pictures": False},
+    {"sourceType": "Both ears", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     [["BOUNDARY\n"
     "# Left ear velocity source\n"
     "ELEM 20479 TO 20479 VELO 0.1 -1 0.0 -1\n"
@@ -115,7 +124,8 @@ import re
 
     # test built-in sound soft material
     ('test_export_soundsoft.blend',
-    {"sourceType": "Point source", "pictures": False},
+    {"sourceType": "Point source", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["BOUNDARY\n"
     "# Material: SoundSoft\n"
     "ELEM 0 TO 20479 PRES 1.0 1 1.0 2\n"
@@ -123,7 +133,8 @@ import re
 
     # test multiple built-in grids
     ('test_export.blend',
-    {"evaluationGrids": "ARI;PlaneFrontal;PlaneMedian", "pictures": False},
+    {"evaluationGrids": "ARI;PlaneFrontal;PlaneMedian", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["../../EvaluationGrids/ARI/Nodes.txt\n"
      "../../EvaluationGrids/PlaneFrontal/Nodes.txt\n"
      "../../EvaluationGrids/PlaneMedian/Nodes.txt"],[]),
@@ -133,7 +144,8 @@ import re
     {"evaluationGrids":
     "os.path.join(tmp_path, 'test_grids', 'test_grid_a');"
     "os.path.join(tmp_path, 'test_grids', 'test_grid_b');"
-    "os.path.join(tmp_path, 'test_grids', 'test_grid_c')", "pictures": False},
+    "os.path.join(tmp_path, 'test_grids', 'test_grid_c')", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["../../EvaluationGrids/test_grid_a/Nodes.txt\n"
      "../../EvaluationGrids/test_grid_b/Nodes.txt\n"
      "../../EvaluationGrids/test_grid_c/Nodes.txt"],[]),
@@ -141,7 +153,8 @@ import re
     # test external materials
     ('test_export_external_materials.blend',
     {"sourceType": "Point source", "materialSearchPaths":
-    "os.path.join(tmp_path, 'test_materials')", "pictures": False},
+    "os.path.join(tmp_path, 'test_materials')", "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["BOUNDARY\n"
     "# Material: test_material_a\n"
     "ELEM 0 TO 12743 ADMI 1.0 1 1.0 2\n"
@@ -153,7 +166,8 @@ import re
     ('test_export.blend',
     {"sourceType": "Point source", "minFrequency": 2000, "maxFrequency": 4000,
     "frequencyVectorType": "Num steps", "frequencyVectorValue": 10,
-    "pictures": False},
+    "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["## Controlparameter II\n"
     "1 10 0.000001 0.00e+00 1 0 0\n"
     "##\n"
@@ -175,7 +189,8 @@ import re
     ('test_export.blend',
     {"sourceType": "Point source", "minFrequency": 2000, "maxFrequency": 4000,
     "frequencyVectorType": "Step size", "frequencyVectorValue": 1000,
-    "pictures": False},
+    "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     ["## Controlparameter II\n"
     "1 3 0.000001 0.00e+00 1 0 0\n"
     "##\n"
@@ -188,13 +203,15 @@ import re
 
     # test Output2HRTF flags reference and computeHRIRs
     ('test_export.blend',
-    {"reference": True, "computeHRIRs": True, "pictures": False},
+    {"reference": True, "computeHRIRs": True, "pictures": False,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     [],
     ["reference = True", "computeHRIRs = True"]),
 
     # test picture generation (look for .png)
     ('test_export.blend',
-    {"pictures": True},
+    {"pictures": True,
+    "programPath": "/home/matheson/Apps/mesh2hrtf-git/mesh2hrtf"},
     [],[])
     ])
 def test_blender_export(blender_path, addon_path, blender_file_name, params,
@@ -333,9 +350,9 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
 #     "0.000009 0.377778e+04 0.0\n"
 #     "0.000010 0.400000e+04 0.0\n"})
 
-test_blender_export(
-    os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-2.91.0'),
-    os.path.join('2.91', 'scripts', 'addons'),
-    'test_export.blend',
-    {"sourceType": "Point source", "method": "BEM", "pictures": False},
-    [],[])
+# test_blender_export(
+#     os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-2.91.0'),
+#     os.path.join('2.91', 'scripts', 'addons'),
+#     'test_export.blend',
+#     {"sourceType": "Point source", "method": "BEM", "pictures": False},
+#     [],[])
