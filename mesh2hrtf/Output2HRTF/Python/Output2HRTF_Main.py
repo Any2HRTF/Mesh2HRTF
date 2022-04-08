@@ -368,8 +368,8 @@ def compute_HRIR(sofa, n_shift):
     return sofa
 
 
-def inspect_sofa_files(folder, pattern=None, atol=0.1, plot=None,
-                       savedir=None):
+def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
+                       atol=0.1, savedir=None):
     """
     Inspect SOFA files through plots.
 
@@ -396,19 +396,26 @@ def inspect_sofa_files(folder, pattern=None, atol=0.1, plot=None,
                plane. See also parameter `atol` below.
 
         The default ``None`` generate both plots.
-    atol : float
-        Sources on the horizontal plane are searched within a range of zero
-        degree elevation +/- `atol` degree.
+    plane : str, optional
+        Select the plane for which is shown in the 3D plot. Can be
+        ``"horizontal"`` (default), ``"median"``, or ``"frontal"``
+    atol : float, optional
+        Sources on the `plane` are searched within a range +/- `atol` degree.
+        The default is ``0.1``.
     savedir : str
         Directory for saving the merged SOFA files. The default ``None`` saves
         the files to the directory given by `folder`.
     """
 
+    # check input
     if plot is None:
         plot = ["2D", "3D"]
     elif plot not in ["2D", "3D"]:
         raise ValueError(
             f"plot is {plot} but must be 2D, 3D, or all")
+    if plane not in ["horizontal", "median", "frontal"]:
+        raise ValueError(
+            f"plane is {plane} but must be horizontal, median, or frontal")
 
     # get all directories containing SOFA files
     folders = glob.glob(folder)
@@ -434,7 +441,7 @@ def inspect_sofa_files(folder, pattern=None, atol=0.1, plot=None,
                 savedir = folder
 
             # inspect data
-            _inspect_sofa_files(file, savedir, atol, plot)
+            _inspect_sofa_files(file, savedir, atol, plot, plane)
 
 
 def merge_sofa_files(left, right, pattern=None, savedir=None):
@@ -1123,7 +1130,7 @@ def _check_project_report(folder, fundamentals, out):
     return report
 
 
-def _inspect_sofa_files(file, savedir, atol, plot):
+def _inspect_sofa_files(file, savedir, atol, plot, plane):
 
     with Dataset(file, "r", format="NETCDF4") as sofa_file:
         data_type = getattr(sofa_file, "DataType")
@@ -1208,15 +1215,26 @@ def _inspect_sofa_files(file, savedir, atol, plot):
                     sharex=True, sharey="row")
                 ax_freq = np.atleast_1d(ax_freq)
 
-            # find sources on horizontal plane
-            _, mask = sources.find_slice("elevation", "deg", 0, atol)
+            # find sources on the desired plane
+            if plane == "horizontal":
+                _, mask = sources.find_slice("elevation", "deg", 0, atol)
+                angles = sources.get_sph('top_elev', 'deg')[mask, 0]
+                angle = "azimuth"
+            elif plane == "median":
+                _, mask = sources.find_slice("lateral", "deg", 0, atol)
+                angles = sources.get_sph('side', 'deg')[mask, 1]
+                angle = "polar angle"
+            else:
+                _, mask = sources.find_slice("theta", "deg", 90, atol)
+                angles = sources.get_sph('front', 'deg')[mask, 0]
+                angle = "theta"
+
             if not np.any(mask):
                 warnings.warn((
                     "Did not find and sources on the horizontal plane for "
                     f"within +/-{atol} deg. for {file}"))
                 return
 
-            az = sources.get_sph('top_elev', 'deg')[..., 0]
             # plot titles
             names = ["left ear", "right ear"] if signal.cshape[-1] == 2 \
                 else [f"ch. {cc+1}" for cc in range(signal.cshape[-1])]
@@ -1226,8 +1244,9 @@ def _inspect_sofa_files(file, savedir, atol, plot):
 
                 # plot time data
                 if mode == "hrir":
-                    _, qm, _ = pf.plot.time_2d(signal[mask, cc], indices=az,
-                                               ax=ax_time[cc], cmap="coolwarm")
+                    _, qm, _ = pf.plot.time_2d(
+                        signal[mask, cc], indices=angles,
+                        ax=ax_time[cc], cmap="coolwarm")
                     ax_time[cc].set_title(name)
 
                     # set limits of time plot symmetric
@@ -1237,13 +1256,13 @@ def _inspect_sofa_files(file, savedir, atol, plot):
 
                 # plot frequency data
                 _, qm, _ = pf.plot.freq_2d(signal[mask, cc], ax=ax_freq[cc],
-                                           indices=az, cmap="Reds")
+                                           indices=angles, cmap="Reds")
                 if mode == "hrir":
-                    ax_freq[cc].set_xlabel("azimuth in degree")
+                    ax_freq[cc].set_xlabel(f"{angle} in degree")
                     ax_time[cc].set_xlabel("")
                 else:
                     ax_freq[cc].set_title(name)
-                    ax_freq[cc].set_xlabel("azimuth in degree")
+                    ax_freq[cc].set_xlabel(f"{angle} in degree")
 
                 c_lim = qm.get_clim()
                 c_lim = np.round(np.max(c_lim))
