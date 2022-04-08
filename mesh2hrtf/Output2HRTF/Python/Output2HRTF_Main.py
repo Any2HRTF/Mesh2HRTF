@@ -733,6 +733,31 @@ def read_evaluation_grid(name, show=False):
 
 def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
                   dB=True, log_prefix=20, log_reference=1):
+    """
+    Export pressure on the (head) mesh to vtk files for importing in ParaView
+
+    The exported vtk files are written to folder/Output2HRTF/Reference_vtk
+    where 'Reference' is given by `object_mesh`.
+
+    Parameters
+    ----------
+    folder : str, optional
+        The Mesh2HRTF project folder. The default ``None`` uses the current
+        folder
+    object_mesh : str, optional
+        The name of the mesh for which the pressure is exported. The default
+        ``None`` selects the `Reference` mesh.
+    frequency_steps : list, optional
+        List with first and last frequency step for which the data is
+        exported. The default ``None`` exports the data for all frequency
+        steps.
+    dB : bool, optional
+        Save pressure in dB if ``True`` (default) and linear otherwise.
+    log_prefix, log_reference : number, optional
+        The pressure in dB is calculated as
+        ``log_prefix * log_10(pressure/log_reference)``. The default values
+        are ``20`` and ``1``.
+    """
 
     # check input data
     if folder is None:
@@ -758,6 +783,12 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
         eps = np.finfo(float).eps
         pressure = log_prefix*np.log10(np.abs(pressure)/log_reference + eps)
 
+        amp_str = f"{log_prefix}log(pressure/{log_reference})"
+        file_str= "db"
+    else:
+        amp_str = "pressure"
+        file_str = "lin"
+
     # load object mesh
     grid, _ = _read_nodes_and_elements(os.path.join(folder, 'ObjectMeshes'))
     nodes = grid[object_mesh]["nodes"]
@@ -766,7 +797,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
     del grid
 
     # create output folder
-    savedir = os.path.join(folder, "Output2HRTF", f"{object_name[:-4]}_vtk")
+    savedir = os.path.join(folder, "Output2HRTF", f"{object_mesh}_vtk")
     if not os.path.isdir(savedir):
         os.mkdir(savedir)
 
@@ -810,7 +841,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
         pressure_txt = ""
 
         for ss in range(pressure.shape[1]):
-            pressure_txt += f"SCALARS source_{ss + 1} float 1\n"
+            pressure_txt += f"SCALARS {amp_str}-source_{ss + 1} float 1\n"
             pressure_txt += "LOOKUP_TABLE default\n"
 
             pp = np.round(pressure[:, ss, ff], 5)
@@ -819,7 +850,8 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
 
             pressure_txt += "\n"
 
-        vtk_file = os.path.join(savedir, f"frequency_step_{ff + 1}.vtk")
+        vtk_file = os.path.join(
+            savedir, f"{file_str}_frequency_step_{ff + 1}.vtk")
         with open(vtk_file, "w") as f:
             f.write(vtk + pressure_txt)
 

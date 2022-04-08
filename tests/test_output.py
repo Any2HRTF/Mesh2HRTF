@@ -260,3 +260,27 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
     # check grid
     assert isinstance(coordinates, pf.Coordinates)
     npt.assert_equal(coordinates.get_cart(), points)
+
+
+@pytest.mark.parametrize("frequency_steps,dB", (
+    [None, True], [[1, 2], True], [[1, 1], False]
+))
+def test_export_to_vtk(frequency_steps, dB):
+
+    # copy test data
+    tmp = TemporaryDirectory()
+    cwd = os.path.join(tmp.name, "SHTF")
+    shutil.copytree(data_shtf, cwd)
+
+    # export to vtk
+    m2h.export_to_vtk(cwd, frequency_steps=frequency_steps, dB=dB)
+
+    # check if all files are there
+    if frequency_steps is None:
+        frequency_steps = [1, 60]
+
+    prefix = "db" if dB else "lin"
+    for ff in range(frequency_steps[0], frequency_steps[1]+1):
+        assert os.path.isfile(os.path.join(
+            cwd, "Output2HRTF", "Reference_vtk",
+            f"{prefix}_frequency_step_{ff}.vtk"))
