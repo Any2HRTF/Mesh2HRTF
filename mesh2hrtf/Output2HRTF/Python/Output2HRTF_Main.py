@@ -731,7 +731,8 @@ def read_evaluation_grid(name, show=False):
     return coordinates
 
 
-def export_to_vtk(folder=None, object_mesh=None):
+def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
+                  dB=True, log_prefix=20, log_reference=1):
 
     # check input data
     if folder is None:
@@ -743,22 +744,84 @@ def export_to_vtk(folder=None, object_mesh=None):
     object_name = os.path.join(
             folder, "Output2HRTF", f"ObjectMesh_{object_mesh}.npz")
     if os.path.isfile(object_name):
-        # contains: nodes, elements=elements, frequencies, and element_data
+        # contains: frequencies and pressure
         data = np.load(object_name, allow_pickle=False)
+        pressure = data["pressure"]
+        frequencies = data["frequencies"]
+        del data
     else:
         raise ValueError((f"{object_name} does not exist. "
                           "Run Output2HRTF_Main to create it"))
 
+    # convert pressure to dB
+    if dB:
+        eps = np.finfo(float).eps
+        pressure = log_prefix*np.log10(np.abs(pressure)/log_reference + eps)
+
     # load object mesh
     grid, _ = _read_nodes_and_elements(os.path.join(folder, 'ObjectMeshes'))
-    grid = grid[object_mesh]
+    nodes = grid[object_mesh]["nodes"]
+    elements = grid[object_mesh]["elements"]
+    num_nodes = grid[object_mesh]["num_nodes"]
+    del grid
 
     # create output folder
-    savedir = os.path.join(folder, "Output2HRTF", f"{object_name}_vtk")
+    savedir = os.path.join(folder, "Output2HRTF", f"{object_name[:-4]}_vtk")
     if not os.path.isdir(savedir):
         os.mkdir(savedir)
 
+    # parse frequency steps
+    if frequency_steps is None:
+        frequency_steps = [1, frequencies.size]
+    if len(frequency_steps) != 2 or np.any(np.array(frequency_steps) < 1) \
+            or any(np.array(frequency_steps) > frequencies.size):
+        raise ValueError(("frequency_steps must contain two values between 1 "
+                          f"and {frequencies.size}"))
+
+    # write constant part of the vtk file
+    vtk = ("# vtk DataFile Version 3.0\n"
+           "Mesh2HRTF Files\n"
+           "ASCII\n"
+           "DATASET POLYDATA\n")
+
+    # write nodes
+    vtk += f"POINTS {num_nodes} float\n"
+    nodes_txt = ""
+    for nn in range(num_nodes):
+        nodes_txt += (f"{nodes[nn, 1]: .4f} "
+                      f"{nodes[nn, 2]: .4f} "
+                      f"{nodes[nn, 3]: .4f}\n")
+    vtk += nodes_txt
+
+    # write elements
+    vtk += f"POLYGONS {elements.shape[0]} {elements.size}\n"
+    elements_txt = ""
+    for nn in range(elements.shape[0]):
+        elements_txt += (f"6 {int(elements[nn, 1])} "
+                         f"{int(elements[nn, 2])} "
+                         f"{int(elements[nn, 3])} 0 0 0\n")
+    vtk += elements_txt
+
+    vtk += "CELL_DATA 2412\n\n"
+
     # write vtk files
+    for ff in range(frequency_steps[0]-1, frequency_steps[1]):
+
+        pressure_txt = ""
+
+        for ss in range(pressure.shape[1]):
+            pressure_txt += f"SCALARS source_{ss + 1} float 1\n"
+            pressure_txt +="LOOKUP_TABLE default\n"
+
+            pp = np.round(pressure[:, ss, ff], 5)
+            for p in pp:
+                pressure_txt += str(p) + "\n"
+
+            pressure_txt += "\n"
+
+        vtk_file = os.path.join(savedir, f"frequency_step_{ff + 1}.vtk")
+        with open(vtk_file, "w") as f:
+            f.write(vtk + pressure_txt)
 
 
 def _parse_nc_out_files(sources, num_sources, num_frequencies):
