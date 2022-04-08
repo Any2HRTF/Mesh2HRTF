@@ -784,7 +784,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
         pressure = log_prefix*np.log10(np.abs(pressure)/log_reference + eps)
 
         amp_str = f"{log_prefix}log(pressure/{log_reference})"
-        file_str= "db"
+        file_str = "db"
     else:
         amp_str = "pressure"
         file_str = "lin"
