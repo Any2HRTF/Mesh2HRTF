@@ -10,20 +10,25 @@ import utils
 create_baseline = False
 
 # Build NumCalc locally to use for testing
-tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
-shutil.copytree(os.path.join(os.path.dirname(__file__), "..", "mesh2hrtf",
-                             "NumCalc", "Source"), tmp.name+"/NumCalc")
+tmp = tempfile.TemporaryDirectory()
 tmp_numcalc_path = os.path.join(tmp.name, "NumCalc")
+
+shutil.copytree(
+    os.path.join(os.path.dirname(__file__), "..", "mesh2hrtf",
+                 "NumCalc", "Source"),
+    tmp_numcalc_path)
+
 subprocess.run(["make"], cwd=tmp_numcalc_path, check=True)
 
-@pytest.mark.parametrize("nitermax, use", [(0, True), (1, True), (2, True), 
+
+@pytest.mark.parametrize("nitermax, use", [(0, True), (1, True), (2, True),
                                            ([], False)])
 def test_numcalc_commandline_nitermax(nitermax, use):
     """ test if command line parameter nitermax behaves as expected"""
     # Setup
 
     # create temporary directory
-    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
+    tmp = tempfile.TemporaryDirectory()
 
     # copy test directory
     shutil.copytree(os.path.join(os.path.dirname(__file__),
@@ -31,12 +36,11 @@ def test_numcalc_commandline_nitermax(nitermax, use):
                                  'project_folder_pspw'),
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
-    shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'resources', 'test_numcalc', 'ncinp_files',
-                    'NC_commandline_parameters.inp'),
-                    os.path.join(tmp.name, 'project', 'NumCalc', 'source_1',
-                                 'NC.inp'))                                
-    
+    shutil.copyfile(
+        os.path.join(os.path.dirname(__file__), 'resources', 'test_numcalc',
+                     'ncinp_files', 'NC_commandline_parameters.inp'),
+        os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
+
     if use:
         commandLineArgument = f' -nitermax {nitermax}'
     else:
@@ -46,7 +50,7 @@ def test_numcalc_commandline_nitermax(nitermax, use):
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'], 
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'],
                    cwd=tmp_path, check=True, shell=True)
 
     # Verify
@@ -58,10 +62,12 @@ def test_numcalc_commandline_nitermax(nitermax, use):
     out_text = out_file.read()
 
     if use:
-        assert f'CGS solver: number of iterations = {nitermax}'    in out_text
+        assert f'CGS solver: number of iterations = {nitermax}' in out_text
         assert 'Warning: Maximum number of iterations is reached!' in out_text
     else:
-        assert 'Warning: Maximum number of iterations is reached!' not in out_text
+        assert 'Warning: Maximum number of iterations is reached!' \
+            not in out_text
+
 
 @pytest.mark.parametrize("istart, iend", [(False, False), (3, False),
                                           (False, 3), (2, 3)])
@@ -78,12 +84,11 @@ def test_numcalc_commandline_istart_iend(istart, iend):
                                  'project_folder_pspw'),
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
-    shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'resources', 'test_numcalc', 'ncinp_files',
-                    'NC_commandline_parameters.inp'),
-                    os.path.join(tmp.name, 'project', 'NumCalc','source_1',
-                                 'NC.inp'))                                
-    
+    shutil.copyfile(
+        os.path.join(os.path.dirname(__file__), 'resources', 'test_numcalc',
+                     'ncinp_files', 'NC_commandline_parameters.inp'),
+        os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
+
     commandLineArgument = ''
     if istart > 0:
         commandLineArgument += f' -istart {istart}'
@@ -94,7 +99,7 @@ def test_numcalc_commandline_istart_iend(istart, iend):
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'], 
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'],
                    cwd=tmp_path, check=True, shell=True)
 
     # Verify
@@ -117,15 +122,15 @@ def test_numcalc_commandline_istart_iend(istart, iend):
 
     if istart > 0:
         assert f'Step {istart-1}' not in out_text
-        assert f'Step {istart}'       in out_text
+        assert f'Step {istart}' in out_text
     else:
         assert 'Step 1' in out_text
 
     if iend > 0:
-        assert f'Step {iend}'       in out_text
+        assert f'Step {iend}' in out_text
         assert f'Step {iend+1}' not in out_text
 
-    if istart>0 and iend>0:
+    if istart > 0 and iend > 0:
         nStepsActual = out_text.count(('>> S T E P   N U M B E R   A N D   F R'
                                        ' E Q U E N C Y <<'))
         nStepsExpected = iend - istart + 1
@@ -154,11 +159,11 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
                                  'project_folder_pspw'),
                     os.path.join(tmp.name, 'project'))
     # copy correct input file and rename it to NC.inp
-    shutil.copyfile(os.path.join(os.path.dirname(__file__),
-                    'resources', 'test_numcalc', 'ncinp_files',
-                    f'NC_{boundary_condition}_{source}_{bem_method}.inp'),
-                    os.path.join(tmp.name, 'project', 'NumCalc',
-                                 'source_1', 'NC.inp'))
+    shutil.copyfile(
+        os.path.join(os.path.dirname(__file__), 'resources', 'test_numcalc',
+                     'ncinp_files',
+                     f'NC_{boundary_condition}_{source}_{bem_method}.inp'),
+        os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
 
     # Exercise
 
@@ -213,47 +218,44 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
     analytical solution. Tests the simulation of HRTF for left, right and both
     ears.
     """
-    # Setup
 
+    # --- Setup ---
     # create temporary directory
     tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
 
     # copy basic test directory
-    shutil.copytree(os.path.join(os.path.dirname(__file__),
-                    'resources', 'test_numcalc',
-                    'project_folder_ears', 'ears_basic_project'),
-                    os.path.join(tmp.name, 'project'))
+    shutil.copytree(
+        os.path.join(os.path.dirname(__file__), 'resources', 'test_numcalc',
+                     'project_folder_ears', 'ears_basic_project'),
+        os.path.join(tmp.name, 'project'))
 
     # copy correct input files for the source type
-    shutil.copy(os.path.join(os.path.dirname(__file__),
-                'resources', 'test_numcalc',
-                'project_folder_ears', source, 'Info.txt'),
-                os.path.join(tmp.name, 'project'))
-    shutil.copy(os.path.join(os.path.dirname(__file__),
-                'resources', 'test_numcalc',
-                'project_folder_ears', source, 'Output2HRTF.py'),
-                os.path.join(tmp.name, 'project'))
-    shutil.copytree(os.path.join(os.path.dirname(__file__),
-                    'resources', 'test_numcalc',
-                    'project_folder_ears', source, 'NumCalc'),
-                    os.path.join(tmp.name, 'project', 'NumCalc'))
+    shutil.copy(
+        os.path.join(os.path.dirname(__file__), 'resources', 'test_numcalc',
+                     'project_folder_ears', source, 'Info.txt'),
+        os.path.join(tmp.name, 'project'))
+    shutil.copy(
+        os.path.join(os.path.dirname(__file__), 'resources', 'test_numcalc',
+                     'project_folder_ears', source, 'Output2HRTF.py'),
+        os.path.join(tmp.name, 'project'))
+    shutil.copytree(
+        os.path.join(os.path.dirname(__file__), 'resources', 'test_numcalc',
+                     'project_folder_ears', source, 'NumCalc'),
+        os.path.join(tmp.name, 'project', 'NumCalc'))
 
-
-    # Exercise
-
+    # --- Exercise ---
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
     subprocess.run([f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
     if source == "bothears":
         tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_2")
-        subprocess.run([f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
+        subprocess.run(
+            [f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
     subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
 
-
-    # Verify
-
+    # --- Verify ---
     # load HRTF data from simulation as numpy
     hrtf_sim = utils.hrtf_sofa_to_numpy(
         os.path.join(tmp_path, "Output2HRTF", "HRTF_HorPlane.sofa"))
