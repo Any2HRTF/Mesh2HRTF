@@ -295,7 +295,7 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
 
             for m in range(len(match_nc[s])):
                 assert match_nc[s][m] in NCinp_text
-    else: # not a nested list: single source
+    else:  # not a nested list: single source
         NCinp_filepath = os.path.join(
             tmp_path, "NumCalc", "source_1", "NC.inp")
 
