@@ -565,6 +565,11 @@ def project_report(folder=None):
     num_frequencies = _get_number_of_frequencies(
         os.path.join(folder, "Info.txt"))
 
+    # sort source files (not read in correct order in some cases)
+    nums = [int(source.split("_")[-1]) for source in sources]
+    sources = np.array(sources)
+    sources = sources[np.argsort(nums)]
+
     # parse all NC*.out files for all sources
     all_files, fundamentals, out, out_names = _parse_nc_out_files(
         sources, num_sources, num_frequencies)
