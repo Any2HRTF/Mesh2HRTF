@@ -198,7 +198,15 @@ base_dir = os.path.dirname(__file__)
     ])
 def test_blender_export(blender_path, addon_path, blender_file_name, params,
                         match_nc, match_o2hrtf):
-    """Test the exportMesh2HRTF Blender plugin"""
+    """
+    Test the exportMesh2HRTF Blender plugin
+
+    1. Copy test data
+    2. Modify python script to test different export parameters
+    3. Run the python script inside blender
+    4. Test the export by comparing the NC.inp and Output2HRTF.py files against
+       given references
+    """
 
     # --- check path ---
     if not os.path.isdir(blender_path):
