@@ -68,3 +68,25 @@ the API for local development
 
 The latest work is contained in `develop`. For bug-fixes, enhancements, and new
 ideas please create a new branch based on develop.
+
+Testing
+-------
+
+Mesh2HRTF uses py ``pytest`` for testing. For all tests to work, you must
+configure your blender path in `test_export` (variable ``blender_paths``).
+
+- All tests are ran by
+
+    $ pytest
+
+- Run a single test with
+
+    $ pytest tests/test_plot.py::test_line_plots
+
+- Exclude tests (for example the time consuming test of plot) with
+
+    $ pytest -k 'not plot'
+
+- Create an html report on the test `coverage <https://coverage.readthedocs.io/en/coverage-5.5/>`_ with
+
+    $ pytest --cov=. --cov-report=html
