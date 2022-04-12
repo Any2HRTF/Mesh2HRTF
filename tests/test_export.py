@@ -1,4 +1,3 @@
-# %%
 import pytest
 import subprocess
 import tempfile
@@ -12,7 +11,6 @@ blender_paths = utils.blender_paths(2)
 
 # directory of this file
 base_dir = os.path.dirname(__file__)
-# base_dir = os.getcwd()
 
 
 @pytest.mark.parametrize("blender_path, addon_path", blender_paths)
@@ -71,8 +69,8 @@ base_dir = os.path.dirname(__file__)
     # test remaining BEM method
     ('test_export.blend',
      {"sourceType": "Point source", "method": "BEM", "pictures": False},
-     ["POINT SOURCES",
-      "Main Parameters I\n2 24176 12092 0 0 2 1 0 0"], []),
+     [["POINT SOURCES",
+      "Main Parameters I\n2 24176 12092 0 0 2 1 0 0"]], []),
 
     # test point source
     ('test_export.blend',
@@ -244,27 +242,27 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
 
     # write export arguments into Blender Python script
     export_args = ''
-    if len(params) > 0:
-        for p in params:
-            if type(params[p]) is str:
-                # special case: grids or materials defined by paths
-                if (p == "evaluationGrids" or p == "materialSearchPaths") \
-                        and ("os.path.join" in params[p]):
-                    args_path_list = params[p].split(";")
-                    path_string = ''
-                    for ap in range(len(args_path_list)):
-                        path_string += f'    "{eval(args_path_list[ap])};"\n'
-                    path_string = re.sub(';"\n$', '"\n', path_string)
-                    export_args += f'    {p}=\n{path_string},\n'
-                # all other string arguments
-                else:
-                    export_args += f'    {p}="{params[p]}",\n'
+    for p in params:
+        if type(params[p]) is str:
+            # special case: grids or materials defined by paths
+            if (p == "evaluationGrids" or p == "materialSearchPaths") \
+                    and ("os.path.join" in params[p]):
+                args_path_list = params[p].split(";")
+                path_string = ''
+                for ap in range(len(args_path_list)):
+                    path_string += f'    "{eval(args_path_list[ap])};"\n'
+                path_string = re.sub(';"\n$', '"\n', path_string)
+                export_args += f'    {p}=\n{path_string},\n'
+            # all other string arguments
+            else:
+                export_args += f'    {p}="{params[p]}",\n'
 
-            elif type(params[p]) is bool:
-                export_args += f'    {p}={params[p]!s},\n'
-            else:  # int or float
-                export_args += f'    {p}={params[p]},\n'
+        elif type(params[p]) is bool:
+            export_args += f'    {p}={params[p]!s},\n'
+        else:  # int or float
+            export_args += f'    {p}={params[p]},\n'
 
+    if len(export_args):
         python_file_text = python_file_text.replace(
             '# additional kwargs added in testing', export_args[4:-2])
 
@@ -281,25 +279,15 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
     # --- Verify ---
     # compare NC.inp against refrerence strings
     # (nested list to check NC.inp of multiple sources)
-    if any(isinstance(i, list) for i in match_nc):
-        for s in range(len(match_nc)):
-            NCinp_filepath = os.path.join(
-                export_path, "NumCalc", f'source_{s+1}', "NC.inp")
-
-            with open(NCinp_filepath) as NCinp_file:
-                NCinp_text = NCinp_file.read()
-
-            for m in range(len(match_nc[s])):
-                assert match_nc[s][m] in NCinp_text
-    else:  # not a nested list: single source
+    for s in range(len(match_nc)):
         NCinp_filepath = os.path.join(
-            export_path, "NumCalc", "source_1", "NC.inp")
+            export_path, "NumCalc", f'source_{s+1}', "NC.inp")
 
         with open(NCinp_filepath) as NCinp_file:
             NCinp_text = NCinp_file.read()
 
-        for m in range(len(match_nc)):
-            assert match_nc[m] in NCinp_text
+        for m in range(len(match_nc[s])):
+            assert match_nc[s][m] in NCinp_text
 
     # compare Output2HRTF.py against reference strings
     with open(os.path.join(export_path, "Output2HRTF.py")) as o2hrtf_file:
@@ -318,40 +306,3 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
             for az in [0, 45, 90, 135, 180, 225, 270, 315]:
                 assert not os.path.exists(os.path.join(
                     export_path, "Pictures", f'{az}_deg_azimuth.png'))
-
-
-# blender_file_name, params, match_nc, match_o2hrtf = (
-#      'test_export.blend',
-#      {"pictures": False,
-#       "c": "343"},
-#      [["##\nHead-Related Transfer Functions",
-#        "Controlparameter II\n1 200 0.000001 0.00e+00 1 0 0",
-#        "Main Parameters I\n2 24176 12092 0 0 2 1 4",
-#        "Main Parameters IV\n346.18 1.1839e+00",
-#        "../../EvaluationGrids/Default/Nodes.txt",
-#        "BOUNDARY\n"
-#        "# Left ear velocity source\n"
-#        "ELEM 20479 TO 20479 VELO 0.1 -1 0.0 -1\n"
-#        "RETU"],
-#       ["##\nHead-Related Transfer Functions",
-#        "Controlparameter II\n1 200 0.000001 0.00e+00 1 0 0",
-#        "Main Parameters I\n2 24176 12092 0 0 2 1 4",
-#        "Main Parameters IV\n346.18 1.1839e+00",
-#        "../../EvaluationGrids/Default/Nodes.txt",
-#        "BOUNDARY\n"
-#        "# Right ear velocity source\n"
-#        "ELEM 20478 TO 20478 VELO 0.1 -1 0.0 -1\n"
-#        "RETU"]],
-#      ["sourceType = 'Both ears'\n"
-#       "numSources = 2\n"
-#       "sourceCenter[0, :] = [-0.000087, -0.000000, 0.000002]\n"
-#       "sourceArea[0, 0] = 5.43588e-12\n"
-#       "sourceCenter[1, :] = [0.000087, 0.000000, 0.000002]\n"
-#       "sourceArea[1, 0] = 5.29446e-12",
-#       "reference = False", "computeHRIRs = False",
-#       "speedOfSound = 346.18", "densityOfAir = 1.1839"])
-
-
-# test_blender_export(
-#     blender_paths[0][0], blender_paths[0][1],
-#     blender_file_name, params, match_nc, match_o2hrtf)
