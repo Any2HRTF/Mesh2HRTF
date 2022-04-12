@@ -10,3 +10,6 @@ mesh2hrtf.egg-info/*
 # Other application specific files
 .vscode
 *.asv
+
+# Sphinx
+docs/_build
