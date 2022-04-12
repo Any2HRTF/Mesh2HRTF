@@ -9,6 +9,9 @@ import utils
 # define paths to your Blender versions here
 blender_paths = utils.blender_paths(2)
 
+# directory of this file
+base_dir = os.path.dirname(__file__)
+
 
 @pytest.mark.parametrize("blender_path, addon_path", blender_paths)
 @pytest.mark.parametrize("blender_file_name, params, match_nc, match_o2hrtf", [
@@ -215,13 +218,12 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
 
     # --- Setup ---
     # create a temporary directory
-    tmp = tempfile.TemporaryDirectory(dir=os.getcwd())
+    tmp = tempfile.TemporaryDirectory()
 
     # copy test directory
-    shutil.copytree(os.path.join(os.path.dirname(__file__),
-                                 'resources',
-                                 'test_blender_export'),
-                    os.path.join(tmp.name, 'project'))
+    shutil.copytree(
+        os.path.join(base_dir, 'resources', 'test_blender_export'),
+        os.path.join(tmp.name, 'project'))
 
     tmp_path = os.path.join(tmp.name, 'project')
     blender_file_path = os.path.join(tmp_path, blender_file_name)
@@ -271,13 +273,12 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
 
     # --- Exercise ---
     # run exportMesh2HRTF from Blender command line interface w/ Python script
-    subprocess.run([os.path.join(blender_path, 'blender'),
-                    '--background', blender_file_path, '--python',
-                    python_file_path],
-                   cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        [os.path.join(blender_path, 'blender'), '--background',
+         blender_file_path, '--python', python_file_path],
+        cwd=tmp_path, check=True, capture_output=True)
 
     # --- Verify ---
-
     # compare NC.inp against refrerence strings
     # (nested list to check NC.inp of multiple sources)
     if any(isinstance(i, list) for i in match_nc):
