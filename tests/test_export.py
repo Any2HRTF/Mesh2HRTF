@@ -4,18 +4,13 @@ import tempfile
 import shutil
 import os
 import re
-
+import utils
 
 # define paths to your Blender versions here
-@pytest.mark.parametrize("blender_path, addon_path", [
-    (os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-2.83.10'),
-     os.path.join('2.83', 'scripts', 'addons')),
-    (os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-2.91.0'),
-     os.path.join('2.91', 'scripts', 'addons')),
-    (os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-2.93.8'),
-     os.path.join('2.93', 'scripts', 'addons')),
-    (os.path.join(os.sep, 'home', 'matheson', 'Apps', 'blender-3.1.2'),
-     os.path.join('3.1', 'scripts', 'addons'))])
+blender_paths = utils.blender_paths(2)
+
+
+@pytest.mark.parametrize("blender_path, addon_path", blender_paths)
 @pytest.mark.parametrize("blender_file_name, params, match_nc, match_o2hrtf", [
     # test default paramters - pictures disabled due to long rendering time
     ('test_export.blend',

@@ -8,6 +8,35 @@ import sofar as sf
 # %matplotlib qt
 
 
+def blender_paths(computer_id):
+    """
+    Define Blender paths for different computers for easier switching of
+    test environments
+    """
+
+    if computer_id == 1:
+        # matheson @ audio communication group
+        base_dir = os.path.join(os.sep, 'home', 'matheson', 'Apps')
+        blender_paths = [
+            (os.path.join(base_dir, 'blender-2.83.10'),
+             os.path.join('2.83', 'scripts', 'addons')),
+            (os.path.join(base_dir, 'blender-2.91.0'),
+             os.path.join('2.91', 'scripts', 'addons')),
+            (os.path.join(base_dir, 'blender-2.93.8'),
+             os.path.join('2.93', 'scripts', 'addons')),
+            (os.path.join(base_dir, 'blender-3.1.2'),
+             os.path.join('3.1', 'scripts', 'addons'))]
+    elif computer_id == 2:
+        # bruel @ audio communication group
+        blender_paths = [
+            ('/home/chef/Desktop/Applications/blender-2.93.8-linux-x64',
+             '2.93/scripts/addons')]
+    else:
+        raise ValueError("Invalid computer id")
+
+    return blender_paths
+
+
 def hrtf_sofa_to_numpy(path):
     """
     Read SOFA file with data type TF and return complex spectrum
