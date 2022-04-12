@@ -69,7 +69,26 @@ def test_Output2HRTF_Main_and_Output2HRTF(num_sources):
         ref = sf.read_sofa(os.path.join(data_shtf, "Output2HRTF", sofa))
         test = sf.read_sofa(os.path.join(tmp_shtf, "Output2HRTF", sofa))
 
-        assert sf.equals(test, ref, exclude="DATE")
+        # test data entries with tolerance
+        # (results differ across operating systems)
+        if sofa.startswith("HRTF"):
+            npt.assert_allclose(test.Data_Real, ref.Data_Real)
+            npt.assert_allclose(test.Data_Imag, ref.Data_Imag)
+        else:
+            npt.assert_allclose(test.Data_IR, ref.Data_IR)
+        
+        # test remaining entries without tolerance
+        ignore = ["Data_Real", "Data_Imag", "Data_IR", "GLOBAL_APIVersion"]
+        for key, value in test.__dict__.items():
+            if key.startswith("_") or "Date" in key or key in ignore:
+                continue
+
+            print(f"{sofa}: {key}")
+            
+            if isinstance(value, np.ndarray):
+                npt.assert_equal(value, getattr(ref, key))
+            else:
+                assert value == getattr(ref, key)
 
 
 @pytest.mark.parametrize("pattern,plot,created,not_created", (
