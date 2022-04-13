@@ -1,7 +1,8 @@
 """Utilities to be used in testing"""
+import os
+import re
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 import sofar as sf
 
 # remove this if used in test file
@@ -35,6 +36,82 @@ def blender_paths(computer_id):
         raise ValueError("Invalid computer id")
 
     return blender_paths
+
+
+def write_blender_export_script(
+        scriptPath, projectPath, programPath, addonFile, addonPath, params):
+    """
+    Write python script that exports a Mesh2HRTF project from Blender. The
+    script can be used to export projects from the command line using
+
+    ``blender --background "path/to/project.blend --python "scriptPath"``
+
+    where project.blend is a blender Project ready for Mesh2HRTF export, i.e.,
+    containing a mesh named Reference, with Left/Right ear materials, a point
+    source, or a plane wave.
+
+
+    Parameters
+    ----------
+    scriptPath : str
+        Complete path and name for saving the export script to disk.
+    projectPath : str
+        Path to the folder into which the Mesh2HRTF project is exported
+    programPath : str
+        Path to the mesh2hrtf foler inside the Mesh2HRTF repository
+    addonFile : str
+        Path to the `exportMesh2HRTF.py` Python addon for Blender
+    addonPath : str
+        Path under which the addon is to be installed (e.g. the folder
+        3.1/scripts/addons for Blender 3.1 on Linux systems)
+    params : dict
+        Optional parameters for exporting the project, e.g.,
+        ``{speedOfSound: "343", "Pictures": False}``. For a full list of
+        parameters see `exportMesh2HRTF.py` or the Mesh2HRTF export menue in
+        Blender.
+    """
+
+    # parse export parameters to string
+    export_args = ''
+    for key, value in params.items():
+
+        # check special parameter
+        if key in ["speedOfSound", "densityOfMedium"] \
+                and not isinstance(value, str):
+            value = str(value)
+
+        if type(value) is str:
+            export_args += f'    {key}="{value}",\n'
+        elif type(value) is bool:
+            export_args += f'    {key}={value!s},\n'
+        else:  # int or float
+            export_args += f'    {key}={value},\n'
+
+    # write export script to string
+    script = (
+        "import bpy\n\n"
+        "# Define paths (done in testing by substituting the strings)\n\n"
+        f"addonFile = '{addonFile}'\n"
+        f"addonPath = '{addonPath}'\n\n"
+        "# re-install export addon\n"
+        "bpy.context.preferences.filepaths.script_directory = addonPath\n"
+        "bpy.utils.refresh_script_paths()\n"
+        "bpy.ops.preferences.addon_install("
+        "overwrite=True, filepath=addonFile)\n"
+        "bpy.ops.preferences.addon_enable(module='exportMesh2HRTF')\n\n"
+        "# save Mesh2HRTF project\n"
+        "bpy.ops.export_mesh2hrtf.inp(\n"
+        f"    filepath='{projectPath}',\n"
+        f"    programPath='{programPath}',\n")
+
+    if len(export_args):
+        script += export_args[4:-2]
+
+    script += ")\n"
+
+    # write export script to file
+    with open(scriptPath, "w") as file:
+        file.write(script)
 
 
 def hrtf_sofa_to_numpy(path):

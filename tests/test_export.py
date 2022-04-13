@@ -1,16 +1,20 @@
+# %%
 import pytest
 import subprocess
 import tempfile
 import shutil
 import os
-import re
 import utils
 
 # define and check paths to your Blender versions
 blender_paths = utils.blender_paths(2)
 
-# directory of this file
+# directory of this file and test data
 base_dir = os.path.dirname(__file__)
+grid_dir = os.path.join(
+    base_dir, 'resources', 'test_blender_export', 'test_grids')
+material_dir = os.path.join(
+    base_dir, 'resources', 'test_blender_export', 'test_materials')
 
 
 @pytest.mark.parametrize("blender_path, addon_path", blender_paths)
@@ -129,9 +133,9 @@ base_dir = os.path.dirname(__file__)
     # test multiple external grids
     ('test_export.blend',
      {"evaluationGrids":
-      "os.path.join(tmp_path, 'test_grids', 'test_grid_a');"
-      "os.path.join(tmp_path, 'test_grids', 'test_grid_b');"
-      "os.path.join(tmp_path, 'test_grids', 'test_grid_c')",
+      (f"{os.path.join(grid_dir, 'test_grid_a')}; "
+       f"{os.path.join(grid_dir, 'test_grid_b')}; "
+       f"{os.path.join(grid_dir, 'test_grid_c')}"),
       "pictures": False},
      [["../../EvaluationGrids/test_grid_a/Nodes.txt\n"
        "../../EvaluationGrids/test_grid_b/Nodes.txt\n"
@@ -139,8 +143,9 @@ base_dir = os.path.dirname(__file__)
 
     # test external materials
     ('test_export_external_materials.blend',
-     {"sourceType": "Point source", "materialSearchPaths":
-      "os.path.join(tmp_path, 'test_materials')", "pictures": False},
+     {"sourceType": "Point source",
+      "materialSearchPaths": material_dir,
+      "pictures": False},
      [["BOUNDARY\n"
        "# Material: test_material_a\n"
        "ELEM 0 TO 12743 ADMI 1.0 1 1.0 2\n"
@@ -224,58 +229,18 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
         os.path.join(tmp.name, 'project'))
 
     tmp_path = os.path.join(tmp.name, 'project')
+    program_path = os.path.join(base_dir, "..", "mesh2hrtf")
     export_path = os.path.join(tmp.name, "export")
     blender_file_path = os.path.join(tmp_path, blender_file_name)
     python_file_path = os.path.join(tmp_path, 'blender_script.py')
 
-    # adapt Blender Python script by writing/adapting commands
-    with open(python_file_path, 'r') as file:
-        python_file_text = file.read()
-
-    # write paths in Python script
-    python_file_text = python_file_text.replace(
-        'exportPath = None',
-        f'exportPath = r"{export_path}"')
-    program_path = os.path.join(base_dir, "..", "mesh2hrtf")
-    python_file_text = python_file_text.replace(
-        'programPath = None',
-        f'programPath = r"{program_path}"')
-    python_file_text = python_file_text.replace(
-        'addonFile = None',
-        (f'addonFile = r"'
-         f'{os.path.join(program_path, "Mesh2Input", "exportMesh2HRTF.py")}"'))
-    python_file_text = python_file_text.replace(
-        'addonPath = None',
-        f'addonPath = r"{os.path.join(blender_path, addon_path)}"')
-
-    # write export arguments into Blender Python script
-    export_args = ''
-    for p in params:
-        if type(params[p]) is str:
-            # special case: grids or materials defined by paths
-            if (p == "evaluationGrids" or p == "materialSearchPaths") \
-                    and ("os.path.join" in params[p]):
-                args_path_list = params[p].split(";")
-                path_string = ''
-                for ap in range(len(args_path_list)):
-                    path_string += f'    "{eval(args_path_list[ap])};"\n'
-                path_string = re.sub(';"\n$', '"\n', path_string)
-                export_args += f'    {p}=\n{path_string},\n'
-            # all other string arguments
-            else:
-                export_args += f'    {p}="{params[p]}",\n'
-
-        elif type(params[p]) is bool:
-            export_args += f'    {p}={params[p]!s},\n'
-        else:  # int or float
-            export_args += f'    {p}={params[p]},\n'
-
-    if len(export_args):
-        python_file_text = python_file_text.replace(
-            '# additional kwargs added in testing', export_args[4:-2])
-
-    with open(python_file_path, 'w') as file:
-        file.write(python_file_text)
+    utils.write_blender_export_script(
+        python_file_path, export_path,
+        os.path.join(base_dir, "..", "mesh2hrtf"),
+        os.path.join(program_path, "Mesh2Input", "exportMesh2HRTF.py"),
+        os.path.join(blender_path, addon_path),
+        params
+        )
 
     # --- Exercise ---
     # run exportMesh2HRTF from Blender command line interface w/ Python script
@@ -295,6 +260,7 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
             NCinp_text = NCinp_file.read()
 
         for m in range(len(match_nc[s])):
+            print(f"Searching {match_nc[s][m]} in {NCinp_filepath}")
             assert match_nc[s][m] in NCinp_text
 
     # compare Output2HRTF.py against reference strings
@@ -302,6 +268,8 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
         o2hrtf_text = o2hrtf_file.read()
 
     for m in range(len(match_o2hrtf)):
+        print((f"Searching {match_o2hrtf[m]} in "
+               f"{os.path.join(export_path, 'Output2HRTF.py')}"))
         assert match_o2hrtf[m] in o2hrtf_text
 
     # check if pictures were created or not
