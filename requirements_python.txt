@@ -1,4 +1,5 @@
 pip
+numpy
 flake8
 Sphinx
 pytest
