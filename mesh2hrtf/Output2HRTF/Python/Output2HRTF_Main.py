@@ -16,7 +16,7 @@ import sofar as sf
 import pyfar as pf
 
 
-def Output2HRTF_Main(
+def output_two_hrtf(
         Mesh2HRTF_version, sourceType, numSources, sourceCenter,
         sourceArea, reference, computeHRIRs, speedOfSound, densityOfAir,
         folder=None):
@@ -791,7 +791,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
         del data
     else:
         raise ValueError((f"{object_name} does not exist. "
-                          "Run Output2HRTF_Main to create it"))
+                          "Run output_two_hrtf to create it"))
 
     # convert pressure to dB
     if dB:

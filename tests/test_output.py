@@ -17,11 +17,11 @@ data_grids = os.path.join(cwd, 'resources', 'evaluation_grids')
 
 
 @pytest.mark.parametrize("num_sources", ([1], [2]))
-def test_Output2HRTF_Main_and_Output2HRTF(num_sources):
+def test_output_two_hrtf_and_Output2HRTF(num_sources):
     """
     Run Output2HRTF.py script to do a round trip test:
 
-    - does Output2HRTF_Main.py run without errors for projects with 1 and 2
+    - does output_two_hrtf run without errors for projects with 1 and 2
       sources
     - are the report_source_*.csv files written correctly (2 sources only)
     - are the SOFA files written correctly (2 sources only)
@@ -76,7 +76,7 @@ def test_Output2HRTF_Main_and_Output2HRTF(num_sources):
             npt.assert_allclose(test.Data_Imag, ref.Data_Imag)
         else:
             npt.assert_allclose(test.Data_IR, ref.Data_IR)
-        
+
         # test remaining entries without tolerance
         ignore = ["Data_Real", "Data_Imag", "Data_IR", "GLOBAL_APIVersion"]
         for key, value in test.__dict__.items():
@@ -84,7 +84,7 @@ def test_Output2HRTF_Main_and_Output2HRTF(num_sources):
                 continue
 
             print(f"{sofa}: {key}")
-            
+
             if isinstance(value, np.ndarray):
                 npt.assert_equal(value, getattr(ref, key))
             else:

@@ -2,7 +2,6 @@
 # Output2HRTF inside project folder.
 
 import numpy
-import os
 import mesh2hrtf as m2h
 
 Mesh2HRTF_version = '1.0.0'
@@ -31,7 +30,7 @@ speedOfSound = 343  # [m/s]
 densityOfAir = 1.1839  # [kg/m^3]
 
 # Collect the data simulated by NumCalc
-m2h.Output2HRTF_Main(Mesh2HRTF_version, sourceType, 
-                     numSources, sourceCenter, sourceArea,
-                     reference, computeHRIRs,
-                     speedOfSound, densityOfAir)
+m2h.output_two_hrtf(Mesh2HRTF_version, sourceType,
+                    numSources, sourceCenter, sourceArea,
+                    reference, computeHRIRs,
+                    speedOfSound, densityOfAir)

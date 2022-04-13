@@ -962,10 +962,7 @@ def _write_output2HRTF_py(
     fw("# Output2HRTF inside project folder.\n\n")
 
     fw("import numpy\n")
-    fw("import os\n")
     fw("import mesh2hrtf as m2h\n\n")
-
-    fw("projectPath = os.getcwd()\n\n")
 
     # Mesh2HRTF version
     fw(f"Mesh2HRTF_version = '{version}'\n\n")
@@ -1048,10 +1045,10 @@ def _write_output2HRTF_py(
 
     # function call
     fw("# Collect the data simulated by NumCalc\n")
-    fw("m2h.Output2HRTF_Main(Mesh2HRTF_version, sourceType,\n")
-    fw("                     numSources, sourceCenter, sourceArea,\n")
-    fw("                     reference, computeHRIRs,\n")
-    fw("                     speedOfSound, densityOfAir)\n")
+    fw("m2h.output_two_hrtf(Mesh2HRTF_version, sourceType,\n")
+    fw("                    numSources, sourceCenter, sourceArea,\n")
+    fw("                    reference, computeHRIRs,\n")
+    fw("                    speedOfSound, densityOfAir)\n")
     file.close
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
