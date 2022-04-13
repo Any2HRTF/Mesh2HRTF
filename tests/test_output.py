@@ -21,7 +21,7 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
     """
     Run Output2HRTF.py script to do a round trip test:
 
-    - does output_two_hrtf run without errors for projects with 1 and 2
+    - does output_to_hrtf run without errors for projects with 1 and 2
       sources
     - are the report_source_*.csv files written correctly (2 sources only)
     - are the SOFA files written correctly (2 sources only)
