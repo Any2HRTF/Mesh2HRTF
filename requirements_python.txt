@@ -5,3 +5,5 @@ Sphinx
 pytest
 autodocsumm
 insipid-sphinx-theme
+pyfar
+sofar
