@@ -1,8 +1,6 @@
-# %%
 import pytest
 import subprocess
 import tempfile
-import shutil
 import os
 import utils
 
