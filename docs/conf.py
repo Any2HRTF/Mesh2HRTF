@@ -61,8 +61,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Mesh2HRTF'
-copyright = u"2020, the Mesh2HRTF developers"
+project = u'Mesh2HRTF Python API'
+copyright = u"2022, the Mesh2HRTF developers"
 author = u"The Mesh2HRTF developers"
 
 # The version info for the project you're documenting, acts as replacement
@@ -150,7 +150,7 @@ latex_elements = {
 # [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'mesh2hrtf.tex',
-     u'Mesh2HRTF Documentation',
+     u'Mesh2HRTF Python API Documentation',
      u'The Mesh2HRTF developers', 'manual'),
 ]
 
@@ -161,7 +161,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     (master_doc, 'mesh2hrtf',
-     u'Mesh2HRTF Documentation',
+     u'Mesh2HRTF Python API Documentation',
      [author], 1)
 ]
 
@@ -173,9 +173,9 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'Mesh2HRTF',
-     u'Mesh2HRTF Documentation',
+     u'Mesh2HRTF Python API Documentation',
      author,
      'Mesh2HRTF',
-     'One line description of project.',
-     'Miscellaneous'),
+     'Numerical calculation of head-related-transfer functions.',
+     'Scientific and open software'),
 ]
