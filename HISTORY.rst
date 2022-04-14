@@ -3,28 +3,43 @@ History
 
 v1.0.0
 -------
-* bumped all python sckripts to Blender >= 2.80.0
-* changed layout of the export GUI to be more clear and less prone to user input errors
-	* added handling of frequency dependent boundary conditions
-	* The source type is now defined by a single drop down menu
-	* The point source coordinates are obtained from a user placed object in the scene
-	* Referencing the HRTF spectra to the center of the head now also supported for point sources
-	* Referencing can now be selected in the GUI
-	* Enabled the computation of HRIRs from complete, single sided, equidistant HRTF spectra from the GUI
-	* More flexible selection of the frequencies that are simulated
-	* Evaluation grids are now specified by strings. This allows to use evaluation grids outside the Mesh2HRTF path
-* Improved structure of the output data created by Output2HRTF
-	* Data is now stored in a separate folder
-	* Data is named according to the evaluation girds, object meshes
+* Project export from Blender (handled by the Blender plugin `Mesh2Input/exportMesh2HRTF.py`)
+	* Upgraded to Blender >= 2.80.0
+	* Better organization and modularization of the Blender plugin
+	* Re-design the parameters, appearance, and in-app documentation of the export menu to be less prone to erroneous input
+		* The source type is now defined by a single drop down menu
+		* Source properties (point source position and plane wave direction) are now obtained from Objects in the Blender Scene and do not have to be entered manually anymore.
+		* Added an option for referencing the HRTF to a source in the origin of coordinates according to the HRTF definition
+		* Referencing is now also supported for point sources
+		* Add an option to calculate HRIRs from single sided HRTF spectra
+		* More flexible selection of the frequencies that are simulated
+		* Multiple evaluation grids can be entered in a single text field
+		* Added handling for custom definitions of materials (boundary conditions)
+		* Moved options for parallelization from the export menu to NumCalc (see below)
+		* Removed undocumented and unfinished options fro near-field calculation and frequency dependent meshes
+	* Boundary conditions can now be frequency dependent
+	* Files containing custom evaluation grids and material data can be located outside the Mesh2HRTF repository
+* NumCalc (contained in NumCalc/Source)
+	* Introduced command line parameters `istart` and `iend` to select a range of frequencies for simulation and to ease parallelization
+	* Introduce command line parameter `nitermax` to control the maximum number of iterations
+	* Reduce the default number of maximum iterations to 250
+	* Minor bug fixes and stability improvements
+* Added a Python API for processing NumCalc output and save HRTF and HRIR data (contained in `Output2HRTF/Python`)
+	* Installable via pip
+	* Full online documentation
+	* Added function to generate a project report and notify in case of issues and/or errors that occurred during the NumCalc simulation
+	* Added flexible plot function for quick inspection of the results
+	* Added Python tools to read and generate custom evaluation grids
+	* Added function to merge results from multiple sources (e.g. left and right ear) into a single SOFA file
+* Improved structure of the output data (Sofa files, project reports, exports, plots)
+	* Data is now stored in a separate folder `Output2HRTF`
+	* Data is named according to the evaluation girds and object meshes
 	* Data for multiple evaluation grids is now stored in separate files
-	* Frequncies in SOFA files now contain decimal values
-* Removed incomplete, buggy, and undocumented features
-	* removed the handling frequency dependent meshes in exportMesh2HRTF.py. Scripting in Blender can do the job and is more flexible
-	* removed near field calculation. This generated a hard coded extremal sampling grid of spherical harmonics order 46 but was not documented
-	* a separate core was assigned to the simulation of low frequencies. This was not documented and buggy in certain cases
-* General
-	* soft pep8 styling of Python code
-	* modularization of Python code as a preparation to introduce unit tests
+	* Frequencies in SOFA files now contain decimal values
+* Added testing
+	* All three arts of Mesh2HRTF (Project export, NumCalc, and Output2HRTF) are tested using pytest to improve and monitor the code quality
+	* The Matlab/Octave API is not tested. New users are recommended to use the Python API
+
 
 v0.4.0
 ------
