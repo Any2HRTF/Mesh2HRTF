@@ -1020,7 +1020,7 @@ def _write_output2HRTF_py(
 
     # referencing
     fw("# Reference to a point source in the origin\n")
-    fw("# accoring to the classical HRTF definition\n")
+    fw("# according to the classical HRTF definition\n")
     fw("# (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
     fw("reference = ")
     if reference:
@@ -1046,9 +1046,9 @@ def _write_output2HRTF_py(
     # function call
     fw("# Collect the data simulated by NumCalc\n")
     fw("m2h.output_to_hrtf(Mesh2HRTF_version, sourceType,\n")
-    fw("                    numSources, sourceCenter, sourceArea,\n")
-    fw("                    reference, computeHRIRs,\n")
-    fw("                    speedOfSound, densityOfAir)\n")
+    fw("                   numSources, sourceCenter, sourceArea,\n")
+    fw("                   reference, computeHRIRs,\n")
+    fw("                   speedOfSound, densityOfAir)\n")
     file.close
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
