@@ -140,7 +140,7 @@ def test_merge_sofa_files(pattern):
     tmp = TemporaryDirectory()
 
     # merge two identical files
-    m2h.merge_sofa_files(data_shtf, data_shtf, pattern, tmp.name)
+    m2h.merge_sofa_files((data_shtf, data_shtf), pattern, tmp.name)
 
     # check merged files
     pattern = ["HRTF", "HRIR"] if not pattern else [pattern]

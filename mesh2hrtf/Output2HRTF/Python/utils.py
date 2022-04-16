@@ -88,7 +88,7 @@ def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
             _inspect_sofa_files(file, savedir, atol, plot, plane)
 
 
-def merge_sofa_files(left, right, pattern=None, savedir=None):
+def merge_sofa_files(folders, pattern=None, savedir=None):
     """
     Merge HRTFs and HRIRs from SOFA-files containing left and right ear data.
 
@@ -96,15 +96,16 @@ def merge_sofa_files(left, right, pattern=None, savedir=None):
 
     Parameters
     ----------
-    left, right : str
-        `left` and `right` are folder names. SOFA files are searched in
-        folder/Output2HRTF if it exist and directly in `folder` otherwise.
+    folders : tuple
+        A tuple containing paths of folders. SOFA files are searched in
+        `folders/Output2HRTF` if it exist and directly in `folders` otherwise.
 
         The names may contain an asterisk to process data in multiple folders.
-        E.g., if `left` is ``"some/path/*_left"`` and `right` is
+        E.g., if ``folders[0]`` is ``"some/path/*_left"`` and ``folders[1]`` is
         ``"some/path/*_right"`` all SOFA files in the matching folders will be
-        merged. Note that the Output2HRTF folder pairs given by `left` and
-        `right` must contain SOFA files with identical names.
+        merged. Note the SOFA files contained in the folders must have the same
+        names to be merged. Currently, `folders` must contain exactly two
+        paths.
     pattern : str
         Merge only files that contain `pattern` in their filename. The default
         ``None`` merges all SOFA files.
@@ -115,6 +116,12 @@ def merge_sofa_files(left, right, pattern=None, savedir=None):
 
     if savedir is not None and not os.path.isdir(savedir):
         raise ValueError(f"savedir {savedir} is not a directory")
+
+    if not isinstance(folders, (tuple, list)) or len(folders) != 2:
+        raise ValueError("folders, must be a tuple or list of length two")
+
+    left = folders[0]
+    right = folders[1]
 
     # get all search directories
     left_dirs = glob.glob(left)
@@ -164,7 +171,8 @@ def merge_sofa_files(left, right, pattern=None, savedir=None):
                 head = savedir
 
             # merge data
-            _merge_sofa_files(left_file, right_file, os.path.join(head, tail))
+            _merge_sofa_files(
+                (left_file, right_file), os.path.join(head, tail))
 
 
 def write_evaluation_grid(
@@ -597,11 +605,11 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
                         bbox_inches="tight")
 
 
-def _merge_sofa_files(left, right, savename):
+def _merge_sofa_files(files, savename):
     """read two sofa files, join the data, and save the result"""
 
-    left = sf.read_sofa(left)
-    right = sf.read_sofa(right)
+    left = sf.read_sofa(files[0])
+    right = sf.read_sofa(files[1])
 
     # join Data
     if left.GLOBAL_DataType.startswith("TF"):
