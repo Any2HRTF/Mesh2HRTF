@@ -1,7 +1,7 @@
 from .Output2HRTF.Python.output_to_hrtf import (
     output_to_hrtf,
-    reference_HRTF,
-    compute_HRIR,
+    reference_hrtf,
+    compute_hrir,
     project_report)
 
 from .Output2HRTF.Python.outputs_to_hrtfs import (
@@ -17,8 +17,8 @@ from .Output2HRTF.Python.utils import (
 __all__ = [
     'output_to_hrtf',
     'outputs_to_hrtfs',
-    'reference_HRTF',
-    'compute_HRIR',
+    'reference_hrtf',
+    'compute_hrir',
     'inspect_sofa_files',
     'merge_sofa_files',
     'project_report',

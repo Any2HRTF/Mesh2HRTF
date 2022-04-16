@@ -17,8 +17,8 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
         Run Output2HRTF.py files in folder specified by `paths` to call
         :py:func:`~mesh2hrtf.output_to_hrtf`,
         :py:func:`~mesh2hrtf.project_report`,
-        :py:func:`~mesh2hrtf.reference_HRTF`, and
-        :py:func:`~mesh2hrtf.compute_HRIR`.
+        :py:func:`~mesh2hrtf.reference_hrtf`, and
+        :py:func:`~mesh2hrtf.compute_hrir`.
     2.
         Run :py:func:`~mesh2hrtf.merge_sofa_files` (optional).
     3.

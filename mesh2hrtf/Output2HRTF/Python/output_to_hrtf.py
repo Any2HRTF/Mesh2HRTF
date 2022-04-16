@@ -151,7 +151,7 @@ def output_to_hrtf(
 
         # reference to sound pressure at the center of the head
         if reference:
-            sofa = reference_HRTF(sofa, sourceType, sourceArea, speedOfSound,
+            sofa = reference_hrtf(sofa, sourceType, sourceArea, speedOfSound,
                                   densityOfAir, mode="min")
 
         # write HRTF data to SOFA file
@@ -167,14 +167,14 @@ def output_to_hrtf(
             fs = round(2*sofa.N[-1])
             n_shift = int(np.round(.30 / (1/fs * speedOfSound)))
 
-            sofa = compute_HRIR(sofa, n_shift)
+            sofa = compute_hrir(sofa, n_shift)
             sf.write_sofa(os.path.join(
                 'Output2HRTF', f'HRIR_{grid}.sofa'), sofa)
 
     print('Done\n')
 
 
-def reference_HRTF(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
+def reference_hrtf(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
                    mode="min"):
     """
     Reference HRTF to the sound pressure in the center of the head. After
@@ -279,7 +279,7 @@ def reference_HRTF(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
     return sofa
 
 
-def compute_HRIR(sofa, n_shift):
+def compute_hrir(sofa, n_shift):
     """
     Compute HRIR from HRTF by means of the inverse Fourier transform.
 
