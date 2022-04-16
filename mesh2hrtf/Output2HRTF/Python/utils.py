@@ -61,6 +61,12 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
         raise ValueError(
             f"plane is {plane} but must be horizontal, median, or frontal")
 
+    # check which data to merge
+    if pattern is None:
+        pattern = "*.sofa"
+    elif not pattern.endswith("sofa"):
+        pattern = f"{pattern}*.sofa"
+
     # get all directories containing SOFA files
     folders = glob.glob(path)
 
@@ -72,20 +78,17 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
             folder = os.path.join(folder, "Output2HRTF")
 
         # find matching SOFA files
-        pattern = "*.sofa" if pattern is None else f"*{pattern}*.sofa"
         files = glob.glob(os.path.join(folder, pattern))
         if not files:
             raise ValueError((f"Did not find any SOFA files in {folder} "
-                              f"that are matching *{pattern}*.sofa"))
+                              f"that are matching {pattern}"))
 
         # loop and inspect all SOFA files
         for file in files:
 
-            if savedir is None:
-                savedir = folder
-
             # inspect data
-            _inspect_sofa_files(file, savedir, atol, plot, plane)
+            save_to = folder if savedir is None else None
+            _inspect_sofa_files(file, save_to, atol, plot, plane)
 
 
 def merge_sofa_files(paths, pattern=None, savedir=None):
@@ -120,6 +123,12 @@ def merge_sofa_files(paths, pattern=None, savedir=None):
     if not isinstance(paths, (tuple, list)) or len(paths) != 2:
         raise ValueError("paths, must be a tuple or list of length two")
 
+    # check which data to merge
+    if pattern is None:
+        pattern = "*.sofa"
+    elif not pattern.endswith("sofa"):
+        pattern = f"{pattern}*.sofa"
+
     left = paths[0]
     right = paths[1]
 
@@ -139,9 +148,6 @@ def merge_sofa_files(paths, pattern=None, savedir=None):
                 and os.path.isdir(os.path.join(right_dir, "Output2HRTF")):
             left_dir = os.path.join(left_dir, "Output2HRTF")
             right_dir = os.path.join(right_dir, "Output2HRTF")
-
-        # check which data to merge
-        pattern = "*.sofa" if pattern is None else f"*{pattern}*.sofa"
 
         # get and check all SOFA files in Output2HRTF folder
         left_files = glob.glob(os.path.join(left_dir, pattern))
