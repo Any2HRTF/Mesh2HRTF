@@ -10,7 +10,7 @@ import pyfar as pf
 from .output_to_hrtf import _read_nodes_and_elements
 
 
-def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
+def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
                        atol=0.1, savedir=None):
     """
     Inspect SOFA files through plots.
@@ -20,12 +20,12 @@ def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
 
     Parameters
     ----------
-    folder : str
-        Name of a folder. SOFA files are searched in folder/Output2HRTF if it
-        exist and directly in `folder` otherwise.
+    path : str
+        Path to a folder containing Mesh2HRTF projects. SOFA files are searched
+        in `path/Output2HRTF` if it exist and directly in `path` otherwise.
 
         The name may contain an asterisk to process data in multiple folders.
-        E.g., if `folder` is ``"some/path/HRIRs_*"`` files in all folder
+        E.g., if `path` is ``"some/path/HRIRs_*"`` files in all folder
         starting with "HRIRs" would be scanned for SOFA files.
     pattern : str
         Merge only files that contain `pattern` in their filename. The default
@@ -48,7 +48,7 @@ def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
         The default is ``0.1``.
     savedir : str
         Directory for saving the merged SOFA files. The default ``None`` saves
-        the files to the directory given by `folder`.
+        the files to the directory given by `path`.
     """
 
     # check input
@@ -62,7 +62,7 @@ def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
             f"plane is {plane} but must be horizontal, median, or frontal")
 
     # get all directories containing SOFA files
-    folders = glob.glob(folder)
+    folders = glob.glob(path)
 
     # loop directories
     for folder in folders:
@@ -88,7 +88,7 @@ def inspect_sofa_files(folder, pattern=None, plot=None, plane="horizontal",
             _inspect_sofa_files(file, savedir, atol, plot, plane)
 
 
-def merge_sofa_files(folders, pattern=None, savedir=None):
+def merge_sofa_files(paths, pattern=None, savedir=None):
     """
     Merge HRTFs and HRIRs from SOFA-files containing left and right ear data.
 
@@ -96,15 +96,15 @@ def merge_sofa_files(folders, pattern=None, savedir=None):
 
     Parameters
     ----------
-    folders : tuple
-        A tuple containing paths of folders. SOFA files are searched in
-        `folders/Output2HRTF` if it exist and directly in `folders` otherwise.
+    paths : tuple
+        A tuple containing paths to folders. SOFA files are searched in
+        `paths/Output2HRTF` if it exist and directly in `paths` otherwise.
 
         The names may contain an asterisk to process data in multiple folders.
-        E.g., if ``folders[0]`` is ``"some/path/*_left"`` and ``folders[1]`` is
+        E.g., if ``paths[0]`` is ``"some/path/*_left"`` and ``paths[1]`` is
         ``"some/path/*_right"`` all SOFA files in the matching folders will be
         merged. Note the SOFA files contained in the folders must have the same
-        names to be merged. Currently, `folders` must contain exactly two
+        names to be merged. Currently, `paths` must contain exactly two
         paths.
     pattern : str
         Merge only files that contain `pattern` in their filename. The default
@@ -117,11 +117,11 @@ def merge_sofa_files(folders, pattern=None, savedir=None):
     if savedir is not None and not os.path.isdir(savedir):
         raise ValueError(f"savedir {savedir} is not a directory")
 
-    if not isinstance(folders, (tuple, list)) or len(folders) != 2:
-        raise ValueError("folders, must be a tuple or list of length two")
+    if not isinstance(paths, (tuple, list)) or len(paths) != 2:
+        raise ValueError("paths, must be a tuple or list of length two")
 
-    left = folders[0]
-    right = folders[1]
+    left = paths[0]
+    right = paths[1]
 
     # get all search directories
     left_dirs = glob.glob(left)
