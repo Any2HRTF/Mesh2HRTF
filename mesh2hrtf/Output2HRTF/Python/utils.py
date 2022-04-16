@@ -480,6 +480,7 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
                 _, ax_freq = plt.subplots(1, 4, figsize=(16, 3), sharey="row")
 
             # loop sources
+            max_db = -300
             for nn, (az, name) in enumerate(zip(
                     [0, 180, 90, 270],
                     ["front", "back", "left", "right"])):
@@ -502,9 +503,10 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
                     pf.plot.freq(signal[idx], ax=ax_freq[nn])
                     ax_freq[nn].set_title(name)
 
+                max_db = np.max([ax_freq[nn].get_ylim()[1], max_db])
+
             # format axis and legend
-            y_lim = ax_freq[nn].get_ylim()
-            ax_freq[nn].set_ylim(y_lim[1] - 50, y_lim[1])
+            ax_freq[nn].set_ylim(max_db - 60, max_db)
 
             if signal.cshape[-1] == 2:
                 ax_freq[nn].legend(["left ear", "right ear"], loc=3)
@@ -587,7 +589,7 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
 
                 c_lim = qm.get_clim()
                 c_lim = np.round(np.max(c_lim))
-                qm.set_clim(c_lim - 50, c_lim)
+                qm.set_clim(c_lim - 60, c_lim)
 
             # save
             plt.tight_layout()
