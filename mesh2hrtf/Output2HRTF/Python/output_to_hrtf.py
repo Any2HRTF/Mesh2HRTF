@@ -366,8 +366,7 @@ def compute_hrir(sofa, n_shift):
 
 def project_report(folder=None):
     r"""
-    Analyze output files written by NumCalc, generate project report, and
-    scan report for issues.
+    Generate project report from NumCalc output files.
 
     NumCalc (Mesh2HRTF's numerical core) writes information about the
     simulations to the files `NC*.inp` located under `NumCalc/source_*`. The
@@ -381,6 +380,35 @@ def project_report(folder=None):
         The project reports are written to the files
         `Output2HRTF/report_source_*.csv`. If issues were detected, they are
         listed in `Output2HRTF/report_issues.csv`.
+
+    The report contain the following information
+
+    Frequency step
+        The index of the frequency.
+    Frequency in Hz
+        The frequency in Hz.
+    NC input
+        Name of the input file from which the information was taken.
+    Input check passed
+        Contains a 1 if the check of the input data passed and a 0 otherwise.
+        If the check failed for one frequency, the following frequencies might
+        be affected as well.
+    Converged
+        Contains a 1 if the simulation converged and a 0 otherwise. If the
+        simulation did not converge, the relative error might be high.
+    Num. iterations
+        The number of iterations that were required to converge
+    relative error
+        The relative error of the final simulation
+    Comp. time total
+        The total computation time in seconds
+    Comp. time assembling
+        The computation time for assembling the matrices in seconds
+    Comp. time solving
+        The computation time for solving the matrices in seconds
+    Comp. time post-proc
+        The computation time for post-processing the results in seconds
+
 
     Parameters
     ----------
