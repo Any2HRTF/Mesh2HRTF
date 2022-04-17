@@ -1,12 +1,13 @@
 import pytest
 import shutil
 import os
-import glob
+from os.path import join
+from glob import glob
 from tempfile import TemporaryDirectory
 import mesh2hrtf as m2h
 
 cwd = os.path.dirname(__file__)
-data_shtf = os.path.join(cwd, 'resources', 'SHTF')
+data_shtf = join(cwd, 'resources', 'SHTF')
 
 
 @pytest.mark.parametrize("savedir, generate_error", (
@@ -17,30 +18,27 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
     without savedir
     """
 
-    # copy required data to temporary directory (folder left, and right contain
-    # two Mesh2HRTF projects each)
+    # copy required data to temporary directory
     tmp = TemporaryDirectory()
-    shutil.copytree(data_shtf, os.path.join(tmp.name, "SHTF"))
-    shutil.rmtree(os.path.join(tmp.name, "SHTF", "Output2HRTF"))
-    shutil.copytree(os.path.join(tmp.name, "SHTF"),
-                    os.path.join(tmp.name, "HRTF"))
+    shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
+    shutil.rmtree(join(tmp.name, "SHTF", "Output2HRTF"))
+    shutil.copytree(join(tmp.name, "SHTF"), join(tmp.name, "HRTF"))
 
     if generate_error:
         # clear one output file to generate the error
-        file = os.path.join(
-            tmp.name, "HRTF", "NumCalc", "source_1", "NC1-20.out")
+        file = join(tmp.name, "HRTF", "NumCalc", "source_1", "NC1-20.out")
         with open(file, "w") as file:
             file.write("\n")
 
     # process outputs
-    savedir = None if not savedir else os.path.join(tmp.name, "output")
+    savedir = None if not savedir else join(tmp.name, "output")
     if not generate_error:
-        m2h.outputs_to_hrtfs(os.path.join(tmp.name, "*"))
+        m2h.outputs_to_hrtfs(join(tmp.name, "*"))
     else:
         match = ("Detected issues in NumCalc output. Check report files in "
                  ".*\n.*HRTF")
         with pytest.raises(ValueError, match=match):
-            m2h.outputs_to_hrtfs(os.path.join(tmp.name, "*"), savedir=savedir)
+            m2h.outputs_to_hrtfs(join(tmp.name, "*"), savedir=savedir)
 
     # check output directories (only if not moved to savedir)
     if not savedir:
@@ -54,8 +52,7 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
             if generate_error and folder == "HRTF":
                 files += ["report_issues.txt"]
 
-            output = glob.glob(os.path.join(
-                tmp.name, folder, "Output2HRTF", "*"))
+            output = glob(join(tmp.name, folder, "Output2HRTF", "*"))
             output = [os.path.basename(o) for o in output]
 
             assert len(output) == len(files)
@@ -69,7 +66,7 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
         if generate_error:
             files += ["report_issues.txt"]
 
-        output = glob.glob(os.path.join(tmp.name, "output", "*"))
+        output = glob(join(tmp.name, "output", "*"))
         output = [os.path.basename(o) for o in output]
 
         assert len(output) == len(files)
@@ -78,8 +75,7 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
 
     # check issue report in savedir
     if savedir and generate_error:
-        with open(os.path.join(
-                tmp.name, "output", "report_issues.txt"), "r") as file:
+        with open(join(tmp.name, "output", "report_issues.txt"), "r") as file:
             report = "\n".join(file.readlines())
 
         assert "Detected issues in NumCalc output" in report
@@ -93,23 +89,21 @@ def test_outputs_to_hrtfs_full():
     # copy required data to temporary directory (folder left, and right contain
     # two Mesh2HRTF projects each)
     tmp = TemporaryDirectory()
-    os.mkdir(os.path.join(tmp.name, "left"))
-    shutil.copytree(data_shtf, os.path.join(tmp.name, "left", "SHTF"))
-    shutil.rmtree(os.path.join(tmp.name, "left", "SHTF", "Output2HRTF"))
-    shutil.copytree(os.path.join(tmp.name, "left", "SHTF"),
-                    os.path.join(tmp.name, "left", "HRTF"))
-    shutil.copytree(os.path.join(tmp.name, "left"),
-                    os.path.join(tmp.name, "right"))
+    os.mkdir(join(tmp.name, "left"))
+    shutil.copytree(data_shtf, join(tmp.name, "left", "SHTF"))
+    shutil.rmtree(join(tmp.name, "left", "SHTF", "Output2HRTF"))
+    shutil.copytree(join(tmp.name, "left", "SHTF"),
+                    join(tmp.name, "left", "HRTF"))
+    shutil.copytree(join(tmp.name, "left"), join(tmp.name, "right"))
 
     # process outputs
     m2h.outputs_to_hrtfs(
-        (os.path.join(tmp.name, "left", "*"),
-         os.path.join(tmp.name, "right", "*")),
+        (join(tmp.name, "left", "*"), join(tmp.name, "right", "*")),
         merge=True, inspect=True, pattern="HRIR",
-        savedir=os.path.join(tmp.name, "output"))
+        savedir=join(tmp.name, "output"))
 
     # check files in savedir
-    output = glob.glob(os.path.join(tmp.name, "output", "*"))
+    output = glob(join(tmp.name, "output", "*"))
     output = [os.path.basename(o) for o in output]
     files = ["HRTF_HRIR_FourPointHorPlane_r100cm.sofa",
              "HRTF_HRIR_FourPointHorPlane_r100cm_2D.pdf",
@@ -124,10 +118,66 @@ def test_outputs_to_hrtfs_full():
     # check files in project directories
     for folder_1 in ["left", "right"]:
         for folder_2 in ["HRTF", "SHTF"]:
-            files = glob.glob(os.path.join(
+            files = glob(join(
                 tmp.name, folder_1, folder_2, "Output2HRTF", "*"))
             files = [os.path.basename(f) for f in files]
 
             assert len(files) == 2
             assert "report_source_1.csv" in files
             assert "report_source_2.csv" in files
+
+
+@pytest.mark.parametrize("boundary,grid,freq", [
+    (True, True, True), (True, False, False), (False, True, False)])
+def test_purge_outputs_numcalc_data(boundary, grid, freq):
+    """Test purging the raw NumCalc output"""
+
+    # copy required data to temporary directory
+    tmp = TemporaryDirectory()
+    shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
+
+    m2h.remove_outputs(join(tmp.name, "*"), boundary, grid, freq)
+
+    for source in glob(join(tmp.name, "SHTF", "NumCalc", "source_*")):
+        if boundary and grid:
+            assert not os.path.isdir(join(source, "be.out"))
+        elif boundary:
+            assert os.path.isdir(join(source, "be.out"))
+            for be in glob(join(source, "be.out", "be.*")):
+                assert glob(join(be, "*Boundary")) == []
+        elif grid:
+            assert os.path.isdir(join(source, "be.out"))
+            for be in glob(join(source, "be.out", "be.*")):
+                assert glob(join(be, "*EvalGrid")) == []
+        if freq:
+            assert not os.path.isdir(join(source, "fe.out"))
+
+
+@pytest.mark.parametrize("boundary_compressed,hrtf,vtk,reports", [
+    (True, False, True, False), (False, True, False, True)])
+def test_purge_outputs_output_data(boundary_compressed, hrtf, vtk, reports):
+    """Test purging the processed data in Output2HRTF"""
+
+    # copy required data to temporary directory
+    tmp = TemporaryDirectory()
+    shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
+    folder = join(tmp.name, "SHTF", "Output2HRTF")
+
+    m2h.remove_outputs(join(tmp.name, "*"),
+                       boundary_compressed=boundary_compressed,
+                       hrtf=hrtf, vtk=vtk, reports=reports)
+
+    assert os.path.isfile(join(folder, "ObjectMesh_Reference.npz")) == \
+        (not boundary_compressed)
+
+    assert os.path.isfile(join(folder, "HRTF_FourPointHorPlane_r100cm.sofa")) \
+        == (not hrtf)
+
+    assert os.path.isdir(join(folder, "Reference_vtk")) \
+        == (not vtk)
+
+    assert os.path.isfile(join(folder, "report_source_1.csv")) == \
+        (not reports)
+
+    assert os.path.isfile(join(folder, "report_source_2.csv")) == \
+        (not reports)
