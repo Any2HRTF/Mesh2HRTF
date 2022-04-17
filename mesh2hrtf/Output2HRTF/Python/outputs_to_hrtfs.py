@@ -41,13 +41,13 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
         independently.
     merge : bool, optional
         ``True`` to merge data from different projets using
-        :py:func:`~mesh2hrtf.merge_sofa_files`  (see `paths` above). The default
-        ``False`` does not merge data.
+        :py:func:`~mesh2hrtf.merge_sofa_files`  (see `paths` above). The
+        default ``False`` does not merge data.
     inspect : bool, optional
         ``True`` to plot data the results from different projets using
-        :py:func:`~mesh2hrtf.inspect_sofa_files`. If `merge` is ``True`` this is
-        only done for the merged data. The default ``False`` does not plot the
-        data.
+        :py:func:`~mesh2hrtf.inspect_sofa_files`. If `merge` is ``True`` this
+        is only done for the merged data. The default ``False`` does not plot
+        the data.
     pattern : str, optional
         Merge, inspect and move only SOFA files that have `pattern` in their
         file names. E.g., if `pattern` is ``"HRIR"`` only the SOFA files
@@ -137,7 +137,7 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
         print("\nInspecting SOFA files")
         print("---------------------")
         for pp, path in enumerate(paths_inspect):
-            print(f"{path} ({pp}/{len(paths_inspect)})")
+            print(f"{path} ({pp+1}/{len(paths_inspect)})")
             utils.inspect_sofa_files(path, pattern, plot, plane, atol)
 
     # return if data should be left in place ----------------------------------
@@ -152,12 +152,14 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
         return
 
     # move data to savedir ----------------------------------------------------
-    print("\nIMoving results to savedir")
-    print("--------------------------")
+    print("\nMoving results to savedir")
+    print("-------------------------")
     for pp, path in enumerate(paths):
 
         # loop folders in path
         folders = glob.glob(path)
+        if pattern is None:
+            pattern = "*"
 
         for ff, folder in enumerate(folders):
 
@@ -169,10 +171,11 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
                 for file in glob.glob(os.path.join(
                         folder, "Output2HRTF", pattern)):
 
-                    copy_name = name + "_" + os.path.basename(
-                        file).replace("_merged", "")
-                    shutil.copyfile(file,
-                                    os.path.join(savedir, copy_name))
+                    if file.endswith(".sofa") or file.endswith(".pdf"):
+                        copy_name = name + "_" + os.path.basename(
+                            file).replace("_merged", "")
+                        shutil.copyfile(file,
+                                        os.path.join(savedir, copy_name))
 
             # remove data
             for file in glob.glob(os.path.join(folder, "Output2HRTF", "*")):

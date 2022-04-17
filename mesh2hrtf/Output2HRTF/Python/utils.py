@@ -104,8 +104,8 @@ def merge_sofa_files(paths, pattern=None, savedir=None):
         `paths/Output2HRTF` if it exist and directly in `paths` otherwise.
 
         The names may contain an asterisk to process data in multiple folders.
-        E.g., if ``paths[0]`` is ``"some/path/*_left"`` and ``paths[1]`` is
-        ``"some/path/*_right"`` all SOFA files in the matching folders will be
+        E.g., if ``paths[0]`` is ``"some/path/left/*"`` and ``paths[1]`` is
+        ``"some/path/right/*"`` all SOFA files in the matching folders will be
         merged. Note the SOFA files contained in the folders must have the same
         names to be merged. Currently, `paths` must contain exactly two
         paths.
