@@ -1,18 +1,16 @@
 """Utilities to be used in testing"""
 import os
-import re
 import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf
-
-# remove this if used in test file
-# %matplotlib qt
 
 
 def blender_paths(computer_id):
     """
     Define Blender paths for different computers for easier switching of
-    test environments
+    test environments. First entry of tuple contains the path under which the
+    `blender` executable is located. Second entry is relative to the first
+    entry and contains the Blender addon directory.
     """
 
     if computer_id == 1:
@@ -30,8 +28,8 @@ def blender_paths(computer_id):
     elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
-            ('/home/chef/Desktop/Applications/blender-2.93.8-linux-x64',
-             '2.93/scripts/addons')]
+            ('/snap/blender/2106/',
+             '3.1/scripts/addons')]
     else:
         raise ValueError("Invalid computer id")
 
