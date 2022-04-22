@@ -129,11 +129,11 @@ void NC_PostProcessing
 #endif
 
 	// create the FE output directories
-	sprintf(Dfname_3d, "fe.out/fe.%d",  currentFrequency_ + 1);
+	//	sprintf(Dfname_3d, "fe.out/fe.%d",  currentFrequency_ + 1);
 #ifdef isWindows
-    ifmkd = _mkdir(Dfname_3d); // WINDOWS
+	//    ifmkd = _mkdir(Dfname_3d); // WINDOWS
 #else
-	mkdir(Dfname_3d, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
+	//mkdir(Dfname_3d, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
 #endif
 
 	// compute the bool variable indicating if the T-vector should be computed
@@ -422,7 +422,9 @@ void NC_WriteResultsObjectMesh
 	Vector<Complex> admi(2);
 	Vector<Complex> zbvi_0(NNODPE);
 	Matrix<double> crdeli(NNODPE, NDIM);
-    FILE *lu_load;
+	/* fe.out will be removed
+	   FILE *lu_load;
+	*/
 
 	// loop over the elements to compute the pressures, velocities and energy intensities in each element
 	for(iel=0; iel<numElements_; iel++)
@@ -475,18 +477,20 @@ void NC_WriteResultsObjectMesh
 //    fprintf(Lu_pBoundaryVTK, "%s\n", jobTitle_);
 //    fprintf(Lu_pBoundaryVTK, "ASCII\n");
 //    fprintf(Lu_pBoundaryVTK, "DATASET POLYDATA\n");
-    
+
+    /* fe.out removed kreiza
 	sprintf(Dfname_3d, "fe.out/fe.%d/load",  currentFrequency_ + 1);
 	lu_load = fopen(Dfname_3d, "w");
         if(!lu_load) NC_Error_Exit_1(NCout,  "Can not open the file ", Dfname_3d);
-
+    */
     fprintf(Lu_pBoundary, "%s\n", versionNumber_);
     fprintf(Lu_vBoundary, "%s\n", versionNumber_);
-
+    /* fe.out stuff removed for now kreiza
 	fprintf(lu_load, "%s\n", versionNumber_);
 	fprintf(lu_load, "1 0.0 %E %d\n", frequency_, currentFrequency_ + 1);
 	fprintf(lu_load, "%E\n", frequency_);
 	fclose(lu_load);
+    */
 
 	// compute the vector NDGRP (number of nodes of each element group) and THINGRP
 	for(igr=0; igr<numElementGroups_; igr++)

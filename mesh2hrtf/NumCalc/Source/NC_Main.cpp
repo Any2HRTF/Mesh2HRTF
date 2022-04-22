@@ -167,9 +167,9 @@ int main(int argc, char **argv)
 {
 
   int i;          //* used for command line parameters
-  int iend = 0;   //* first freq step
+  int iend = 0;   //* last freq step
   char filename[200];  //* filename for the outputfile
-  istart_ = 0;    //* last freq step
+  istart_ = 0;    //* first freq step
 
 
   /* check the caommand line */
@@ -263,17 +263,17 @@ int main(int argc, char **argv)
       int ifmkd;
       if(istart_ == 0 && iend == 0) { // no steps are given, remove the old directory
 	if(system("rmdir /s /q be.out")==-1) cout << "\nCannot create directory be.out";
-	if(system("rmdir /s /q fe.out")==-1) cout << "\nCannot create directory fe.out";
+	//	if(system("rmdir /s /q fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
       ifmkd = _mkdir("be.out"); // WINDOWS
-      ifmkd = _mkdir("fe.out");
+      //   ifmkd = _mkdir("fe.out");
 #else
       if(istart_ == 0 && iend == 0) {
 	if(system("rm -f -r be.out")==-1) cout << "\nCannot create directory be.out";
-	if(system("rm -f -r fe.out")==-1) cout << "\nCannot create directory fe.out";
+	//	if(system("rm -f -r fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
       mkdir("be.out", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
-      mkdir("fe.out", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
+      //  mkdir("fe.out", S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
 #endif
     
 	// call the control program
