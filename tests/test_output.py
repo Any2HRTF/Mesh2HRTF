@@ -110,8 +110,10 @@ def test_inspect_sofa_files_single_project(
     tmp_shtf = os.path.join(tmp.name, "SHTF")
     shutil.copytree(data_shtf, tmp_shtf)
 
-    for pdf in glob.glob(os.path.join(tmp_shtf, "Output2HRTF", "*.pdf")):
-        os.remove(pdf)
+    for file in glob.glob(os.path.join(tmp_shtf, "Output2HRTF", "*.pdf")):
+        os.remove(file)
+    for file in glob.glob(os.path.join(tmp_shtf, "Output2HRTF", "*.jpeg")):
+        os.remove(file)
 
     # create plots
     m2h.inspect_sofa_files(tmp_shtf, pattern, plot=plot)
@@ -119,13 +121,15 @@ def test_inspect_sofa_files_single_project(
     grid = "FourPointHorPlane_r100cm"
 
     # check if the correct files exist and are missing
-    for pdf in created:
-        pdf = os.path.join(tmp_shtf, "Output2HRTF", pdf.replace("*", grid))
-        assert os.path.isfile(pdf + ".pdf")
+    for file in created:
+        file = os.path.join(tmp_shtf, "Output2HRTF", file.replace("*", grid))
+        extension = ".pdf" if "2D" in file else ".jpeg"
+        assert os.path.isfile(file + extension)
 
-    for pdf in not_created:
-        pdf = os.path.join(tmp_shtf, "Output2HRTF", pdf.replace("*", grid))
-        assert not os.path.isfile(pdf + ".pdf")
+    for file in not_created:
+        file = os.path.join(tmp_shtf, "Output2HRTF", file.replace("*", grid))
+        extension = ".pdf" if "2D" in file else ".jpeg"
+        assert not os.path.isfile(file + extension)
 
 
 @pytest.mark.parametrize("pattern", (None, "HRIR", "HRTF"))
