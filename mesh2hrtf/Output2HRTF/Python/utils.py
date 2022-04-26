@@ -607,8 +607,8 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
 
             # save
             plt.tight_layout()
-            plt.savefig(os.path.join(savedir, tail[:-5] + "_3D.pdf"),
-                        bbox_inches="tight")
+            plt.savefig(os.path.join(savedir, tail[:-5] + "_3D.jpeg"),
+                        dpi=300, bbox_inches="tight")
 
 
 def _merge_sofa_files(files, savename):

@@ -171,7 +171,7 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
                 for file in glob.glob(os.path.join(
                         folder, "Output2HRTF", pattern)):
 
-                    if file.endswith(".sofa") or file.endswith(".pdf"):
+                    if file.endswith((".sofa", ".pdf", ".jpeg")):
                         copy_name = name + "_" + os.path.basename(
                             file).replace("_merged", "")
                         shutil.copyfile(file,
