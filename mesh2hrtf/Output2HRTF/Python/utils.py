@@ -442,7 +442,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
                          f"{int(elements[nn, 3])}\n")
     vtk += elements_txt
 
-    vtk += "CELL_DATA 2412\n\n"
+    vtk += f"\nCELL_DATA {pressure.shape[0]}\n\n"
 
     # write vtk files
     for ff in range(frequency_steps[0]-1, frequency_steps[1]):
