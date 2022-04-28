@@ -684,9 +684,10 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
                         ax=ax_time[cc], cmap="coolwarm")
                     ax_time[cc].set_title(name)
 
-                    # set limits of time plot symmetric
+                    # set limits of time plot (symmetric for nice colors, clip
+                    # to improve visibility)
                     c_lim = qm.get_clim()
-                    c_lim = np.round(np.max(np.abs(c_lim)), 1)
+                    c_lim = np.round(.6 * np.max(np.abs(c_lim)), 1)
                     qm.set_clim(-c_lim, c_lim)
 
                 # plot frequency data
