@@ -31,6 +31,7 @@ v1.0.0
 	* Added flexible plot function for quick inspection of the results
 	* Added Python tools to read and generate custom evaluation grids
 	* Added function to merge results from multiple sources (e.g. left and right ear) into a single SOFA file
+	* Added function to write boundary conditions to material files
 * Improved structure of the output data (Sofa files, project reports, exports, plots)
 	* Data is now stored in a separate folder `Output2HRTF`
 	* Data is named according to the evaluation girds and object meshes
