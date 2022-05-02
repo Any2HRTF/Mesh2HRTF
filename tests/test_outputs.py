@@ -107,10 +107,10 @@ def test_outputs_to_hrtfs_full():
     output = [os.path.basename(o) for o in output]
     files = ["HRTF_HRIR_FourPointHorPlane_r100cm.sofa",
              "HRTF_HRIR_FourPointHorPlane_r100cm_2D.pdf",
-             "HRTF_HRIR_FourPointHorPlane_r100cm_3D.pdf",
+             "HRTF_HRIR_FourPointHorPlane_r100cm_3D.jpeg",
              "SHTF_HRIR_FourPointHorPlane_r100cm.sofa",
              "SHTF_HRIR_FourPointHorPlane_r100cm_2D.pdf",
-             "SHTF_HRIR_FourPointHorPlane_r100cm_3D.pdf"]
+             "SHTF_HRIR_FourPointHorPlane_r100cm_3D.jpeg"]
     assert len(output) == len(files)
     for file in files:
         assert file in output
