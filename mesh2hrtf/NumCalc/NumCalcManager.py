@@ -1,12 +1,9 @@
 import os
 import shutil
 import time
-import psutil           #  pip install psutil
+import psutil
 import subprocess
 import argparse
-
-#       ---  "psutil" is required !  https://github.com/giampaolo/psutil/blob/master/INSTALL.rst  ---
-#
 
 # -------------------------------------------  User Settings:  --------------------------------------------
 

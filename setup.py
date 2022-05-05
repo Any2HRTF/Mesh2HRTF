@@ -17,6 +17,7 @@ with open('VERSION') as version_file:
 requirements = [
     'numpy>=1.14.0',
     'scipy>=1.5.0',
+    'psutil',
     'sofar',
     'pyfar'
 ]
