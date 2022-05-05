@@ -3,26 +3,41 @@ import shutil
 import time
 import psutil           #  pip install psutil
 import subprocess
+import argparse
 
 #       ---  "psutil" is required !  https://github.com/giampaolo/psutil/blob/master/INSTALL.rst  ---
 #
 
 # -------------------------------------------  User Settings:  --------------------------------------------
 
-StartPath = os.path.dirname(os.path.realpath(__file__))  # Automatically detect the working directory
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-p", "--path", default=False, type=str, help="Search path/working directory")
+parser.add_argument("-i", "--seconds_to_initialize", default=15, type=int, help="delay in seconds")
+parser.add_argument("-r", "--ram_safety_factor", default=0.95, type=float,  help="free RAM for next instance must be > safety factor * biggest NumCalc instance RAM consumption")
+parser.add_argument("-c", "--cleanup_after_finish", default=True, type=bool, help="delete NumCalc executables after completion")
+parser.add_argument("-ami", "--auto_set_max_instances", default=True, type=bool, help="autodetect how many instances can be executed")
+parser.add_argument("-mc", "--max_cpu_load", default=80, type=int, help="Max CPU load allowed in percent")
+parser.add_argument("-mi", "--max_instances", default=8, type=int, help="no. of instances used if auto_set_max_instances is false")
+
+args = vars(parser.parse_args())
+
+if args["path"]:
+    StartPath = args["path"]
+else:
+    StartPath = os.path.dirname(os.path.realpath(__file__))  # Automatically detect the working directory
 #                            (usually in the main project folder (where "Info.txt" file is)
 #                            OR NumCalcManager can start from a folder that contains multiple Mesh2HRTF projects to run)
 # StartPath = r"C:\hrtf_NumCalc"  # alternatively specify which folder to execute (use r"..." raw strings!)
 # StartPath = r"C:\hrtf_NumCalc\My_project"  # alternatively specify which folder to execute (use r"..." raw strings!)
 
-SecondsToInitialize = 15  # delay in seconds during which new NumCalc instance should initialize its full RAM usage.
-RAM_safetyFactor = 0.95  # extra instances are launched when:
+SecondsToInitialize = args["seconds_to_initialize"]  # delay in seconds during which new NumCalc instance should initialize its full RAM usage.
+RAM_safetyFactor = args["ram_safety_factor"]  # extra instances are launched when:
 #                           free RAM is greater than RAM consumption of the biggest NumCalc instance * RAM_safetyFactor.
-CleanUp_afterFinish = True  # Delete all NumCalc executable files from individual instance folders after completion?
-Auto_set_MaxInstances = True  # use this to autodetect how many instances can be at most executed.
-Max_CPU_load_percent = 80  # target % for how much CPU can be used by Mesh2HRTF, assuming that RAM allows for so many
+CleanUp_afterFinish = args["cleanup_after_finish"]  # Delete all NumCalc executable files from individual instance folders after completion?
+Auto_set_MaxInstances = args["auto_set_max_instances"]  # use this to autodetect how many instances can be at most executed.
+Max_CPU_load_percent = args["max_cpu_load"] # target % for how much CPU can be used by Mesh2HRTF, assuming that RAM allows for so many
 #                              instances. Recommended to NOT set more than 80% because the real CPU usage can be higher.
-Max_Instances = 8  # default instance limit is used in case "Auto_set_MaxInstances = False"
+Max_Instances =  args["max_instances"] # default instance limit is used in case "Auto_set_MaxInstances = False"
 # ----------------------------------------  End of User Settings  -----------------------------------------
 
 #  "NumCalcManager.py" executable script automatically runs one or multiple Mesh2HRTF simulation projects while
