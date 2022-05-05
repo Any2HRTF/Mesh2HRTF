@@ -1,44 +1,5 @@
 /*===========================================================================*\
  *                                                                            *
- *                                 Mesh2HRTF                                  *
- *                Copyright (C) 2015 by Harald Ziegelwanger,                  *
- *        Acoustics Research Institute, Austrian Academy of Sciences          *
- *                        mesh2hrtf.sourceforge.net                           *
- *                                                                            *
- *--------------------------------------------------------------------------- *
- *                                                                            *
- *  Mesh2HRTF is licensed under the GNU Lesser General Public License as      *
- *  published by the Free Software Foundation, either version 3 of            *
- *  the License, or (at your option) any later version.                       *
- *                                                                            *
- *  Mesh2HRTF is distributed in the hope that it will be useful,              *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the              *
- *  GNU Lesser General Public License for more details.                       *
- *                                                                            *
- *  You should have received a copy of the GNU LesserGeneral Public           *
- *  License along with Mesh2HRTF. If not, see                                 *
- *  <http://www.gnu.org/licenses/lgpl.html>.                                  *
- *                                                                            *
- *  If you use Mesh2HRTF:                                                     *
- *  - Provide credits:                                                        *
- *    "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"     *
- *  - In your publication, cite both articles:                                *
- *    [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF:   *
- *        Open-source software package for the numerical calculation of       *
- *        head-related transfer functions," in Proceedings of the 22nd        *
- *        ICSV, Florence, IT.                                                 *
- *    [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical    *
- *        calculation of listener-specific head-related transfer functions    *
- *        and sound localization: Microphone model and mesh discretization,"  *
- *        The Journal of the Acoustical Society of America, 138, 208-222.     *
- *                                                                            *
- \*===========================================================================*/
-
-
-
-/*===========================================================================*\
- *                                                                            *
  *  File name:      NC_3dFunctions.cpp                                        *
  *  Description:    public functions for 3D problems                          *
  *  Author:         H. Ziegelwanger, W. Kreuzer and Z.S. Chen                 *
@@ -635,7 +596,7 @@ int NC_GenerateSubelements
 
 	int nsbe = -1, nsfl = 1, i, j, ndie, nsel, idi, nsu, j1, j2, jr = 0, nsf0,
 		ngaumax = 6, ngaumin = 2;
-	double tolf = 1.3,//toleranz fŸr verhŠltnis Abstand FlŠche(subelement)
+	double tolf = 1.3,//toleranz fï¿½r verhï¿½ltnis Abstand Flï¿½che(subelement)
     faclin = 2.0, arels, scent, tcent, ratdis, xi, et, dxi = 0.0, det,
 		disfac, err_g, err_h, err_e, gauaccu = 0.001;
 	Vector<double> crdpoip(NDIM), xisp(MVX*2), etsp(MVX*2);
@@ -652,7 +613,7 @@ int NC_GenerateSubelements
 	// loop using GOTO
 Begin_Subel:
 	ndie = 0;      // number of elments to be subdivided in this loop //subdivision level (kantesb = kante 2^-j)
-	faclin *= 0.5; // length of the subelements / length of the original el. //relative KantenlŠnge der subelements 2^-j
+	faclin *= 0.5; // length of the subelements / length of the original el. //relative Kantenlï¿½nge der subelements 2^-j
 	arels = arelj*faclin*faclin; // area of the current subelements
 	nsel = nsfl;   // number of subelements to be treated in the current loop
 
@@ -797,7 +758,7 @@ Begin_Idi:
 		}
 
 		// computing the Gaussean order
-		disfac = 0.5/ratdis;//flŠche(subelement)/entfernung/2
+		disfac = 0.5/ratdis;//flï¿½che(subelement)/entfernung/2
 		ngsbp[nsbe] = ngaumax;
 		for(i=ngaumin; i<=ngaumax; i++)
 		{
@@ -881,7 +842,7 @@ void NC_SphericalHankel
     for(i=2; i<norder; i++) dY_n[i] = dY_n[i - 1]*(double)(2*i - 1)/argu -
         dY_n[i - 2];
     
-    // compute the real part of the spherical Hankel function (see K. Giebermann, "Schnelle Sumationsverfahren zur numerischen Lösung von Integralgleichungen für Streuprobleme im R^(3)", pp 87-88)
+    // compute the real part of the spherical Hankel function (see K. Giebermann, "Schnelle Sumationsverfahren zur numerischen Lï¿½sung von Integralgleichungen fï¿½r Streuprobleme im R^(3)", pp 87-88)
     dnu = (double)(norder - 1);
     
     di=(double)(2*(dnu+1)+1)/argu;
