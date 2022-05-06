@@ -56,6 +56,7 @@ Extra tips:
 #                             - introduce input parameters confirm_errors and
 #                               numcalc_path
 #                             - remove cleanup_after_finish
+#                             - messages are written to log file as well
 
 # ToDo: future improvement ideas
 #   - figure out a good method to split simulation projects over multiple
@@ -81,11 +82,6 @@ import psutil
 import subprocess
 import argparse
 
-# TODO:
-# - Format DocString
-# - format messages
-# - write messages to log file
-
 # Done
 # - removed else case in check_project
 # - removed double check for existing results (variable `pathToCheck`)
@@ -95,6 +91,7 @@ import argparse
 # - rename start_path to project_path
 # - introduce input parameter confirm_errors
 # - introduce input parameter numcalc_path to run NumCalc without copying files
+# - write messages to log files (messages remain on console as well)
 
 
 # helping functions -----------------------------------------------------------
@@ -485,6 +482,7 @@ for pp, project in enumerate(all_projects):
 
             # start NumCalc instance if none is running
             if len(pid_names_bytes) == 0:
+                max_numcalc_ram = 0
                 break
 
             # if the maximum number of instances to launch is not exceeded
@@ -571,16 +569,16 @@ for pp, project in enumerate(all_projects):
         print_message(message, text_color_reset, log_file)
         time.sleep(waitTime)
 
-        # Check if all NumCalc processes crashed: Find all NumCalc Processes
-        pid_names_bytes = get_num_calc_processes(numcalc_executable)
+        # # Check if all NumCalc processes crashed: Find all NumCalc Processes
+        # pid_names_bytes = get_num_calc_processes(numcalc_executable)
 
-        if len(pid_names_bytes) == 0:
-            message = (
-                "No NumCalc processes running. Likely the last launched "
-                "instance crashed or finished. Read NC.out log inside "
-                f"source{instances_to_run[NC_ins][0]}, frequency step"
-                f"{instances_to_run[NC_ins][1]}")
-            raise_error(message, text_color_green, log_file, confirm_errors)
+        # if len(pid_names_bytes) == 0:
+        #     message = (
+        #         "No NumCalc processes running. Likely the last launched "
+        #         "instance crashed or finished. Read NC.out log inside "
+        #         f"source{instances_to_run[NC_ins][0]}, frequency step"
+        #         f"{instances_to_run[NC_ins][1]}")
+        #     raise_error(message, text_color_green, log_file, confirm_errors)
 
     #  END of the main project loop -------------------------------------------
 
