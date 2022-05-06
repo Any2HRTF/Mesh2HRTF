@@ -53,13 +53,16 @@ Extra tips:
 #     v4.01    2022-05-06     - flake8 and code styling and styling
 #                             - unify parameters auto_set_max_instances and
 #                               max_instances
+#                             - introduce input parameters confirm_errors and
+#                               numcalc_path
+#                             - remove cleanup_after_finish
 
 # ToDo: future improvement ideas
 #   - figure out a good method to split simulation projects over multiple
 #     computers (so far it is only possible to split projects by
 #     moving/deleting "../NumCalc/step_x/" folders - assuming there are more
 #     than the usual one).
-#   - add project_path input to the script (so-far project_path can only be
+#   x add project_path input to the script (so-far project_path can only be
 #     changed by editing the script itself)
 #   - add automatic compilation of NumCalc on Linux/Mac (to automate-away one
 #     more hassle)
@@ -71,8 +74,8 @@ Extra tips:
 #     simulation project (this could be tricky and require new RAM monitoring
 #     code).
 
+from cmath import log
 import os
-import shutil
 import time
 import psutil
 import subprocess
@@ -80,23 +83,29 @@ import argparse
 
 # TODO:
 # - Format DocString
-# - Add argument to pass NumCalc binary (default "NumCalc")
-# - add argument for `confirm``
+# - format messages
+# - write messages to log file
 
 # Done
 # - removed else case in check_project
-# - removed `if len(all_projects) > 1: ... else ...`
 # - removed double check for existing results (variable `pathToCheck`)
 # - removed repeated call of check_project()
 # - all_instances and instances_to_run are now nested lists
 #   [[source, step], [source, step] ...]
 # - rename start_path to project_path
 # - introduce input parameter confirm_errors
+# - introduce input parameter numcalc_path to run NumCalc without copying files
 
 
 # helping functions -----------------------------------------------------------
-def raise_error(message, text_color, confirm_errors):
+def raise_error(message, text_color, log_file, confirm_errors):
     """Two different ways of error handling depending on `confirm_errors`"""
+
+    # error to logfile
+    with open(log_file, "a", encoding="utf8", newline="\n") as f:
+        f.write("\n\n" + message + "\n")
+
+    # error to console
     if confirm_errors:
         print(text_color + message)
         input(text_color + "Press Enter to exit num_calc_manager\033[0m")
@@ -105,12 +114,21 @@ def raise_error(message, text_color, confirm_errors):
         raise ValueError(message)
 
 
-def get_num_calc_processes(NumCalc_filename):
+def print_message(message, text_color, log_file):
+    """Print message to console and log file"""
+
+    print(text_color + message)
+
+    with open(log_file, "a", encoding="utf8", newline="\n") as f:
+        f.write(message + "\n")
+
+
+def get_num_calc_processes(numcalc_executable):
     """Return a list with the pid, names, and bytes of each NumCalc process"""
     pid_names_bytes = [
             (p.pid, p.info['name'], p.info['memory_info'].rss)
             for p in psutil.process_iter(['name', 'memory_info'])
-            if p.info['name'] == NumCalc_filename]
+            if p.info['name'] == os.path.basename(numcalc_executable)]
     return pid_names_bytes
 
 
@@ -221,9 +239,6 @@ parser.add_argument(
           "exceeds `safety factor` times this value before starting the next "
           "NumCalc instance."))
 parser.add_argument(
-    "--cleanup_after_finish", default='True', choices=('True', 'False'),
-    type=str, help="Delete NumCalc executables after completion")
-parser.add_argument(
     "--max_cpu_load", default=80, type=int,
     help="Maximum allowed CPU load in percent")
 parser.add_argument(
@@ -252,29 +267,14 @@ else:
 
 # write to local variables
 project_path = args["project_path"]
+numcalc_path = args["numcalc_path"]
 seconds_to_initialize = args["wait_time"]
 ram_safety_factor = args["ram_safety_factor"]
-clean_up_after_finish = args["cleanup_after_finish"] == 'True'
 max_cpu_load_percent = args["max_cpu_load"]
 max_instances = args["max_instances"]
 confirm_errors = args["confirm_errors"] == 'True'
 
-# echo input parameters
-print("Running num_calc_manager with the following arguments:")
-for key, value in args.items():
-    print(f"{key}: {value}")
-print("\n")
-
 # initialization --------------------------------------------------------------
-if os.name == 'nt':  # Windows detected
-    NumCalc_filename = "NumCalc.exe"
-    # folder where NumCalc_runtime_files are found
-    NumCalc_runtime_folder = 'NumCalc_WindowsExe'
-    # files that are needed to execute NumCalc
-    NumCalc_runtime_files = ['NumCalc.exe', 'libgcc_s_seh-1.dll',
-                             'libstdc++-6.dll', 'libwinpthread-1.dll']
-else:  # elif os.name == 'posix': # Linux or Mac detected
-    NumCalc_filename = "NumCalc"
 
 # trick to get colored print-outs   https://stackoverflow.com/a/54955094
 os.system("")
@@ -283,14 +283,18 @@ text_color_green = '\033[32m'
 text_color_cyan = '\033[36m'
 text_color_reset = '\033[0m'
 
+start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
+log_file = f"numcalc_manager_{start_time}.txt"
+
 # Detect what the project_path or "getcwd()" is pointing to:
-print('NumCalcManager started with project_path = "' + project_path + '"')
 if os.path.basename(project_path) == 'NumCalc':
     # project_path is a NumCalc folder
     all_projects = [os.path.dirname(project_path)]
+    log_file = os.path.join(project_path, '..', log_file)
 elif os.path.isfile(os.path.join(project_path, 'Info.txt')):
     # project_path is a Mesh2HRTF project folder
     all_projects = [project_path]
+    log_file = os.path.join(project_path, log_file)
 else:
     # project_path contains multiple Mesh2HRTF project folders
     all_projects = []  # list of project folders to execute
@@ -298,48 +302,80 @@ else:
         if os.path.isfile(os.path.join(project_path, subdir, 'Info.txt')):
             all_projects.append(os.path.join(project_path, subdir))
 
-# stop if no project folders were detected
-if len(all_projects) == 0:
-    message = ("num_calc_manager could not detect any Mesh2HRTF projects at "
-               f"project_path={project_path}")
-    raise_error(message, text_color_red, confirm_errors)
+    log_file = os.path.join(project_path, log_file)
 
-# Find 'NumCalc_WindowsExe' folder if we are on Windows
+    # stop if no project folders were detected
+    if len(all_projects) == 0:
+        message = ("num_calc_manager could not detect any Mesh2HRTF projects "
+                   f"at project_path={project_path}")
+        raise_error(message, text_color_red, log_file, confirm_errors)
+
+# remove old log-file
+if os.path.isfile(log_file):
+    os.remove(log_file)
+
+# echo input parameters and number of Mesh2HRTF projects
+message = "Running num_calc_manager with the following arguments:\n"
+for key, value in args.items():
+    message += f"{key}: {value}\n"
+
+message += f"\nRunning {len(all_projects)} Mesh2HRTF projects in\n"
+message += f"{os.path.dirname(log_file)}\n"
+
+print_message(message, text_color_reset, log_file)
+del message, key, value
+
+# Check for NumCalc executable
 if os.name == 'nt':  # Windows detected
-    if os.path.isfile(os.path.join(all_projects[0], NumCalc_runtime_folder,
-                                   NumCalc_runtime_files[0])):
+
+    # files that are needed to execute NumCalc
+    NumCalc_runtime_files = ['NumCalc.exe', 'libgcc_s_seh-1.dll',
+                             'libstdc++-6.dll', 'libwinpthread-1.dll']
+
+    if os.path.isdir(os.path.join(all_projects[0], 'NumCalc_WindowsExe')):
         # located inside the project folder
-        NumCalc_runtime_location = os.path.join(
-            all_projects[0], NumCalc_runtime_folder)
-    elif os.path.isfile(os.path.join(os.path.dirname(all_projects[0]),
-                                     NumCalc_runtime_folder,
-                                     NumCalc_runtime_files[0])):
+        numcalc_path = os.path.join(all_projects[0], 'NumCalc_WindowsExe')
+    elif os.path.isdir(os.path.join(os.path.dirname(all_projects[0]),
+                                    'NumCalc_WindowsExe')):
         # located is inside the folder that contains all Mesh2HRTF projects
-        NumCalc_runtime_location = os.path.join(
-            os.path.dirname(all_projects[0]), NumCalc_runtime_folder)
+        numcalc_path = os.path.join(
+            os.path.dirname(all_projects[0]), 'NumCalc_WindowsExe')
     elif os.path.isfile(os.path.join(all_projects[0],
                                      NumCalc_runtime_files[0])):
         # located directly in the project folder.
-        NumCalc_runtime_location = os.path.join(all_projects[0])
+        numcalc_path = os.path.join(all_projects[0])
     else:
-        NumCalc_runtime_location = ""
+        # try path provided as it is
+        pass
 
     # Check that each required runtime file is present:
     for calc_file in NumCalc_runtime_files:
-        if not os.path.isfile(os.path.join(NumCalc_runtime_location,
-                                           calc_file)):
+        if not os.path.isfile(os.path.join(numcalc_path, calc_file)):
             message = (
-                f"The file {calc_file} is missing in {NumCalc_runtime_folder}"
-                "or num_calc_manager could not find the folder "
-                f"{NumCalc_runtime_folder} that is usually located one level "
-                "above the Mesh2HRTF project folder")
-            raise_error(message, text_color_red, confirm_errors)
+                f"The file {calc_file} is missing or num_calc_manager could "
+                f"not find the containing folder 'NumCalc_WindowsExe'")
+            raise_error(message, text_color_red, log_file, confirm_errors)
 
-# else:  # elif os.name == 'posix': # Linux or Mac detected
-    #  ToDo add check that NumCalc is compiled and working in Linux
+    # full path to the NumCalc executable
+    numcalc_executable = os.path.join(numcalc_path, "NumCalc.exe")
+
+    del calc_file, NumCalc_runtime_files
+else:
+    if not numcalc_path.endswith("NumCalc"):
+        raise_error("numcalc_path must end with 'NumCalc'", text_color_red,
+                    log_file, confirm_errors)
+    elif not os.path.isfile(numcalc_path):
+        raise_error(f"NumCalc executable does not exist at {numcalc_path}",
+                    text_color_red, log_file, confirm_errors)
+    else:
+        numcalc_executable = numcalc_path
+        numcalc_path = os.path.dirname(numcalc_path)
+
 
 # loop to process all projects
 for pp, project in enumerate(all_projects):
+
+    start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
 
     # Check how many instances are in this Project:
     root_NumCalc = os.path.join(project, 'NumCalc')
@@ -348,14 +384,18 @@ for pp, project in enumerate(all_projects):
     total_nr_to_run = len(instances_to_run)
 
     # Status printouts:
-    print(text_color_reset + "\n\n")
-    print(f'{text_color_cyan}Started Project {pp + 1}/{len(all_projects)}')
-    print(text_color_reset + "\n\n")
-    print(f"--- {len(all_instances)} frequency steps contained in the project")
+    message = (f"Started {os.path.basename(project)} "
+               f"({pp + 1}/{len(all_projects)}, {start_time})")
+    message = "\n" + message + "\n" + "-" * len(message) + "\n"
+    message += f"{len(all_instances)} frequency steps in the project\n"
     if total_nr_to_run == 0:
-        print("--- All NumCalc simulations in this project are complete")
+        message += (
+            "All NumCalc simulations in this project are complete")
+        print_message(message, text_color_reset, log_file)
         continue
-    print(f"--- {total_nr_to_run} NumCalc simulations will be run")
+    message += (f"{total_nr_to_run} NumCalc simulations will be run")
+
+    print_message(message, text_color_reset, log_file)
 
     # ADVANCED sorting
     # (Build matching list of frequencies for each "instances_to_run")
@@ -377,33 +417,21 @@ for pp, project in enumerate(all_projects):
     del Sorting_List, idx
 
     # main loop for each instance
-    start_time = time.localtime()
-    print(time.strftime("%d %b - %H:%M:%S", start_time))
-
     for NC_ins in range(total_nr_to_run):
         # current source and frequency step
         source = instances_to_run[NC_ins][0]
         step = instances_to_run[NC_ins][1]
 
-        print((f"--- {NC_ins + 1}/{total_nr_to_run} preparing >>> "
-               f"{matched_freq_of_inst[NC_ins]}Hz <<< instance from "
-               f"source_{source}, step{str(step)}"))
-
-        if os.name == 'nt':  # Windows detected
-            # copy the NumCalc.exe files into the source_ folder (if necessary)
-            for calc_file in NumCalc_runtime_files:
-                if not os.path.isfile(os.path.join(
-                        root_NumCalc, f"source_{source}", calc_file)):
-                    shutil.copyfile(
-                        os.path.join(NumCalc_runtime_location, calc_file),
-                        os.path.join(root_NumCalc, f"source_{source}",
-                                     calc_file))
-
         # Check the RAM & run instance if feasible
+        start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
         RAM_info = psutil.virtual_memory()
-        print((f"{round((RAM_info.available / 1073741824), 2)} GB free RAM, "
-               f"{RAM_info.percent}% used ("
-               f"{time.strftime('%d %b - %H:%M:%S', time.localtime())})"))
+        message = (
+            f"\n{NC_ins + 1}/{total_nr_to_run} preparing "
+            f"{matched_freq_of_inst[NC_ins]} Hz instance from source {source},"
+            f" step {step}\n"
+            f"{round((RAM_info.available / 1073741824), 2)} GB free RAM, "
+            f"{RAM_info.percent}% used ({start_time})")
+        print_message(message, text_color_reset, log_file)
 
         # use this to autodetect how many instances can at most be executed
         if NC_ins > 0 and not max_instances:
@@ -411,7 +439,7 @@ for pp, project in enumerate(all_projects):
             try:
                 # it is better to get fresh pid (hopefully at least one NumCalc
                 # process is still running)
-                pid_names_bytes = get_num_calc_processes(NumCalc_filename)
+                pid_names_bytes = get_num_calc_processes(numcalc_executable)
 
                 PrcInfo = psutil.Process(pid_names_bytes[0][0])
 
@@ -426,10 +454,12 @@ for pp, project in enumerate(all_projects):
                 max_instances = round(
                     max_cpu_load_percent / Instance_CPU_usageNow)
 
-                print(("One NumCalc instance requires "
-                       f"{round(Instance_CPU_usageNow, 1)}% of the CPU."
-                       "max_instances is now automatically set to "
-                       f"{max_instances}"))
+                message = (
+                    "One NumCalc instance requires "
+                    f"{round(Instance_CPU_usageNow, 1)}% of the CPU."
+                    "max_instances is now automatically set to "
+                    f"{max_instances}")
+                print_message(message, text_color_reset, log_file)
 
             except BaseException:
                 message = (
@@ -437,7 +467,7 @@ for pp, project in enumerate(all_projects):
                     "parallel NumCalc instances. This can happen if a NumCalc "
                     "process finished very fast. Try to lower wait_time or "
                     "manually set max_instances")
-                raise_error(message, text_color_red, confirm_errors)
+                raise_error(message, text_color_red, log_file, confirm_errors)
 
         #  Main checks before launching the next instance
         # (to avoid system resource overload)
@@ -445,7 +475,7 @@ for pp, project in enumerate(all_projects):
 
         while wait_for_resources:
             # Find all NumCalc Processes
-            pid_names_bytes = get_num_calc_processes(NumCalc_filename)
+            pid_names_bytes = get_num_calc_processes(numcalc_executable)
 
             # DEBUGGING --- Find Processes consuming more than 250MB of memory:
             # pid_names_bytes = [
@@ -461,11 +491,11 @@ for pp, project in enumerate(all_projects):
             elif len(pid_names_bytes) < max_instances:
 
                 # find out how much RAM is consumed by any NumCalc Instance
-                Max_NumCalc_RAM = pid_names_bytes[0][2]
+                max_numcalc_ram = pid_names_bytes[0][2]
                 if len(pid_names_bytes) > 1:
                     for prcNr in range(1, len(pid_names_bytes)):
-                        if pid_names_bytes[prcNr][2] > Max_NumCalc_RAM:
-                            Max_NumCalc_RAM = pid_names_bytes[prcNr][2]
+                        if pid_names_bytes[prcNr][2] > max_numcalc_ram:
+                            max_numcalc_ram = pid_names_bytes[prcNr][2]
 
                 # check if we can run more:
                 # IF free RAM is greater than RAM consumption of the biggest
@@ -473,17 +503,17 @@ for pp, project in enumerate(all_projects):
                 RAM_info = psutil.virtual_memory()
                 current_time = \
                     time.strftime('%d %b - %H:%M:%S', time.localtime())
-                if RAM_info.available > Max_NumCalc_RAM * ram_safety_factor:
-                    print(("   Enough RAM to run one more: "
+                if RAM_info.available > max_numcalc_ram * ram_safety_factor:
+                    print(("... Enough RAM to run one more: "
                            f"{round((RAM_info.available / 1073741824), 1)} GB "
                            f"free [{current_time}]"))
                     break
 
                 else:
-                    print("   Waiting for more free RAM:   "
+                    print("... Waiting for more free RAM:"
                           f"{round((RAM_info.available / 1073741824), 1)} GB "
                           f"free "
-                          f"({round((Max_NumCalc_RAM * ram_safety_factor / 1073741824), 1)} "  # noqa
+                          f"({round((max_numcalc_ram * ram_safety_factor / 1073741824), 1)} "  # noqa
                           f"GB needed) [{current_time}]")
 
             else:
@@ -496,9 +526,10 @@ for pp, project in enumerate(all_projects):
             # END of the while loop -------------------------------------------
 
         # start next instance -------------------------------------------------
-        print((f"- {NC_ins + 1}/{total_nr_to_run} STARTING instance from: "
-               f"{os.path.basename(project)} >>>    source_{source}, step "
-               f"{step}"))
+        message = (
+            f"{NC_ins + 1}/{total_nr_to_run} starting instance from: "
+            f"{os.path.basename(project)} (source {source}, step {step}")
+        print_message(message, text_color_reset, log_file)
 
         # change working directory
         os.chdir(os.path.join(root_NumCalc, "source_" + str(source)))
@@ -507,75 +538,72 @@ for pp, project in enumerate(all_projects):
             # create a log file for all print-outs
             LogFileHandle = open(f"NC{step}-{step}_log.txt", "w")
             # run NumCalc and route all printouts to a log file
-            subprocess.Popen(f"{NumCalc_filename} -istart {step} -iend {step}",
-                             stdout=LogFileHandle)
+            subprocess.Popen(
+                f"{numcalc_executable} -istart {step} -iend {step}",
+                stdout=LogFileHandle)
 
         else:  # elif os.name == 'posix': Linux or Mac detected
             # run NumCalc and route all printouts to a log file
-            subprocess.Popen((f"{NumCalc_filename} -istart {step} -iend {step}"
-                              f" >NC{step}-{step}_log.txt"), shell=True)
+            subprocess.Popen((
+                f"{numcalc_executable} -istart {step} -iend {step}"
+                f" >NC{step}-{step}_log.txt"), shell=True)
 
         # optimize waiting time (important if available RAM >>> needed RAM)
         if NC_ins > 0:
             # noinspection PyUnboundLocalVariable
-            if RAM_info.available > Max_NumCalc_RAM * 3:
+            if RAM_info.available > max_numcalc_ram * 3:
                 # wait less, if RAM is enough for three new instances
                 waitTime = 0.5
-            elif RAM_info.available > Max_NumCalc_RAM * 2:
+            elif RAM_info.available > max_numcalc_ram * 2:
                 # wait less if RAM is enough for two new instances
                 waitTime = seconds_to_initialize / 2
             else:
                 # wait longer to assess how much RAM is available
                 waitTime = seconds_to_initialize
-            print((f"   ... waiting {waitTime} s for current instance to "
-                   "initialize RAM"))
 
         else:
             # always wait for the 1st instance to initialize to get worst-case
             # RAM use estimate
             waitTime = seconds_to_initialize
-            print((f"   ... waiting {seconds_to_initialize} s for the first "
-                   "instance to initialize RAM"))
 
         # Wait for instance to initialize before attempting to start the next
+        message = f"... waiting {waitTime} s for instance to initialize RAM"
+        print_message(message, text_color_reset, log_file)
         time.sleep(waitTime)
 
         # Check if all NumCalc processes crashed: Find all NumCalc Processes
-        pid_names_bytes = get_num_calc_processes(NumCalc_filename)
+        pid_names_bytes = get_num_calc_processes(numcalc_executable)
 
         if len(pid_names_bytes) == 0:
-            message = (("No NumCalc processes running. Likely the last "
-                        "launched instance crashed. Read NC.out log inside "
-                        f"source{instances_to_run[NC_ins][0]}, frequency step"
-                        f"{instances_to_run[NC_ins][1]}"))
-            raise_error(message, text_color_green, confirm_errors)
+            message = (
+                "No NumCalc processes running. Likely the last launched "
+                "instance crashed or finished. Read NC.out log inside "
+                f"source{instances_to_run[NC_ins][0]}, frequency step"
+                f"{instances_to_run[NC_ins][1]}")
+            raise_error(message, text_color_green, log_file, confirm_errors)
 
     #  END of the main project loop -------------------------------------------
 
+    # wait for last NumCalc instances to finish
     while True:
         # Find all NumCalc Processes
-        pid_names_bytes = get_num_calc_processes(NumCalc_filename)
+        pid_names_bytes = get_num_calc_processes(numcalc_executable)
 
         # no NumCalc processes are running, so Finish
         if len(pid_names_bytes) == 0:
             break
 
-        print((f"... waiting {2 * seconds_to_initialize} s for last processes "
-               "to finish"))
+        message = (f"... waiting {2 * seconds_to_initialize} s for last "
+                   "processes to finish")
+        print_message(message, text_color_reset, log_file)
         time.sleep(2 * seconds_to_initialize)
 
-    # Windows only: Delete all NumCalc files from individual source_ folders
-    if os.name == 'nt' and clean_up_after_finish:
-        print("Deleting local copies of NumCalc executables")
-        for subdir in os.listdir(root_NumCalc):
-            for calc_file in NumCalc_runtime_files:
-                if os.path.isfile(os.path.join(
-                        root_NumCalc, subdir, calc_file)):
-                    os.remove(os.path.join(root_NumCalc, subdir, calc_file))
+#  END of all_projects loop ---------------------------------------------------
 
-#  END of all_projects loop.
+# print final message
+start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+message = f"All NumCalc projects finished at {start_time}"
+print_message(message, text_color_reset, log_file)
 
-print(("All NumCalc projects finished. ["
-       f"{time.strftime('%d %b - %H:%M:%S', time.localtime())}]"))
 if confirm_errors:
     input(text_color_green + 'DONE. Hit Enter to exit')
