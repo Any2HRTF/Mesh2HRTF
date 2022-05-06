@@ -11,10 +11,10 @@ run ``python num_calc_manager -h`` for help.
 HOW TO USE
 ----------
  1- copy this .py file into the project folder OR the folder that contains multiple projects that you will simulate.
- 2- Windows only: Make sure that NumCalc runtime files are located in a folder next to "start_path" or next to this
+ 2- Windows only: Make sure that NumCalc runtime files are located in a folder next to "project_path" or next to this
      "NumCalcManager.py" file (that is "NumCalc_WindowsExe" folder with compiled NumCalc.exe, .dll and .bat files.)
  3- "open/run" this "NumCalcManager.py" file with Python.      (Python3 and "psutil" must be installed)
-     By default script automatically runs projects next to the script BUT you can specify custom "start_path".
+     By default script automatically runs projects next to the script BUT you can specify custom "project_path".
  4- The script will manage all simulations and print out the progress until it is finished
  5- It is highly recommended to check NC _log.txt files of the first completed instances for issues before letting
      the simulation continue till the end.   DONE.
@@ -59,8 +59,8 @@ Extra tips:
 #     computers (so far it is only possible to split projects by
 #     moving/deleting "../NumCalc/step_x/" folders - assuming there are more
 #     than the usual one).
-#   - add start_path input to the script (so-far start_path can only be changed
-#     by editing the script itself)
+#   - add project_path input to the script (so-far project_path can only be
+#     changed by editing the script itself)
 #   - add automatic compilation of NumCalc on Linux/Mac (to automate-away one
 #     more hassle)
 #   - add nice printout for total processing time.
@@ -230,7 +230,7 @@ parser.add_argument(
 
 args = vars(parser.parse_args())
 
-start_path = args["path"] if args["path"] \
+project_path = args["path"] if args["path"] \
     else os.path.dirname(os.path.realpath(__file__))
 seconds_to_initialize = args["wait_time"]
 ram_safety_factor = args["ram_safety_factor"]
@@ -257,25 +257,25 @@ text_color_green = '\033[32m'
 text_color_cyan = '\033[36m'
 text_color_reset = '\033[0m'
 
-# Detect what the start_path or "getcwd()" is pointing to:
-print('NumCalcManager started with start_path = "' + start_path + '"')
-if os.path.basename(start_path) == 'NumCalc':
-    # start_path is a NumCalc folder
-    all_projects = [os.path.dirname(start_path)]
-elif os.path.isfile(os.path.join(start_path, 'Info.txt')):
-    # start_path is a Mesh2HRTF project folder
-    all_projects = [start_path]
+# Detect what the project_path or "getcwd()" is pointing to:
+print('NumCalcManager started with project_path = "' + project_path + '"')
+if os.path.basename(project_path) == 'NumCalc':
+    # project_path is a NumCalc folder
+    all_projects = [os.path.dirname(project_path)]
+elif os.path.isfile(os.path.join(project_path, 'Info.txt')):
+    # project_path is a Mesh2HRTF project folder
+    all_projects = [project_path]
 else:
-    # start_path contains multiple Mesh2HRTF project folders
+    # project_path contains multiple Mesh2HRTF project folders
     all_projects = []  # list of project folders to execute
-    for subdir in os.listdir(start_path):
-        if os.path.isfile(os.path.join(start_path, subdir, 'Info.txt')):
-            all_projects.append(os.path.join(start_path, subdir))
+    for subdir in os.listdir(project_path):
+        if os.path.isfile(os.path.join(project_path, subdir, 'Info.txt')):
+            all_projects.append(os.path.join(project_path, subdir))
 
 # stop if no project folders were detected
 if len(all_projects) == 0:
     message = ("num_calc_manager could not detect any Mesh2HRTF projects at "
-               f"start_path={start_path}")
+               f"project_path={project_path}")
     raise_error(message, text_color_red, confirm_errors)
 
 # Find 'NumCalc_WindowsExe' folder if we are on Windows
