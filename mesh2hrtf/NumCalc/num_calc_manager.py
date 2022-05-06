@@ -87,6 +87,7 @@ import argparse
 # - removed else case in check_project
 # - removed `if len(all_projects) > 1: ... else ...`
 # - removed double check for existing results (variable `pathToCheck`)
+# - removed repeated call of check_project()
 
 
 # helping functions -----------------------------------------------------------
@@ -134,9 +135,10 @@ def check_project(project):
 
     project_numcalc = os.path.join(project, 'NumCalc')
 
-    # parse "Info.txt" to get info about frequencies and instances
+    # parse "Info.txt" to get info about frequencies
     with open(os.path.join(project, "Info.txt"), "r", encoding="utf8",
               newline="\n") as f:
+
         for line in f:
             if line.find('Minimum evaluated Frequency') != -1:
                 idl = line.find(':')
@@ -146,7 +148,6 @@ def check_project(project):
                 frequency_step = float(line[idl + 2:-1])
             elif line.find('Frequency Steps') != -1:
                 idl = line.find(':')
-                # NOTE: total instances = frequency_steps_nr * source_counter!!
                 frequency_steps_nr = int(line[idl + 2:-1])
 
         del line, idl  # remove no longer needed variables
@@ -311,25 +312,8 @@ if os.name == 'nt':  # Windows detected
 # else:  # elif os.name == 'posix': # Linux or Mac detected
     #  ToDo add check that NumCalc is compiled and working in Linux
 
-# Check all projects that may need to be executed
-projects_to_run = []
-
-for project in all_projects:
-    all_instances, instances_to_run, min_frequency, frequency_step, \
-        frequency_steps_nr, source_counter = check_project(project)
-    if len(instances_to_run) > 0:
-        projects_to_run.append(project)
-        print((f'Project "{os.path.basename(project)}" has '
-               f'{len(instances_to_run)} out of {len(all_instances)} instances'
-               ' to run'))
-    else:
-        print((f'Project "{os.path.basename(project)}" is '
-               'already complete'))
-
-del all_projects
-
 # loop to process all projects
-for pp, project in enumerate(projects_to_run):
+for pp, project in enumerate(all_projects):
 
     # Check how many instances are in this Project:
     root_NumCalc = os.path.join(project, 'NumCalc')
@@ -339,7 +323,7 @@ for pp, project in enumerate(projects_to_run):
 
     # Status printouts:
     print(text_color_reset + "\n\n")
-    print(f'{text_color_cyan}Started Project {pp + 1}/{len(projects_to_run)}')
+    print(f'{text_color_cyan}Started Project {pp + 1}/{len(all_projects)}')
     print(text_color_reset + "\n\n")
     print(f"--- {len(all_instances)} frequency steps contained in the project")
     if total_nr_to_run == 0:
