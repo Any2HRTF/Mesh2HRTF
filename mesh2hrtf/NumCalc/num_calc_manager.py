@@ -88,6 +88,8 @@ import argparse
 # - removed `if len(all_projects) > 1: ... else ...`
 # - removed double check for existing results (variable `pathToCheck`)
 # - removed repeated call of check_project()
+# - all_instances and instances_to_run are now nested lists
+#   [[source, step], [source, step] ...]
 
 
 # helping functions -----------------------------------------------------------
@@ -160,14 +162,12 @@ def check_project(project):
 
         source_counter += 1              # count this source
         source_id = int(ff[7:])
-        base_nr_str = f'{source_id:05}'  # source_id as fixed length string
 
         # loop frequency steps
         for step in range(frequency_steps_nr):  # counting from zero
 
             # update list of all instances
-            all_instances.append(
-                'source' + base_nr_str + '_step' + f'{1 + step:05}')
+            all_instances.append([source_id, 1+step])
 
             if not os.path.isfile(os.path.join(
                     project_numcalc, ff, "be.out", f"be.{1 + step}",
@@ -335,7 +335,7 @@ for pp, project in enumerate(all_projects):
     # (Build matching list of frequencies for each "instances_to_run")
     matched_freq_of_inst = [0] * len(instances_to_run)
     for inst in range(total_nr_to_run):
-        idx = int(instances_to_run[inst][16:])
+        idx = int(instances_to_run[inst][1])
         # frequency in Hz
         matched_freq_of_inst[inst] = int(
             min_frequency + frequency_step * (idx - 1))
@@ -356,8 +356,8 @@ for pp, project in enumerate(all_projects):
 
     for NC_ins in range(total_nr_to_run):
         # current source and frequency step
-        source = int(instances_to_run[NC_ins][6:11])
-        step = int(instances_to_run[NC_ins][16:])
+        source = instances_to_run[NC_ins][0]
+        step = instances_to_run[NC_ins][1]
 
         print((f"--- {NC_ins + 1}/{total_nr_to_run} preparing >>> "
                f"{matched_freq_of_inst[NC_ins]}Hz <<< instance from "
@@ -520,7 +520,8 @@ for pp, project in enumerate(all_projects):
         if len(pid_names_bytes) == 0:
             message = (("No NumCalc processes running. Likely the last "
                         "launched instance crashed. Read NC.out log inside "
-                        f"{instances_to_run[NC_ins]}"))
+                        f"source{instances_to_run[NC_ins][0]}, frequency step"
+                        f"{instances_to_run[NC_ins][1]}"))
             raise_error(message, text_color_green, confirm_errors)
 
     #  END of the main project loop -------------------------------------------
