@@ -90,6 +90,8 @@ import argparse
 # - removed repeated call of check_project()
 # - all_instances and instances_to_run are now nested lists
 #   [[source, step], [source, step] ...]
+# - rename start_path to project_path
+# - introduce input parameter confirm_errors
 
 
 # helping functions -----------------------------------------------------------
@@ -97,13 +99,13 @@ def raise_error(message, text_color, confirm_errors):
     """Two different ways of error handling depending on `confirm_errors`"""
     if confirm_errors:
         print(text_color + message)
-        input(text_color + "Press Enter to exit num_calc_manager")
+        input(text_color + "Press Enter to exit num_calc_manager\033[0m")
         raise Exception("num_calc_manager was stopped due to an error")
     else:
         raise ValueError(message)
 
 
-def get_num_calc_processes():
+def get_num_calc_processes(NumCalc_filename):
     """Return a list with the pid, names, and bytes of each NumCalc process"""
     pid_names_bytes = [
             (p.pid, p.info['name'], p.info['memory_info'].rss)
@@ -197,11 +199,18 @@ def check_project(project):
 parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
-    "--path", default=False, type=str,
+    "--project_path", default=False, type=str,
     help=("The working directory. This can be a directory that contains "
           "multiple Mesh2HRTF project folders, a Mesh2HRTF project folder or "
           "a NumCalc folder inside a Mesh2HRTF project folder. The default "
           "uses the current working directory"))
+parser.add_argument(
+    "--numcalc_path", default=False, type=str,
+    help=("On Unix, this is the path to the NumCalc binary (by default "
+          "'NumCalc' is used). On Windows, this is the path to the folder "
+          "'NumCalc_WindowsExe' from "
+          "https://sourceforge.net/projects/mesh2hrtf-tools/ (by default "
+          "the project_path is searched for this folder)"))
 parser.add_argument(
     "--wait_time", default=15, type=int,
     help=("Delay in seconds for waiting until the RAM and CPU usage is checked"
@@ -212,8 +221,8 @@ parser.add_argument(
           "exceeds `safety factor` times this value before starting the next "
           "NumCalc instance."))
 parser.add_argument(
-    "--cleanup_after_finish", default=True, type=bool,
-    help="Delete NumCalc executables after completion")
+    "--cleanup_after_finish", default='True', choices=('True', 'False'),
+    type=str, help="Delete NumCalc executables after completion")
 parser.add_argument(
     "--max_cpu_load", default=80, type=int,
     help="Maximum allowed CPU load in percent")
@@ -224,20 +233,37 @@ parser.add_argument(
           "of the instance calculating the highest frequency and "
           "`max_cpu_load` (see above)"))
 parser.add_argument(
-    "--confirm_errors", default=True, type=bool,
+    "--confirm_errors", default='True', choices=('True', 'False'), type=str,
     help=("If True, num_calc_manager waits for user input in case an error "
           "occurs."))
 
 args = vars(parser.parse_args())
 
-project_path = args["path"] if args["path"] \
+# default values
+args["project_path"] = args["project_path"] if args["project_path"] \
     else os.path.dirname(os.path.realpath(__file__))
+
+if os.name == "nt":
+    args["numcalc_path"] = args["numcalc_path"] if args["numcalc_path"] \
+        else args["project_path"]
+else:
+    args["numcalc_path"] = args["numcalc_path"] if args["numcalc_path"] \
+        else "NumCalc"
+
+# write to local variables
+project_path = args["project_path"]
 seconds_to_initialize = args["wait_time"]
 ram_safety_factor = args["ram_safety_factor"]
-clean_up_after_finish = args["cleanup_after_finish"]
+clean_up_after_finish = args["cleanup_after_finish"] == 'True'
 max_cpu_load_percent = args["max_cpu_load"]
 max_instances = args["max_instances"]
-confirm_errors = args["confirm_errors"]
+confirm_errors = args["confirm_errors"] == 'True'
+
+# echo input parameters
+print("Running num_calc_manager with the following arguments:")
+for key, value in args.items():
+    print(f"{key}: {value}")
+print("\n")
 
 # initialization --------------------------------------------------------------
 if os.name == 'nt':  # Windows detected
@@ -385,7 +411,7 @@ for pp, project in enumerate(all_projects):
             try:
                 # it is better to get fresh pid (hopefully at least one NumCalc
                 # process is still running)
-                pid_names_bytes = get_num_calc_processes()
+                pid_names_bytes = get_num_calc_processes(NumCalc_filename)
 
                 PrcInfo = psutil.Process(pid_names_bytes[0][0])
 
@@ -419,7 +445,7 @@ for pp, project in enumerate(all_projects):
 
         while wait_for_resources:
             # Find all NumCalc Processes
-            pid_names_bytes = get_num_calc_processes()
+            pid_names_bytes = get_num_calc_processes(NumCalc_filename)
 
             # DEBUGGING --- Find Processes consuming more than 250MB of memory:
             # pid_names_bytes = [
@@ -515,7 +541,7 @@ for pp, project in enumerate(all_projects):
         time.sleep(waitTime)
 
         # Check if all NumCalc processes crashed: Find all NumCalc Processes
-        pid_names_bytes = get_num_calc_processes()
+        pid_names_bytes = get_num_calc_processes(NumCalc_filename)
 
         if len(pid_names_bytes) == 0:
             message = (("No NumCalc processes running. Likely the last "
@@ -528,7 +554,7 @@ for pp, project in enumerate(all_projects):
 
     while True:
         # Find all NumCalc Processes
-        pid_names_bytes = get_num_calc_processes()
+        pid_names_bytes = get_num_calc_processes(NumCalc_filename)
 
         # no NumCalc processes are running, so Finish
         if len(pid_names_bytes) == 0:
