@@ -311,12 +311,10 @@ if os.path.isfile(log_file):
     os.remove(log_file)
 
 # echo input parameters and number of Mesh2HRTF projects
-message = "Running num_calc_manager with the following arguments:\n"
+message = ("\nRunning num_calc_manager with the following arguments\n"
+           "-----------------------------------------------------\n")
 for key, value in args.items():
     message += f"{key}: {value}\n"
-
-message += f"\nRunning {len(all_projects)} Mesh2HRTF projects in\n"
-message += f"{os.path.dirname(log_file)}\n"
 
 print_message(message, text_color_reset, log_file)
 del message, key, value
@@ -372,6 +370,9 @@ else:
 projects_to_run = []
 message = ("Per project summary of instances that will be run\n"
            "-------------------------------------------------\n")
+
+message += f"Detected {len(all_projects)} Mesh2HRTF projects in\n"
+message += f"{os.path.dirname(log_file)}\n\n"
 
 for project in all_projects:
     all_instances, instances_to_run, *_ = check_project(project)
