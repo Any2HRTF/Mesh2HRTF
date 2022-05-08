@@ -539,8 +539,7 @@ for pp, project in enumerate(projects_to_run):
 
             # delay before trying the while loop again
             time.sleep(seconds_to_initialize)
-
-            # END of the while loop -------------------------------------------
+            # END of the while loop ---
 
         # start next instance -------------------------------------------------
         message = (
@@ -587,18 +586,6 @@ for pp, project in enumerate(projects_to_run):
         message = f"... waiting {waitTime} s for instance to initialize RAM"
         print_message(message, text_color_reset, log_file)
         time.sleep(waitTime)
-
-        # # Check if all NumCalc processes crashed: Find all NumCalc Processes
-        # pid_names_bytes = get_num_calc_processes(numcalc_executable)
-
-        # if len(pid_names_bytes) == 0:
-        #     message = (
-        #         "No NumCalc processes running. Likely the last launched "
-        #         "instance crashed or finished. Read NC.out log inside "
-        #         f"source{instances_to_run[NC_ins][0]}, frequency step"
-        #         f"{instances_to_run[NC_ins][1]}")
-        #     raise_error(message, text_color_green, log_file, confirm_errors)
-
     #  END of the main project loop ---
 
     # wait for last NumCalc instances to finish
@@ -614,7 +601,6 @@ for pp, project in enumerate(projects_to_run):
                    "processes to finish")
         print_message(message, text_color_reset, log_file)
         time.sleep(2 * seconds_to_initialize)
-
 #  END of all_projects loop ---
 
 # Check all projects that may need to be executed -----------------------------
