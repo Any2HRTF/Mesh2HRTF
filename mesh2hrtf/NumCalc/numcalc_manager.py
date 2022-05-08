@@ -2,30 +2,21 @@
 Run NumCalc on one or multiple Mesh2HRTF project folders.
 
 This script monitors the RAM and CPU usage and starts a new NumCalc instance
-whenever enough resources are available. It detects interrupted and incomplete
-results and therefore can be interrupted and started again without losing
-major progress.
-
-run ``python num_calc_manager -h`` for help.
+whenever enough resources are available. A log file is written to the base
+directory and an error is raised at the end if any unfinished instances are
+detected.
 
 HOW TO USE
 ----------
- 1- copy this .py file into the project folder OR the folder that contains multiple projects that you will simulate.
- 2- Windows only: Make sure that NumCalc runtime files are located in a folder next to "project_path" or next to this
-     "NumCalcManager.py" file (that is "NumCalc_WindowsExe" folder with compiled NumCalc.exe, .dll and .bat files.)
- 3- "open/run" this "NumCalcManager.py" file with Python.      (Python3 and "psutil" must be installed)
-     By default script automatically runs projects next to the script BUT you can specify custom "project_path".
- 4- The script will manage all simulations and print out the progress until it is finished
- 5- It is highly recommended to check NC _log.txt files of the first completed instances for issues before letting
-     the simulation continue till the end.   DONE.
+run ``python num_calc_manager -h`` for help (requires Python and psutil).
 
-Extra tips:
-  1- It is not recommended to run multiple NumCalcManager.py scripts on the same computer (but it would work)
+Tips:
+  1- It is not recommended to run multiple NumCalcManager.py scripts on the
+     same computer (but it would work)
   2- avoid folder names with spaces. Code is not tested for that.
-  3- If there is a problem with some instance result - just delete its output folder "be.X" and the Manager
-          will automatically re-run that instance on the next run.
-  + It is recommended to re-launch NumCalcManager after the simulation is finished. This way it will quickly
-      re-check the status and either confirm 100% ready or attempt to re-launch some instances that did not complete.
+  3- If there is a problem with some instance result delete its output folder
+     folder "be.X" and the Manager will automatically re-run that instance on
+     the next run.
 """
 
 # made for Python 3.7+
