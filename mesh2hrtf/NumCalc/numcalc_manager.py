@@ -274,7 +274,6 @@ confirm_errors = args["confirm_errors"] == 'True'
 # initialization --------------------------------------------------------------
 
 # trick to get colored print-outs   https://stackoverflow.com/a/54955094
-os.system("")
 text_color_red = '\033[31m'
 text_color_green = '\033[32m'
 text_color_cyan = '\033[36m'
@@ -322,7 +321,7 @@ message += f"{os.path.dirname(log_file)}\n"
 print_message(message, text_color_reset, log_file)
 del message, key, value
 
-# Check for NumCalc executable
+# Check for NumCalc executable ------------------------------------------------
 if os.name == 'nt':  # Windows detected
 
     # files that are needed to execute NumCalc
@@ -369,8 +368,27 @@ else:
         numcalc_path = os.path.dirname(numcalc_path)
 
 
-# loop to process all projects
-for pp, project in enumerate(all_projects):
+# Check all projects that may need to be executed -----------------------------
+projects_to_run = []
+message = ("Per project summary of instances that will be run\n"
+           "-------------------------------------------------\n")
+
+for project in all_projects:
+    all_instances, instances_to_run, *_ = check_project(project)
+
+    if len(instances_to_run) > 0:
+        projects_to_run.append(project)
+        message += (f"{len(instances_to_run)}/{len(all_instances)} in "
+                    f"{os.path.basename(project)}\n")
+    else:
+        message += f"{os.path.basename(project)} is already complete\n"
+
+print_message(message, text_color_reset, log_file)
+del all_projects
+
+
+# loop to process all projects ------------------------------------------------
+for pp, project in enumerate(projects_to_run):
 
     start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
 
@@ -382,7 +400,7 @@ for pp, project in enumerate(all_projects):
 
     # Status printouts:
     message = (f"Started {os.path.basename(project)} "
-               f"({pp + 1}/{len(all_projects)}, {start_time})")
+               f"({pp + 1}/{len(projects_to_run)}, {start_time})")
     message = "\n" + message + "\n" + "-" * len(message) + "\n"
     message += f"{len(all_instances)} frequency steps in the project\n"
     if total_nr_to_run == 0:
@@ -580,7 +598,7 @@ for pp, project in enumerate(all_projects):
         #         f"{instances_to_run[NC_ins][1]}")
         #     raise_error(message, text_color_green, log_file, confirm_errors)
 
-    #  END of the main project loop -------------------------------------------
+    #  END of the main project loop ---
 
     # wait for last NumCalc instances to finish
     while True:
@@ -596,12 +614,31 @@ for pp, project in enumerate(all_projects):
         print_message(message, text_color_reset, log_file)
         time.sleep(2 * seconds_to_initialize)
 
-#  END of all_projects loop ---------------------------------------------------
+#  END of all_projects loop ---
 
-# print final message
+# Check all projects that may need to be executed -----------------------------
 start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
-message = f"All NumCalc projects finished at {start_time}"
-print_message(message, text_color_reset, log_file)
 
-if confirm_errors:
-    input(text_color_green + 'DONE. Hit Enter to exit')
+projects_to_run = []
+message = ("\nThe following instances did not finish\n"
+           "--------------------------------------\n")
+
+for project in projects_to_run:
+    all_instances, instances_to_run, *_ = check_project(project)
+
+    if len(instances_to_run) > 0:
+        projects_to_run.append(project)
+        message += f"{os.path.basename(project)}: "
+        unfinished = [f"source {p[0]} step {p[1]}" for p in projects_to_run]
+        message += "; ".join(unfinished) + "\n"
+
+if message.count("\n") > 3:
+    message += f"Finished at {start_time}"
+    raise_error(message, text_color_reset, log_file, confirm_errors)
+else:
+    message = f"All NumCalc projects finished at {start_time}"
+    print_message(message, text_color_reset, log_file)
+
+    if confirm_errors:
+        input(text_color_green + 'DONE. Hit Enter to exit')
+        print(text_color_reset)
