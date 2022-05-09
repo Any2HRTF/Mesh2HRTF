@@ -66,7 +66,6 @@ Tips:
 #     simulation project (this could be tricky and require new RAM monitoring
 #     code).
 
-from cmath import log
 import os
 import time
 import psutil
