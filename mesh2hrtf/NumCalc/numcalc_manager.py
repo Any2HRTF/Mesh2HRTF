@@ -512,21 +512,27 @@ for pp, project in enumerate(projects_to_run):
                 current_time = \
                     time.strftime('%d %b - %H:%M:%S', time.localtime())
                 if RAM_info.available > max_numcalc_ram * ram_safety_factor:
-                    print(("... Enough RAM to run one more: "
-                           f"{round((RAM_info.available / 1073741824), 1)} GB "
-                           f"free [{current_time}]"))
+                    message = (
+                        "... Starting next instance: "
+                        f"{round((RAM_info.available / 1073741824), 1)} GB "
+                        f"free RAM detected [{current_time}]")
+                    print_message(message, text_color_reset, log_file)
                     break
 
                 else:
-                    print("... Waiting for more free RAM:"
-                          f"{round((RAM_info.available / 1073741824), 1)} GB "
-                          f"free "
-                          f"({round((max_numcalc_ram * ram_safety_factor / 1073741824), 1)} "  # noqa
-                          f"GB needed) [{current_time}]")
+                    message = (
+                        "... Waiting for free RAM:"
+                        f"{round((RAM_info.available / 1073741824), 1)} GB "
+                        f"free RAM detected. "
+                        f"{round((max_numcalc_ram * ram_safety_factor / 1073741824), 1)} "  # noqa
+                        f"GB needed [{current_time}]")
+                    print_message(message, text_color_reset, log_file)
 
             else:
-                print(("   No more instances allowed. Waiting for 1/"
-                       f"{max_instances} instances to finish"))
+                message = (
+                    f"... Waiting for 1/{max_instances} instances to finish"
+                    f"[{current_time}]")
+                print_message(message, text_color_reset, log_file)
 
             # delay before trying the while loop again
             time.sleep(seconds_to_initialize)
