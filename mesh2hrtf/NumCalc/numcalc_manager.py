@@ -481,10 +481,11 @@ for pp, project in enumerate(projects_to_run):
         wait_for_resources = False if NC_ins == 0 else True
 
         while wait_for_resources:
-            # Find all NumCalc Processes
+            # Start time, number of numcalc processes and RAM usage
             current_time = \
                     time.strftime('%d %b - %H:%M:%S', time.localtime())
             pid_names_bytes = get_num_calc_processes(numcalc_executable)
+            RAM_info = psutil.virtual_memory()
 
             # DEBUGGING --- Find Processes consuming more than 250MB of memory:
             # pid_names_bytes = [
@@ -510,7 +511,6 @@ for pp, project in enumerate(projects_to_run):
                 # check if we can run more:
                 # IF free RAM is greater than RAM consumption of the biggest
                 # NumCalc instance x ram_safety_factor
-                RAM_info = psutil.virtual_memory()
                 if RAM_info.available > max_numcalc_ram * ram_safety_factor:
                     message = (
                         "... Starting next instance: "
@@ -530,8 +530,9 @@ for pp, project in enumerate(projects_to_run):
 
             else:
                 message = (
-                    f"... Waiting for 1/{max_instances} instances to finish "
-                    f"[{current_time}]")
+                    f"... Waiting for 1/{max_instances} instances to finish. "
+                    f"{round((RAM_info.available / 1073741824), 1)} GB free "
+                    f"RAM detected [{current_time}]")
                 print_message(message, text_color_reset, log_file)
 
             # delay before trying the while loop again
