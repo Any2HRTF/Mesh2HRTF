@@ -301,8 +301,9 @@ if os.path.isfile(log_file):
     os.remove(log_file)
 
 # echo input parameters and number of Mesh2HRTF projects
-message = ("\nRunning num_calc_manager with the following arguments\n"
-           "-----------------------------------------------------\n")
+message = \
+    f"\nStarting numcalc_manager with the following arguments [{start_time}]\n"
+message += "-" * len(message) + "\n"
 for key, value in args.items():
     message += f"{key}: {value}\n"
 
@@ -381,7 +382,7 @@ del all_projects
 # loop to process all projects ------------------------------------------------
 for pp, project in enumerate(projects_to_run):
 
-    start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+    start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
 
     # Check how many instances are in this Project:
     root_NumCalc = os.path.join(project, 'NumCalc')
@@ -431,7 +432,7 @@ for pp, project in enumerate(projects_to_run):
         step = instances_to_run[NC_ins][1]
 
         # Check the RAM & run instance if feasible
-        start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+        start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
         RAM_info = psutil.virtual_memory()
         message = (
             f"\n{NC_ins + 1}/{total_nr_to_run} preparing "
@@ -484,7 +485,7 @@ for pp, project in enumerate(projects_to_run):
         while wait_for_resources:
             # Start time, number of numcalc processes and RAM usage
             current_time = \
-                    time.strftime('%d %b - %H:%M:%S', time.localtime())
+                    time.time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
             pid_names_bytes = get_num_calc_processes(numcalc_executable)
             RAM_info = psutil.virtual_memory()
 
@@ -609,7 +610,7 @@ for pp, project in enumerate(projects_to_run):
 #  END of all_projects loop ---
 
 # Check all projects that may need to be executed -----------------------------
-start_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
 
 projects_to_run = []
 message = ("\nThe following instances did not finish\n"
