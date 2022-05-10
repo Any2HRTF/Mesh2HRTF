@@ -303,7 +303,7 @@ if os.path.isfile(log_file):
 # echo input parameters and number of Mesh2HRTF projects
 message = \
     f"\nStarting numcalc_manager with the following arguments [{start_time}]\n"
-message += "-" * len(message) + "\n"
+message += "-" * len(message) - 2 + "\n"
 for key, value in args.items():
     message += f"{key}: {value}\n"
 
@@ -465,7 +465,7 @@ for pp, project in enumerate(projects_to_run):
 
                 message = (
                     "One NumCalc instance requires "
-                    f"{round(Instance_CPU_usageNow, 1)}% of the CPU."
+                    f"{round(Instance_CPU_usageNow, 1)}% of the CPU. "
                     "max_instances is now automatically set to "
                     f"{max_instances}")
                 print_message(message, text_color_reset, log_file)
