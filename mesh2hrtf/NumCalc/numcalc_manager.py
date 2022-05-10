@@ -303,7 +303,7 @@ if os.path.isfile(log_file):
 # echo input parameters and number of Mesh2HRTF projects
 message = \
     f"\nStarting numcalc_manager with the following arguments [{start_time}]\n"
-message += "-" * len(message) - 2 + "\n"
+message += "-" * (len(message) - 2) + "\n"
 for key, value in args.items():
     message += f"{key}: {value}\n"
 
