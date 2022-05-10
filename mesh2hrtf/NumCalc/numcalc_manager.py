@@ -485,7 +485,7 @@ for pp, project in enumerate(projects_to_run):
         while wait_for_resources:
             # Start time, number of numcalc processes and RAM usage
             current_time = \
-                    time.time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
+                    time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
             pid_names_bytes = get_num_calc_processes(numcalc_executable)
             RAM_info = psutil.virtual_memory()
 
