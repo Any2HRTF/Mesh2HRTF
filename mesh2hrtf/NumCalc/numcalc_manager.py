@@ -393,13 +393,15 @@ for pp, project in enumerate(projects_to_run):
     message = (f"Started {os.path.basename(project)} "
                f"({pp + 1}/{len(projects_to_run)}, {start_time})")
     message = "\n" + message + "\n" + "-" * len(message) + "\n"
-    message += f"{len(all_instances)} frequency steps in the project\n"
-    if total_nr_to_run == 0:
+    if total_nr_to_run:
+        message += (
+            f"Running {total_nr_to_run}/{len(all_instances)} unfinished "
+            "frequency steps in the project\n")
+    else:
         message += (
             "All NumCalc simulations in this project are complete")
         print_message(message, text_color_reset, log_file)
         continue
-    message += (f"{total_nr_to_run} NumCalc simulations will be run")
 
     print_message(message, text_color_reset, log_file)
 
@@ -519,20 +521,26 @@ for pp, project in enumerate(projects_to_run):
                     break
 
                 else:
-                    message = (
-                        "... Waiting for free RAM:"
-                        f"{round((RAM_info.available / 1073741824), 1)} GB "
-                        f"free RAM detected. "
-                        f"{round((max_numcalc_ram * ram_safety_factor / 1073741824), 1)} "  # noqa
-                        f"GB needed [{current_time}]")
-                    print_message(message, text_color_reset, log_file)
+                    if not message.startswith("... Waiting for free RAM"):
+                        message = (
+                            "... Waiting for free RAM:"
+                            f"{round((RAM_info.available / 1073741824), 1)} "
+                            f"GB free RAM detected. "
+                            f"{round((max_numcalc_ram * ram_safety_factor / 1073741824), 1)} "  # noqa
+                            f"GB needed [{current_time}, checking every "
+                            f"{seconds_to_initialize} seconds]")
+                        print_message(message, text_color_reset, log_file)
 
             else:
-                message = (
-                    f"... Waiting for 1/{max_instances} instances to finish. "
-                    f"{round((RAM_info.available / 1073741824), 1)} GB free "
-                    f"RAM detected [{current_time}]")
-                print_message(message, text_color_reset, log_file)
+                if not message.startswith(
+                        f"... Waiting for 1/{max_instances}"):
+                    message = (
+                        f"... Waiting for 1/{max_instances} instances to "
+                        "finish: "
+                        f"{round((RAM_info.available / 1073741824), 1)} GB "
+                        f"free RAM detected [{current_time}, checking every "
+                        f"{seconds_to_initialize} seconds]")
+                    print_message(message, text_color_reset, log_file)
 
             # delay before trying the while loop again
             time.sleep(seconds_to_initialize)
