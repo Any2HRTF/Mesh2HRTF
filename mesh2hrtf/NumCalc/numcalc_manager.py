@@ -269,8 +269,8 @@ text_color_green = '\033[32m'
 text_color_cyan = '\033[36m'
 text_color_reset = '\033[0m'
 
-start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
-log_file = f"numcalc_manager_{start_time}.txt"
+current_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
+log_file = f"numcalc_manager_{current_time}.txt"
 
 # Detect what the project_path or "getcwd()" is pointing to:
 if os.path.basename(project_path) == 'NumCalc':
@@ -301,8 +301,9 @@ if os.path.isfile(log_file):
     os.remove(log_file)
 
 # echo input parameters and number of Mesh2HRTF projects
-message = \
-    f"\nStarting numcalc_manager with the following arguments [{start_time}]\n"
+current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+message = ("\nStarting numcalc_manager with the following arguments "
+           f"[{current_time}]\n")
 message += "-" * (len(message) - 2) + "\n"
 for key, value in args.items():
     message += f"{key}: {value}\n"
@@ -382,7 +383,7 @@ del all_projects
 # loop to process all projects ------------------------------------------------
 for pp, project in enumerate(projects_to_run):
 
-    start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
+    current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
 
     # Check how many instances are in this Project:
     root_NumCalc = os.path.join(project, 'NumCalc')
@@ -392,7 +393,7 @@ for pp, project in enumerate(projects_to_run):
 
     # Status printouts:
     message = (f"Started {os.path.basename(project)} "
-               f"({pp + 1}/{len(projects_to_run)}, {start_time})")
+               f"({pp + 1}/{len(projects_to_run)}, {current_time})")
     message = "\n" + message + "\n" + "-" * len(message) + "\n"
     if total_nr_to_run:
         message += (
@@ -432,14 +433,14 @@ for pp, project in enumerate(projects_to_run):
         step = instances_to_run[NC_ins][1]
 
         # Check the RAM & run instance if feasible
-        start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
+        current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
         RAM_info = psutil.virtual_memory()
         message = (
             f"\n{NC_ins + 1}/{total_nr_to_run} preparing "
             f"{matched_freq_of_inst[NC_ins]} Hz instance from source {source},"
             f" step {step}\n"
             f"{round((RAM_info.available / 1073741824), 2)} GB free RAM, "
-            f"{RAM_info.percent}% used ({start_time})")
+            f"{RAM_info.percent}% used ({current_time})")
         print_message(message, text_color_reset, log_file)
 
         # use this to autodetect how many instances can at most be executed
@@ -485,7 +486,7 @@ for pp, project in enumerate(projects_to_run):
         while wait_for_resources:
             # Start time, number of numcalc processes and RAM usage
             current_time = \
-                    time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
+                    time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
             pid_names_bytes = get_num_calc_processes(numcalc_executable)
             RAM_info = psutil.virtual_memory()
 
@@ -610,7 +611,7 @@ for pp, project in enumerate(projects_to_run):
 #  END of all_projects loop ---
 
 # Check all projects that may need to be executed -----------------------------
-start_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
+current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
 
 projects_to_run = []
 message = ("\nThe following instances did not finish\n"
@@ -626,10 +627,10 @@ for project in projects_to_run:
         message += "; ".join(unfinished) + "\n"
 
 if message.count("\n") > 3:
-    message += f"Finished at {start_time}"
+    message += f"Finished at {current_time}"
     raise_error(message, text_color_reset, log_file, confirm_errors)
 else:
-    message = f"All NumCalc projects finished at {start_time}"
+    message = f"All NumCalc projects finished at {current_time}"
     print_message(message, text_color_reset, log_file)
 
     if confirm_errors:
