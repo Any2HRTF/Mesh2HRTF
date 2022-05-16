@@ -14,6 +14,7 @@ cwd = os.path.dirname(__file__)
 data_shtf = os.path.join(cwd, 'resources', 'SHTF')
 data_nc = os.path.join(cwd, 'resources', 'nc.out')
 data_grids = os.path.join(cwd, 'resources', 'evaluation_grids')
+data_sofa = os.path.join(cwd, 'resources', 'SOFA_files')
 
 
 @pytest.mark.parametrize("num_sources", ([1], [2]))
@@ -130,6 +131,35 @@ def test_inspect_sofa_files_single_project(
         file = os.path.join(tmp_shtf, "Output2HRTF", file.replace("*", grid))
         extension = ".pdf" if "2D" in file else ".jpeg"
         assert not os.path.isfile(file + extension)
+
+
+def test_compute_hrir_custom_sampling_rate():
+    """Test compute HRIR with custom sampling rate"""
+
+    # test with default (test file with constant spectrum of ones)
+    sofa = m2h.compute_hrir(
+        os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40)
+    hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
+
+    assert sofa.GLOBAL_SOFAConventions == "SimpleFreeFieldHRIR"
+    assert hrir.frequencies[-1] == 24000
+    assert hrir.sampling_rate == 48000
+    npt.assert_almost_equal(np.abs(hrir.freq_raw), np.ones_like(hrir.freq_raw))
+
+    # test with valid sampling rate (test file with constant spectrum of ones)
+    sofa = m2h.compute_hrir(
+        os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44100)
+    hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
+
+    assert sofa.GLOBAL_SOFAConventions == "SimpleFreeFieldHRIR"
+    assert hrir.frequencies[-1] == 22050
+    assert hrir.sampling_rate == 44100
+    npt.assert_almost_equal(np.abs(hrir.freq_raw), np.ones_like(hrir.freq_raw))
+
+    # test with invalid sampling rate
+    with pytest.raises(ValueError, match="sampling rate is invalid"):
+        sofa = m2h.compute_hrir(
+            os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44110)
 
 
 @pytest.mark.parametrize("pattern", (None, "HRIR", "HRTF"))
