@@ -127,16 +127,16 @@ def test_outputs_to_hrtfs_full():
             assert "report_source_2.csv" in files
 
 
-@pytest.mark.parametrize("boundary,grid,freq", [
-    (True, True, True), (True, False, False), (False, True, False)])
-def test_purge_outputs_numcalc_data(boundary, grid, freq):
+@pytest.mark.parametrize("boundary,grid", [
+    (True, True), (True, False), (False, True)])
+def test_purge_outputs_numcalc_data(boundary, grid):
     """Test purging the raw NumCalc output"""
 
     # copy required data to temporary directory
     tmp = TemporaryDirectory()
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
 
-    m2h.remove_outputs(join(tmp.name, "*"), boundary, grid, freq)
+    m2h.remove_outputs(join(tmp.name, "*"), boundary, grid)
 
     for source in glob(join(tmp.name, "SHTF", "NumCalc", "source_*")):
         if boundary and grid:
@@ -149,8 +149,6 @@ def test_purge_outputs_numcalc_data(boundary, grid, freq):
             assert os.path.isdir(join(source, "be.out"))
             for be in glob(join(source, "be.out", "be.*")):
                 assert glob(join(be, "*EvalGrid")) == []
-        if freq:
-            assert not os.path.isdir(join(source, "fe.out"))
 
 
 @pytest.mark.parametrize("boundary_compressed,hrtf,vtk,reports", [
