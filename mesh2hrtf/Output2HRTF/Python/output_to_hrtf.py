@@ -75,7 +75,7 @@ def output_to_hrtf(
         os.makedirs(os.path.join(folder, 'Output2HRTF'))
 
     # get the number of frequency steps
-    numFrequencies = _get_number_of_frequencies(
+    frequencies, numFrequencies = _get_frequencies(
         os.path.join(folder, 'Info.txt'))
 
     # write the project report and check for issues
@@ -96,8 +96,7 @@ def output_to_hrtf(
         os.path.join(folder, 'ObjectMeshes'))
 
     # Load ObjectMesh data
-    pressure, frequencies = _read_pressure(
-        numSources, numFrequencies, folder, 'pBoundary')
+    pressure = _read_pressure(numSources, numFrequencies, folder, 'pBoundary')
 
     print('\nSaving ObjectMesh data ...')
     cnt = 0
@@ -118,13 +117,13 @@ def output_to_hrtf(
 
         cnt = cnt + elements.shape[0]
 
-    del pressure, elements, frequencies, mesh, jj, cnt, element_data
+    del pressure, elements, mesh, jj, cnt, element_data
 
     # Load EvaluationGrid data
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
 
-        pressure, frequencies = _read_pressure(
+        pressure = _read_pressure(
             numSources, numFrequencies, folder, 'pEvalGrid')
 
     # save to struct
@@ -164,8 +163,8 @@ def output_to_hrtf(
                 raise ValueError("Computing HRIRs requires prior referencing")
 
             # calculate shift value (equivalent to a 30 cm shift)
-            fs = round(2*sofa.N[-1])
-            n_shift = int(np.round(.30 / (1/fs * speedOfSound)))
+            sampling_rate = round(2*sofa.N[-1])
+            n_shift = int(np.round(.30 / (1/sampling_rate * speedOfSound)))
 
             sofa = compute_hrir(sofa, n_shift)
             sf.write_sofa(os.path.join(
@@ -279,7 +278,7 @@ def reference_hrtf(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
     return sofa
 
 
-def compute_hrir(sofa, n_shift):
+def compute_hrir(sofa, n_shift, sampling_rate=None):
     """
     Compute HRIR from HRTF by means of the inverse Fourier transform.
 
@@ -311,6 +310,11 @@ def compute_hrir(sofa, n_shift):
        SimpleFreeFieldHRTF or GeneralTF
     n_shift : int
         Amount the HRIRs are shifted to enforce a causal system.
+    sampling_rate : int
+        The sampling rate in Hz. The sampling rate can two times any frequency
+        for which the HRTF was computed. The default ``None`` assumes the
+        sampling rate to be two times the highest frequency for which the HRTF
+        was computed.
 
     Returns
     -------
@@ -339,14 +343,30 @@ def compute_hrir(sofa, n_shift):
             ('The frequency vector must go from f_1 > 0 to'
              'f_2 (half the sampling rate) in equidistant steps.'))
 
+    # get the HRTF
     pressure = sofa.Data_Real + 1j * sofa.Data_Imag
 
-    fs = round(2*frequencies[-1])
+    if sampling_rate is None:
+        # detect the sampling rate
+        sampling_rate = round(2*frequencies[-1])
+    else:
+        # check if the specified sampling rate is valid
+        idx = np.argmin(np.abs(2 * frequencies - sampling_rate))
+        error = np.abs(2 * frequencies[idx] - sampling_rate)
+        if np.abs(error) > 1e-6:
+            raise ValueError((
+                "The specified sampling rate is invalid. It must be two times "
+                "any frequency for which the HRTF was computed."))
+
+        # discard frequencies above sampling_rate / 2
+        pressure = pressure[..., :idx + 1]
+        frequencies = frequencies[:idx + 1]
 
     # add 0 Hz bin
     pressure = np.concatenate((np.ones((pressure.shape[0],
                                pressure.shape[1], 1)), pressure), axis=2)
-    # make fs/2 real
+
+    # make sampling_rate/2 real
     pressure[:, :, -1] = np.abs(pressure[:, :, -1])
     # ifft (take complex conjugate because sign conventions differ)
     hrir = np.fft.irfft(np.conj(pressure))
@@ -359,7 +379,7 @@ def compute_hrir(sofa, n_shift):
     sofa = _get_sofa_object(
         hrir, sofa.SourcePosition, sofa.SourcePosition_Type,
         sofa.ReceiverPosition, "HRIR", sofa.GLOBAL_ApplicationVersion,
-        sampling_rate=fs)
+        sampling_rate=sampling_rate)
 
     return sofa
 
@@ -431,7 +451,7 @@ def project_report(folder=None):
     # get sources and number of sources and frequencies
     sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
     num_sources = len(sources)
-    num_frequencies = _get_number_of_frequencies(
+    _, num_frequencies = _get_frequencies(
         os.path.join(folder, "Info.txt"))
 
     # sort source files (not read in correct order in some cases)
@@ -764,14 +784,14 @@ def _read_pressure(numSources, numFrequencies, folder, data):
 
         tmpFilename = os.path.join(
             folder, 'NumCalc', f'source_{source+1}', 'be.out')
-        tmpPressure, frequencies = _output_to_hrtf_load(
+        tmpPressure = _output_to_hrtf_load(
             tmpFilename, data, numFrequencies)
 
         pressure.append(tmpPressure)
 
     pressure = np.transpose(np.array(pressure), (2, 0, 1))
 
-    return pressure, frequencies
+    return pressure
 
 
 def _get_sofa_object(data, source_position, source_position_type,
@@ -882,8 +902,6 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
     -------
     data : numpy array
         Pressure or velocity values of shape (numFrequencies, numEntries)
-    frequencies : numpy array
-        The frequencies in Hz
     """
 
     # ---------------------check number of header and data lines---------------
@@ -906,7 +924,6 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
 
     # ------------------------------load data----------------------------------
     data = np.zeros((numFrequencies, numDatalines), dtype=complex)
-    frequency = np.zeros(numFrequencies)
 
     for ii in range(numFrequencies):
         tmpData = []
@@ -917,26 +934,14 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
                 if line.line_num > numHeaderlines_BE:
                     tmpData.append(complex(float(li[1]), float(li[2])))
 
-        if tmpData:
-            current_file = os.path.join(
-                foldername, '..', 'fe.out', 'fe.%d' % (ii+1), 'load')
-            with open(current_file) as file:
-                line = csv.reader(file, delimiter=' ', skipinitialspace=True)
-                for li in line:
-                    if line.line_num > 2:
-                        tmpFrequency = float(li[0])
-            data[ii, :] = tmpData
-            frequency[ii] = tmpFrequency
-        else:
-            data[ii, :] = np.nan
-            frequency[ii] = np.nan
+        data[ii, :] = tmpData if tmpData else np.nan
 
-    return data, frequency
+    return data
 
 
-def _get_number_of_frequencies(path):
+def _get_frequencies(path):
     """
-    Read number of simulated frequency steps from Info.txt
+    Read number of simulated frequency steps and frequencies from Info.txt
 
     Parameters
     ----------
@@ -945,19 +950,30 @@ def _get_number_of_frequencies(path):
 
     Returns
     -------
+    frequencies : numpy array
+        the simulated frequencies in Hz generated from the information in
+        Info.txt (number of frequencies, minimum frequency, frequency step
+        size)
     frequency_steps : int
         number of simulated frequency steps
     """
-
-    key = 'Frequency Steps: '
 
     # read info file
     with open(path) as f:
         lines = f.readlines()
 
-    # find line containing the number of frequency steps
+    # find number of frequency steps and minimum frequency
+    key_num = 'Frequency Steps: '
+    key_min = 'Minimum evaluated Frequency: '
+    key_step = 'Frequency Stepsize: '
     for line in lines:
-        if line.startswith(key):
-            break
+        if line.startswith(key_num):
+            num_frequencies = int(line.strip()[len(key_num):])
+        if line.startswith(key_min):
+            min_frequency = float(line.strip()[len(key_min):])
+        if line.startswith(key_step):
+            frequency_step = float(line.strip()[len(key_step):])
 
-    return int(line.strip()[len(key):])
+    frequencies = np.arange(num_frequencies) * frequency_step + min_frequency
+
+    return np.atleast_1d(frequencies), num_frequencies

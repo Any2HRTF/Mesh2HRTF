@@ -196,7 +196,7 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
     return
 
 
-def remove_outputs(paths, boundary=False, grid=False, freq=False,
+def remove_outputs(paths, boundary=False, grid=False,
                    boundary_compressed=False, hrtf=False, vtk=False,
                    reports=False):
     """
@@ -219,9 +219,6 @@ def remove_outputs(paths, boundary=False, grid=False, freq=False,
         Remove raw pressure and velocity simulated on the evaluation grid.This
         data is saved in
         `project_folder/NumCalc/source_*/be.out/be.*/*EvalGrid`
-    freq : bool, optional
-        Remove deprecated frequency data saved in
-        `project_folder/NumCalc/source_*/fe.out/*`
     boundary_compressed : bool, optional
         Remove compressed pressure and velocity simulated on the boundary,
         i.e., the mesh. This data is saved in
@@ -280,11 +277,6 @@ def remove_outputs(paths, boundary=False, grid=False, freq=False,
                     for be in glob.glob(os.path.join(nc, "be.out", "be.*")):
                         os.remove(os.path.join(be, "pEvalGrid"))
                         os.remove(os.path.join(be, "vEvalGrid"))
-
-            # delete entire fe.out folders
-            if freq and has_numcalc:
-                for nc in numcalc:
-                    shutil.rmtree(os.path.join(nc, "fe.out"))
 
             # data in Output2HRTF ---------------------------------------------
             if has_output:

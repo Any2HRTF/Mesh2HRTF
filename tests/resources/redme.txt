@@ -15,6 +15,10 @@ Contains a complete Mesh2HRTF project with spherical head transfer functions
 calculated up to 6 kHz. The output was generated manually by running
 Output2HRTF.py an inspect_sofa_files
 
+SOFA_files
+----------
+SOFA file for testing compute_hrir
+
 test_blender_export
 ----
 
@@ -45,5 +49,3 @@ test_numcalc/project_folder_pspw
 ----
 
 Contains a mesh2HRTF project for the point source and plane wave scattering test conditions.
-
-
