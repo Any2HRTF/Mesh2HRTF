@@ -44,7 +44,7 @@ function ncdata2vtk(name,datatype,rootdir,datadir1, ...
 %    
 % the data will be stored in the vtk file as Amplitude and Phase values
 %
-% written by kreiza, if you have any questions, suggestions 
+% written by Wolfgang Kreuzer, if you have any questions, suggestions 
 %   send me an email, depending on my workload I will try to reply
 %   in time: wolfgang.kreuzer@oeaw.ac.at
 %
@@ -55,8 +55,9 @@ function ncdata2vtk(name,datatype,rootdir,datadir1, ...
 %
 %   This script is distributed in the hope that it will be useful,              
 %   but WITHOUT ANY WARRANTY; without even the implied warranty of            
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
-
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+%
+% Licensed under the EUPL-1.2-or-later
 if(nargin < 4) 
   datadir1 = 'be.out';
   if(nargin < 3)
@@ -81,7 +82,7 @@ if(nargin < 6)
   end
 end
 
-isoctave = 1;
+isoctave = is_octave();
 nojumps = 1;
 elementwise = 1;
 
@@ -135,7 +136,7 @@ if(~isempty(meshdir))
       Elem4 = [];
     else
       e3 = find (isnan (Elems(:,8) ) );
-      if(!isempty(e3))
+      if(~isempty(e3))
 	Elem3 = Elems(e3,1:4);
 	Elem(e3,:) = [];
       end
@@ -180,11 +181,13 @@ if(~isempty(evaldir))
       EElem4 = [];
     else
       e3 = find (isnan (EElems(:,8) ) );
-      if(!isempty(e3))
+      if(~isempty(e3))
 	EElem3 = EElems(e3,1:4);
 	EElems(e3,:) = [];
+      else
+	EElem3 = [];
       end
-      EElems4 = EElems(:,1:5);
+      EElem4 = EElems(:,1:5);
     end
   else
     [EElem3,EElem4] = read_elements(fh);
@@ -351,14 +354,14 @@ for i = 1:nf,
 % graph we decided to assign a value to each nodes of the grid
 % if you do not like the idea, just reformulate the vtk file
 % with cell data instead of point data, this should work too
-  if(printpb && !elementwise) 
+  if(printpb && ~elementwise) 
     pBound = zeros(nnodes,1);
   end
-  if(printvb && !elementwise) 
+  if(printvb && ~elementwise) 
     vBound = zeros(nnodes,1);
   end
   
-  if( !elementwise ) % get the values at the BEM nodes by interpolation
+  if( ~elementwise ) % get the values at the BEM nodes by interpolation
     for j = 1:nnodes,
       if( ~isempty(Elem3) )
 			     % find the elements that contain the node
@@ -824,4 +827,11 @@ for j = 1:nelems
         Elem4 = [Elem4;el'];  
     end
 end
+
+function r = is_octave ()
+  persistent x;
+  if (isempty (x))
+    x = exist ('OCTAVE_VERSION', 'builtin');
+  end
+  r = x;
 
