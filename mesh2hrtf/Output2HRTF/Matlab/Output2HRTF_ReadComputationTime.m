@@ -8,7 +8,9 @@ function data=Output2HRTF_ReadComputationTime(filename)
 %
 %   Output:
 %       data ....... computation time in seconds, with columns:
-%                    'Frequency index', 'Frequency', 'Building', 'Solving', 'Postprocessing', 'Total'
+%                    'Frequency index', 'Frequency', 'Building', 'Solving',
+%                    'Postprocessing', 'Total', 'relative error', 'iterations',
+%                    'maximum number of iterations reached' (1 = yes, 0 = no)
 
 fid=fopen(filename);
 count=0;
