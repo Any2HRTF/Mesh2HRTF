@@ -68,14 +68,27 @@ end
 % get number of frequencies
 fprintf('Get frequencies ...\n');
 tmpFrequencies=fileread('Info.txt');
-[lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: )\w*\n');
-numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
+[fstepsLineIdxStart, fstepsLineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: )\w*\n');
+numFreq = str2double(tmpFrequencies(fstepsLineIdxStart+17:fstepsLineIdxEnd-1)); % last char \n is left out
 
 if isnan(numFreq)
-    error('Info.txt does not contain information about frequency steps. Please specify.\n')
+    error('Info.txt does not contain information about frequency steps. Please specify: %s.\n', 'Frequency Steps')
 end
 
-clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
+% build frequency vector
+fprintf('Build frequency vector ...\n');
+[fminLineIdxStart, fminLineIdxEnd] = regexp(tmpFrequencies, '(Minimum evaluated Frequency: )\w*.\w*\n');
+f_min = str2double(tmpFrequencies(fminLineIdxStart+29:fminLineIdxEnd-1)); % last char \n is left out
+[fstepsizeLineIdxStart, fstepsizeLineIdxEnd] = regexp(tmpFrequencies, '(Frequency Stepsize: )\w*.\w*\n');
+f_stepsize = str2double(tmpFrequencies(fstepsizeLineIdxStart+20:fstepsizeLineIdxEnd-1)); % last char \n is left out
+frequencies = f_min + f_stepsize .* (0:numFreq-1);
+
+if isnan(frequencies)
+    error('Info.txt does not contain sufficient information about the frequency vector. Please specify:\n%s\n%s.\n', ...
+        'Minimum evaluated Frequency', 'Frequency Stepsize')
+end
+
+clear ii tmpNodes tmpElements tmpFrequencies fstepsLineIdxStart fstepsLineIdxEnd fminLineIdxStart fminLineIdxEnd fstepsizeLineIdxStart fstepsizeLineIdxEnd
 
 %% Read computational effort
 fprintf('Loading computational effort data ...\n');
