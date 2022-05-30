@@ -137,7 +137,7 @@ for ii = 1:numSources
         tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
     else % what possible case is this?
-        error('This case is not yet implemented.');
+        error('This case is not yet implemented. Please open an issue at the project page: https://github.com/Any2HRTF/Mesh2HRTF/issues');
     end
     clear jj
 
