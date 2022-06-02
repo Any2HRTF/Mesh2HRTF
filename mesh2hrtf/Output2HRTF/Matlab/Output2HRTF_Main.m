@@ -68,14 +68,27 @@ end
 % get number of frequencies
 fprintf('Get frequencies ...\n');
 tmpFrequencies=fileread('Info.txt');
-[lineIdxStart, lineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: )\w*\n');
-numFreq = str2double(tmpFrequencies(lineIdxStart+17:lineIdxEnd-1)); % last char \n is left out
+[fstepsLineIdxStart, fstepsLineIdxEnd] = regexp(tmpFrequencies, '(Frequency Steps: )\w*\n');
+numFreq = str2double(tmpFrequencies(fstepsLineIdxStart+17:fstepsLineIdxEnd-1)); % last char \n is left out
 
 if isnan(numFreq)
-    error('Info.txt does not contain information about frequency steps. Please specify.\n')
+    error('Info.txt does not contain information about frequency steps. Please specify: %s.\n', 'Frequency Steps')
 end
 
-clear ii tmpNodes tmpElements tmpFrequencies lineIdxStart lineIdxEnd
+% build frequency vector
+fprintf('Build frequency vector ...\n');
+[fminLineIdxStart, fminLineIdxEnd] = regexp(tmpFrequencies, '(Minimum evaluated Frequency: )\w*.\w*\n');
+f_min = str2double(tmpFrequencies(fminLineIdxStart+29:fminLineIdxEnd-1)); % last char \n is left out
+[fstepsizeLineIdxStart, fstepsizeLineIdxEnd] = regexp(tmpFrequencies, '(Frequency Stepsize: )\w*.\w*\n');
+f_stepsize = str2double(tmpFrequencies(fstepsizeLineIdxStart+20:fstepsizeLineIdxEnd-1)); % last char \n is left out
+frequencies = f_min + f_stepsize .* (0:numFreq-1)';
+
+if isnan(frequencies)
+    error('Info.txt does not contain sufficient information about the frequency vector. Please specify:\n%s\n%s.\n', ...
+        'Minimum evaluated Frequency', 'Frequency Stepsize')
+end
+
+clear ii tmpNodes tmpElements tmpFrequencies fstepsLineIdxStart fstepsLineIdxEnd fminLineIdxStart fminLineIdxEnd fstepsizeLineIdxStart fstepsizeLineIdxEnd
 
 %% Read computational effort
 fprintf('Loading computational effort data ...\n');
@@ -137,7 +150,7 @@ for ii = 1:numSources
         tmp=Output2HRTF_ReadComputationTime(['NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
     else % what possible case is this?
-        error('This case is not yet implemented.');
+        error('This case is not yet implemented. Please open an issue at the project page: https://github.com/Any2HRTF/Mesh2HRTF/issues');
     end
     clear jj
 
@@ -171,10 +184,8 @@ clear ii jj description computationTime tmp iter_error_idx rel_error_idx
 fprintf('Loading ObjectMesh data ...\n');
 for ii=1:numSources
     fprintf(['Source ', num2str(ii), '\n']);
-    [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+    pressure{ii}=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
         filesep, 'be.out', filesep], 'pBoundary', numFreq);
-    [frequencies,idx]=sort(frequencies);
-    pressure{ii}=data(idx,:);
     clear data
 end
 
@@ -194,18 +205,15 @@ for ii = 1:numel(objectMeshes)
     cnt = cnt + size(elements,1);
 end
 
-clear pressure nodes elements frequencies ii jj cnt idx element_data
+clear pressure nodes elements ii jj cnt idx element_data
 
 %% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
     fprintf('Loading data for the evaluation grids ...\n');
     for ii=1:numSources
         fprintf(['Source ', num2str(ii), '\n']);
-        [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+        pressure(:,:,ii)=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
             filesep, 'be.out', filesep], 'pEvalGrid', numFreq);
-        [frequencies,idx]=sort(frequencies);
-        pressure(:,:,ii)=data(idx,:);
-        clear data
     end
 end
 clear ii
