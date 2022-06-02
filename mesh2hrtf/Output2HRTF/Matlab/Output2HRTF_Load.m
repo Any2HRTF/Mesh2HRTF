@@ -29,18 +29,13 @@ end
 temp1 = importdata([foldername, 'be.1', filesep, filename], ' ', numHeaderlines_BE);
 
 data=zeros(numFrequencies,size(temp1.data,1));
-frequency=zeros(numFrequencies,1);
 
 for ii=1:numFrequencies
     tmpData = importdata([foldername, 'be.', num2str(ii), filesep, filename], ' ', numHeaderlines_BE);
     if ~isempty(tmpData)
-        tmpFrequency = importdata([foldername, '..', filesep, 'fe.out', filesep, 'fe.', num2str(ii), filesep, 'load'], ' ', 2);
-
         data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
-        frequency(ii,1)=tmpFrequency.data(1,1);
     else
         data(ii,:)      = NaN;
-        frequency(ii,1) = NaN;
     end
 end
 
