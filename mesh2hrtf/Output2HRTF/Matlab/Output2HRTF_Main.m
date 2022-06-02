@@ -81,7 +81,7 @@ fprintf('Build frequency vector ...\n');
 f_min = str2double(tmpFrequencies(fminLineIdxStart+29:fminLineIdxEnd-1)); % last char \n is left out
 [fstepsizeLineIdxStart, fstepsizeLineIdxEnd] = regexp(tmpFrequencies, '(Frequency Stepsize: )\w*.\w*\n');
 f_stepsize = str2double(tmpFrequencies(fstepsizeLineIdxStart+20:fstepsizeLineIdxEnd-1)); % last char \n is left out
-frequencies = f_min + f_stepsize .* (0:numFreq-1);
+frequencies = f_min + f_stepsize .* (0:numFreq-1)';
 
 if isnan(frequencies)
     error('Info.txt does not contain sufficient information about the frequency vector. Please specify:\n%s\n%s.\n', ...
@@ -184,10 +184,8 @@ clear ii jj description computationTime tmp iter_error_idx rel_error_idx
 fprintf('Loading ObjectMesh data ...\n');
 for ii=1:numSources
     fprintf(['Source ', num2str(ii), '\n']);
-    [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+    pressure{ii}=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
         filesep, 'be.out', filesep], 'pBoundary', numFreq);
-    [frequencies,idx]=sort(frequencies);
-    pressure{ii}=data(idx,:);
     clear data
 end
 
@@ -207,18 +205,15 @@ for ii = 1:numel(objectMeshes)
     cnt = cnt + size(elements,1);
 end
 
-clear pressure nodes elements frequencies ii jj cnt idx element_data
+clear pressure nodes elements ii jj cnt idx element_data
 
 %% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
     fprintf('Loading data for the evaluation grids ...\n');
     for ii=1:numSources
         fprintf(['Source ', num2str(ii), '\n']);
-        [data,frequencies]=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
+        pressure(:,:,ii)=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
             filesep, 'be.out', filesep], 'pEvalGrid', numFreq);
-        [frequencies,idx]=sort(frequencies);
-        pressure(:,:,ii)=data(idx,:);
-        clear data
     end
 end
 clear ii
