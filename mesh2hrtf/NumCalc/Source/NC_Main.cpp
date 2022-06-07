@@ -280,10 +280,13 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
   time_t ltim[7], lti_eqa = 0, lti_sol = 0, lti_pos = 0, lti_est, lti_sst, lti_pst;
 
 
-  ofstream NCestim("Memory.txt");
-  if(!NCestim)
-    if(!NCout) NC_Error_Exit_0(NCout, "can not open the output stream NCestim!");
+  ofstream NCestim;
 
+  if(estimate_ram) {
+    NCestim.open("Memory.txt");
+    if(!NCestim)
+      if(!NCout) NC_Error_Exit_0(NCout, "can not open the output stream NCestim!");
+  }
   
   time(&ltim[0]);
 
@@ -503,8 +506,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
     if( estimate_ram ) {
       // do not reserve too much space. Just try to figure out
       // how much RAM is needed
-      int nint = 0;
-      int ncmplx = 0;
+      uint nint = 0;
+      uint ncmplx = 0;
       int i,j,nnonzers;
       Vector<bool> bneacluo(numOriginalClusters_);
       Vector<int> nclufar(numOriginalClusters_);
@@ -547,8 +550,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 
 	cout << "SLFMM:\n";
 	cout << "Nearfield: " << nnonzers << "\n";
-	nint += nnonzers + numRowsOfCoefficientMatrix_ + 1;
-	ncmplx += nnonzers;
+	nint += (uint)nnonzers + (uint)numRowsOfCoefficientMatrix_ + 1;
+	ncmplx += (uint)nnonzers;
 	
 	/* ******************************************************
 	  the T matrix, 
@@ -562,8 +565,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	  nnonzers += clustarry[i].NumOfDOFs;
 	nnonzers *= numIntegrationPointsUnitSphere_;
 
-	ncmplx += nnonzers;
-	nint += nnonzers + numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_ + 1;
+	ncmplx += (uint)nnonzers;
+	nint += (uint)nnonzers + (uint)numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_ + 1;
 
 	cout << "T Matrix: " << nnonzers << "\n";
 	
@@ -576,8 +579,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	    nnonzers += clustarry[i].NumFarClus;
 	  }
 	nnonzers *= numIntegrationPointsUnitSphere_;
-	nint += nnonzers + numOriginalClusters_*numIntegrationPointsUnitSphere_;
-	ncmplx += nnonzers;
+	nint += (uint)nnonzers + (uint)numOriginalClusters_*numIntegrationPointsUnitSphere_;
+	ncmplx += (uint)nnonzers;
 
 	cout << "D Matrix: " << nnonzers << "\n";
 	/* **************************************************
@@ -585,8 +588,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	   some estimate shortcut: all rows are assumed to have entries
 	   ************************************************** */
 	nnonzers = numRowsOfCoefficientMatrix_ * numIntegrationPointsUnitSphere_;
-	nint += nnonzers + numRowsOfCoefficientMatrix_ + 1;
-	ncmplx += nnonzers;
+	nint += (uint)nnonzers + (uint)numRowsOfCoefficientMatrix_ + 1;
+	ncmplx += (uint)nnonzers;
 
 	cout << "S Matrix: " << nnonzers << "\n";
 	break;
@@ -616,8 +619,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	  nnonzers += neli*nelij;
 	}
 	
-	nint += nnonzers + numRowsOfCoefficientMatrix_ + 1;
-	ncmplx += nnonzers;
+	nint += (uint)nnonzers + (uint)numRowsOfCoefficientMatrix_ + 1;
+	ncmplx += (uint)nnonzers;
 
 	cout << "MLFMM: \n";
 	cout << "Nearfield " << nnonzers << "\n";
@@ -634,8 +637,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 
 	  cout << "Tmatrix level " << nlv << ": " << nnonzers << "\n";
 
-	  nint += nnonzers + clulevarry[nlv].nClustSLv*clulevarry[nlv].nPoinSpheLv + 1;
-	  ncmplx += nnonzers;
+	  nint += (uint)nnonzers + (uint)clulevarry[nlv].nClustSLv*clulevarry[nlv].nPoinSpheLv + 1;
+	  ncmplx += (uint)nnonzers;
 	}
 
 	/* **************************************************
@@ -674,8 +677,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	    nnonzers += nclufar[i];
 	  nnonzers *= clulevarry[nlv].nPoinSpheLv;
 
-	  nint += nnonzers + clulevarry[nlv].nClustOLv*clulevarry[nlv].nPoinSpheLv + 1;
-	  ncmplx += nnonzers;
+	  nint += (uint)nnonzers + (uint)clulevarry[nlv].nClustOLv*clulevarry[nlv].nPoinSpheLv + 1;
+	  ncmplx += (uint)nnonzers;
 
 	  cout << "D Matrix level " << nlv << ": " << nnonzers << "\n";
 	} // loop over levels
@@ -685,8 +688,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	for(nlv=0; nlv<numClusterLevels_; nlv++) {
 	  nnonzers = numRowsOfCoefficientMatrix_ * clulevarry[nlv].nPoinSpheLv;
 
-	  nint += nnonzers + numRowsOfCoefficientMatrix_ + 1;
-	  ncmplx += nnonzers;
+	  nint += (uint)nnonzers + (uint)numRowsOfCoefficientMatrix_ + 1;
+	  ncmplx += (uint)nnonzers;
 
 	  cout << "S Matrix level " << nlv << ": " << nnonzers << "\n";
 	}
@@ -694,7 +697,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
       } // the FMM switch
       cout << "Total Nr. of Integers: " << nint << "\n";
       cout << "Total Nr. of Cmplxdble: " << ncmplx << "\n";
-      if( nint < 0 || ncmplx < 0 ) {
+      /*      if( nint < 0 || ncmplx < 0 ) {
 	// Oh boy, you really run into troubles now, you broke the integer
 	// boundary
 	cout << "Warning: This estimation is really just a rough lower limit, because of too many entries.\n";
@@ -702,12 +705,12 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 
 	NCestim << currentFrequency_ << " " << frequency_ << " ";
 	NCestim << (double)(2.2 * sizeof(int) + 2.2 * sizeof(Complex)) << "\n";
-      }
-      else {
+	}*/
+      
 	cout << "RAM Estimation: " << (double)(nint * sizeof(int) + ncmplx * sizeof(Complex))/1000.0/1000.0/1000.0 << " GByte\n";
 	NCestim << currentFrequency_ << " " << frequency_ << " ";
 	NCestim << (double)(nint * sizeof(int) + ncmplx * sizeof(Complex))/1000.0/1000.0/1000.0 << "\n";
-      }
+      
       continue; // end the freq loop
     }
 
