@@ -22,6 +22,21 @@ shutil.copytree(
 subprocess.run(["make"], cwd=tmp_numcalc_path, check=True)
 
 
+def test_numcalc_invalid_parameter(capfd):
+    """
+    Test if NumCalc throws an error in case of invalid command line parameter.
+    """
+
+    try:
+        subprocess.run([f'{tmp_numcalc_path}/NumCalc -invalid_parameter'],
+                       check=True, shell=True)
+    except subprocess.CalledProcessError:
+        _, err = capfd.readouterr()
+        assert "NumCalc was called with an unknown parameter or flag." in err
+    else:
+        ValueError("Num calc did not throw an error")
+
+
 @pytest.mark.parametrize("nitermax, use", [(0, True), (1, True), (2, True),
                                            ([], False)])
 def test_numcalc_commandline_nitermax(nitermax, use):
