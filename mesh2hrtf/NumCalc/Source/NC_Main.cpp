@@ -142,7 +142,7 @@ int main(int argc, char **argv)
       printf("-istart   int : start index of iteration\n");
       printf("-iend     int : end index of iteration\n");
       printf("-nitermax int : max number of CGS iterations\n");
-      printf("-estimate_ram : calculate the number of non-zeros of the FMM matrices and try to give an estimation of RAM consumption\n");
+      printf("-estimate_ram : estimation the RAM consumption of ML-FMM-BEM and write estimate to Memory.txt. Estimate is obtained from the number of non-zeros in the FMM matrices.\n");
       printf("-h            : this message\n");
       exit(0);
     }
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
       estimate_ram = true;
     }
 	else {
-		cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help\n";
+		cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help.\n";
     	exit(-1);
 	}
     i++;
