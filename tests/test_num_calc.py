@@ -157,6 +157,34 @@ def test_numcalc_commandline_istart_iend(istart, iend):
         assert nStepsActual == nStepsExpected
 
 
+def test_numcalc_estimate_ram():
+    """Test NumCalc's RAM estimation using -estimate_ram"""
+
+    # copy test data
+    cwd = tempfile.TemporaryDirectory()
+    data_cwd = os.path.join(cwd.name, 'SHTF', 'NumCalc', 'source_1')
+    data_shtf = os.path.join(os.path.dirname(__file__), 'resources', 'SHTF')
+    shutil.copytree(data_shtf, os.path.join(cwd.name, 'SHTF'))
+
+    # run NumCalc ram estimation
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc -estimate_ram'],
+                   cwd=data_cwd, check=True, shell=True,
+                   stdout=subprocess.DEVNULL)
+
+    # check if Memory.txt exists
+    assert os.path.isfile(os.path.join(data_cwd, 'Memory.txt'))
+
+    # check Memory.txt against reference
+    with open(os.path.join(data_cwd, 'Memory.txt'), 'r') as file:
+        current = file.readlines()
+
+    with open(os.path.join(
+            data_shtf, 'NumCalc', 'source_1', 'Memory.txt'), 'r') as file:
+        reference = file.readlines()
+
+    assert current == reference
+
+
 @pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])
 @pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
                                             ("point", (40, -45))])
