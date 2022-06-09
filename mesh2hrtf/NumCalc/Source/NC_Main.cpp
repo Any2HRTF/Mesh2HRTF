@@ -146,25 +146,29 @@ int main(int argc, char **argv)
       printf("-h            : this message\n");
       exit(0);
     }
-    if(!strcmp(argv[i],"-istart")) {
+    else if(!strcmp(argv[i],"-istart")) {
       i++;
       if(i<argc) {
 	istart_=atoi(argv[i]);
       }
     }
-    if(!strcmp(argv[i],"-iend")) {
+    else if(!strcmp(argv[i],"-iend")) {
       i++;
       if(i<argc)
 	iend=atoi(argv[i]);
     }
-    if(!strcmp(argv[i],"-nitermax")) {
+    else if(!strcmp(argv[i],"-nitermax")) {
       i++;
       if( i < argc )
 	niter_max_ = atoi( argv[i] );
     }
-    if(!strcmp(argv[i],"-estimate_ram")) {
+    else if(!strcmp(argv[i],"-estimate_ram")) {
       estimate_ram = true;
     }
+	else {
+		cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help\n";
+    	exit(-1);
+	}
     i++;
   }
 
