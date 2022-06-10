@@ -232,14 +232,14 @@ int main(int argc, char **argv)
       // and the data in it
 #ifdef isWindows
       int ifmkd;
-      if(istart_ == 0 && iend == 0) { // no steps are given, remove the old directory
+      if( (istart_ == 0 && iend == 0) && (!estimate_ram)) { // no steps are given, remove the old directory
 	if(system("rmdir /s /q be.out")==-1) cout << "\nCannot create directory be.out";
 	//	if(system("rmdir /s /q fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
       ifmkd = _mkdir("be.out"); // WINDOWS
       //   ifmkd = _mkdir("fe.out");
 #else
-      if(istart_ == 0 && iend == 0) {
+      if(istart_ == 0 && iend == 0 && !estimate_ram) {
 	if(system("rm -f -r be.out")==-1) cout << "\nCannot create directory be.out";
 	//	if(system("rm -f -r fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
