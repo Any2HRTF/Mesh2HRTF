@@ -1,9 +1,7 @@
 function finalizeHRTFsimulation(varargin)
-%  "finalize_hrtf_simulation.py" merges SOFA data from two separate Mesh2HRTF simulations for LEFT & RIGHT ear.
-%  it uses a lot of example code from Mesh2HRTF "Output2HRTF_Main.py" & "NumCalcManager.py"
-%
-%                               HOW TO USE:
-% Main tutorial is here:   https://sourceforge.net/p/mesh2hrtf/wiki/Basic_HRTF_post_processing
+%  FINALIZEHRTFSIMULATION(varargin)
+%  merge SOFA data from two separate Mesh2HRTF simulations for left & right ear.
+%  For usage details, please check the documentation!
 %
 % A - no inputs = scan start folder for 2 projects to merge.
 % B - 1 input  = scan given folder for 2 projects to merge.
@@ -24,53 +22,77 @@ function finalizeHRTFsimulation(varargin)
 %
 % mode C - 2 inputs = Merge the 2 projects that were given as input_1 and input_2.
 %
-%   made for Python 3.7+                    see license details at the end of the script.
-%       v0.50    2022-01-23     First working version. Tested on Windows 10. (by Sergejs Dombrovskis)
-%       v0.90    2022-01-24     Mode-A1 is ready + most descriptions in place. (by S.D.)
-%       v0.93    2022-02-06     added Mode-A2 and Mode-C. (by S.D.)
-%       v1.00    2022-03-15     added Mode-A0 with automatic execution of "Output2HRTF.py" + small improvements +
-%                                added multi-SamplingRate HRIR outputs + extra sanity checks (by S.D.)
-%       v1.10    2022-03-17     added diagnostic plotting of the merged HRIR.sofa file (by S.D.)
-%       v1.20    2022-03-20     added effective workaround to produce usable data even if simulation encountered the
-%                                "Non-Convergence issue" - only in A0 mode (by S.D.)
-%       v1.30    2022-03-26     added more and easier-to-use troubleshooting messages (more beginner-friendly),
-%                                added universal handling of all possible simulation errors (by S.D.)
-%       v1.31    2022-03-22     improved compatibility with Mac-OS + minor bugfix (by S.D.)
-%       v1.32    2022-03-31     disabled "multi-SamplingRate" HRIR saving because the current code is wrong (by S.D.)
-%       v1.50    2022-04-02     rewrite to make "multi-SamplingRate" HRIR saving work correctly (by S.D.)
-%       v1.60    2022-04-20     Compatibility fixes to support latest version of "output_to_hrtf.py". Plus
-%                                   renamed the script from the initial "join_sofa_files.py" name because of much
-%                                   broader scope than in the initial v0.93 (by S.D.)
-%       v1.70    2022-05-02     Improved repeated executions - now it is safe to re-run the script, added setting
-%                                   "Re_Process_Output2HRTF", plus minor improvements for exception handling (by S.D.)
-%       v2.00    2022-05-12     rewrite to make "multi-SamplingRate" HRIR use the new "output_to_hrtf" functionality
-%                                   and avoid the crash due to other changes in recent "output_to_hrtf".
-%                                   Added command line arguments, and simplified too much confusing modes.
-%                                   Bugfix in HRTF merging based on code from "utils._merge_sofa_files" (by S.D.)
-%       v2.05    2022-05-16     Various useful improvements & fixes (by S.D.)
+% migrated from Python API from Sergejs Dombrovskis
+% author(s): Katharina Pollack, June 2022
+
+jj = 1;
 
 % check input and input mode
-% # different input scenarios:
-% # A - no inputs = scan start folder for 2 projects to merge.
-% # B - 1 input  = scan given folder for 2 projects to merge.
-% # C - 2 inputs = Merge 2 projects that were given as input.
-
+switch numel(varargin)
+    case 0 % mode 'no inputs' = scan working directory for 2 projects to merge.
+        start_folder = dir;
+        for ii = 3:numel(start_folder)
+            % check for folder name
+            [~, ~, fext] = fileparts(start_folder(ii).name);
+            if isempty(fext)
+                % save folder name to variable
+                folder_names{jj} = fname;
+                jj = jj+1;
+            end
+        end
+        if numel(folder_names) ~= 2
+            error('More than two folders were found, only two expected. Program aborted.');
+        end
+    case 1 % mode '1 input'   = scan given folder for 2 projects to merge.
+        if ~ischar(varargin{1})
+            error('Allowed input parameter is string.');
+        elseif ~isfolder(varargin{1})
+            error('Input parameter has to be valid folder name.');
+        end
+        start_folder = varargin{1};
+        
+        % pretty sure this can be solved in a more elegant way (than
+        % copypasting the code from above ...)
+        for ii = 3:numel(start_folder)
+            % check for folder name
+            [~, ~, fext] = fileparts(start_folder(ii).name);
+            if isempty(fext)
+                % save folder name to variable
+                folder_names{jj} = fname;
+                jj = jj+1;
+            end
+        end
+        if numel(folder_names) ~= 2
+            error('More than two folders were found, only two expected. Program aborted.');
+        end
+    case 2 % mode '2 inputs'  = Merge 2 projects that were given as input.
+        if ~ischar(varargin{1}) || ~ischar(varargin{2})
+            error('Allowed input parameter is string.');
+        elseif ~isfolder(varargin{1}) || ~isfolder(varargin{2})
+            error('Both input parameters have to be valid folder names.');
+        end
+        folder_names{1} = varargin{1};
+        folder_names{2} = varargin{2};
+    otherwise
+        error(['Wrong number of inputs given. Valid number of input arguments are:\n', ...
+            '%s\n%s\n%s'], ...
+            'A - no inputs = scan start folder for 2 projects to merge.', ...
+            'B - 1 input  = scan given folder for 2 projects to merge.', ...
+            'C - 2 inputs = Merge 2 projects that were given as input.');
+end
 
 % def merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRTF'):
-% """Write complex pressure or impulse responses as SOFA file."""
-%    adapted from "write_to_sofa()" in "Output2HRTF_Main.py"
+% Write complex pressure or impulse responses as SOFA file.
+%   adapted from "write_to_sofa()" in "Output2HRTF_Main.py"
 
-% cart2sph conversion with DEGREE output
-% def cart2sph_in_deg(xyz):
 
 % def scan_for_errors(project_path):  # find any broken data in this project
-%     # NOTE: made only to work with 1 source!!!
+%     NOTE: made only to work with 1 source!!!
 
 % def plot_hrir_pair(sofa_data_path, noise_floor=-70):
-%     """
 %     Plots both left and right ear HRIRs in an easy to diagnose format
 % 
-%     # based on tutorial: https://sofar.readthedocs.io/en/latest/working_with_sofa_files.html#working-with-sofa
+%     based on tutorial: https://sofar.readthedocs.io/en/latest/working_with_sofa_files.html#working-with-sofa
 % 
 %     Params:
 %     sofa_data_path : full path to the sofa HRIR file to load and plot
@@ -78,8 +100,6 @@ function finalizeHRTFsimulation(varargin)
 %     noise_floor : were to limit colormap to provide easy to read image
 %         = -50  # noise floor value used in "SOFAplotHRTF.m" from SOFA Matlab API
 %         = -70  # value that visually matches the look of "SOFAplotHRTF.m" from SOFA MatlabAPI
-% 
-%     """
 
 
 
