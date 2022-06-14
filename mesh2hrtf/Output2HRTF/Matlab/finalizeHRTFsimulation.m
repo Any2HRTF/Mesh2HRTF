@@ -33,10 +33,10 @@ switch numel(varargin)
         start_folder = dir;
         for ii = 3:numel(start_folder)
             % check for folder name
-            [~, ~, fext] = fileparts(start_folder(ii).name);
+            [fpath, fname, fext] = fileparts(start_folder(ii).name);
             if isempty(fext)
                 % save folder name to variable
-                folder_names{jj} = fname;
+                folder_names{jj} = fullfile(fpath, fname);
                 jj = jj+1;
             end
         end
@@ -55,10 +55,10 @@ switch numel(varargin)
         % copypasting the code from above ...)
         for ii = 3:numel(start_folder)
             % check for folder name
-            [~, ~, fext] = fileparts(start_folder(ii).name);
+            [fpath, fname, fext] = fileparts(start_folder(ii).name);
             if isempty(fext)
                 % save folder name to variable
-                folder_names{jj} = fname;
+                folder_names{jj} = fullfile(fpath, fname);
                 jj = jj+1;
             end
         end
@@ -80,26 +80,24 @@ switch numel(varargin)
             'B - 1 input  = scan given folder for 2 projects to merge.', ...
             'C - 2 inputs = Merge 2 projects that were given as input.');
 end
-
-% def merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRTF'):
-% Write complex pressure or impulse responses as SOFA file.
-%   adapted from "write_to_sofa()" in "Output2HRTF_Main.py"
-
+clear ii jj
 
 % def scan_for_errors(project_path):  # find any broken data in this project
 %     NOTE: made only to work with 1 source!!!
+% scan project for errors
+% run Output2HRTF_Main in both folders
+for ii = 1:2
+    cd(folder_names{ii})
+    Output2HRTF;
+end
 
-% def plot_hrir_pair(sofa_data_path, noise_floor=-70):
-%     Plots both left and right ear HRIRs in an easy to diagnose format
-% 
-%     based on tutorial: https://sofar.readthedocs.io/en/latest/working_with_sofa_files.html#working-with-sofa
-% 
-%     Params:
-%     sofa_data_path : full path to the sofa HRIR file to load and plot
-% 
-%     noise_floor : were to limit colormap to provide easy to read image
-%         = -50  # noise floor value used in "SOFAplotHRTF.m" from SOFA Matlab API
-%         = -70  # value that visually matches the look of "SOFAplotHRTF.m" from SOFA MatlabAPI
+
+% determine left and right ear data
+% source position along interaural axis. Positive = left, negative = right
+
+% merge to one SOFA file
+% merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRTF'):
+% merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRIR'):
 
 
 
