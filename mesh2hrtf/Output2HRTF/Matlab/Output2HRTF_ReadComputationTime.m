@@ -8,7 +8,9 @@ function data=Output2HRTF_ReadComputationTime(filename)
 %
 %   Output:
 %       data ....... computation time in seconds, with columns:
-%                    'Frequency index', 'Frequency', 'Building', 'Solving', 'Postprocessing', 'Total'
+%                    'Frequency index', 'Frequency', 'Building', 'Solving',
+%                    'Postprocessing', 'Total', 'relative error', 'iterations',
+%                    'maximum number of iterations reached' (1 = yes, 0 = no)
 
 fid=fopen(filename);
 count=0;
@@ -47,12 +49,12 @@ while ~feof(fid)
         data(count,8) = sscanf(line(startIdx+23:endIdx-1), '%d');
         data(count,9) = sscanf('0', '%d');
     end
-    if ~isempty(regexp(line, '^\d+\s\d+'))
-        [idx1, idx2] = regexp(line, '\s');
-        data(count,7) = sscanf(line(idx2+1:end-1), '%f');
-        data(count,8) = sscanf(line(1:idx1-1), '%d');
-        data(count,9) = sscanf('0', '%d');
-    end
+%     if ~isempty(regexp(line, '^\d+\s\d+'))
+%         [idx1, idx2] = regexp(line, '\s');
+%         data(count,7) = sscanf(line(idx2+1:end-1), '%f');
+%         data(count,8) = sscanf(line(1:idx1-1), '%d');
+%         data(count,9) = sscanf('0', '%d');
+%     end
     if strfind(line, 'Warning: Maximum number of iterations')
         data(count,9) = sscanf('1', '%d');
     end

@@ -57,7 +57,8 @@ void NC_Read
 	// read the basic parameters
 	NC_ReadBasicParametersB(NCout, inputFile_, chinpline, chterms, Freqs);
 
-	// create the arrays
+	// alloctate the global arrays
+	// these are needed later in the postprocessing
 	extNumbersOfNodes = new int[numNodes_];
 	isNodeMeshOrEvalNode = new int[numNodes_];
 	extNumbersOfElements = new int[numElements_];
@@ -1560,12 +1561,13 @@ int NC_GetLine
 }
 
 // change a string into integer
+/* This is a bit over the top because c++ offers nicer ways */
 int NC_String2Integer
 (
 	string Ori_Str		// I: string to be coverted
 )
 {
-	int j;
+	int j = 0;
 	char chwk[15];
 	string chnu = " ";
 
@@ -1583,15 +1585,16 @@ int NC_String2Integer
 }
 
 // change a string into double
+// kreiza changed everything about because valgrind complained
 double NC_String2Double
 (
 	string Ori_Str		// I: string to be coverted
 )
 {
-	int j;
-	double dwk;
-	char chwk[25];
-	string chnu = " ";
+  /*	int j = 0;
+	double dwk = 0.0;
+	char chwk[25] = " ";
+	string chnu = " ";*/
 
 	if((int)Ori_Str.length() > 25)
 	{
@@ -1600,11 +1603,13 @@ double NC_String2Double
 		exit(1);
 	}
 
-	for(j=0; j<25; j++) chwk[j] = chnu[0];
+	return atof(Ori_Str.c_str());
+	
+	/*	for(j=0; j<25; j++) chwk[j] = chnu[0];
 	Ori_Str.copy(chwk, 25, 0);
 	sscanf(chwk, "%lf", &dwk);
 
-	return(dwk);
+	return(dwk);*/
 }
 
 // compute the frequencies

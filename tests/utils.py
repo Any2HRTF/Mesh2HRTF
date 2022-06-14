@@ -152,6 +152,8 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
         plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                     source, bem_method)
 
+    plt.close()
+
 
 def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                 source, bem_method, iEar=0):
