@@ -173,6 +173,9 @@ def test_numcalc_estimate_ram():
 
     # check if Memory.txt exists
     assert os.path.isfile(os.path.join(data_cwd, 'Memory.txt'))
+    # check if output files still exist
+    assert os.path.isfile(os.path.join(
+        data_cwd, 'be.out', 'be.1', 'pBoundary'))
 
     # check Memory.txt against reference
     with open(os.path.join(data_cwd, 'Memory.txt'), 'r') as file:
