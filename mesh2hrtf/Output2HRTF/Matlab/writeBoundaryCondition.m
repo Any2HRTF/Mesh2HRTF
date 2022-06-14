@@ -56,7 +56,8 @@ end
 
 % write comment
 if nargin == 5
-    fprintf(comment);
+    fprintf(fileID, comment);
+    fprintf(fileID, '\n#\n');
 end
 
 % write kind of boundary condition
