@@ -22,6 +22,21 @@ shutil.copytree(
 subprocess.run(["make"], cwd=tmp_numcalc_path, check=True)
 
 
+def test_numcalc_invalid_parameter(capfd):
+    """
+    Test if NumCalc throws an error in case of invalid command line parameter.
+    """
+
+    try:
+        subprocess.run([f'{tmp_numcalc_path}/NumCalc -invalid_parameter'],
+                       check=True, shell=True)
+    except subprocess.CalledProcessError:
+        _, err = capfd.readouterr()
+        assert "NumCalc was called with an unknown parameter or flag." in err
+    else:
+        ValueError("Num calc did not throw an error")
+
+
 @pytest.mark.parametrize("nitermax, use", [(0, True), (1, True), (2, True),
                                            ([], False)])
 def test_numcalc_commandline_nitermax(nitermax, use):
@@ -140,6 +155,37 @@ def test_numcalc_commandline_istart_iend(istart, iend):
             '>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<'))
         nStepsExpected = iend - istart + 1
         assert nStepsActual == nStepsExpected
+
+
+def test_numcalc_estimate_ram():
+    """Test NumCalc's RAM estimation using -estimate_ram"""
+
+    # copy test data
+    cwd = tempfile.TemporaryDirectory()
+    data_cwd = os.path.join(cwd.name, 'SHTF', 'NumCalc', 'source_1')
+    data_shtf = os.path.join(os.path.dirname(__file__), 'resources', 'SHTF')
+    shutil.copytree(data_shtf, os.path.join(cwd.name, 'SHTF'))
+
+    # run NumCalc ram estimation
+    subprocess.run([f'{tmp_numcalc_path}/NumCalc -estimate_ram'],
+                   cwd=data_cwd, check=True, shell=True,
+                   stdout=subprocess.DEVNULL)
+
+    # check if Memory.txt exists
+    assert os.path.isfile(os.path.join(data_cwd, 'Memory.txt'))
+    # check if output files still exist
+    assert os.path.isfile(os.path.join(
+        data_cwd, 'be.out', 'be.1', 'pBoundary'))
+
+    # check Memory.txt against reference
+    with open(os.path.join(data_cwd, 'Memory.txt'), 'r') as file:
+        current = file.readlines()
+
+    with open(os.path.join(
+            data_shtf, 'NumCalc', 'source_1', 'Memory.txt'), 'r') as file:
+        reference = file.readlines()
+
+    assert current == reference
 
 
 @pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])

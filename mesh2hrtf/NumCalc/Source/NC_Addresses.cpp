@@ -58,7 +58,8 @@ int n_Pair_NeaF[10], // number of cluster pairs located in the frequncy near fie
 int NC_DeclareArrays
 (
 	ofstream& NCout,
-	double* Freqs
+	double* Freqs,
+	bool estimate_ram
 )
 {
 	double dLamdBeL = waveLength_/diameterBE_, d_ratio[10],
@@ -184,99 +185,103 @@ Labsettradibem:
 
     // number of components of the coefficient matrix for the traditional BEM
     numComponentsOfCoefficientMatrix_ = numRowsOfCoefficientMatrix_*numRowsOfCoefficientMatrix_;
-
+    
     // compute the near field coefficient matrix and
-	// generate the clusters of internal points
-	numInternalPointsClusters_ = 0;
-	if(methodFMM_) // FMBEM is used
-	{
-		// compute the number of nonzeros of the near field coefficient matrix
-		NC_AllocateNmtx(NCout);
-
-		// generate the clusters of the internal points
-		if(numNodesOfEvaluationMesh_ > 0) numInternalPointsClusters_ = NC_GenerateClustersEvalGrid(NCout);
-	}
-
-	// generate the arrays
-	switch(methodFMM_)
+    // generate the clusters of internal points
+    numInternalPointsClusters_ = 0;
+    if(methodFMM_) // FMBEM is used
+      {
+	// compute the number of nonzeros of the near field coefficient matrix
+	// kreiza: This is expensive an not really needed for the estimation
+	//         of the entries. Trouble is that we have to estimate or
+	//         determine the number of nonzero-entries later explicitely
+	if( !estimate_ram )
+	  NC_AllocateNmtx(NCout);
+	
+	// generate the clusters of the internal points
+	if(numNodesOfEvaluationMesh_ > 0) numInternalPointsClusters_ = NC_GenerateClustersEvalGrid(NCout);
+      }
+    if ( !estimate_ram ) {
+      // generate the arrays
+      switch(methodFMM_)
 	{
 	case 1:
-		dmtxlev = new D_mtx_lev[1];
-		break;
+	  dmtxlev = new D_mtx_lev[1];
+	  break;
 	case 3:
-		dmtxlev = new D_mtx_lev[numClusterLevels_];
-		tmtxlev = new T_mtx_lev[numClusterLevels_];
-		smtxlev = new S_mtx_lev[numClusterLevels_];
-		break;
+	  dmtxlev = new D_mtx_lev[numClusterLevels_];
+	  tmtxlev = new T_mtx_lev[numClusterLevels_];
+	  smtxlev = new S_mtx_lev[numClusterLevels_];
+	  break;
 	}
-
-	// create the right hand side vector
-	zrhs = new Complex[numRowsOfCoefficientMatrix_];
-
-	// set original value of the computation type
-	imultipori = methodFMM_;
-	nlevmlfmori = numClusterLevels_;
-
-	// compute the ratio of cluster paires in the frequency near field to the total number
-	// of cluster pairs in the geometrical far field
-	for(i=0; i<numClusterLevels_; i++) {
-		if(n_Pair_NeaF[i] > 0) {
-			d_ratio[i] = (double)n_Pair_NeaF[i]/(double)n_Pair_FarD[i];
-		} else {
-			d_ratio[i] = 0.0;
-		}
+      
+      // create the right hand side vector
+      zrhs = new Complex[numRowsOfCoefficientMatrix_];
+    }
+    // set original value of the computation type
+    imultipori = methodFMM_;
+    nlevmlfmori = numClusterLevels_;
+    
+    // compute the ratio of cluster paires in the frequency near field to the total number
+    // of cluster pairs in the geometrical far field
+    for(i=0; i<numClusterLevels_; i++) {
+      if(n_Pair_NeaF[i] > 0) {
+	d_ratio[i] = (double)n_Pair_NeaF[i]/(double)n_Pair_FarD[i];
+      } else {
+	d_ratio[i] = 0.0;
+      }
+    }
+    
+    // write informations about canceled interacting cluster paires
+    if(methodFMM_ && (n_Pair_NeaF[0] || n_Pair_NeaF[numClusterLevels_ - 1])) {
+      cout << "\nInformations about the canceled interacting cluster pairs:" << endl;
+      cout << "   Level   N. canceled pairs   N. interacting pairs   Cancel ratio (%)"
+	   << endl;
+      for(i=0; i<numClusterLevels_; i++) {
+	cout << "   " << setw(3) << i << "     " << setw(10) << n_Pair_NeaF[i] <<
+	  "           " << setw(10) << n_Pair_FarD[i] <<
+	  "               " << setw(5) << d_ratio[i]*100.0 << endl;
+      }
+      NCout << "\nInformations about the canceled interacting cluster pairs:" << endl;
+      NCout << "   Level   N. canceled pairs   N. interacting pairs   Cancel ratio (%)"
+	    << endl;
+      for(i=0; i<numClusterLevels_; i++) {
+	NCout << "   " << setw(3) << i << "     " << setw(10) << n_Pair_NeaF[i] <<
+	  "           " << setw(10) << n_Pair_FarD[i] <<
+	  "               " << setw(5) << d_ratio[i]*100.0 << endl;
+      }
+    }
+    
+    if(methodFMM_ == 1) {
+      if(d_ratio[0] > thresholrat) {
+	methodFMM_ = 0;
+	numClusterLevels_ = 1;
+	idifcomtyp = 1;
+	if(numRowsOfCoefficientMatrix_ < Max_Dofs_TBEM) {
+	  goto Labsettradibem;
+	} else {
+	  NC_Error_Exit_1(NCout, "Frquency is too low, the single level FMBEM can not be used!",
+			  "Frequency = ", frequency_);
 	}
-
-	// write informations about canceled interacting cluster paires
-	if(methodFMM_ && (n_Pair_NeaF[0] || n_Pair_NeaF[numClusterLevels_ - 1])) {
-		cout << "\nInformations about the canceled interacting cluster pairs:" << endl;
-		cout << "   Level   N. canceled pairs   N. interacting pairs   Cancel ratio (%)"
-			<< endl;
-		for(i=0; i<numClusterLevels_; i++) {
-			cout << "   " << setw(3) << i << "     " << setw(10) << n_Pair_NeaF[i] <<
-				"           " << setw(10) << n_Pair_FarD[i] <<
-				"               " << setw(5) << d_ratio[i]*100.0 << endl;
-		}
-		NCout << "\nInformations about the canceled interacting cluster pairs:" << endl;
-		NCout << "   Level   N. canceled pairs   N. interacting pairs   Cancel ratio (%)"
-			<< endl;
-		for(i=0; i<numClusterLevels_; i++) {
-			NCout << "   " << setw(3) << i << "     " << setw(10) << n_Pair_NeaF[i] <<
-				"           " << setw(10) << n_Pair_FarD[i] <<
-				"               " << setw(5) << d_ratio[i]*100.0 << endl;
-		}
+      }
+    } else if(methodFMM_ > 1) {
+      for(i=0; i<numClusterLevels_; i++)
+	{
+	  if(d_ratio[i] > thresholrat) {
+	    methodFMM_ = 1;
+	    numClusterLevels_ = 1;
+	    idifcomtyp = 1;
+	    if(numRowsOfCoefficientMatrix_ < Max_Dofs_FMM1) {
+	      goto Labsettradibem;
+	    } else {
+	      NC_Error_Exit_1(NCout, "Frquency is too low, the multilevel FMBEM can not be used!",
+			      "Frequency = ", frequency_);
+	    }
+	  }
 	}
-
-	if(methodFMM_ == 1) {
-		if(d_ratio[0] > thresholrat) {
-			methodFMM_ = 0;
-			numClusterLevels_ = 1;
-			idifcomtyp = 1;
-			if(numRowsOfCoefficientMatrix_ < Max_Dofs_TBEM) {
-				goto Labsettradibem;
-			} else {
-				NC_Error_Exit_1(NCout, "Frquency is too low, the single level FMBEM can not be used!",
-					"Frequency = ", frequency_);
-			}
-		}
-	} else if(methodFMM_ > 1) {
-		for(i=0; i<numClusterLevels_; i++)
-		{
-			if(d_ratio[i] > thresholrat) {
-				methodFMM_ = 1;
-				numClusterLevels_ = 1;
-				idifcomtyp = 1;
-				if(numRowsOfCoefficientMatrix_ < Max_Dofs_FMM1) {
-					goto Labsettradibem;
-				} else {
-					NC_Error_Exit_1(NCout, "Frquency is too low, the multilevel FMBEM can not be used!",
-						"Frequency = ", frequency_);
-				}
-			}
-		}
-	}
-
-	return(1);
+    }
+    
+    return(1);
 }
 
 // generate the element clusters for SLFMBEM
