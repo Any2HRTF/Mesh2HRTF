@@ -12,13 +12,13 @@ function finalizeHRTFsimulation(varargin)
 %   1- run this .py file from a dedicated folder (for example use folder "Finalize_HRTF_simulation")
 %   2- Move into the "Finalize_HRTF_simulation" folder exactly the 2 project folders that need to be merged.
 %   3- "open/run" this "finalize_hrtf_simulation.py" with Python.
-%   4- Merged SOFA files will be saved in a folder next to the project that was found.   DONE.
+%   4- Merged SOFA files will be saved in a folder next to the project that was found.
 %
 % mode B - Input1 only = scan Input1 folder for 2 projects to merge.
 %   1- Move into any folder exactly the 2 project folders that need to be merged.
 %   2- "run" this "finalize_HRTF_simulation.py" file & specify "input_1" folder that contains projects to merge.
 %       This script searches and merges the SOFA files from the 2 projects it finds inside "input_1" path.
-%   3- Merged SOFA files will be saved in a folder next to the project that was found.   DONE.
+%   3- Merged SOFA files will be saved in a folder next to the project that was found.
 %
 % mode C - 2 inputs = Merge the 2 projects that were given as input_1 and input_2.
 %
@@ -43,7 +43,7 @@ switch numel(varargin)
         if numel(folder_names) ~= 2
             error('More than two folders were found, only two expected. Program aborted.');
         end
-    case 1 % mode '1 input'   = scan given folder for 2 projects to merge.
+    case 1 % mode '1 input' = scan given folder for 2 projects to merge.
         if ~ischar(varargin{1})
             error('Allowed input parameter is string.');
         elseif ~isfolder(varargin{1})
@@ -65,7 +65,7 @@ switch numel(varargin)
         if numel(folder_names) ~= 2
             error('More than two folders were found, only two expected. Program aborted.');
         end
-    case 2 % mode '2 inputs'  = Merge 2 projects that were given as input.
+    case 2 % mode '2 inputs' = Merge 2 projects that were given as input.
         if ~ischar(varargin{1}) || ~ischar(varargin{2})
             error('Allowed input parameter is string.');
         elseif ~isfolder(varargin{1}) || ~isfolder(varargin{2})
