@@ -235,10 +235,16 @@ parser.add_argument(
     help=("Delay in seconds for waiting until the RAM and CPU usage is checked"
           " after a NumCalc instance was started."))
 parser.add_argument(
-    "--ram_safety_factor", default=0.95, type=float,
-    help=("Detect RAM usage of highest frequency and wait until free RAM "
-          "exceeds `safety factor` times this value before starting the next "
-          "NumCalc instance."))
+    "--max_ram_load", default=False, type=float,
+    help=("The RAM that can maximally be used. New NumCalc instances are only "
+          "started if enough RAM is available. By default all available RAM "
+          "will be used."))
+parser.add_argument(
+    "--ram_safety_factor", default=1.05, type=float,
+    help=("A safty factor that is applied to the estimated RAM consumption. "
+          "The estimate is obtained using NumCalc -estimate_ram. The dafault "
+          "of 1.05 would for example assume that 10.5 GB ram are needed if "
+          "a RAM consumption of 10 GB was estimated by NumCalc."))
 parser.add_argument(
     "--max_cpu_load", default=80, type=int,
     help="Maximum allowed CPU load in percent")
