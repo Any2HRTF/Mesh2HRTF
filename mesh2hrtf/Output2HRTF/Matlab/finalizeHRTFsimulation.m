@@ -26,8 +26,6 @@ function finalizeHRTFsimulation(varargin)
 % migrated from Python API from Sergejs Dombrovskis
 % author(s): Katharina Pollack, June 2022
 
-jj = 1;
-
 % check input and input mode
 switch numel(varargin)
     case 0 % mode 'no inputs' = scan working directory for 2 projects to merge.
@@ -37,8 +35,7 @@ switch numel(varargin)
             [fpath, fname, fext] = fileparts(start_folder(ii).name);
             if isempty(fext)
                 % save folder name to variable
-                folder_names{jj} = fullfile(fpath, fname);
-                jj = jj+1;
+                folder_names{end+1} = fullfile(fpath, fname);
             end
         end
         if numel(folder_names) ~= 2
@@ -59,8 +56,7 @@ switch numel(varargin)
             [fpath, fname, fext] = fileparts(start_folder(ii).name);
             if isempty(fext)
                 % save folder name to variable
-                folder_names{jj} = fullfile(fpath, fname);
-                jj = jj+1;
+                folder_names{end+1} = fullfile(fpath, fname);
             end
         end
         if numel(folder_names) ~= 2
@@ -81,15 +77,92 @@ switch numel(varargin)
             'B - 1 input  = scan given folder for 2 projects to merge.', ...
             'C - 2 inputs = Merge 2 projects that were given as input.');
 end
-clear ii jj
+clear ii
 
 % def scan_for_errors(project_path):  # find any broken data in this project
 %     NOTE: made only to work with 1 source!!!
 % scan project for errors
 % run Output2HRTF_Main in both folders
 for ii = 1:2
-    cd(folder_names{ii})
-    Output2HRTF;
+    cd(fullfile(folder_names{ii}, 'NumCalc'))
+    % check for number of sources
+    NCdir_tmp = dir;
+    if numel(NCdir_tmp) > 3 % including '.' and '..' entries
+        error(['%s consists of two source folders.\n', ...
+            'This script only merges SOFA files of two separately calculated sources.\n', ...
+            'See documentation for details.'], folder_names{ii});
+    end
+    cd(NCdir_tmp{3}) % ignoring '.' and '..' entries
+    % check for NC*.out files
+    sourcedir_tmp = dir('NC*.out');
+    for jj = 1:numel(sourcedir_tmp)
+        NCout_files{end+1} = fullfile(sourcedir_tmp(jj).folder, sourcedir_tmp(jj).name);
+    end
+    % set keys for regexps
+    fstep_key = 'Frequency step = ';
+    frequency_key = ', Frequency = ';
+    non_convergence_key = 'Warning: Maximum number of iterations is reached!';
+    gaussean_lim_key = 'Too many integral points in the theta-direction!';
+    happy_end_key = 'End time: ';
+    for kk = 1:numel(NCout_files)
+        % open each NC*.out file and scan for errors (i.e., search for keys in files)
+        fid=fopen(filename);
+        counter = 0;
+        while ~feof(fid)
+            counter = counter+1;
+            line=fgets(fid);
+            switch line
+                case fstep_key
+                    line_nr = counter;
+                    fstep_nr = line(length(fstep_key)+1:end);
+                case frequency_key
+%                     where_is_it = lines[line_nr].find(frequency_key)
+%                     # note down what is the frequency of this log and on which line
+%                     # (because more than 1 frequency may be in the same worker/log-file)
+%                     frequencies.append(float(lines[line_nr].strip()[where_is_it + len(frequency_key):-3]))
+%                     happy_end = False  # used in case of multiple frequency steps in one log file
+                    line_nr = counter;
+                    freq = line(length(frequency_key)+1:end);
+                    happy_end = 0;
+                case non_convergence_key
+%                     if frequencies[-1] > 24000:  # affects very high frequencies only
+%                         print('Warning - Non-Convergence detected at over 24kHz  (at ' + str(frequencies[-1]) + 'Hz)')
+%                     else:
+%                         print('PROBLEM!! - Non-Convergence issue in important range: @ ' + str(frequencies[-1]) + 'Hz')
+%                         
+%                         corrupt_freq.append(frequencies[-1])  # note down which frequency failed
+%                         # break  # can not use break because there may be multiple frequency steps in one log file...
+                case gaussean_lim_key
+%                     if frequencies[-1] > 24000:  # affects very high frequencies only
+%                         print('Warning - Gaussean points limit issue detected at over 24kHz  (at '
+%                         + str(frequencies[-1]) + 'Hz)')
+%                     else:
+%                         print('PROBLEM!! - Gaussean points limit issue in important range: @ '
+%                         + str(frequencies[-1]) + 'Hz')
+%                         
+%                         corrupt_freq.append(frequencies[-1])  # note down which frequency failed
+%                         # break  # can not use break because there may be multiple frequency steps in one log file...
+                case happy_end_key
+%                     happy_end = True
+%                     # great - this instance completed the simulation
+                otherwise
+            end
+        end
+        fclose(fid);
+        
+%         if len(corrupt_freq) > 0:  # we have corrupt data
+%             if lowest_corrupt_frq == 0:
+%                 lowest_corrupt_frq = min(corrupt_freq)
+%                 
+%                 elif lowest_corrupt_frq > min(corrupt_freq):
+%                 lowest_corrupt_frq = min(corrupt_freq)  # keep only the lowest problematic frequency
+%                 
+%                 return lowest_corrupt_frq, re_run_numcaclmanager
+        
+        % run Output2HRTF script in project folder
+        cd(folder_names{ii})
+        Output2HRTF;
+    end
 end
 
 
