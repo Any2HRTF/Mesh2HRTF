@@ -370,12 +370,13 @@ else:
     if not numcalc_path.endswith("NumCalc"):
         raise_error("numcalc_path must end with 'NumCalc'", text_color_red,
                     log_file, confirm_errors)
-    elif not os.path.isfile(numcalc_path):
+    p = subprocess.Popen(f"command -v {numcalc_path}", stdout=subprocess.PIPE,
+                         shell=True)
+    if not len(p.stdout.read()):
         raise_error(f"NumCalc executable does not exist at {numcalc_path}",
                     text_color_red, log_file, confirm_errors)
-    else:
-        numcalc_executable = numcalc_path
-        numcalc_path = os.path.dirname(numcalc_path)
+    numcalc_executable = numcalc_path
+    numcalc_path = os.path.dirname(numcalc_path)
 
 
 # Check all projects that may need to be executed -----------------------------
