@@ -99,70 +99,59 @@ for ii = 1:2
         NCout_files{end+1} = fullfile(sourcedir_tmp(jj).folder, sourcedir_tmp(jj).name);
     end
     % set keys for regexps
-    fstep_key = 'Frequency step = ';
     frequency_key = ', Frequency = ';
     non_convergence_key = 'Warning: Maximum number of iterations is reached!';
     gaussean_lim_key = 'Too many integral points in the theta-direction!';
     happy_end_key = 'End time: ';
     for kk = 1:numel(NCout_files)
         % open each NC*.out file and scan for errors (i.e., search for keys in files)
-        fid=fopen(filename);
-        counter = 0;
+        fid=fopen(NCout_files{kk});
+        counter = 0; happy_end = 0; corrupt_freq = 0; lowest_corrupt_frq = 0; freq = [];
         while ~feof(fid)
             counter = counter+1;
             line=fgets(fid);
             switch line
-                case fstep_key
-                    line_nr = counter;
-                    fstep_nr = line(length(fstep_key)+1:end);
                 case frequency_key
-%                     where_is_it = lines[line_nr].find(frequency_key)
-%                     # note down what is the frequency of this log and on which line
-%                     # (because more than 1 frequency may be in the same worker/log-file)
-%                     frequencies.append(float(lines[line_nr].strip()[where_is_it + len(frequency_key):-3]))
-%                     happy_end = False  # used in case of multiple frequency steps in one log file
-                    line_nr = counter;
-                    freq = line(length(frequency_key)+1:end);
-                    happy_end = 0;
+                    line_nr = counter; % save line number as well
+                    freq = [freq; line(length(frequency_key)+1:end-3)]; % omit last 3 chars (' Hz')
                 case non_convergence_key
-%                     if frequencies[-1] > 24000:  # affects very high frequencies only
-%                         print('Warning - Non-Convergence detected at over 24kHz  (at ' + str(frequencies[-1]) + 'Hz)')
-%                     else:
-%                         print('PROBLEM!! - Non-Convergence issue in important range: @ ' + str(frequencies[-1]) + 'Hz')
-%                         
-%                         corrupt_freq.append(frequencies[-1])  # note down which frequency failed
-%                         # break  # can not use break because there may be multiple frequency steps in one log file...
+                    if freq(end) > 24e3 % affects very high frequencies only
+                        warning(['Non-Convergence detected at over 24kHz  (at ', num2str(freq(end)), ' Hz']);
+                    else
+                        warning(['PROBLEM!! - Non-Convergence issue in important range at ', num2str(freq(end)), ' Hz']);
+                        corrupt_freq = [corrupt_freq; freq(end)]; % note which at frequency the calculation failed
+                    end
                 case gaussean_lim_key
-%                     if frequencies[-1] > 24000:  # affects very high frequencies only
-%                         print('Warning - Gaussean points limit issue detected at over 24kHz  (at '
-%                         + str(frequencies[-1]) + 'Hz)')
-%                     else:
-%                         print('PROBLEM!! - Gaussean points limit issue in important range: @ '
-%                         + str(frequencies[-1]) + 'Hz')
-%                         
-%                         corrupt_freq.append(frequencies[-1])  # note down which frequency failed
-%                         # break  # can not use break because there may be multiple frequency steps in one log file...
+                    if freq(end) > 24e3 % affects very high frequencies only
+                        warning(['Gaussean points limit issue detected at over 24kHz  (at ', num2str(freq(end)), ' Hz']);
+                    else
+                        warning(['PROBLEM!! - Gaussean points limit issue in important range at ', num2str(freq(end)), ' Hz']);
+                        corrupt_freq = [corrupt_freq; freq(end)]; % note which at frequency the calculation failed
+                    end
                 case happy_end_key
-%                     happy_end = True
-%                     # great - this instance completed the simulation
+                    happy_end = 1;
                 otherwise
             end
         end
         fclose(fid);
-        
-%         if len(corrupt_freq) > 0:  # we have corrupt data
-%             if lowest_corrupt_frq == 0:
-%                 lowest_corrupt_frq = min(corrupt_freq)
-%                 
-%                 elif lowest_corrupt_frq > min(corrupt_freq):
-%                 lowest_corrupt_frq = min(corrupt_freq)  # keep only the lowest problematic frequency
-%                 
-%                 return lowest_corrupt_frq, re_run_numcaclmanager
-        
-        % run Output2HRTF script in project folder
-        cd(folder_names{ii})
-        Output2HRTF;
+        if happy_end == 1
+            disp(['Great! The calculation of', NCout_files{kk}, 'finished successfully.']);
+        else
+            disp('FYI: The calculation of', NCout_files{kk}, 'did not finish successfully.');
+        end
+
+        if numel(corrupt_freq) > 1 % we have corrupt data
+            if lowest_corrupt_frq == 0
+                lowest_corrupt_frq = min(corrupt_freq);
+            elseif lowest_corrupt_frq > min(corrupt_freq)
+                lowest_corrupt_frq = min(corrupt_freq); % keep only the lowest problematic frequency
+            end
+        end
     end
+    
+    % run Output2HRTF script in project folder
+    cd(folder_names{ii})
+    Output2HRTF;
 end
 
 
