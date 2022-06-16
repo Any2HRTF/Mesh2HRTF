@@ -456,7 +456,7 @@ for pp, project in enumerate(projects_to_run):
                     (f"\n... waiting for resources (checking every "
                      f"{seconds_to_initialize} seconds, {current_time}):\n"
                      f"{running_instances} NumCalc instances running\n"
-                     f"{cpu_load} %CPU load\n"
+                     f"{cpu_load}% CPU load\n"
                      f"{round(ram_available, 2)} GB RAM available\n"),
                     text_color_reset, log_file)
                 started_instance = False
