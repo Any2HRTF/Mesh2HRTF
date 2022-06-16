@@ -100,7 +100,7 @@ end
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRTF'):
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRIR'):
 
-
+% write merged SOFA file to pwd
 
 end
 % EOF
