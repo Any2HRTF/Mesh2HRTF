@@ -33,69 +33,11 @@ Tips:
      the next run.
 """
 
-# made for Python 3.7+
-#     v1.00    2021-09-18     First versions. Tested on Windows 10.
-#                             (Sergejs Dombrovskis)
-#     v1.01    2021-09-21     Small fixes & improvements. (by S.D.)
-#     v1.02    2021-09-23     More improvements. (by S.D.)
-#     v2.00    2021-10-10     Almost-rewrite with major improvements including
-#                             support for running multiple projects parsing
-#                             text files and sorting of instances by actual
-#                             frequency (by S.D.)
-#     v2.01    2021-11-16     Critical bugfix. Minor improvements. Tested some
-#                             more. (by S.D.)
-#     v3.00    2022-01-20     Adapted code to the new Mesh2HRTF project
-#                             structure. (by S.D.)
-#     v3.05    2022-01-22     Added optimization to launch new instances faster
-#                             (can save 15+ min of processing time when running
-#                             very large number of instances simultaneously,
-#                             by S.D.)
-#     v3.10    2022-02-02     LINUX & MAC support added, note NumCalc must be
-#                             already compiled (by S.D.)
-#     v3.11    2022-02-05     minor fix for cases when re-running 100% complete
-#                             projects (by S.D.)
-#     v4.00    2022-05-05     added parser for command line arguments (by J.T.)
-#     v4.01    2022-05-06     - flake8 and code styling and styling
-#                             - unify parameters auto_set_max_instances and
-#                               max_instances
-#                             - introduce input parameters confirm_errors and
-#                               numcalc_path
-#                             - remove cleanup_after_finish
-#                             - messages are written to log file as well
-
-# ToDo: future improvement ideas
-#   - figure out a good method to split simulation projects over multiple
-#     computers (so far it is only possible to split projects by
-#     moving/deleting "../NumCalc/step_x/" folders - assuming there are more
-#     than the usual one).
-#   x add project_path input to the script (so-far project_path can only be
-#     changed by editing the script itself)
-#   - add automatic compilation of NumCalc on Linux/Mac (to automate-away one
-#     more hassle)
-#   - add nice printout for total processing time.
-#   - Long-Term - launch "Output2HRTF" Octave/Matlab/Python processing at the
-#     end of each simulation.
-#   - Long-Term - try to run some low frequency instances in parallel with
-#     high-frequency instances to better utilize RAM in the beginning of the
-#     simulation project (this could be tricky and require new RAM monitoring
-#     code).
-
 import os
 import time
 import psutil
 import subprocess
 import argparse
-
-# Done
-# - removed else case in check_project
-# - removed double check for existing results (variable `pathToCheck`)
-# - removed repeated call of check_project()
-# - all_instances and instances_to_run are now nested lists
-#   [[source, step], [source, step] ...]
-# - rename start_path to project_path
-# - introduce input parameter confirm_errors
-# - introduce input parameter numcalc_path to run NumCalc without copying files
-# - write messages to log files (messages remain on console as well)
 
 
 # helping functions -----------------------------------------------------------
