@@ -476,8 +476,8 @@ for pp, project in enumerate(projects_to_run):
         progress = total_nr_to_run - instances_to_run.shape[0] + 1
         message = (
             f"{progress}/{total_nr_to_run} starting instance from: "
-            f"{os.path.basename(project)} (source {source}, step {step}"
-            f"({current_time})")
+            f"{os.path.basename(project)} (source {source}, step {step}, "
+            f"{current_time})")
         print_message(message, text_color_reset, log_file)
 
         # change working directory
