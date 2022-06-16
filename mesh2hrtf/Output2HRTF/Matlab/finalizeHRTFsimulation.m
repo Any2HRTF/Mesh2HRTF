@@ -8,19 +8,20 @@ function finalizeHRTFsimulation(varargin)
 % C - 2 inputs = Merge 2 projects that were given as input.
 %
 % mode A - no inputs = (recommended usage mode) scans start folder for 2 projects to merge,
-%                       + usually executes "Output2HRTF.py" to run full pre-processing in one go.
-%   1- run this .py file from a dedicated folder (for example use folder "Finalize_HRTF_simulation")
-%   2- Move into the "Finalize_HRTF_simulation" folder exactly the 2 project folders that need to be merged.
-%   3- "open/run" this "finalize_hrtf_simulation.py" with Python.
-%   4- Merged SOFA files will be saved in a folder next to the project that was found.
+%                       + usually executes "Output2HRTF.m" to run full pre-processing in one go.
+%   run this .m file from a dedicated folder (for example use folder "Finalize_HRTF_simulation")
+%   Move into the "Finalize_HRTF_simulation" folder exactly the 2 project folders that need to be merged.
+%   run this "finalizeHRTFsimulation.m" with Matlab.
+%   Merged SOFA files will be saved in a folder next to the project that was found.
 %
 % mode B - Input1 only = scan Input1 folder for 2 projects to merge.
-%   1- Move into any folder exactly the 2 project folders that need to be merged.
-%   2- "run" this "finalize_HRTF_simulation.py" file & specify "input_1" folder that contains projects to merge.
+%   Move into any folder exactly the 2 project folders that need to be merged.
+%   run this "finalizeHRTFsimulation.m" file & specify "input_1" folder that contains projects to merge.
 %       This script searches and merges the SOFA files from the 2 projects it finds inside "input_1" path.
-%   3- Merged SOFA files will be saved in a folder next to the project that was found.
+%   Merged SOFA file will be saved in pwd.
 %
 % mode C - 2 inputs = Merge the 2 projects that were given as input_1 and input_2.
+%   Merged SOFA file will be written in pwd.
 %
 % migrated from Python API from Sergejs Dombrovskis
 % author(s): Katharina Pollack, June 2022
