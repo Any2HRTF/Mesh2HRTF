@@ -13,6 +13,7 @@ from .Output2HRTF.Python.utils import (
     merge_sofa_files,
     write_evaluation_grid,
     read_evaluation_grid,
+    read_ram_estimates,
     export_to_vtk,
     write_boundary_condition)
 
@@ -27,5 +28,6 @@ __all__ = [
     'project_report',
     'write_evaluation_grid',
     'read_evaluation_grid',
+    'read_ram_estimates',
     'export_to_vtk',
     'write_boundary_condition']
