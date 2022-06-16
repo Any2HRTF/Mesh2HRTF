@@ -712,7 +712,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	}*/
 
 	cout << "RAM Estimation: " << (double)(nint * sizeof(int) + ncmplx * sizeof(Complex))/1000.0/1000.0/1000.0 << " GByte\n";
-	NCestim << currentFrequency_ << " " << frequency_ << " ";
+	NCestim << currentFrequency_ + 1 << " " << frequency_ << " ";
 	NCestim << (double)(nint * sizeof(int) + ncmplx * sizeof(Complex))/1000.0/1000.0/1000.0 << "\n";
 
       continue; // end the freq loop
