@@ -34,10 +34,13 @@ Tips:
 """
 
 import os
+import glob
 import time
 import psutil
 import subprocess
 import argparse
+import numpy as np
+import mesh2hrtf as m2h
 
 
 # helping functions -----------------------------------------------------------
@@ -66,16 +69,23 @@ def print_message(message, text_color, log_file):
         f.write(message + "\n")
 
 
-def get_num_calc_processes(numcalc_executable):
-    """Return a list with the pid, names, and bytes of each NumCalc process"""
-    pid_names_bytes = [
-            (p.pid, p.info['name'], p.info['memory_info'].rss)
-            for p in psutil.process_iter(['name', 'memory_info'])
-            if p.info['name'] == os.path.basename(numcalc_executable)]
-    return pid_names_bytes
+def available_ram(ram_offset):
+    """Get the available RAM = free RAM - ram_offset"""
+    RAM_info = psutil.virtual_memory()
+    return max([0, RAM_info.available / 1073741824 - ram_offset])
 
 
-def check_project(project):
+def numcalc_instances():
+    """Return the number of currently running NumCalc instances"""
+    num_instances = 0
+    for p in psutil.process_iter(['name', 'memory_info']):
+        if p.info['name'].endswith("NumCalc"):
+            num_instances += 1
+
+    return num_instances
+
+
+def check_project(project, numcalc_executable, log_file):
     """
     Find unfinished instances (frequency steps) in a Mesh2HRTF project folder
 
@@ -86,74 +96,92 @@ def check_project(project):
 
     Returns
     -------
-    _type_
-        _description_
+    all_instances : numpy array
+        Array of shape (N, 4) where N is the number of detected frequency
+        steps in all source_* folders in the project. The first column contains
+        the source number, the second the frequency step, the third the
+        frequency in Hz, and the fourth the estimated RAM consumption in GB.
+    instances_to_run : numpy array, None
+        Array of size (M, 4) if any instances need to be run (in this case M
+        gives the unfinished instances). ``None``, if all instances are
+        finished.
+    source_counter : int
+        Number of sources in the project
     """
 
-    # initialize variables
-    all_instances = []           # all folder for each instance
-    instances_to_run = []        # folders for each instance that must be run
-    source_counter: int = 0      # but up to sources 99999 are supported
-    frequency_steps_nr: int = 0  # init
-    frequency_step = 0           # init
-    min_frequency = 0            # init
-
-    project_numcalc = os.path.join(project, 'NumCalc')
-
-    # parse "Info.txt" to get info about frequencies
-    with open(os.path.join(project, "Info.txt"), "r", encoding="utf8",
-              newline="\n") as f:
-
-        for line in f:
-            if line.find('Minimum evaluated Frequency') != -1:
-                idl = line.find(':')
-                min_frequency = float(line[idl + 2:-1])
-            elif line.find('Frequency Stepsize') != -1:
-                idl = line.find(':')
-                frequency_step = float(line[idl + 2:-1])
-            elif line.find('Frequency Steps') != -1:
-                idl = line.find(':')
-                frequency_steps_nr = int(line[idl + 2:-1])
-
-        del line, idl  # remove no longer needed variables
+    # get source folders and number of sources
+    sources = glob.glob(os.path.join(project, 'NumCalc', "source_*"))
+    source_counter = len(sources)
+    sources = [os.path.join(project, 'NumCalc', f"source_{s+1}")
+               for s in range(source_counter)]
 
     # loop source_* folders
-    for ff in os.listdir(project_numcalc):
+    for source_id, ff in enumerate(sources):
 
-        if not ff.startswith("source_"):
-            continue
+        # estimate RAM consumption if required
+        if not os.path.isfile(os.path.join(ff, "Memory.txt")):
 
-        source_counter += 1              # count this source
-        source_id = int(ff[7:])
+            print_message(f"Obtaining RAM estimates for {ff}",
+                          '\033[0m', log_file)
+
+            if os.name == 'nt':  # Windows detected
+                # run NumCalc and route all printouts to a log file
+                subprocess.run(
+                    [f"{numcalc_executable} -estimate_ram"],
+                    stdout=subprocess.DEVNULL, cwd=ff, check=True)
+
+            else:  # elif os.name == 'posix': Linux or Mac detected
+                # run NumCalc and route all printouts to a log file
+                subprocess.run(
+                    [f"{numcalc_executable} -estimate_ram"],
+                    shell=True, stdout=subprocess.DEVNULL, cwd=ff, check=True)
+
+        # get RAM estimates and prepend source number
+        estimates = m2h.read_ram_estimates(ff)
+        estimates = np.concatenate(
+            ((source_id + 1) * np.ones((estimates.shape[0], 1)), estimates),
+            axis=1)
+
+        if source_id == 0:
+            all_instances = estimates
+            instances_to_run = None
+        else:
+            all_instances = np.append(all_instances, estimates, axis=0)
 
         # loop frequency steps
-        for step in range(frequency_steps_nr):  # counting from zero
-
-            # update list of all instances
-            all_instances.append([source_id, 1+step])
+        for step in range(estimates.shape[0]):
 
             if not os.path.isfile(os.path.join(
-                    project_numcalc, ff, "be.out", f"be.{1 + step}",
-                    "pEvalGrid")):
+                    ff, "be.out", f"be.{1 + step}", "pEvalGrid")):
+
                 # there are no output files, process this
-                instances_to_run.append(all_instances[-1])
+                if instances_to_run is None:
+                    instances_to_run = np.atleast_2d(estimates[step])
+                else:
+                    instances_to_run = np.append(
+                        instances_to_run, np.atleast_2d(estimates[step]),
+                        axis=0)
 
             elif os.path.isfile(os.path.join(
-                    project_numcalc, ff, f'NC{1 + step}-{1 + step}.out')):
+                    ff, f'NC{1 + step}-{1 + step}.out')):
 
                 # check if "NCx-x.out" contains "End time:" to confirm that
                 # the simulation was completed.
                 nc_out = os.path.join(
-                    project_numcalc, ff, f'NC{1 + step}-{1 + step}.out')
+                    ff, f'NC{1 + step}-{1 + step}.out')
                 with open(nc_out, "r", encoding="utf8", newline="\n") as f:
                     nc_out = "".join(f.readlines())
 
                 if 'End time:' not in nc_out:
                     # instance did not finish
-                    instances_to_run.append(all_instances[-1])
+                    if instances_to_run is None:
+                        instances_to_run = np.atleast_2d(estimates[step])
+                    else:
+                        instances_to_run = np.append(
+                            instances_to_run, np.atleast_2d(estimates[step]),
+                            axis=0)
 
-    return all_instances, instances_to_run, min_frequency, frequency_step, \
-        frequency_steps_nr, source_counter
+    return all_instances, instances_to_run, source_counter
 
 
 # parse command line input ----------------------------------------------------
@@ -178,24 +206,24 @@ parser.add_argument(
           " after a NumCalc instance was started."))
 parser.add_argument(
     "--max_ram_load", default=False, type=float,
-    help=("The RAM that can maximally be used. New NumCalc instances are only "
-          "started if enough RAM is available. By default all available RAM "
-          "will be used."))
+    help=("The RAM that can maximally be used in GB. New NumCalc instances are"
+          " only started if enough RAM is available. By default all available "
+          "RAM will be used."))
 parser.add_argument(
     "--ram_safety_factor", default=1.05, type=float,
     help=("A safty factor that is applied to the estimated RAM consumption. "
-          "The estimate is obtained using NumCalc -estimate_ram. The dafault "
+          "The estimate is obtained using NumCalc -estimate_ram. The default "
           "of 1.05 would for example assume that 10.5 GB ram are needed if "
           "a RAM consumption of 10 GB was estimated by NumCalc."))
 parser.add_argument(
-    "--max_cpu_load", default=80, type=int,
+    "--max_cpu_load", default=90, type=int,
     help="Maximum allowed CPU load in percent")
 parser.add_argument(
     "--max_instances", default=0, type=int,
-    help=("The maximum numbers of parallel NumCalc instances. If this is 0 "
-          "(default) the maximum number is estimated based on the CPU usage "
-          "of the instance calculating the highest frequency and "
-          "`max_cpu_load` (see above)"))
+    help=("The maximum numbers of parallel NumCalc instances. The default of 0"
+          "Launches a new instance if the current CPU load is below "
+          "`max_cpu_load` and less instances than available CPU cores are "
+          "currently running"))
 parser.add_argument(
     "--confirm_errors", default='True', choices=('True', 'False'), type=str,
     help=("If True, num_calc_manager waits for user input in case an error "
@@ -214,14 +242,25 @@ else:
     args["numcalc_path"] = args["numcalc_path"] if args["numcalc_path"] \
         else "NumCalc"
 
+RAM_info = psutil.virtual_memory()
+args["max_ram_load"] = RAM_info.total / 1073741824 \
+    if args["max_ram_load"] is False else args["max_ram_load"]
+
+args["max_instances"] = psutil.cpu_count() if args["max_instances"] == 0 \
+    else args["max_instances"]
+
 # write to local variables
 project_path = args["project_path"]
 numcalc_path = args["numcalc_path"]
 seconds_to_initialize = args["wait_time"]
+max_ram_load = args["max_ram_load"]
 ram_safety_factor = args["ram_safety_factor"]
 max_cpu_load_percent = args["max_cpu_load"]
 max_instances = args["max_instances"]
 confirm_errors = args["confirm_errors"] == 'True'
+
+# RAM that should not be used
+ram_offset = max([0, RAM_info.total / 1073741824 - max_ram_load])
 
 # initialization --------------------------------------------------------------
 
@@ -233,6 +272,13 @@ text_color_reset = '\033[0m'
 
 current_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
 log_file = f"numcalc_manager_{current_time}.txt"
+
+# check input
+if args["max_instances"] > psutil.cpu_count():
+    raise_error(
+        (f"max_instances is {max_instances} but can not be larger than "
+         f"{psutil.cpu_count()} (The number of logical CPUs)"),
+        text_color_red, log_file, confirm_errors)
 
 # Detect what the project_path or "getcwd()" is pointing to:
 if os.path.basename(project_path) == 'NumCalc':
@@ -323,24 +369,24 @@ else:
 
 # Check all projects that may need to be executed -----------------------------
 projects_to_run = []
-message = ("Per project summary of instances that will be run\n"
+message = ("\nPer project summary of instances that will be run\n"
            "-------------------------------------------------\n")
 
 message += f"Detected {len(all_projects)} Mesh2HRTF projects in\n"
 message += f"{os.path.dirname(log_file)}\n\n"
 
 for project in all_projects:
-    all_instances, instances_to_run, *_ = check_project(project)
+    all_instances, instances_to_run, *_ = check_project(
+        project, numcalc_executable, log_file)
 
-    if len(instances_to_run) > 0:
+    if instances_to_run is not None:
         projects_to_run.append(project)
-        message += (f"{len(instances_to_run)}/{len(all_instances)} in "
-                    f"{os.path.basename(project)}\n")
+        message += (f"{len(instances_to_run)}/{len(all_instances)} frequency "
+                    f"steps to run in {os.path.basename(project)}\n")
     else:
         message += f"{os.path.basename(project)} is already complete\n"
 
 print_message(message, text_color_reset, log_file)
-del all_projects
 
 
 # loop to process all projects ------------------------------------------------
@@ -348,11 +394,11 @@ for pp, project in enumerate(projects_to_run):
 
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
 
-    # Check how many instances are in this Project:
+    # Check number of instances in project and estimate their RAM consumption
     root_NumCalc = os.path.join(project, 'NumCalc')
-    all_instances, instances_to_run, min_frequency, frequency_step, \
-        frequency_steps_nr, source_counter = check_project(project)
-    total_nr_to_run = len(instances_to_run)
+    all_instances, instances_to_run, source_counter = \
+        check_project(project, numcalc_executable, log_file)
+    total_nr_to_run = instances_to_run.shape[0]
 
     # Status printouts:
     message = (f"Started {os.path.basename(project)} "
@@ -370,151 +416,68 @@ for pp, project in enumerate(projects_to_run):
 
     print_message(message, text_color_reset, log_file)
 
-    # ADVANCED sorting
-    # (Build matching list of frequencies for each "instances_to_run")
-    matched_freq_of_inst = [0] * len(instances_to_run)
-    for inst in range(total_nr_to_run):
-        idx = int(instances_to_run[inst][1])
-        # frequency in Hz
-        matched_freq_of_inst[inst] = int(
-            min_frequency + frequency_step * (idx - 1))
+    # sort instances according to RAM consumption (highest first)
+    instances_to_run = instances_to_run[np.argsort(instances_to_run[:, 3])]
+    instances_to_run = np.flip(instances_to_run, axis=0)
 
-    # Sort list to run the largest frequencies that consume the most RAM first
-    # (needed for Both ears!!!)
-    Sorting_List = sorted(zip(matched_freq_of_inst, instances_to_run),
-                          reverse=True)
-    # sort "instances_to_run" according to decreasing frequency
-    instances_to_run = [x for _, x in Sorting_List]
-    # update Matched list to correspond to "instances_to_run"
-    matched_freq_of_inst = [y for y, _ in Sorting_List]
-    del Sorting_List, idx
+    # check if available memory is enough for running the instance with the
+    # highest memory consumption
+    RAM_available = available_ram(ram_offset)
+    if RAM_available < instances_to_run[-1, 3] * ram_safety_factor:
+        raise_error((
+            f"Available RAM is {round(RAM_available, 2)} GB, but frequency "
+            f"step {int(instances_to_run[0, 1])} of source "
+            f"{int(instances_to_run[0, 1])} requires "
+            f"{round(instances_to_run[0, 3] * ram_safety_factor, 2)} GB."),
+            text_color_red, log_file, confirm_errors)
 
-    # main loop for each instance
-    for NC_ins in range(total_nr_to_run):
-        # current source and frequency step
-        source = instances_to_run[NC_ins][0]
-        step = instances_to_run[NC_ins][1]
+    # main loop for starting instances
+    started_instance = True
+    while instances_to_run.shape[0]:
 
-        # Check the RAM & run instance if feasible
+        # current time and resources
         current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
-        RAM_info = psutil.virtual_memory()
-        message = (
-            f"\n{NC_ins + 1}/{total_nr_to_run} preparing "
-            f"{matched_freq_of_inst[NC_ins]} Hz instance from source {source},"
-            f" step {step}\n"
-            f"{round((RAM_info.available / 1073741824), 2)} GB free RAM, "
-            f"{RAM_info.percent}% used ({current_time})")
-        print_message(message, text_color_reset, log_file)
+        ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
+        ram_available = available_ram(ram_offset)
+        cpu_load = psutil.cpu_percent(.1) / psutil.cpu_count()
+        running_instances = numcalc_instances()
 
-        # use this to autodetect how many instances can at most be executed
-        if NC_ins > 0 and not max_instances:
-            # noinspection PyBroadException
-            try:
-                # it is better to get fresh pid (hopefully at least one NumCalc
-                # process is still running)
-                pid_names_bytes = get_num_calc_processes(numcalc_executable)
+        # wait if
+        # - CPU usage too high
+        # - number of running instances is too large
+        # - not enough RAM available
+        if cpu_load > max_cpu_load_percent \
+                or running_instances >= max_instances \
+                or ram_available < ram_required:
 
-                PrcInfo = psutil.Process(pid_names_bytes[0][0])
+            # print message (only done once between launching instances)
+            if started_instance:
+                print_message(
+                    (f"\n... waiting for resources (checking every "
+                     f"{seconds_to_initialize} seconds, {current_time}):\n"
+                     f"{running_instances} NumCalc instances running\n"
+                     f"{cpu_load} %CPU load\n"
+                     f"{round(ram_available, 2)} GB RAM available\n"),
+                    text_color_reset, log_file)
+                started_instance = False
 
-                # wait until CPU usage is realistic
-                Instance_CPU_usageNow = 0
-                while Instance_CPU_usageNow < 0.001:
-                    Instance_CPU_usageNow = \
-                        PrcInfo.cpu_percent() / psutil.cpu_count()
-                    time.sleep(0.01)
+            # wait and continue
+            time.sleep(seconds_to_initialize)
+            continue
 
-                # calculate optimal maximum number of NumCalc processes
-                max_instances = round(
-                    max_cpu_load_percent / Instance_CPU_usageNow)
-
-                message = (
-                    "One NumCalc instance requires "
-                    f"{round(Instance_CPU_usageNow, 1)}% of the CPU. "
-                    "max_instances is now automatically set to "
-                    f"{max_instances}")
-                print_message(message, text_color_reset, log_file)
-
-            except BaseException:
-                message = (
-                    "Failed to automatically set the maximum number of "
-                    "parallel NumCalc instances. This can happen if a NumCalc "
-                    "process finished very fast. Try to lower wait_time or "
-                    "manually set max_instances")
-                raise_error(message, text_color_red, log_file, confirm_errors)
-
-        #  Main checks before launching the next instance
-        # (to avoid system resource overload)
-        wait_for_resources = False if NC_ins == 0 else True
-
-        while wait_for_resources:
-            # Start time, number of numcalc processes and RAM usage
-            current_time = \
-                    time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
-            pid_names_bytes = get_num_calc_processes(numcalc_executable)
-            RAM_info = psutil.virtual_memory()
-
-            # DEBUGGING --- Find Processes consuming more than 250MB of memory:
-            # pid_names_bytes = [
-            #     (p.pid, p.info['name'], p.info['memory_info'].rss)
-            #     for p in psutil.process_iter(['name', 'memory_info'])
-            #     if p.info['memory_info'].rss > 250 * 1048576]
-
-            # start NumCalc instance if none is running
-            if len(pid_names_bytes) == 0:
-                max_numcalc_ram = 0
+        # find frequency step with the highest possible RAM consumption
+        for idx, ram_required in enumerate(instances_to_run[:, 3]):
+            if ram_required <= ram_available:
                 break
 
-            # if the maximum number of instances to launch is not exceeded
-            elif len(pid_names_bytes) < max_instances:
-
-                # find out how much RAM is consumed by any NumCalc Instance
-                max_numcalc_ram = pid_names_bytes[0][2]
-                if len(pid_names_bytes) > 1:
-                    for prcNr in range(1, len(pid_names_bytes)):
-                        if pid_names_bytes[prcNr][2] > max_numcalc_ram:
-                            max_numcalc_ram = pid_names_bytes[prcNr][2]
-
-                # check if we can run more:
-                # IF free RAM is greater than RAM consumption of the biggest
-                # NumCalc instance x ram_safety_factor
-                if RAM_info.available > max_numcalc_ram * ram_safety_factor:
-                    message = (
-                        "... Starting next instance: "
-                        f"{round((RAM_info.available / 1073741824), 1)} GB "
-                        f"free RAM detected [{current_time}]")
-                    print_message(message, text_color_reset, log_file)
-                    break
-
-                else:
-                    if not message.startswith("... Waiting for free RAM"):
-                        message = (
-                            "... Waiting for free RAM:"
-                            f"{round((RAM_info.available / 1073741824), 1)} "
-                            f"GB free RAM detected. "
-                            f"{round((max_numcalc_ram * ram_safety_factor / 1073741824), 1)} "  # noqa
-                            f"GB needed [{current_time}, checking every "
-                            f"{seconds_to_initialize} seconds]")
-                        print_message(message, text_color_reset, log_file)
-
-            else:
-                if not message.startswith(
-                        f"... Waiting for 1/{max_instances}"):
-                    message = (
-                        f"... Waiting for 1/{max_instances} instances to "
-                        "finish: "
-                        f"{round((RAM_info.available / 1073741824), 1)} GB "
-                        f"free RAM detected [{current_time}, checking every "
-                        f"{seconds_to_initialize} seconds]")
-                    print_message(message, text_color_reset, log_file)
-
-            # delay before trying the while loop again
-            time.sleep(seconds_to_initialize)
-            # END of the while loop ---
-
-        # start next instance -------------------------------------------------
+        # start new NumCalc instance
+        source = int(instances_to_run[idx, 0])
+        step = int(instances_to_run[idx, 1])
+        progress = total_nr_to_run - instances_to_run.shape[0] + 1
         message = (
-            f"{NC_ins + 1}/{total_nr_to_run} starting instance from: "
-            f"{os.path.basename(project)} (source {source}, step {step}")
+            f"{progress}/{total_nr_to_run} starting instance from: "
+            f"{os.path.basename(project)} (source {source}, step {step}"
+            f"({current_time})")
         print_message(message, text_color_reset, log_file)
 
         # change working directory
@@ -534,66 +497,48 @@ for pp, project in enumerate(projects_to_run):
                 f"{numcalc_executable} -istart {step} -iend {step}"
                 f" >NC{step}-{step}_log.txt"), shell=True)
 
-        # optimize waiting time (important if available RAM >>> needed RAM)
-        if NC_ins > 0:
-            # noinspection PyUnboundLocalVariable
-            if RAM_info.available > max_numcalc_ram * 3:
-                # wait less, if RAM is enough for three new instances
-                waitTime = 0.5
-            elif RAM_info.available > max_numcalc_ram * 2:
-                # wait less if RAM is enough for two new instances
-                waitTime = seconds_to_initialize / 2
-            else:
-                # wait longer to assess how much RAM is available
-                waitTime = seconds_to_initialize
-
-        else:
-            # always wait for the 1st instance to initialize to get worst-case
-            # RAM use estimate
-            waitTime = seconds_to_initialize
-
-        # Wait for instance to initialize before attempting to start the next
-        message = f"... waiting {waitTime} s for instance to initialize RAM"
-        print_message(message, text_color_reset, log_file)
-        time.sleep(waitTime)
+        started_instance = True
+        instances_to_run = np.delete(instances_to_run, idx, 0)
+        time.sleep(seconds_to_initialize)
     #  END of the main project loop ---
 
     # wait for last NumCalc instances to finish
+    current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+    message = (f"\n... waiting for last NumCalc instance to finish "
+               f"(checking every {seconds_to_initialize} s, {current_time})")
+    print_message(message, text_color_reset, log_file)
     while True:
-        # Find all NumCalc Processes
-        pid_names_bytes = get_num_calc_processes(numcalc_executable)
 
-        # no NumCalc processes are running, so Finish
-        if len(pid_names_bytes) == 0:
+        if numcalc_instances() == 0:
             break
 
-        message = (f"... waiting {2 * seconds_to_initialize} s for last "
-                   "processes to finish")
-        print_message(message, text_color_reset, log_file)
-        time.sleep(2 * seconds_to_initialize)
+        time.sleep(seconds_to_initialize)
 #  END of all_projects loop ---
 
 # Check all projects that may need to be executed -----------------------------
 current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
 
-projects_to_run = []
 message = ("\nThe following instances did not finish\n"
            "--------------------------------------\n")
 
-for project in projects_to_run:
-    all_instances, instances_to_run, *_ = check_project(project)
+for project in all_projects:
+    all_instances, instances_to_run, *_ = check_project(
+        project, numcalc_executable, log_file)
 
-    if len(instances_to_run) > 0:
-        projects_to_run.append(project)
+    if instances_to_run is None:
+        continue
+
+    if instances_to_run.shape[0] > 0:
         message += f"{os.path.basename(project)}: "
-        unfinished = [f"source {p[0]} step {p[1]}" for p in projects_to_run]
+        unfinished = [f"source {int(p[0])} step {int(p[1])}"
+                      for p in projects_to_run]
         message += "; ".join(unfinished) + "\n"
 
 if message.count("\n") > 3:
     message += f"Finished at {current_time}"
     raise_error(message, text_color_reset, log_file, confirm_errors)
 else:
-    message = f"All NumCalc projects finished at {current_time}"
+    message = f"\nAll NumCalc projects finished at {current_time}"
     print_message(message, text_color_reset, log_file)
 
     if confirm_errors:
