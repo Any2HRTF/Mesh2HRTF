@@ -3,9 +3,10 @@ function finalizeHRTFsimulation(varargin)
 %  merge SOFA data from two separate Mesh2HRTF simulations for left & right ear.
 %  For usage details, please check the documentation!
 %
-% A - no inputs = scan start folder for 2 projects to merge.
-% B - 1 input  = scan given folder for 2 projects to merge.
-% C - 2 inputs = Merge 2 projects that were given as input.
+% A - no inputs ... scan start folder for 2 projects to merge.
+% B - 1 input ..... scan given folder for 2 projects to merge.
+% C - 2 inputs .... merge 2 projects that were given as input.
+% D - 3 inputs .... merge 2 projects and save to folder in input 3
 %
 % mode A - no inputs = (recommended usage mode) scans start folder for 2 projects to merge,
 %                       + usually executes "Output2HRTF.m" to run full pre-processing in one go.
@@ -22,11 +23,15 @@ function finalizeHRTFsimulation(varargin)
 %
 % mode C - 2 inputs = Merge the 2 projects that were given as input_1 and input_2.
 %   Merged SOFA file will be written in pwd.
-%
+% 
+% mode D - 3 inputs = merge 2 projects and save to folder in input 3
+%   Merged SOFA file will be written to input 3
+% 
 % migrated from Python API from Sergejs Dombrovskis
 % author(s): Katharina Pollack, June 2022
 
 pwdirectory = pwd;
+targetdir = {};
 
 % check input and input mode
 switch numel(varargin)
@@ -72,6 +77,15 @@ switch numel(varargin)
         end
         folder_names{1} = varargin{1};
         folder_names{2} = varargin{2};
+    case 3 % mode '3 inputs' = Merge 2 projects and safe merged SOFA file to input 3
+        if ~ischar(varargin{1}) || ~ischar(varargin{2}) || ischar(varargin{3})
+            error('Allowed input parameter is string.');
+        elseif ~isfolder(varargin{1}) || ~isfolder(varargin{2}) ||~isfolder(varargin{3})
+            error('All input parameters have to be valid folder names.');
+        end
+        folder_names{1} = varargin{1};
+        folder_names{2} = varargin{2};
+        targetdir = varargin{3};
     otherwise
         error(['Wrong number of inputs given. Valid number of input arguments are:\n', ...
             '%s\n%s\n%s'], ...
@@ -82,10 +96,12 @@ end
 clear ii
 
 % create folder name for merged SOFA
-if strcmp(folder_names{1}(end-1:end), '_L') || strcmp(folder_names{1}(end-1:end), '_R')
-    targetdir = strcat(folder_names{1}(1:end-2), '_merged');
-else
-    targetdir = pwdirectory;
+if isempty(targetdir)
+    if strcmp(folder_names{1}(end-1:end), '_L') || strcmp(folder_names{1}(end-1:end), '_R')
+        targetdir = strcat(folder_names{1}(1:end-2), '_merged');
+    else
+        targetdir = pwdirectory;
+    end
 end
 
 % find any broken data in this project
@@ -288,6 +304,8 @@ SOFAsave(fullfile(targetdir, [SOFA_type, '_', num2str(fs_out), 'fs.sofa']), Obj)
 
 % copy Info.txt to targetdir
 copyfile(fullfile(folder_names{1}, 'Info.txt'), targetdir);
+
+fprintf(['\nDone! Merged SOFA files saved in ', targetdir]);
 
 end
 % EOF
