@@ -79,10 +79,7 @@ switch numel(varargin)
 end
 clear ii
 
-% def scan_for_errors(project_path):  # find any broken data in this project
-%     NOTE: made only to work with 1 source!!!
-% scan project for errors
-% run Output2HRTF_Main in both folders
+% find any broken data in this project
 for ii = 1:2
     cd(fullfile(folder_names{ii}, 'NumCalc'))
     % check for number of sources
@@ -103,10 +100,11 @@ for ii = 1:2
     non_convergence_key = 'Warning: Maximum number of iterations is reached!';
     gaussean_lim_key = 'Too many integral points in the theta-direction!';
     happy_end_key = 'End time: ';
+    lowest_corrupt_frq = [0, 0];
     for kk = 1:numel(NCout_files)
         % open each NC*.out file and scan for errors (i.e., search for keys in files)
         fid=fopen(NCout_files{kk});
-        counter = 0; happy_end = 0; corrupt_freq = 0; lowest_corrupt_frq = 0; freq = [];
+        counter = 0; happy_end = 0; corrupt_freq = 0; freq = [];
         while ~feof(fid)
             counter = counter+1;
             line=fgets(fid);
@@ -141,10 +139,10 @@ for ii = 1:2
         end
 
         if numel(corrupt_freq) > 1 % we have corrupt data
-            if lowest_corrupt_frq == 0
-                lowest_corrupt_frq = min(corrupt_freq);
-            elseif lowest_corrupt_frq > min(corrupt_freq)
-                lowest_corrupt_frq = min(corrupt_freq); % keep only the lowest problematic frequency
+            if lowest_corrupt_frq(ii) == 0
+                lowest_corrupt_frq(ii) = min(corrupt_freq);
+            elseif lowest_corrupt_frq(ii) > min(corrupt_freq)
+                lowest_corrupt_frq(ii) = min(corrupt_freq); % keep only the lowest problematic frequency
             end
         end
     end
@@ -153,7 +151,6 @@ for ii = 1:2
     cd(folder_names{ii})
     Output2HRTF;
 end
-
 
 % determine left and right ear data
 % source position along interaural axis. Positive = left, negative = right
