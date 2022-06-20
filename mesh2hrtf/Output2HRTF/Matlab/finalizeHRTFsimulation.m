@@ -267,9 +267,11 @@ end
 
 % source and receiver data
 if strcmp(sofa_read_L.SourcePosition_Type, 'cartesian') && strcmp(sofa_read_L.SourcePosition_Units, 'metre')
-%     Obj.SourcePosition = cart2sph(rad2deg(sofa_read_L.SourcePosition)); % NOTE: throws error -> work around!
+    [pos_tmp(:,1), pos_tmp(:,2), pos_tmp(:,3)] = cart2sph(sofa_read_L.SourcePosition(1), sofa_read_L.SourcePosition(2), sofa_read_L.SourcePosition(3));
+    Obj.SourcePosition = rad2deg(pos_tmp);
     Obj.SourcePosition_Units = 'degree, degree, metre';
     Obj.SourcePosition_Type = 'spherical';
+    clear pos_tmp
 else
     Obj.SourcePosition = sofa_read_L.SourcePosition;
     Obj.SourcePosition_Units = sofa_read_L.SourcePosition_Units;
