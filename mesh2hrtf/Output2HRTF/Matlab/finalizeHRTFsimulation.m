@@ -50,7 +50,7 @@ switch numel(varargin)
             error('Input parameter has to be valid folder name.');
         end
         start_folder = varargin{1};
-        
+
         % pretty sure this can be solved in a more elegant way (than
         % copypasting the code from above ...)
         for ii = 3:numel(start_folder)
@@ -200,7 +200,7 @@ fprintf('Merge SOFA file(s) ...\n');
 for ii = 1:numel(sofa_files_L)  % loop for every SOFA file in one of the projects
     sofa_read_L = SOFAload(sofa_files_L(ii).name);
     sofa_read_R = SOFAload(sofa_files_R(ii).name);
-    
+
     % detect data type
     if strcmp(sofa_read_L.GLOBAL_DataType, 'FIR')
         SOFA_type = 'HRIR';
@@ -223,7 +223,66 @@ end
 
 % write merged SOFA file to targetdir
 fprintf(['Write merged SOFA file to ...', targetdir,'\n']);
+% create targetdir if it does not exist yet
+if ~isfolder(targetdir)
+    mkdir(targetdir)
+end
 cd(targetdir);
+
+% create empty SOFA object
+if strcmp(SOFA_type, 'HRTF')
+    Obj = SOFAgetConventions('SimpleFreeFieldHRTF');
+    % write data to SOFA object
+    Obj.Data.Real = [sofa_read_L.Data.Real; sofa_read_R.Data.Real];
+    Obj.Data.Imag = [sofa_read_L.Data.Imag; sofa_read_R.Data.Imag];
+    Obj.N = sofa_read_L.N;
+    fs_out = 2*Obj.N(end); % specify sampling frequency according to Nyquist
+elseif strcmp(SOFA_type, 'HRIR')
+    Obj = SOFAgetConventions('SimpleFreeFieldHRIR');
+    % write data to SOFA object
+    Obj.Data = [sofa_read_L.Data.IR, sofa_read_R.Data.IR];
+    Obj.Data.SamplingRate = sofa_read_L.Data.SamplingRate;
+    Obj.Data.Delay = [sofa_read_L.Data.Delay, sofa_read_R.Data.Delay];
+    fs_out = Obj.Data_SamplingRate;
+else
+    Obj = SOFAgetConventions('General'); % general SOFA object, no restrictions at all
+end
+
+% write meta data
+Obj.GLOBAL_ApplicationName = sofa_read_L.GLOBAL_ApplicationName;
+Obj.GLOBAL_ApplicationVersion = sofa_read_L.GLOBAL_ApplicationVersion;
+Obj.GLOBAL_History = sofa_read_L.GLOBAL_History;
+
+if isempty(sofa_read_L.GLOBAL_Title)
+    Obj.GLOBAL_Title = ['untitled ', SOFA_type, ' SOFA data'];
+else
+    Obj.GLOBAL_Title = sofa_read_L.GLOBAL_Title;
+end
+
+if isempty(sofa_read_L.GLOBAL_Origin) % added for spat5
+    Obj.GLOBAL_Origin = 'Mesh2HRTF_simulation';
+else
+    Obj.GLOBAL_Origin = sofa_read_L.GLOBAL_Origin;
+end
+
+% source and receiver data
+if strcmp(sofa_read_L.SourcePosition_Type, 'cartesian') && strcmp(sofa_read_L.SourcePosition_Units, 'metre')
+%     Obj.SourcePosition = cart2sph(rad2deg(sofa_read_L.SourcePosition)); % NOTE: throws error -> work around!
+    Obj.SourcePosition_Units = 'degree, degree, metre';
+    Obj.SourcePosition_Type = 'spherical';
+else
+    Obj.SourcePosition = sofa_read_L.SourcePosition;
+    Obj.SourcePosition_Units = sofa_read_L.SourcePosition_Units;
+    Obj.SourcePosition_Type = sofa_read_L.SourcePosition_Type;
+end
+
+Obj.ReceiverPosition = [sofa_read_L.ReceiverPosition; sofa_read_R.ReceiverPosition];
+Obj.ReceiverPosition_Units = sofa_read_L.ReceiverPosition_Units;
+Obj.ReceiverPosition_Type = sofa_read_L.ReceiverPosition_Type;
+
+% save as SOFA file
+% Obj=SOFAupdateDimensions(Obj);
+% SOFAsave(fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
 
 end
 % EOF
