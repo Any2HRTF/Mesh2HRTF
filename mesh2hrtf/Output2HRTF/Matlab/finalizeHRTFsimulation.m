@@ -26,6 +26,8 @@ function finalizeHRTFsimulation(varargin)
 % migrated from Python API from Sergejs Dombrovskis
 % author(s): Katharina Pollack, June 2022
 
+pwdirectory = pwd;
+
 % check input and input mode
 switch numel(varargin)
     case 0 % mode 'no inputs' = scan working directory for 2 projects to merge.
@@ -81,6 +83,7 @@ clear ii
 
 % find any broken data in this project
 for ii = 1:2
+    fprintf(['Checking for errors in ', folder_names{ii}, '...\n']);
     cd(fullfile(folder_names{ii}, 'NumCalc'))
     % check for number of sources
     NCdir_tmp = dir;
@@ -149,17 +152,22 @@ for ii = 1:2
     
     % run Output2HRTF script in project folder
     cd(folder_names{ii})
+    fprintf(['Running Output2HRTF in folder ', folder_names{ii}, '...\n']);
     Output2HRTF;
 end
 
 % determine left and right ear data
 % source position along interaural axis. Positive = left, negative = right
+fprintf(['Determine L/R ear of project ', folder_names{ii}, '...\n']);
 
 % merge to one SOFA file
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRTF'):
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRIR'):
+fprintf('Merge SOFA file ...\n');
 
 % write merged SOFA file to pwd
+fprintf(['Write merged SOFA file to ...', pwdirectory,'\n']);
+cd(pwdirectory);
 
 end
 % EOF
