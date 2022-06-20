@@ -50,7 +50,7 @@ switch numel(varargin)
             error('Input parameter has to be valid folder name.');
         end
         start_folder = varargin{1};
-
+        
         % pretty sure this can be solved in a more elegant way (than
         % copypasting the code from above ...)
         for ii = 3:numel(start_folder)
@@ -147,7 +147,7 @@ for ii = 1:2
         else
             disp('FYI: The calculation of', NCout_files{kk}, 'did not finish successfully.');
         end
-
+        
         if numel(corrupt_freq) > 1 % we have corrupt data
             if lowest_corrupt_frq(ii) == 0
                 lowest_corrupt_frq(ii) = min(corrupt_freq);
@@ -200,7 +200,7 @@ fprintf('Merge SOFA file(s) ...\n');
 for ii = 1:numel(sofa_files_L)  % loop for every SOFA file in one of the projects
     sofa_read_L = SOFAload(sofa_files_L(ii).name);
     sofa_read_R = SOFAload(sofa_files_R(ii).name);
-
+    
     % detect data type
     if strcmp(sofa_read_L.GLOBAL_DataType, 'FIR')
         SOFA_type = 'HRIR';
@@ -283,8 +283,11 @@ Obj.ReceiverPosition_Units = sofa_read_L.ReceiverPosition_Units;
 Obj.ReceiverPosition_Type = sofa_read_L.ReceiverPosition_Type;
 
 % save as SOFA file
-% Obj=SOFAupdateDimensions(Obj);
-% SOFAsave(fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
+Obj=SOFAupdateDimensions(Obj);
+SOFAsave(fullfile(targetdir, [SOFA_type, '_', num2str(fs_out), 'fs.sofa']), Obj);
+
+% copy Info.txt to targetdir
+copyfile(fullfile(folder_names{1}, 'Info.txt'), targetdir);
 
 end
 % EOF
