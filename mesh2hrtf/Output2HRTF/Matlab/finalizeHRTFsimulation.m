@@ -303,7 +303,9 @@ Obj=SOFAupdateDimensions(Obj);
 SOFAsave(fullfile(targetdir, [SOFA_type, '_', num2str(fs_out), 'fs.sofa']), Obj);
 
 % copy Info.txt to targetdir
-copyfile(fullfile(folder_names{1}, 'Info.txt'), targetdir);
+if isfile(fullfile(folder_names{1}, 'Info.txt'))
+    copyfile(fullfile(folder_names{1}, 'Info.txt'), targetdir);
+end
 
 fprintf(['\nDone! Merged SOFA files saved in ', targetdir]);
 
