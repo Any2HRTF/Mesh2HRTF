@@ -307,7 +307,7 @@ if isfile(fullfile(folder_names{1}, 'Info.txt'))
     copyfile(fullfile(folder_names{1}, 'Info.txt'), targetdir);
 end
 
-fprintf(['\nDone! Merged SOFA files saved in ', targetdir, '\n']);
+disp(['Done! Merged SOFA files saved in ', targetdir]);
 
 end
 % EOF
