@@ -81,6 +81,13 @@ switch numel(varargin)
 end
 clear ii
 
+% create folder name for merged SOFA
+if strcmp(folder_names{1}(end-1:end), '_L') || strcmp(folder_names{1}(end-1:end), '_R')
+    targetdir = strcat(folder_names{1}(1:end-2), '_merged');
+else
+    targetdir = pwdirectory;
+end
+
 % find any broken data in this project
 for ii = 1:2
     fprintf(['Checking for errors in ', folder_names{ii}, '...\n']);
@@ -149,25 +156,74 @@ for ii = 1:2
             end
         end
     end
-    
+end
+clear ii
+
+if (lowest_corrupt_frq(1) > 1 || lowest_corrupt_frq(1) < 250) || ...
+        (lowest_corrupt_frq(2) > 1 || lowest_corrupt_frq(2) < 250)
+    error(['Practically all simulation instances failed. There is no usable data here. ', ...
+        'See documentation for troubleshooting or open an issue in the repository.']);
+end
+
+% overwrite lowest_corrupt_frq with unified information
+if min(lowest_corrupt_frq) == 0
+    lowest_corrupt_frq = max(lowest_corrupt_frq);
+else
+    lowest_corrupt_frq = min(lowest_corrupt_frq);
+end
+
+for ii = 1:2
     % run Output2HRTF script in project folder
     cd(folder_names{ii})
     fprintf(['Running Output2HRTF in folder ', folder_names{ii}, '...\n']);
     Output2HRTF;
+    % determine left and right ear data
+    % source position along interaural axis. Positive = left, negative = right
+    fprintf(['Determine L/R ear of project ', folder_names{ii}, '...\n']);
+    output2hrtf_text = fileread('Output2HRTF.m');
+    [~, endIdx] = regexp(output2hrtf_text, '(sourceType = )');
+    switch output2hrtf_text(endIdx+2)
+        case 'L'
+            sofa_file_L = folder_names{ii};
+            sofa_files_L = dir('*.sofa');
+        case 'R'
+            sofa_file_R = folder_names{ii};
+            sofa_files_R = dir('*.sofa');
+    end
 end
-
-% determine left and right ear data
-% source position along interaural axis. Positive = left, negative = right
-fprintf(['Determine L/R ear of project ', folder_names{ii}, '...\n']);
+clear ii
 
 % merge to one SOFA file
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRTF'):
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRIR'):
-fprintf('Merge SOFA file ...\n');
+fprintf('Merge SOFA file(s) ...\n');
+for ii = 1:numel(sofa_files_L)  % loop for every SOFA file in one of the projects
+    sofa_read_L = SOFAload(sofa_files_L(ii).name);
+    sofa_read_R = SOFAload(sofa_files_R(ii).name);
+    
+    % detect data type
+    if strcmp(sofa_read_L.GLOBAL_DataType, 'FIR')
+        SOFA_type = 'HRIR';
+        % sanity check whether files can be merged
+        if sofa_read_L.Data.SamplingRate ~= sofa_read_R.Data.SamplingRate
+            error('Sampling rates of the two input SOFA files do not match! Merging aborted.');
+        elseif size(sofa_read_L.Data.IR, 2) ~= 1 || size(sofa_read_R.Data.IR, 2) ~= 1
+            error('Input SOFA files contain data for more than one receiver! Merging aborted.');
+        elseif size(sofa_read_L.Data.IR, 3) ~= size(sofa_read_R.Data.IR, 3)
+            error('Sampling frequencies of the two input SOFA files do not match! Merging aborted.')
+        end
+    else
+        SOFA_type = 'HRTF';
+        % sanity check whether files can be merged
+        if sofa_read_L.N - sofa_read_R.N < 1e-10
+            error('Frequency vectors of the two input SOFA files do not match! Merging aborted.');
+        end
+    end
+end
 
-% write merged SOFA file to pwd
-fprintf(['Write merged SOFA file to ...', pwdirectory,'\n']);
-cd(pwdirectory);
+% write merged SOFA file to targetdir
+fprintf(['Write merged SOFA file to ...', targetdir,'\n']);
+cd(targetdir);
 
 end
 % EOF
