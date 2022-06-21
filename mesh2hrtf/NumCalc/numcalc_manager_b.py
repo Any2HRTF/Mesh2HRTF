@@ -71,8 +71,10 @@ def print_message(message, text_color, log_file):
 
 def available_ram(ram_offset):
     """Get the available RAM = free RAM - ram_offset"""
-    RAM_info = psutil.virtual_memory()
-    return max([0, RAM_info.available / 1073741824 - ram_offset])
+    ram_info = psutil.virtual_memory()
+    ram_available = max([0, ram_info.available / 1073741824 - ram_offset])
+    ram_used = ram_info.used / 1073741824
+    return ram_available, ram_used
 
 
 def numcalc_instances():
@@ -433,10 +435,10 @@ for pp, project in enumerate(projects_to_run):
 
     # check if available memory is enough for running the instance with the
     # highest memory consumption
-    RAM_available = available_ram(ram_offset)
-    if RAM_available < instances_to_run[-1, 3] * ram_safety_factor:
+    ram_available, _ = available_ram(ram_offset)
+    if ram_available < instances_to_run[-1, 3] * ram_safety_factor:
         raise_error((
-            f"Available RAM is {round(RAM_available, 2)} GB, but frequency "
+            f"Available RAM is {round(ram_available, 2)} GB, but frequency "
             f"step {int(instances_to_run[0, 1])} of source "
             f"{int(instances_to_run[0, 1])} requires "
             f"{round(instances_to_run[0, 3] * ram_safety_factor, 2)} GB."),
@@ -449,7 +451,7 @@ for pp, project in enumerate(projects_to_run):
         # current time and resources
         current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
         ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
-        ram_available = available_ram(ram_offset)
+        ram_available, ram_used = available_ram(ram_offset)
         cpu_load = psutil.cpu_percent(.1)
         running_instances = numcalc_instances()
 
@@ -468,7 +470,8 @@ for pp, project in enumerate(projects_to_run):
                      f"{seconds_to_initialize} seconds, {current_time}):\n"
                      f"{running_instances} NumCalc instances running\n"
                      f"{cpu_load}% CPU load\n"
-                     f"{round(ram_available, 2)} GB RAM available\n"),
+                     f"{round(ram_available, 2)} GB RAM available, "
+                     f"{round(ram_used, 2)} GB used\n"),
                     text_color_reset, log_file)
                 started_instance = False
 
