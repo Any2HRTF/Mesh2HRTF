@@ -450,7 +450,7 @@ for pp, project in enumerate(projects_to_run):
         current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
         ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
         ram_available = available_ram(ram_offset)
-        cpu_load = psutil.cpu_percent(.1) / psutil.cpu_count()
+        cpu_load = psutil.cpu_percent(.1)
         running_instances = numcalc_instances()
 
         # wait if
