@@ -33,6 +33,7 @@
 #include<unistd.h>                                                                  //
 #endif                                                                              //
 using namespace std;                                                                //
+typedef unsigned int uint;                                                          //
 //====================================================================================
 
 
