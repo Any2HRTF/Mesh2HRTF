@@ -230,7 +230,7 @@ clear ii
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRTF'):
 % merge_write_sofa(sofa_left, sofa_right, basepath, filename, sofa_type='HRIR'):
 disp('Merge SOFA file(s) ...');
-for ii = 1:numel(sofa_files_L)  % loop for every SOFA file in one of the projects
+for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the projects
     sofa_read_L = SOFAload(sofa_files_L{ii});
     sofa_read_R = SOFAload(sofa_files_R{ii});
 
@@ -254,7 +254,7 @@ for ii = 1:numel(sofa_files_L)  % loop for every SOFA file in one of the project
     end
 
     % write merged SOFA file to targetdir
-    fprintf(['Write merged SOFA file to ...', targetdir,'\n']);
+    disp(['Write merged SOFA file to ...', targetdir, ' ...']);
     % create targetdir if it does not exist yet
     if ~isfolder(targetdir)
         mkdir(targetdir)
@@ -265,17 +265,20 @@ for ii = 1:numel(sofa_files_L)  % loop for every SOFA file in one of the project
     if strcmp(SOFA_type, 'HRTF')
         Obj = SOFAgetConventions('SimpleFreeFieldHRTF');
         % write data to SOFA object
-        Obj.Data.Real = [sofa_read_L.Data.Real; sofa_read_R.Data.Real];
-        Obj.Data.Imag = [sofa_read_L.Data.Imag; sofa_read_R.Data.Imag];
+        Obj.Data.Real = sofa_read_L.Data.Real;
+        Obj.Data.Real(:,2,:) = sofa_read_R.Data.Real;
+        Obj.Data.Imag = sofa_read_L.Data.Imag;
+        Obj.Data.Imag(:,2,:) = sofa_read_R.Data.Imag;
         Obj.N = sofa_read_L.N;
         fs_out = 2*Obj.N(end); % specify sampling frequency according to Nyquist
     elseif strcmp(SOFA_type, 'HRIR')
         Obj = SOFAgetConventions('SimpleFreeFieldHRIR');
         % write data to SOFA object
-        Obj.Data = [sofa_read_L.Data.IR, sofa_read_R.Data.IR];
+        Obj.Data.IR = sofa_read_L.Data.IR;
+        Obj.Data.IR(:,2,:) = sofa_read_R.Data.IR;
         Obj.Data.SamplingRate = sofa_read_L.Data.SamplingRate;
         Obj.Data.Delay = [sofa_read_L.Data.Delay, sofa_read_R.Data.Delay];
-        fs_out = Obj.Data_SamplingRate;
+        fs_out = Obj.Data.SamplingRate;
     else
         Obj = SOFAgetConventions('General'); % general SOFA object, no restrictions at all
     end
@@ -299,7 +302,7 @@ for ii = 1:numel(sofa_files_L)  % loop for every SOFA file in one of the project
 
     % source and receiver data
     if strcmp(sofa_read_L.SourcePosition_Type, 'cartesian') && strcmp(sofa_read_L.SourcePosition_Units, 'metre')
-        [pos_tmp(:,1), pos_tmp(:,2), pos_tmp(:,3)] = cart2sph(sofa_read_L.SourcePosition(1), sofa_read_L.SourcePosition(2), sofa_read_L.SourcePosition(3));
+        [pos_tmp(:,1), pos_tmp(:,2), pos_tmp(:,3)] = cart2sph(sofa_read_L.SourcePosition(:,1), sofa_read_L.SourcePosition(:,2), sofa_read_L.SourcePosition(:,3));
         Obj.SourcePosition = rad2deg(pos_tmp);
         Obj.SourcePosition_Units = 'degree, degree, metre';
         Obj.SourcePosition_Type = 'spherical';
