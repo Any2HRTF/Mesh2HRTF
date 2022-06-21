@@ -233,6 +233,8 @@ disp('Merge SOFA file(s) ...');
 for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the projects
     sofa_read_L = SOFAload(sofa_files_L{ii});
     sofa_read_R = SOFAload(sofa_files_R{ii});
+    % no need to check whether there are the same SOFA files in L/R folders
+    % since we created them from one file
 
     % detect data type
     if strcmp(sofa_read_L.GLOBAL_DataType, 'FIR')
@@ -254,7 +256,7 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
     end
 
     % write merged SOFA file to targetdir
-    disp(['Write merged SOFA file to ...', targetdir, ' ...']);
+    disp(['Write merged SOFA file to ', targetdir, ' ...']);
     % create targetdir if it does not exist yet
     if ~isfolder(targetdir)
         mkdir(targetdir)
