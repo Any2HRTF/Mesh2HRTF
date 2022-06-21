@@ -228,6 +228,14 @@ parser.add_argument(
     "--confirm_errors", default='True', choices=('True', 'False'), type=str,
     help=("If True, num_calc_manager waits for user input in case an error "
           "occurs."))
+parser.add_argument(
+    "--starting_order", default='alternate',
+    choices=('alternate', 'high', 'low'), type=str,
+    help=("Control the order in which the frequency steps are launched. "
+          "'high' always launches the step with the highest possible "
+          "memory consumption. 'low', launches the step with the lowest "
+          "estimated memory consumption, and the default 'alternate' mixes "
+          "the two approaches."))
 
 args = vars(parser.parse_args())
 
@@ -258,6 +266,7 @@ ram_safety_factor = args["ram_safety_factor"]
 max_cpu_load_percent = args["max_cpu_load"]
 max_instances = args["max_instances"]
 confirm_errors = args["confirm_errors"] == 'True'
+starting_order = args["starting_order"]
 
 # RAM that should not be used
 ram_offset = max([0, RAM_info.total / 1073741824 - max_ram_load])
@@ -416,9 +425,11 @@ for pp, project in enumerate(projects_to_run):
 
     print_message(message, text_color_reset, log_file)
 
-    # sort instances according to RAM consumption (highest first)
+    # sort instances according to RAM consumption (lowest first)
     instances_to_run = instances_to_run[np.argsort(instances_to_run[:, 3])]
-    instances_to_run = np.flip(instances_to_run, axis=0)
+    # assure highest first if demanded
+    if starting_order != "low":
+        instances_to_run = np.flip(instances_to_run, axis=0)
 
     # check if available memory is enough for running the instance with the
     # highest memory consumption
@@ -497,10 +508,16 @@ for pp, project in enumerate(projects_to_run):
                 f"{numcalc_executable} -istart {step} -iend {step}"
                 f" >NC{step}-{step}_log.txt"), shell=True)
 
+        # set flag to indicate started instance (controls command line output)
         started_instance = True
+        # prepare instances for next loop
         instances_to_run = np.delete(instances_to_run, idx, 0)
+        if starting_order == "alternate":
+            instances_to_run = np.flip(instances_to_run, axis=0)
+        # wait for next loop
         time.sleep(seconds_to_initialize)
-    #  END of the main project loop ---
+
+    #  END of per project loop ------------------------------------------------
 
     # wait for last NumCalc instances to finish
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
@@ -513,7 +530,7 @@ for pp, project in enumerate(projects_to_run):
             break
 
         time.sleep(seconds_to_initialize)
-#  END of all_projects loop ---
+#  END of all projects loop ---------------------------------------------------
 
 # Check all projects that may need to be executed -----------------------------
 current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
