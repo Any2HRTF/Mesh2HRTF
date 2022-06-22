@@ -257,7 +257,7 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
     end
 
     % write merged SOFA file to targetdir
-    disp(['Write merged SOFA file to ', targetdir, ' ...']);
+    disp(['Write merged SOFA file to ', targetdir, filesep, SOFA_type, '_', num2str(fs_out), 'fs.sofa ...']);
     % create targetdir if it does not exist yet
     if ~isfolder(targetdir)
         mkdir(targetdir)
@@ -322,7 +322,7 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
 
     % save as SOFA file
     Obj=SOFAupdateDimensions(Obj);
-    SOFAsave(fullfile(targetdir, [SOFA_type, '_', num2str(fs_out), 'fs.sofa']), Obj);
+    SOFAsave(fullfile(targetdir, [SOFA_type, '_', num2str(fs_out), 'fs.sofa']), Obj, 9); % choose highest compression of 9
 end
 
 % copy Info.txt to targetdir
