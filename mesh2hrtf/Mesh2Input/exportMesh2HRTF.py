@@ -812,7 +812,7 @@ def _write_output2HRTF_m(
 
     # header
     fw("% Collect the data simulated by NumCalc and save to project folder.\n")
-    fw("close all; clear\n\n")
+    fw("% close all; clear\n\n")
 
     # Mesh2HRTF version
     fw(f"Mesh2HRTF_version = '{version}';\n\n")
