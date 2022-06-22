@@ -79,9 +79,12 @@ def available_ram(ram_offset):
 
 def numcalc_instances():
     """Return the number of currently running NumCalc instances"""
+
+    numcalc_executable = 'NumCalc' if os.name != 'nt' else 'NumCalc.exe'
+
     num_instances = 0
     for p in psutil.process_iter(['name', 'memory_info']):
-        if p.info['name'].endswith("NumCalc"):
+        if p.info['name'].endswith(numcalc_executable):
             num_instances += 1
 
     return num_instances
@@ -205,7 +208,8 @@ parser.add_argument(
 parser.add_argument(
     "--wait_time", default=15, type=int,
     help=("Delay in seconds for waiting until the RAM and CPU usage is checked"
-          " after a NumCalc instance was started."))
+          " in case too little resources are available for starting the next. "
+          "NumCalc instance."))
 parser.add_argument(
     "--max_ram_load", default=False, type=float,
     help=("The RAM that can maximally be used in GB. New NumCalc instances are"
@@ -247,7 +251,7 @@ args["project_path"] = args["project_path"] if args["project_path"] \
 
 if os.name == "nt":
     args["numcalc_path"] = args["numcalc_path"] if args["numcalc_path"] \
-        else args["project_path"]
+        else "Searching for NumCalc_WindowsExe"
 else:
     args["numcalc_path"] = args["numcalc_path"] if args["numcalc_path"] \
         else "NumCalc"
@@ -304,7 +308,8 @@ else:
     # project_path contains multiple Mesh2HRTF project folders
     all_projects = []  # list of project folders to execute
     for subdir in os.listdir(project_path):
-        if os.path.isfile(os.path.join(project_path, subdir, 'Info.txt')):
+        if os.path.isdir(os.path.join(project_path, subdir,
+                                      'ObjectMeshes', 'Reference')):
             all_projects.append(os.path.join(project_path, subdir))
 
     log_file = os.path.join(project_path, log_file)
@@ -342,7 +347,7 @@ if os.name == 'nt':  # Windows detected
         numcalc_path = os.path.join(all_projects[0], 'NumCalc_WindowsExe')
     elif os.path.isdir(os.path.join(os.path.dirname(all_projects[0]),
                                     'NumCalc_WindowsExe')):
-        # located is inside the folder that contains all Mesh2HRTF projects
+        # located inside the folder that contains all Mesh2HRTF projects
         numcalc_path = os.path.join(
             os.path.dirname(all_projects[0]), 'NumCalc_WindowsExe')
     elif os.path.isfile(os.path.join(all_projects[0],
@@ -376,6 +381,10 @@ else:
                     text_color_red, log_file, confirm_errors)
     numcalc_executable = numcalc_path
     numcalc_path = os.path.dirname(numcalc_path)
+
+# echo the used NumCalc executable
+print_message(f"NumCalc executable: {numcalc_executable}\n",
+              text_color_reset, log_file)
 
 
 # Check all projects that may need to be executed -----------------------------
@@ -524,15 +533,15 @@ for pp, project in enumerate(projects_to_run):
 
     # wait for last NumCalc instances to finish
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
-    message = (f"\n... waiting for last NumCalc instance to finish "
-               f"(checking every {seconds_to_initialize} s, {current_time})")
+    message = (f"\n... waiting for the last NumCalc instances to finish "
+               f"(checking every 5 s, {current_time})")
     print_message(message, text_color_reset, log_file)
     while True:
 
         if numcalc_instances() == 0:
             break
 
-        time.sleep(seconds_to_initialize)
+        time.sleep(5)
 #  END of all projects loop ---------------------------------------------------
 
 # Check all projects that may need to be executed -----------------------------
@@ -551,7 +560,7 @@ for project in all_projects:
     if instances_to_run.shape[0] > 0:
         message += f"{os.path.basename(project)}: "
         unfinished = [f"source {int(p[0])} step {int(p[1])}"
-                      for p in projects_to_run]
+                      for p in instances_to_run]
         message += "; ".join(unfinished) + "\n"
 
 if message.count("\n") > 3:
