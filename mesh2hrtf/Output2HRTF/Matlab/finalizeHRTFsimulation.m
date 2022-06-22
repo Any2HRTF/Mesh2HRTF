@@ -3,32 +3,32 @@ function finalizeHRTFsimulation(varargin)
 %  merge SOFA data from two separate Mesh2HRTF simulations for left & right ear.
 %  For usage details, please check the documentation!
 %
-% A - no inputs ... scan start folder for 2 projects to merge.
-% B - 1 input ..... scan given folder for 2 projects to merge.
-% C - 2 inputs .... merge 2 projects that were given as input.
-% D - 3 inputs .... merge 2 projects and save to folder in input 3
+%  A - no inputs ... scan pwd for 2 projects to merge
+%  B - 1 input ..... scan given folder for 2 projects to merge
+%  C - 2 inputs .... merge 2 projects that were given as input 1 and 2
+%  D - 3 inputs .... merge 2 projects specified in input 1 and 2 and save to folder in input 3
 %
-% mode A - no inputs = (recommended usage mode) scans start folder for 2 projects to merge,
+%  MODE A - no inputs = scan start folder for 2 projects to merge,
 %                       + usually executes "Output2HRTF.m" to run full pre-processing in one go.
 %   run this .m file from a dedicated folder (for example use folder "Finalize_HRTF_simulation")
 %   Move into the "Finalize_HRTF_simulation" folder exactly the 2 project folders that need to be merged.
 %   run this "finalizeHRTFsimulation.m" with Matlab.
 %   Merged SOFA files will be saved in a folder next to the project that was found.
 %
-% mode B - Input1 only = scan Input1 folder for 2 projects to merge.
+%  MODE B - Input1 only = scan Input1 folder for 2 projects to merge.
 %   Move into any folder exactly the 2 project folders that need to be merged.
 %   run this "finalizeHRTFsimulation.m" file & specify "input_1" folder that contains projects to merge.
 %       This script searches and merges the SOFA files from the 2 projects it finds inside "input_1" path.
 %   Merged SOFA file will be saved in pwd.
 %
-% mode C - 2 inputs = Merge the 2 projects that were given as input_1 and input_2.
+%  MODE C - 2 inputs = merge the 2 projects that were given as input_1 and input_2.
 %   Merged SOFA file will be written in pwd.
 %
-% mode D - 3 inputs = merge 2 projects and save to folder in input 3
+%  MODE D - 3 inputs = (recommended usage mode) merge 2 projects and save to folder in input 3
 %   Merged SOFA file will be written to input 3
 %
-% migrated from Python API from Sergejs Dombrovskis
-% author(s): Katharina Pollack, June 2022
+%  migrated from finalize_hrtf_simulation.py from Sergejs Dombrovskis
+%  author(s): Katharina Pollack, June 2022
 
 pwdirectory = pwd;
 targetdir = {};
@@ -88,10 +88,11 @@ switch numel(varargin)
         targetdir = varargin{3};
     otherwise
         error(['Wrong number of inputs given. Valid number of input arguments are:\n', ...
-            '%s\n%s\n%s'], ...
-            'A - no inputs = scan start folder for 2 projects to merge.', ...
-            'B - 1 input  = scan given folder for 2 projects to merge.', ...
-            'C - 2 inputs = Merge 2 projects that were given as input.');
+            '%s\n%s\n%s\n%s'], ...
+            'A - no inputs = scan start folder for 2 projects to merge', ...
+            'B - 1 input  = scan given folder for 2 projects to merge', ...
+            'C - 2 inputs = merge 2 projects that were given as input', ...
+            'D - 3 inputs = merge 2 projects specified in input 1 and 2 and save to folder in input 3');
 end
 clear ii
 
