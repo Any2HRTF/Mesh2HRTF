@@ -167,7 +167,7 @@ for ii = 1:2
     end
     fclose(fid);
     if happy_end == 1
-        warning(['Great! The calculation of', NCout_files{kk}, ' finished successfully.']);
+        disp(['Great! The calculation of', NCout_files{kk}, ' finished successfully.']);
     else
         warning(['FYI: The calculation of', NCout_files{kk}, ' did not finish successfully.']);
     end
