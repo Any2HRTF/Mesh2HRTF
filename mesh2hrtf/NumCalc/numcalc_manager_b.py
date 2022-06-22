@@ -69,7 +69,7 @@ def print_message(message, text_color, log_file):
         f.write(message + "\n")
 
 
-def available_ram(ram_offset):
+def get_current_ram(ram_offset):
     """Get the available RAM = free RAM - ram_offset"""
     ram_info = psutil.virtual_memory()
     ram_available = max([0, ram_info.available / 1073741824 - ram_offset])
@@ -444,7 +444,7 @@ for pp, project in enumerate(projects_to_run):
 
     # check if available memory is enough for running the instance with the
     # highest memory consumption
-    ram_available, _ = available_ram(ram_offset)
+    ram_available, _ = get_current_ram(ram_offset)
     if ram_available < instances_to_run[-1, 3] * ram_safety_factor:
         raise_error((
             f"Available RAM is {round(ram_available, 2)} GB, but frequency "
@@ -460,7 +460,7 @@ for pp, project in enumerate(projects_to_run):
         # current time and resources
         current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
         ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
-        ram_available, ram_used = available_ram(ram_offset)
+        ram_available, ram_used = get_current_ram(ram_offset)
         cpu_load = psutil.cpu_percent(.1)
         running_instances = numcalc_instances()
 
