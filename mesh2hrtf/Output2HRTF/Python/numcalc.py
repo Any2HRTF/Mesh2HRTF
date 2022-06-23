@@ -335,7 +335,7 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                 LogFileHandle = open(f"NC{step}-{step}_log.txt", "w")
                 # run NumCalc and route all printouts to a log file
                 subprocess.run(
-                    [f"{numcalc_executable} -istart {step} -iend {step}"],
+                    f"{numcalc_executable} -istart {step} -iend {step}",
                     stdout=LogFileHandle, cwd=cwd)
 
             else:  # elif os.name == 'posix': Linux or Mac detected
