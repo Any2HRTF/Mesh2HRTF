@@ -327,8 +327,8 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                 f"{current_time})")
             print_message(message, text_color_reset, log_file)
 
-            # change working directory
-            os.chdir(os.path.join(root_NumCalc, "source_" + str(source)))
+            # new working directory
+            cwd = os.path.join(root_NumCalc, "source_" + str(source))
 
             if os.name == 'nt':  # Windows detected
                 # create a log file for all print-outs
@@ -336,13 +336,13 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                 # run NumCalc and route all printouts to a log file
                 subprocess.Popen(
                     f"{numcalc_executable} -istart {step} -iend {step}",
-                    stdout=LogFileHandle)
+                    stdout=LogFileHandle, cwd=cwd)
 
             else:  # elif os.name == 'posix': Linux or Mac detected
                 # run NumCalc and route all printouts to a log file
                 subprocess.Popen((
                     f"{numcalc_executable} -istart {step} -iend {step}"
-                    f" >NC{step}-{step}_log.txt"), shell=True)
+                    f" >NC{step}-{step}_log.txt"), shell=True, cwd=cwd)
 
             # set flag to indicate started instance
             # (controls command line output)
