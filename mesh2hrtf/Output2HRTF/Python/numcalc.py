@@ -355,19 +355,19 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
             time.sleep(wait_time)
 
         #  END of per project loop --------------------------------------------
-
-        # wait for last NumCalc instances to finish
-        current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
-        message = (f"\n... waiting for the last NumCalc instances to finish "
-                   f"(checking every 5 s, {current_time})")
-        print_message(message, text_color_reset, log_file)
-        while True:
-
-            if numcalc_instances() == 0:
-                break
-
-            time.sleep(5)
     #  END of all projects loop -----------------------------------------------
+
+    # wait for last NumCalc instances to finish
+    current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+    message = (f"\n... waiting for the last NumCalc instances to finish "
+               f"(checking every 5 s, {current_time})")
+    print_message(message, text_color_reset, log_file)
+    while True:
+
+        if numcalc_instances() == 0:
+            break
+
+        time.sleep(5)
 
     # Check all projects that may need to be executed -------------------------
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
