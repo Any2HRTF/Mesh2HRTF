@@ -300,22 +300,41 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                 if started_instance:
                     print_message(
                         (f"\n... waiting for resources (checking every "
-                         f"{wait_time} seconds, {current_time}):\n"
-                         f"{running_instances} NumCalc instances running\n"
-                         f"{cpu_load}% CPU load\n"
-                         f"{round(ram_available, 2)} GB RAM available, "
-                         f"{round(ram_used, 2)} GB used\n"),
+                         f"{5} seconds, {current_time}):\n"
+                         f" {running_instances} NumCalc instances running | "
+                         f"   {cpu_load}% CPU load\n"
+                         f"   {round(ram_available, 2)} GB RAM available    | "
+                         f"   {round(ram_used, 2)} GB used\n"),
                         text_color_reset, log_file)
                     started_instance = False
 
                 # wait and continue
-                time.sleep(wait_time)
+                time.sleep(5) # this waiting time can be reduced even lower
                 continue
 
-            # find frequency step with the highest possible RAM consumption
-            for idx, ram_required in enumerate(instances_to_run[:, 3]):
-                if ram_required <= ram_available:
-                    break
+            if running_instances == 0:  # note will work only for pp==0 project!
+                # force calculation of the heaviest Step even if it
+                # exceeds available RAM, to show the worst-case scenario.
+                if starting_order == "low":
+                    idx = instances_to_run.shape[0] - 1  # the biggest
+                else:
+                    idx = 0  # the biggest
+
+                max_ram = instances_to_run[idx, 3] * ram_safety_factor
+                if max_ram <= ram_available:
+                    message = (f"WARNING - Max RAM needed Exceeds available system "
+                               f"RAM!: {max_ram} GB\n")
+                    print_message(message, text_color_red, log_file)
+                else:
+                    message = (f"Max RAM needed: "
+                               f"{max_ram} GB\n")
+                    print_message(message, text_color_reset, log_file)
+
+            else:
+                # find frequency step with the highest possible RAM consumption
+                for idx, ram_required in enumerate(instances_to_run[:, 3]):
+                    if ram_required * ram_safety_factor <= ram_available:
+                        break
 
             # start new NumCalc instance
             source = int(instances_to_run[idx, 0])
@@ -336,7 +355,7 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                 # run NumCalc and route all printouts to a log file
                 subprocess.run(
                     f"{numcalc_executable} -istart {step} -iend {step}",
-                    stdout=LogFileHandle, cwd=cwd)
+                    stdout=LogFileHandle, cwd=cwd, check=True)
 
             else:  # elif os.name == 'posix': Linux or Mac detected
                 # run NumCalc and route all printouts to a log file
