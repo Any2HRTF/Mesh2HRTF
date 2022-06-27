@@ -1,4 +1,6 @@
 import mesh2hrtf as m2h
+import numpy as np
+import numpy.testing as npt
 import pytest
 import os
 from tempfile import TemporaryDirectory
@@ -64,3 +66,21 @@ def test_write_boundary_condition_comment():
     assert file[0] == "# " + comment + "\n"
     assert file[1] == "#\n"
     assert file[2] == "# Keyword to define the boundary condition:\n"
+
+
+def test_read_ram_estimates():
+
+    estimates = m2h.read_ram_estimates(os.path.join(
+        os.path.dirname(__file__), "resources", "SHTF", "NumCalc", "source_1"))
+
+    assert isinstance(estimates, np.ndarray)
+    assert estimates.shape == (60, 3)
+    npt.assert_allclose([1.00000e+00, 1.00000e+02, 4.16414e-02], estimates[0])
+    npt.assert_allclose([6.00000e+01, 6.00000e+03, 7.22010e-02], estimates[-1])
+
+
+def test_read_ram_estimates_assertions():
+    """test assertions for read_ram_estimates"""
+
+    with pytest.raises(ValueError, match="does not contain a Memory.txt"):
+        m2h.read_ram_estimates(os.getcwd())
