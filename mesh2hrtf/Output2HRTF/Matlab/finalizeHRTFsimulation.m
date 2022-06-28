@@ -256,14 +256,6 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
         end
     end
 
-    % write merged SOFA file to targetdir
-    disp(['Write merged SOFA file to ', targetdir, filesep, SOFA_type, '_', num2str(fs_out), 'fs.sofa ...']);
-    % create targetdir if it does not exist yet
-    if ~isfolder(targetdir)
-        mkdir(targetdir)
-    end
-    cd(targetdir);
-
     % create empty SOFA object
     if strcmp(SOFA_type, 'HRTF')
         Obj = SOFAgetConventions('SimpleFreeFieldHRTF');
@@ -319,6 +311,14 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
     Obj.ReceiverPosition = [sofa_read_L.ReceiverPosition; sofa_read_R.ReceiverPosition];
     Obj.ReceiverPosition_Units = sofa_read_L.ReceiverPosition_Units;
     Obj.ReceiverPosition_Type = sofa_read_L.ReceiverPosition_Type;
+
+    % write merged SOFA file to targetdir
+    disp(['Write merged SOFA file to ', targetdir, filesep, SOFA_type, '_', num2str(fs_out), 'fs.sofa ...']);
+    % create targetdir if it does not exist yet
+    if ~isfolder(targetdir)
+        mkdir(targetdir)
+    end
+    cd(targetdir);
 
     % save as SOFA file
     Obj=SOFAupdateDimensions(Obj);
