@@ -313,7 +313,7 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
     Obj.ReceiverPosition_Type = sofa_read_L.ReceiverPosition_Type;
 
     % write merged SOFA file to targetdir
-    disp(['Write merged SOFA file to ', targetdir, filesep, SOFA_type, '_', num2str(fs_out), 'fs.sofa ...']);
+    disp(['Write merged SOFA file to ', targetdir, SOFA_type, '_', num2str(fs_out), 'fs.sofa ...']);
     % create targetdir if it does not exist yet
     if ~isfolder(targetdir)
         mkdir(targetdir)
