@@ -95,8 +95,7 @@ fprintf('Loading computational effort data ...\n');
 % check for folder be.out and read computation time from every NC*.out file
 for ii = 1:numSources
     computationTime{ii} = [];
-    boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii)]);
-    boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
+    boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii), filesep, 'NC*.out']);
 
     NC_all_flag = 0; NC_all_idx = []; NC_all_date = [];
     NC_single_flag = 0; NC_single_idx = []; NC_single_date = [];
