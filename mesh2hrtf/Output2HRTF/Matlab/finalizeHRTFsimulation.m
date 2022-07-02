@@ -298,7 +298,7 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
     % source and receiver data
     if strcmp(sofa_read_L.SourcePosition_Type, 'cartesian') && strcmp(sofa_read_L.SourcePosition_Units, 'metre')
         [pos_tmp(:,1), pos_tmp(:,2), pos_tmp(:,3)] = cart2sph(sofa_read_L.SourcePosition(:,1), sofa_read_L.SourcePosition(:,2), sofa_read_L.SourcePosition(:,3));
-        Obj.SourcePosition = rad2deg(pos_tmp);
+        Obj.SourcePosition = [rad2deg(pos_tmp(:,1:2)); pos_tmp(:,3)];
         Obj.SourcePosition_Units = 'degree, degree, metre';
         Obj.SourcePosition_Type = 'spherical';
         clear pos_tmp
