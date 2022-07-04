@@ -95,8 +95,7 @@ fprintf('Loading computational effort data ...\n');
 % check for folder be.out and read computation time from every NC*.out file
 for ii = 1:numSources
     computationTime{ii} = [];
-    boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii)]);
-    boundaryElements = boundaryElements(~cellfun(@(x) strncmp(x, '.', 1), {boundaryElements.name}));
+    boundaryElements = dir(['NumCalc', filesep, 'source_', num2str(ii), filesep, 'NC*.out']);
 
     NC_all_flag = 0; NC_all_idx = []; NC_all_date = [];
     NC_single_flag = 0; NC_single_idx = []; NC_single_date = [];
@@ -181,9 +180,9 @@ save(fullfile('Output2HRTF', 'computationTime.mat'), 'description', 'computation
 clear ii jj description computationTime tmp iter_error_idx rel_error_idx
 
 %% Load ObjectMesh data
-fprintf('Loading ObjectMesh data ...\n');
+fprintf('Loading ObjectMesh data for ');
 for ii=1:numSources
-    fprintf(['Source ', num2str(ii), '\n']);
+    fprintf(['source ', num2str(ii), '\n']);
     pressure{ii}=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
         filesep, 'be.out', filesep], 'pBoundary', numFreq);
     clear data
@@ -209,9 +208,9 @@ clear pressure nodes elements ii jj cnt idx element_data
 
 %% Load EvaluationGrid data
 if ~isempty(evaluationGrids)
-    fprintf('Loading data for the evaluation grids ...\n');
+    fprintf('Loading evaluation grids for data in ');
     for ii=1:numSources
-        fprintf(['Source ', num2str(ii), '\n']);
+        fprintf(['source ', num2str(ii), '\n']);
         pressure(:,:,ii)=Output2HRTF_Load(['NumCalc', filesep, 'source_', num2str(ii), ...
             filesep, 'be.out', filesep], 'pEvalGrid', numFreq);
     end
