@@ -1535,7 +1535,10 @@ int NC_GetLine
 {
 	int ii, len, nfi, ss, nn;
 
-	if(fgets(chinpline, SIZE, inputFile_)==NULL) cout << "\nError parsing the input file";
+	if(fgets(chinpline, SIZE, inputFile_)==NULL) {
+	  cout << "\nError parsing the input file\n";
+	  exit(-1);
+	}
 	string inpline(chinpline);
 
 	nn=0,ss=0,ii=0;
