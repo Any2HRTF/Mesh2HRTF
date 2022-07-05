@@ -95,6 +95,7 @@ Contributors
 ============
 
 * Fabian Brinkmann, AC-TUB
+* Zhengsheng Chen, ARI
 * Slim Ghorbal, IETR/CentraleSupélec, Mimi
 * Junaid Khan, FH Technikum Wien
 * Michael Kalcher, ARI
@@ -102,6 +103,7 @@ Contributors
 * Piotr Majdak, ARI
 * Robert Pelzer, AC-TUB
 * Johan Pauwels, ICL
+* Katharina Pollack, ARI
 * Jeffrey Thomsen, AC-TUB
 * Filip Tsai, KTH
 * Oliver Weissbarth, CG-TUB
