@@ -1,7 +1,7 @@
 Mesh2HRTF
 =========
 
-Mesh2HRTF is an open-source project aiming at providing an easy-to-use software package for the numerical calculation of head-realtaed transfer functions (HRTFs). It targets researchers in the field of binaural audio. In a nutshell, Mesh2HRTF simply reads geometrical data, calculates the corresponding sound field and outputs HRTFs.
+Mesh2HRTF is an open-source project aiming at providing an easy-to-use software package for the numerical calculation of head-related transfer functions (HRTFs). It targets researchers in the field of binaural audio. In a nutshell, Mesh2HRTF simply reads geometrical data, calculates the corresponding sound field and outputs HRTFs in the SOFA format.
 
 Documentation
 =============
