@@ -20,6 +20,7 @@ v1.0.0
 	* Boundary conditions can now be frequency dependent
 	* Files containing custom evaluation grids and material data can be located outside the Mesh2HRTF repository
 * NumCalc (contained in NumCalc/Source)
+	* Bugfix: when NC.inp does not contain an "END" of file, NumCalc now throws one error and aborts programme execution (was infinite loop resulting in large output files)
 	* Introduced command line parameters `istart` and `iend` to select a range of frequencies for simulation and to ease parallelization
 	* Introduce command line parameter `nitermax` to control the maximum number of iterations
 	* Reduce the default number of maximum iterations to 250
