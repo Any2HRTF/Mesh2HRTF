@@ -44,7 +44,7 @@ v1.0.0
 
 v0.4.0
 ------
-* this will be the last release supporting Blender < 3.8
+* this will be the last release supporting Blender < 2.8
 * new directory structure
 
 v0.3.2
