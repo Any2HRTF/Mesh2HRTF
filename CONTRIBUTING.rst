@@ -97,7 +97,7 @@ Releasing
 To release a new Mesh2HRTF version do the following
 
 - Write the new version to the file VERSION
-- Update HISTORY.txt (also include new contributors)
+- Update HISTORY.rst (also include new contributors)
 - Commit all changes to develop
 - add a tag with the version number ``git tag <tagname>``, e.g. ``git tag v1.0.0``
 - push the tag using ``git push origin --follow-tags``
