@@ -4,7 +4,7 @@ SOURCES= NC_3dFunctions.cpp  NC_CommonFunctions.cpp  NC_Input.cpp \
          NC_PostProcessing.cpp NC_Addresses.cpp    NC_EquationSystem.cpp \
          NC_Main.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=../NumCalc
+EXECUTABLE=../bin/NumCalc
 OPTIM=-O2
 #DEBUG=-g
 
