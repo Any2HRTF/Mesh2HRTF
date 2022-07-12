@@ -56,10 +56,6 @@ def output_to_hrtf(folder=None):
     if not os.path.exists(os.path.join(folder, 'Output2HRTF')):
         os.makedirs(os.path.join(folder, 'Output2HRTF'))
 
-    # get the number of frequency steps
-    frequencies, numFrequencies = _get_frequencies(
-        os.path.join(folder, 'Info.txt'))
-
     # write the project report and check for issues
     print('\n Writing the project report ...')
     found_issues, report = project_report(folder)
@@ -95,7 +91,8 @@ def output_to_hrtf(folder=None):
             folder, "Output2HRTF",
             "ObjectMesh_" + mesh + ".npz"), "w")
         np.savez_compressed(
-            file.name, frequencies=frequencies, pressure=element_data)
+            file.name, frequencies=params["frequencies"],
+            pressure=element_data)
         file.close()
 
         cnt = cnt + elements.shape[0]
@@ -438,8 +435,9 @@ def project_report(folder=None):
     # get sources and number of sources and frequencies
     sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
     num_sources = len(sources)
-    _, num_frequencies = _get_frequencies(
-        os.path.join(folder, "Info.txt"))
+
+    with open(os.path.join(folder, "parameters.json"), "r") as file:
+        params = json.load(file)
 
     # sort source files (not read in correct order in some cases)
     nums = [int(source.split("_")[-1]) for source in sources]
@@ -448,7 +446,7 @@ def project_report(folder=None):
 
     # parse all NC*.out files for all sources
     all_files, fundamentals, out, out_names = _parse_nc_out_files(
-        sources, num_sources, num_frequencies)
+        sources, num_sources, params["numFrequencies"])
 
     # write report as csv file
     _write_project_reports(folder, all_files, out, out_names)
@@ -924,43 +922,3 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
         data[ii, :] = tmpData if tmpData else np.nan
 
     return data
-
-
-def _get_frequencies(path):
-    """
-    Read number of simulated frequency steps and frequencies from Info.txt
-
-    Parameters
-    ----------
-    path : str
-        path of Info.txt
-
-    Returns
-    -------
-    frequencies : numpy array
-        the simulated frequencies in Hz generated from the information in
-        Info.txt (number of frequencies, minimum frequency, frequency step
-        size)
-    frequency_steps : int
-        number of simulated frequency steps
-    """
-
-    # read info file
-    with open(path) as f:
-        lines = f.readlines()
-
-    # find number of frequency steps and minimum frequency
-    key_num = 'Frequency Steps: '
-    key_min = 'Minimum evaluated Frequency: '
-    key_step = 'Frequency Stepsize: '
-    for line in lines:
-        if line.startswith(key_num):
-            num_frequencies = int(line.strip()[len(key_num):])
-        if line.startswith(key_min):
-            min_frequency = float(line.strip()[len(key_min):])
-        if line.startswith(key_step):
-            frequency_step = float(line.strip()[len(key_step):])
-
-    frequencies = np.arange(num_frequencies) * frequency_step + min_frequency
-
-    return np.atleast_1d(frequencies), num_frequencies
