@@ -6,6 +6,7 @@ import datetime
 import math
 import shutil
 from math import pi
+import json
 from bpy.props import StringProperty, BoolProperty, EnumProperty, \
     IntProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper
@@ -399,7 +400,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         # add the default mesh2hrtf path to the material search path
         defaultPath = os.path.join(programPath, 'Mesh2Input', 'Materials')
-        materialSearchPaths += f";  {defaultPath}"
+        if materialSearchPaths == "None":
+            materialSearchPaths = defaultPath
+        else:
+            materialSearchPaths += f";  {defaultPath}"
 
         # get used materials as dictionary
         materials = _get_materials(bpy.data.objects['Reference'])
@@ -431,11 +435,19 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             _distribute_frequencies(minFrequency, maxFrequency,
                                     frequencyStepSize, numFrequencySteps)
 
+# Write Info.txt (feedback for user, not used by NumCalc) ---------------------
+        _write_parameters_json(
+            filepath1, title, programPath, version, method, pictures,
+            evaluationGrids, materialSearchPaths, materials,
+            speedOfSound, densityOfMedium, unit, unitFactor,
+            reference, computeHRIRs,
+            sourceType, numSources, sourceXPosition,
+            sourceYPosition, sourceZPosition,
+            frequencies, frequencyStepSize, numFrequencySteps)
 
 # Write Info.txt (feedback for user, not used by NumCalc) ---------------------
         _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
                         frequencies, frequencyStepSize, numFrequencySteps)
-
 
 # Write Output2HRTF.m function ------------------------------------------------
         _write_output2HRTF_m(
@@ -683,10 +695,6 @@ def _get_material_files(materials, materialSearchPaths):
     paths = materialSearchPaths.split(';')
     paths = [path.strip() for path in paths]
 
-    # remove default value if user path is not passed
-    if paths[0] == "None":
-        paths.pop(0)
-
     # check if paths exist
     for path in paths:
         if not os.path.isdir(path):
@@ -798,6 +806,62 @@ def _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
     fw("Frequency Stepsize: %f\n" % frequencyStepSize)
     fw("Frequency Steps: %d\n" % numFrequencySteps)
     file.close
+
+
+def _write_parameters_json(
+        filepath1, title, programPath, version, method, pictures,
+        evaluationGrids, materialSearchPaths, materials,
+        speedOfSound, densityOfMedium, unit, unitFactor,
+        reference, computeHRIRs,
+        sourceType, numSources, sourceXPosition,
+        sourceYPosition, sourceZPosition,
+        frequencies, frequencyStepSize, numFrequencySteps):
+
+    # calculate missing parameters
+    if "ear" in sourceType:
+        # get the receiver/ear centers and areas
+        obj = bpy.data.objects['Reference']
+        obj_data = obj.data
+        sourceCenter, sourceArea = _calculateReceiverProperties(
+            obj, obj_data, unitFactor)
+    else:
+        sourceCenter = [sourceXPosition, sourceYPosition, sourceZPosition]
+        sourceArea = [0]
+
+    # write parameters to dict
+    parameters = {
+        # project Info
+        "projectTitle": title,
+        "Mesh2HRTF_Path": programPath,
+        "Mesh2HRTF_Version": version,
+        "BEM_Type": method,
+        "exportPictures": pictures,
+        # Constants
+        "speedOfSound": float(speedOfSound),
+        "densityOfMedium": float(densityOfMedium),
+        "3D_SceneUnit": unit,
+        # Grids and materials
+        "evaluationGrids": evaluationGrids,
+        "materialSearchPaths": materialSearchPaths,
+        "materials": materials,
+        # Source definition
+        "sourceType": sourceType,
+        "numSources": numSources,
+        "sourceCenter": sourceCenter,
+        "sourceArea": sourceArea,
+        # post processing
+        "reference": reference,
+        "computeHRIRs": computeHRIRs,
+        # frequencies
+        "numFrequencies": numFrequencySteps,
+        "frequencyStepSize": frequencyStepSize,
+        "minFrequency": frequencies[0],
+        "maxFrequency": frequencies[-1],
+        "frequencies": frequencies
+    }
+
+    with open(os.path.join(filepath1, "parameters.json"), 'w') as file:
+        json.dump(parameters, file, indent=4)
 
 
 def _write_output2HRTF_m(
