@@ -449,21 +449,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
                         frequencies, frequencyStepSize, numFrequencySteps)
 
-# Write Output2HRTF.m function ------------------------------------------------
-        _write_output2HRTF_m(
-            filepath1, version, sourceType, numSources, unitFactor, reference,
-            computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-            sourceYPosition, sourceZPosition)
-
 # Write Output2VTK.m function ------------------------------------------------
         _write_output2VTK_m(filepath1, version)
-
-# Write Output2HRTF.py function -----------------------------------------------
-        _write_output2HRTF_py(
-            filepath1, version, sourceType, numSources, unitFactor, reference,
-            computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-            sourceYPosition, sourceZPosition)
-
 
 # Render pictures of the model ------------------------------------------------
         if pictures:
@@ -864,96 +851,6 @@ def _write_parameters_json(
         json.dump(parameters, file, indent=4)
 
 
-def _write_output2HRTF_m(
-        filepath1, version, sourceType, numSources, unitFactor, reference,
-        computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-        sourceYPosition, sourceZPosition):
-
-    # file handling
-    file = open(os.path.join(filepath1, "Output2HRTF.m"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-
-    # header
-    fw("% Collect the data simulated by NumCalc and save to project folder.\n")
-    fw("% close all; clear\n\n")
-
-    # Mesh2HRTF version
-    fw(f"Mesh2HRTF_version = '{version}';\n\n")
-
-    # add information about the source
-    fw("% source information\n")
-    fw(f"sourceType = '{sourceType}';\n")
-    fw(f"numSources = {numSources};\n")
-    if "ear" in sourceType:
-
-        # get the receiver/ear centers and areas
-        obj = bpy.data.objects['Reference']
-        obj_data = obj.data
-        earCenter, earArea = _calculateReceiverProperties(
-            obj, obj_data, unitFactor)
-
-        # write left ear data
-        if sourceType in ['Both ears', 'Left ear']:
-            fw("sourceCenter(1,1:3) = [%f %f %f];\n" % (earCenter[0][0],
-                                                        earCenter[0][1],
-                                                        earCenter[0][2]))
-            fw("sourceArea(1,1) = %g;\n" % earArea[0])
-
-        # write right ear data
-        if sourceType in ['Both ears', 'Right ear']:
-            if sourceType == 'Right ear':
-                nn = 1
-            if sourceType == 'Both ears':
-                nn = 2
-
-            fw("sourceCenter(%d,1:3) = [%f %f %f];\n" % (nn,
-                                                         earCenter[1][0],
-                                                         earCenter[1][1],
-                                                         earCenter[1][2]))
-            fw("sourceArea(%d,1) = %g;\n" % (nn, earArea[1]))
-
-        fw("\n")
-    else:
-
-        fw("sourceCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition,
-                                                    sourceYPosition,
-                                                    sourceZPosition))
-        fw("sourceArea(1,1)     = 1;\n")
-
-    # referencing
-    fw("% Reference to a point source in the origin\n")
-    fw("% accoring to the classical HRTF definition\n")
-    fw("% (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
-    fw("reference = ")
-    if reference:
-        fw("true;\n\n")
-    else:
-        fw("false;\n\n")
-
-    # compute HRIRs
-    fw("% Compute HRIRs via the inverse Fourier transfrom.\n")
-    fw("% This will add data at 0 Hz, mirror the single sided spectrum, and\n")
-    fw("% shift the HRIRs in time. Requires reference = true.\n")
-    fw("computeHRIRs = ")
-    if computeHRIRs:
-        fw("true;\n\n")
-    else:
-        fw("false;\n\n")
-
-    # constants
-    fw("% Constants\n")
-    fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
-    fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
-
-    fw("% Collect the data simulated by NumCalc\n")
-    fw("Output2HRTF_Main(Mesh2HRTF_version, ...\n")
-    fw("                 sourceType, numSources, sourceCenter, sourceArea, ...\n")  # noqa
-    fw("                 reference, computeHRIRs, ...\n")
-    fw("                 speedOfSound, densityOfAir);\n")
-    file.close
-
-
 def _write_output2VTK_m(filepath1, version):
 
     # file handling
@@ -982,104 +879,6 @@ def _write_output2VTK_m(filepath1, version):
 
     # export the sound pressure distribution as dB SPL in VTK-files
     fw("EvalToolsExport2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes(:,2:end),elements(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')\n")  # noqa
-    file.close
-
-
-def _write_output2HRTF_py(
-        filepath1, version, sourceType, numSources, unitFactor, reference,
-        computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-        sourceYPosition, sourceZPosition):
-
-    # file handling
-    file = open(os.path.join(filepath1, "Output2HRTF.py"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-
-    # header
-    fw("# Read the data simulated by NumCalc and save to the folder\n")
-    fw("# Output2HRTF inside project folder.\n\n")
-
-    fw("import numpy\n")
-    fw("import mesh2hrtf as m2h\n\n")
-
-    # Mesh2HRTF version
-    fw(f"Mesh2HRTF_version = '{version}'\n\n")
-
-    fw("# source information\n")
-    # initialize arrays for source information
-    if sourceType == 'Both ears':
-        fw("sourceCenter = numpy.zeros((2, 3))\n")
-        fw("sourceArea = numpy.zeros((2, 1))\n\n")
-    else:
-        fw("sourceCenter = numpy.zeros((1, 3))\n")
-        fw("sourceArea = numpy.zeros((1, 1))\n\n")
-
-    # add information about the source
-    fw(f"sourceType = '{sourceType}'\n")
-    fw(f"numSources = {numSources}\n")
-    if "ear" in sourceType:
-
-        # get the receiver/ear centers and areas
-        obj = bpy.data.objects['Reference']
-        obj_data = obj.data
-        earCenter, earArea = _calculateReceiverProperties(
-            obj, obj_data, unitFactor)
-
-        # write left ear data
-        if sourceType in ['Left ear', 'Both ears']:
-            fw("sourceCenter[0, :] = [%f, %f, %f]\n"
-               % (earCenter[0][0], earCenter[0][1], earCenter[0][2]))
-            fw("sourceArea[0, 0] = %g\n" % earArea[0])
-
-        # write right ear data
-        if sourceType in ['Right ear', 'Both ears']:
-            if sourceType == 'Right ear':
-                nn = 0
-            if sourceType == 'Both ears':
-                nn = 1
-
-            fw("sourceCenter[%d, :] = [%f, %f, %f]\n"
-               % (nn, earCenter[1][0], earCenter[1][1], earCenter[1][2]))
-            fw("sourceArea[%d, 0] = %g\n" % (nn, earArea[1]))
-
-        fw("\n")
-    else:
-
-        fw("sourceCenter[0, :] = [%s, %s, %s]\n"
-           % (sourceXPosition, sourceYPosition, sourceZPosition))
-        fw("sourceArea[0, 0] = 1\n")
-
-    # referencing
-    fw("# Reference to a point source in the origin\n")
-    fw("# according to the classical HRTF definition\n")
-    fw("# (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
-    fw("reference = ")
-    if reference:
-        fw("True\n\n")
-    else:
-        fw("False\n\n")
-
-    # compute HRIRs
-    fw("# Compute HRIRs via the inverse Fourier transfrom.\n")
-    fw("# This will add data at 0 Hz, mirror the single sided spectrum, and\n")
-    fw("# shift the HRIRs in time. Requires reference = true.\n")
-    fw("computeHRIRs = ")
-    if computeHRIRs:
-        fw("True\n\n")
-    else:
-        fw("False\n\n")
-
-    # constants
-    fw("# Constants\n")
-    fw("speedOfSound = " + speedOfSound + "  # [m/s]\n")
-    fw("densityOfAir = " + densityOfMedium + "  # [kg/m^3]\n\n")
-
-    # function call
-    fw("# Collect the data simulated by NumCalc\n")
-    fw("m2h.output_to_hrtf(Mesh2HRTF_version, sourceType,\n")
-    fw("                   numSources, sourceCenter, sourceArea,\n")
-    fw("                   reference, computeHRIRs,\n")
-    fw("                   speedOfSound, densityOfAir)\n")
     file.close
 
 
