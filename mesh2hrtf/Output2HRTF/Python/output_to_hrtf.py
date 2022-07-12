@@ -17,10 +17,6 @@ def output_to_hrtf(folder=None):
     """
     Process NumCalc output and write data to disk.
 
-    All parameters are written to Output2HRTF.py upon exporting a Mesh2HRTF
-    project from Blender. This function will thus usually be called from an
-    Output2HRTF.py file.
-
     Processing the data is done in the following steps
 
     1. Read project parameter `from parameters.json`

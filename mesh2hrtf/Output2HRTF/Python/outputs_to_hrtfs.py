@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-import subprocess
+import mesh2hrtf as m2h
 from . import utils
 
 
@@ -11,11 +11,11 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
     Process NumCalc outputs from multiple projects and write data to disk.
 
     This is a convenience function that process multiple Mesh2HRTF projects and
-    offerst to merge and plot the results in one call:
+    offers to merge and plot the results in one call:
 
     1.
-        Run Output2HRTF.py files in folder specified by `paths` to call
-        :py:func:`~mesh2hrtf.output_to_hrtf`,
+        Run :py:func:`~mesh2hrtf.output_to_hrtf` in folders specified by
+        `paths`. This also calls
         :py:func:`~mesh2hrtf.project_report`,
         :py:func:`~mesh2hrtf.reference_hrtf`, and
         :py:func:`~mesh2hrtf.compute_hrir`.
@@ -86,7 +86,7 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
     if savedir is not None and not os.path.isdir(savedir):
         os.mkdir(savedir)
 
-    # loop paths for running Output2HRTF.py files -----------------------------
+    # loop paths for running output_2_hrtf in folders -------------------------
     print("Generating SOFA files")
     print("---------------------")
 
@@ -102,16 +102,15 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
 
             # check
             name = os.path.basename(folder)
-            if not os.path.isfile(os.path.join(folder, "Output2HRTF.py")):
+            if not os.path.isfile(os.path.join(folder, "parameters.json")):
                 print(f"Skipping: {name}")
                 continue
 
             print((f"{name} (path {pp+1}/{len(paths)}, "
                    f"folder {ff+1}/{len(folders)})"))
 
-            # run Output2HRTF.py
-            subprocess.run(["python", "Output2HRTF.py"],
-                           cwd=folder, check=True)
+            # run output_to_hrtf
+            m2h.output_to_hrtf(folder)
 
             # track issues
             if os.path.isfile(os.path.join(
