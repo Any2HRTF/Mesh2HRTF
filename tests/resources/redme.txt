@@ -13,7 +13,7 @@ SHTF
 
 Contains a complete Mesh2HRTF project with spherical head transfer functions
 calculated up to 6 kHz. The output was generated manually by running
-Output2HRTF.py an inspect_sofa_files
+mesh2hrtf.output_to_hrtf and inspect_sofa_files
 
 SOFA_files
 ----------
