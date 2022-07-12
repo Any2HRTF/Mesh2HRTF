@@ -9,13 +9,11 @@ import csv
 import warnings
 import numpy as np
 import glob
+import json
 import sofar as sf
 
 
-def output_to_hrtf(
-        Mesh2HRTF_version, sourceType, numSources, sourceCenter,
-        sourceArea, reference, computeHRIRs, speedOfSound, densityOfAir,
-        folder=None):
+def output_to_hrtf(folder=None):
     """
     Process NumCalc output and write data to disk.
 
@@ -25,41 +23,19 @@ def output_to_hrtf(
 
     Processing the data is done in the following steps
 
-    1. use :py:func:`~project_report` to parse files in
+    1. Read project parameter `from parameters.json`
+    2. use :py:func:`~project_report` to parse files in
        project_folder/NumCalc/source_*/NC*.out, write project report to
        project_folder/Output2HRTF/report_source_*.csv. Raise a warning if any
        issues were detected and write report_issues.txt to the same folder
-    2. Read simulated pressures from project_folder/NumCalc/source_*/be.out.
+    3. Read simulated pressures from project_folder/NumCalc/source_*/be.out.
        This and the following steps are done, even if an issue was detected in
        the previous step
-    3. use :py:func:`~reference_hrtf` and :py:func:`~compute_hrir` to save the
+    4. use :py:func:`~reference_hrtf` and :py:func:`~compute_hrir` to save the
        results to SOFA files
 
     Parameters
     ----------
-    Mesh2HRTF_version : string
-        Mesh2HRTF version as string
-    numSources : integer
-        Number of sound sources in the simulation
-    sourceType : string
-        The source type ('Both ears', 'Left ear', 'Right ear',
-                         'Point source', 'Plane wave')
-    sourceCenter : array
-        The source position
-    sourceArea : array
-        The area of the source(s) if using vibrating elements as sourceType.
-        This is required for referencing the HRTFs. Use an area of 1 for a
-        point source.
-    reference : boolean
-        Indicate if the HRTF are referenced to the pressure in the center of
-        the head with the head absent.
-    computeHRIRs : boolean
-        Indicate if the HRIRs should be calculated by means of the inverse
-        Fourier transform.
-    speedOfSound : float
-        The speed of sound in m/s
-    densityOfAir : float
-        The density of air in kg/m^3
     folder : str, optional
         The path of the Mesh2HRTF project folder, i.e., the folder containing
         the subfolders EvaluationsGrids, NumCalc, and ObjectMeshes. The
@@ -69,6 +45,16 @@ def output_to_hrtf(
     # check input
     if folder is None:
         folder = os.getcwd()
+
+    # check and load parameters
+    params = os.path.join(folder, "parameters.json")
+    if not os.path.isfile(params):
+        raise ValueError((
+            f"The folder {folder} is not a valid Mesh2HRTF project. "
+            "It must contain the file 'parameters.json'"))
+
+    with open(params, "r") as file:
+        params = json.load(file)
 
     # output directory
     if not os.path.exists(os.path.join(folder, 'Output2HRTF')):
@@ -96,7 +82,8 @@ def output_to_hrtf(
         os.path.join(folder, 'ObjectMeshes'))
 
     # Load ObjectMesh data
-    pressure = _read_pressure(numSources, numFrequencies, folder, 'pBoundary')
+    pressure = _read_pressure(
+        params["numSources"], params["numFrequencies"], folder, 'pBoundary')
 
     print('\nSaving ObjectMesh data ...')
     cnt = 0
@@ -124,7 +111,8 @@ def output_to_hrtf(
         print('\nLoading data for the evaluation grids ...')
 
         pressure = _read_pressure(
-            numSources, numFrequencies, folder, 'pEvalGrid')
+            params["numSources"], params["numFrequencies"],
+            folder, 'pEvalGrid')
 
     # save to struct
     cnt = 0
@@ -145,26 +133,29 @@ def output_to_hrtf(
         # objects. This way they are available to other users as well)
         sofa = _get_sofa_object(
             evaluationGrids[grid]["pressure"],
-            evaluationGrids[grid]["nodes"][:, 1:4], "cartesian", sourceCenter,
-            "HRTF", Mesh2HRTF_version, frequencies=frequencies)
+            evaluationGrids[grid]["nodes"][:, 1:4], "cartesian",
+            params["sourceCenter"], "HRTF", params["Mesh2HRTF_version"],
+            frequencies=params["frequencies"])
 
         # reference to sound pressure at the center of the head
-        if reference:
-            sofa = reference_hrtf(sofa, sourceType, sourceArea, speedOfSound,
-                                  densityOfAir, mode="min")
+        if params["reference"]:
+            sofa = reference_hrtf(
+                sofa, params["sourceType"], params["sourceArea"],
+                params["speedOfSound"], params["densityOfAir"], mode="min")
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
             'Output2HRTF', f'HRTF_{grid}.sofa'), sofa)
 
         # calculate and write HRIRs
-        if computeHRIRs:
-            if not reference:
+        if params["computeHRIRs"]:
+            if not params["reference"]:
                 raise ValueError("Computing HRIRs requires prior referencing")
 
             # calculate shift value (equivalent to a 30 cm shift)
             sampling_rate = round(2*sofa.N[-1])
-            n_shift = int(np.round(.30 / (1/sampling_rate * speedOfSound)))
+            n_shift = int(np.round(
+                .30 / (1/sampling_rate * params["speedOfSound"])))
 
             sofa = compute_hrir(sofa, n_shift)
             sf.write_sofa(os.path.join(
