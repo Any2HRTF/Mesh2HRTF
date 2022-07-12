@@ -445,10 +445,6 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             sourceYPosition, sourceZPosition,
             frequencies, frequencyStepSize, numFrequencySteps)
 
-# Write Info.txt (feedback for user, not used by NumCalc) ---------------------
-        _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
-                        frequencies, frequencyStepSize, numFrequencySteps)
-
 # Write Output2VTK.m function ------------------------------------------------
         _write_output2VTK_m(filepath1, version)
 
@@ -768,31 +764,6 @@ def _read_material_data(materials):
         materials[material]['imag'] = imag
 
     return materials
-
-
-def _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
-                    frequencies, frequencyStepSize, numFrequencySteps):
-    file = open(os.path.join(filepath1, "Info.txt"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-    fw("#####################################\n")
-    fw("######## General information ########\n")
-    fw("#####################################\n\n")
-    fw(f"Program: Mesh2HRTF {version}\n")
-    fw("Title: %s\n" % title)
-    fw("Source type: %s\n" % sourceType)
-    fw("Evaluation Grids:\n")
-    for evaluationGrid in evalGridPaths:
-        fw("    %s\n" % evaluationGrid)
-    fw("\n")
-    fw("#####################################\n")
-    fw("####### Frequency information #######\n")
-    fw("#####################################\n\n")
-    fw("Minimum evaluated Frequency: %f\n" % frequencies[0])
-    fw("Highest evaluated Frequency: %f\n" % frequencies[-1])
-    fw("Frequency Stepsize: %f\n" % frequencyStepSize)
-    fw("Frequency Steps: %d\n" % numFrequencySteps)
-    file.close
 
 
 def _write_parameters_json(
