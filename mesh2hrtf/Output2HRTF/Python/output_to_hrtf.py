@@ -42,7 +42,10 @@ def output_to_hrtf(folder=None):
     if folder is None:
         folder = os.getcwd()
 
-    # check and load parameters
+    # check and load parameters, required parameters are:
+    # Mesh2HRTF_version, reference, computeHRIRs, speedOfSound, densityOfAir,
+    # numSources, sourceType, sourceCenter, sourceArea,
+    # numFrequencies, frequencies
     params = os.path.join(folder, "parameters.json")
     if not os.path.isfile(params):
         raise ValueError((
@@ -127,7 +130,7 @@ def output_to_hrtf(folder=None):
         sofa = _get_sofa_object(
             evaluationGrids[grid]["pressure"],
             evaluationGrids[grid]["nodes"][:, 1:4], "cartesian",
-            params["sourceCenter"], "HRTF", params["Mesh2HRTF_version"],
+            params["sourceCenter"], "HRTF", params["Mesh2HRTF_Version"],
             frequencies=params["frequencies"])
 
         # reference to sound pressure at the center of the head
@@ -138,7 +141,7 @@ def output_to_hrtf(folder=None):
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
-            'Output2HRTF', f'HRTF_{grid}.sofa'), sofa)
+            folder, 'Output2HRTF', f'HRTF_{grid}.sofa'), sofa)
 
         # calculate and write HRIRs
         if params["computeHRIRs"]:
@@ -152,7 +155,7 @@ def output_to_hrtf(folder=None):
 
             sofa = compute_hrir(sofa, n_shift)
             sf.write_sofa(os.path.join(
-                'Output2HRTF', f'HRIR_{grid}.sofa'), sofa)
+                folder, 'Output2HRTF', f'HRIR_{grid}.sofa'), sofa)
 
     print('Done\n')
 
