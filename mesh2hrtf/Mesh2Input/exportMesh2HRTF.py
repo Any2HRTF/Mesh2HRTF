@@ -435,7 +435,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             _distribute_frequencies(minFrequency, maxFrequency,
                                     frequencyStepSize, numFrequencySteps)
 
-# Write Info.txt (feedback for user, not used by NumCalc) ---------------------
+# Write parameters.json (feedback for user, not used by NumCalc) --------------
         _write_parameters_json(
             filepath1, title, programPath, version, method, pictures,
             evaluationGrids, materialSearchPaths, materials,
@@ -932,11 +932,11 @@ def _distribute_frequencies(minFrequency, maxFrequency,
     frequencies: list
         list that holds the frequencies in Hz that are calculated.
     frequencyStepSize: float
-        Step size between successive frequencies (written to Info.txt). This is
-        returned because it might be zero during the function call.
+        Step size between successive frequencies (written to parameters.json).
+        This is returned because it might be zero during the function call.
     numFrequencySteps: int
-        Number of frequencies to be simulated (written to Info.txt). This is
-        returned because it might be zero during the function call.
+        Number of frequencies to be simulated (written to parameters.json).
+        This is returned because it might be zero during the function call.
 
     """
 
