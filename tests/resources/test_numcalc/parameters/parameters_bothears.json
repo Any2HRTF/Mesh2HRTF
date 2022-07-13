@@ -1,0 +1,29 @@
+{
+    "Mesh2HRTF_Version": "1.0.0",
+    "speedOfSound": 343.0,
+    "densityOfMedium": 1.1839,
+    "sourceType": "Both ears",
+    "numSources": 2,
+    "sourceCenter": [
+    	[
+    	    -0.087114,
+    	    0.002899,
+    	    0.003891
+    	],
+    	[
+    	    0.087107,
+    	    -0.003103,
+    	    0.003888
+    	]
+    ],
+    "sourceArea": [
+	3.69475e-05,
+	3.68754e-05
+    ],
+    "reference": false,
+    "computeHRIRs": false,
+    "numFrequencies": 1,
+    "frequencies": [
+        4000.0
+    ]
+}
