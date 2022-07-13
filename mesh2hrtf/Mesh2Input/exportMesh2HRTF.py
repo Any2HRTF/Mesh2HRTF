@@ -781,7 +781,7 @@ def _write_parameters_json(
             obj, obj_data, unitFactor)
     else:
         sourceCenter = [sourceXPosition, sourceYPosition, sourceZPosition]
-        sourceArea = [0]
+        sourceArea = [1]
 
     # write parameters to dict
     parameters = {
