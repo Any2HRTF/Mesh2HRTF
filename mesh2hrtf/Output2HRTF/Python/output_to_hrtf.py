@@ -137,7 +137,7 @@ def output_to_hrtf(folder=None):
         if params["reference"]:
             sofa = reference_hrtf(
                 sofa, params["sourceType"], params["sourceArea"],
-                params["speedOfSound"], params["densityOfAir"], mode="min")
+                params["speedOfSound"], params["densityOfMedium"], mode="min")
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
@@ -854,7 +854,7 @@ def _get_sofa_object(data, source_position, source_position_type,
     if mode == "HRTF":
         sofa.Data_Real = np.real(data)
         sofa.Data_Imag = np.imag(data)
-        sofa.N = frequencies
+        sofa.N = np.array(frequencies).flatten()
     else:
         sofa.Data_IR = data
         sofa.Data_SamplingRate = sampling_rate
