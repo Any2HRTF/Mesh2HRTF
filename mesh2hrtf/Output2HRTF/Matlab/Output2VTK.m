@@ -1,21 +1,30 @@
-function EvalToolsExport2VTK(path,nodes,elements,data,datatype)
-%EvalTools_EXPORT2VTK
-%   []=EvalTools_export2VTK(path,nodes,elements,data,datatype) exports
-%   data to VTK file for visualization in Paraview
+function Output2VTK(path)
+%   []=EvalTools_export2VTK(path)
+%   exports data to VTK file for visualization in Paraview
 %
 %   Input:
-%       path:
-% 
-%       nodes:
-% 
-%       elements:
-% 
-%       data:
+%       path... The Mesh2HRTF project folder [string, the default is
+%               the current working directory]
 
 %% ----------------------check and initialize variables--------------------
-if ~exist('path','var') || ~exist('nodes','var') || ~exist('elements','var') || ~exist('data','var') || ~exist('datatype','var')
-    error('Not enough input arguments.')
+if ~exist('path','var')
+    path = pwd;
 end
+
+% create output directory
+if ~exist(fullfile(path, 'Output2HRTF', 'ObjectMesh_vtk'),'dir')
+    mkdir(fullfile(path, 'Output2HRTF', 'ObjectMesh_vtk'))
+end
+
+% load data struct created by Output2HRTF.m
+load(fullfile(path, 'Output2HRTF', 'ObjectMesh_Reference.mat'), 'elements', 'nodes', 'element_data')
+nodes = nodes(:,2:end);
+elements = elements(:,2:end);
+data = 20*log10(abs(element_data{1})/0.00002);
+datatype = 'amp';
+
+% reset path to output directoy
+path = fullfile(path, 'Output2HRTF', 'ObjectMesh_vtk');
 
 temp=zeros(size(data,2),size(data,1),size(data,3));
 for ii=1:size(data,3)
@@ -27,7 +36,7 @@ clear temp
 
 %% ----------------------------export data---------------------------------
 for ii=1:size(data,2)
-    file=fopen([path datatype '_' num2str(ii) '.vtk'],'w');
+    file=fopen([path, filesep, datatype '_' num2str(ii) '.vtk'],'w');
 
     fprintf(file,'# vtk DataFile Version 3.0\n');
     fprintf(file,'Mesh2HRTF Files\n');
