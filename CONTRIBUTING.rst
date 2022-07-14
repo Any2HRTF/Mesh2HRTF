@@ -91,6 +91,13 @@ configure your blender path in `test_export` (variable ``blender_paths``).
 
     $ pytest --cov=. --cov-report=html
 
+Submodules
+----------
+
+To update the submodules containing the conventions and verification rules run
+
+$ git submodule update --remote mesh2hrtf/Tools/MeshManipulation/GradingHybrid
+
 Releasing
 ---------
 
