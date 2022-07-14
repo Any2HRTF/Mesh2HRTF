@@ -28,10 +28,18 @@ def blender_paths(computer_id):
     elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
-            ('/snap/blender/2106/',
-             '3.1/scripts/addons')]
+            ('/home/bruel/Daten/Applications/blender-3.2.1-linux-x64/',
+             '3.2/scripts/addons')]
     else:
         raise ValueError("Invalid computer id")
+
+    # check paths
+    for path in blender_paths:
+        for p in [path[0], os.path.join(path[0], path[1])]:
+            if not os.path.isdir(p):
+                raise ValueError((
+                    f"path {path} does not exist. Insert correct paths in "
+                    "function blender_paths before testing."))
 
     return blender_paths
 

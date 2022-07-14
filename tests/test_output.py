@@ -1,11 +1,11 @@
 import pytest
 import numpy as np
 import numpy.testing as npt
-import subprocess
 from tempfile import TemporaryDirectory
 import shutil
 import os
 import glob
+import json
 import pyfar as pf
 import sofar as sf
 import mesh2hrtf as m2h
@@ -20,7 +20,7 @@ data_sofa = os.path.join(cwd, 'resources', 'SOFA_files')
 @pytest.mark.parametrize("num_sources", ([1], [2]))
 def test_output_two_hrtf_and_Output2HRTF(num_sources):
     """
-    Run Output2HRTF.py script to do a round trip test:
+    Run output_to_hrtf to do a round trip test:
 
     - does output_to_hrtf run without errors for projects with 1 and 2
       sources
@@ -34,19 +34,21 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
     shutil.copytree(data_shtf, tmp_shtf)
     shutil.rmtree(os.path.join(tmp_shtf, "Output2HRTF"))
 
-    # manipulate output script
+    # manipulate parameters
     if num_sources == 1:
-        with open(os.path.join(tmp_shtf, "Output2HRTF.py"), "r") as f:
-            script = "".join(f.readlines())
+        with open(os.path.join(tmp_shtf, "parameters.json"), "r") as f:
+            params = json.load(f)
 
-        script.replace("numSources = 2", "numSources = 1")
-        assert "numSources = 1" in script
+        params["sourceType"] = "Left ear"
+        params["numSources"] = 1
+        params["sourceCenter"] = params["sourceCenter"][0]
+        params["sourceArea"] = [params["sourceArea"][0]]
 
-        with open(os.path.join(tmp_shtf, "Output2HRTF.py"), "w") as f:
-            f.write(script)
+        with open(os.path.join(tmp_shtf, "parameters.json"), "w") as f:
+            json.dump(params, f, indent=4)
 
-    # run Output2HRTF.py
-    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_shtf, check=True)
+    # run output_to_hrtf
+    m2h.output_to_hrtf(tmp_shtf)
 
     if num_sources == 1:
         return
@@ -73,12 +75,12 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
         # test data entries with tolerance
         # (results differ across operating systems)
         if sofa.startswith("HRTF"):
-            npt.assert_allclose(test.Data_Real, ref.Data_Real)
-            npt.assert_allclose(test.Data_Imag, ref.Data_Imag)
+            npt.assert_allclose(test.Data_Real, ref.Data_Real, rtol=1e-5)
+            npt.assert_allclose(test.Data_Imag, ref.Data_Imag, rtol=1e-5)
         else:
-            npt.assert_allclose(test.Data_IR, ref.Data_IR)
+            npt.assert_allclose(test.Data_IR, ref.Data_IR, rtol=1e-1)
 
-        # test remaining entries without tolerance
+        # test remaining entries
         ignore = ["Data_Real", "Data_Imag", "Data_IR", "GLOBAL_APIVersion"]
         for key, value in test.__dict__.items():
             if key.startswith("_") or "Date" in key or key in ignore:
@@ -87,7 +89,8 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
             print(f"{sofa}: {key}")
 
             if isinstance(value, np.ndarray):
-                npt.assert_equal(value, getattr(ref, key))
+                npt.assert_allclose(
+                    value, getattr(ref, key), atol=1e-6, rtol=1e-3)
             else:
                 assert value == getattr(ref, key)
 
@@ -231,8 +234,8 @@ def test_project_report(folders, issue, errors, nots):
     tmp = TemporaryDirectory()
     os.mkdir(os.path.join(tmp.name, "NumCalc"))
     os.mkdir(os.path.join(tmp.name, "Output2HRTF"))
-    shutil.copyfile(os.path.join(data_nc, "Info.txt"),
-                    os.path.join(tmp.name, "Info.txt"))
+    shutil.copyfile(os.path.join(data_nc, "parameters.json"),
+                    os.path.join(tmp.name, "parameters.json"))
     for ff, folder in enumerate(folders):
         shutil.copytree(os.path.join(data_nc, folder),
                         os.path.join(tmp.name, "NumCalc", f"source_{ff + 1}"))

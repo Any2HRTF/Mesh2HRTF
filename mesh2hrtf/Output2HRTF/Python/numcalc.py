@@ -120,7 +120,7 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
         # project_path is a NumCalc folder
         all_projects = [os.path.dirname(project_path)]
         log_file = os.path.join(project_path, '..', log_file)
-    elif os.path.isfile(os.path.join(project_path, 'Info.txt')):
+    elif os.path.isfile(os.path.join(project_path, 'parameters.json')):
         # project_path is a Mesh2HRTF project folder
         all_projects = [project_path]
         log_file = os.path.join(project_path, log_file)

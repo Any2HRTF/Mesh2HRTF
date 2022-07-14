@@ -6,6 +6,7 @@ import datetime
 import math
 import shutil
 from math import pi
+import json
 from bpy.props import StringProperty, BoolProperty, EnumProperty, \
     IntProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper
@@ -291,7 +292,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         if has_error_message:
             # Go in edit mode to show the result
-            bpy.ops.object.mode_set(mode = 'EDIT')
+            bpy.ops.object.mode_set(mode='EDIT')
             raise TypeError(
                 ('Not all faces in the Reference mesh are triangular! '
                  'Non triangular faces are selected'))
@@ -312,7 +313,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         # check for existing projects
         if os.path.exists(os.path.join(filepath1, "NumCalc")):
             raise ValueError((f"Project folder {filepath1} already exists. "
-                               "Choose another folder or delete files."))
+                              "Choose another folder or delete files."))
         # create sub-folders
         subfolders = ["ObjectMeshes", "EvaluationGrids", "NumCalc"]
         for subfolder in subfolders:
@@ -399,7 +400,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         # add the default mesh2hrtf path to the material search path
         defaultPath = os.path.join(programPath, 'Mesh2Input', 'Materials')
-        materialSearchPaths += f";  {defaultPath}"
+        if materialSearchPaths == "None":
+            materialSearchPaths = defaultPath
+        else:
+            materialSearchPaths += f";  {defaultPath}"
 
         # get used materials as dictionary
         materials = _get_materials(bpy.data.objects['Reference'])
@@ -431,27 +435,15 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             _distribute_frequencies(minFrequency, maxFrequency,
                                     frequencyStepSize, numFrequencySteps)
 
-
-# Write Info.txt (feedback for user, not used by NumCalc) ---------------------
-        _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
-                        frequencies, frequencyStepSize, numFrequencySteps)
-
-
-# Write Output2HRTF.m function ------------------------------------------------
-        _write_output2HRTF_m(
-            filepath1, version, sourceType, numSources, unitFactor, reference,
-            computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-            sourceYPosition, sourceZPosition)
-
-# Write Output2VTK.m function ------------------------------------------------
-        _write_output2VTK_m(filepath1, version)
-
-# Write Output2HRTF.py function ------------------------------------------------
-        _write_output2HRTF_py(
-            filepath1, version, sourceType, numSources, unitFactor, reference,
-            computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-            sourceYPosition, sourceZPosition)
-
+# Write parameters.json (feedback for user, not used by NumCalc) --------------
+        _write_parameters_json(
+            filepath1, title, programPath, version, method, pictures,
+            evaluationGrids, materialSearchPaths, materials,
+            speedOfSound, densityOfMedium, unit, unitFactor,
+            reference, computeHRIRs,
+            sourceType, numSources, sourceXPosition,
+            sourceYPosition, sourceZPosition,
+            frequencies, frequencyStepSize, numFrequencySteps)
 
 # Render pictures of the model ------------------------------------------------
         if pictures:
@@ -683,10 +675,6 @@ def _get_material_files(materials, materialSearchPaths):
     paths = materialSearchPaths.split(';')
     paths = [path.strip() for path in paths]
 
-    # remove default value if user path is not passed
-    if paths[0] == "None":
-        paths.pop(0)
-
     # check if paths exist
     for path in paths:
         if not os.path.isdir(path):
@@ -775,253 +763,61 @@ def _read_material_data(materials):
     return materials
 
 
-def _write_info_txt(evalGridPaths, title, sourceType, filepath1, version,
-                    frequencies, frequencyStepSize, numFrequencySteps):
-    file = open(os.path.join(filepath1, "Info.txt"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-    fw("#####################################\n")
-    fw("######## General information ########\n")
-    fw("#####################################\n\n")
-    fw(f"Program: Mesh2HRTF {version}\n")
-    fw("Title: %s\n" % title)
-    fw("Source type: %s\n" % sourceType)
-    fw("Evaluation Grids:\n")
-    for evaluationGrid in evalGridPaths:
-        fw("    %s\n" % evaluationGrid)
-    fw("\n")
-    fw("#####################################\n")
-    fw("####### Frequency information #######\n")
-    fw("#####################################\n\n")
-    fw("Minimum evaluated Frequency: %f\n" % frequencies[0])
-    fw("Highest evaluated Frequency: %f\n" % frequencies[-1])
-    fw("Frequency Stepsize: %f\n" % frequencyStepSize)
-    fw("Frequency Steps: %d\n" % numFrequencySteps)
-    file.close
+def _write_parameters_json(
+        filepath1, title, programPath, version, method, pictures,
+        evaluationGrids, materialSearchPaths, materials,
+        speedOfSound, densityOfMedium, unit, unitFactor,
+        reference, computeHRIRs,
+        sourceType, numSources, sourceXPosition,
+        sourceYPosition, sourceZPosition,
+        frequencies, frequencyStepSize, numFrequencySteps):
 
-
-def _write_output2HRTF_m(
-        filepath1, version, sourceType, numSources, unitFactor, reference,
-        computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-        sourceYPosition, sourceZPosition):
-
-    # file handling
-    file = open(os.path.join(filepath1, "Output2HRTF.m"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-
-    # header
-    fw("% Collect the data simulated by NumCalc and save to project folder.\n")
-    fw("% close all; clear\n\n")
-
-    # Mesh2HRTF version
-    fw(f"Mesh2HRTF_version = '{version}';\n\n")
-
-    # add information about the source
-    fw("% source information\n")
-    fw(f"sourceType = '{sourceType}';\n")
-    fw(f"numSources = {numSources};\n")
+    # calculate missing parameters
     if "ear" in sourceType:
-
         # get the receiver/ear centers and areas
         obj = bpy.data.objects['Reference']
         obj_data = obj.data
-        earCenter, earArea = _calculateReceiverProperties(
+        sourceCenter, sourceArea = _calculateReceiverProperties(
             obj, obj_data, unitFactor)
-
-        # write left ear data
-        if sourceType in ['Both ears', 'Left ear']:
-            fw("sourceCenter(1,1:3) = [%f %f %f];\n" % (earCenter[0][0],
-                                                        earCenter[0][1],
-                                                        earCenter[0][2]))
-            fw("sourceArea(1,1) = %g;\n" % earArea[0])
-
-        # write right ear data
-        if sourceType in ['Both ears', 'Right ear']:
-            if sourceType == 'Right ear':
-                nn = 1
-            if sourceType == 'Both ears':
-                nn = 2
-
-            fw("sourceCenter(%d,1:3) = [%f %f %f];\n" % (nn,
-                                                         earCenter[1][0],
-                                                         earCenter[1][1],
-                                                         earCenter[1][2]))
-            fw("sourceArea(%d,1) = %g;\n" % (nn, earArea[1]))
-
-        fw("\n")
     else:
+        sourceCenter = [sourceXPosition, sourceYPosition, sourceZPosition]
+        sourceArea = [1]
 
-        fw("sourceCenter(1,1:3) = [%s %s %s];\n" % (sourceXPosition,
-                                                    sourceYPosition,
-                                                    sourceZPosition))
-        fw("sourceArea(1,1)     = 1;\n")
+    # write parameters to dict
+    parameters = {
+        # project Info
+        "projectTitle": title,
+        "Mesh2HRTF_Path": programPath,
+        "Mesh2HRTF_Version": version,
+        "BEM_Type": method,
+        "exportPictures": pictures,
+        # Constants
+        "speedOfSound": float(speedOfSound),
+        "densityOfMedium": float(densityOfMedium),
+        "3D_SceneUnit": unit,
+        # Grids and materials
+        "evaluationGrids": evaluationGrids,
+        "materialSearchPaths": materialSearchPaths,
+        "materials": materials,
+        # Source definition
+        "sourceType": sourceType,
+        "numSources": numSources,
+        "sourceCenter": sourceCenter,
+        "sourceArea": sourceArea,
+        # post processing
+        "reference": reference,
+        "computeHRIRs": computeHRIRs,
+        # frequencies
+        "numFrequencies": numFrequencySteps,
+        "frequencyStepSize": frequencyStepSize,
+        "minFrequency": frequencies[0],
+        "maxFrequency": frequencies[-1],
+        "frequencies": frequencies
+    }
 
-    # referencing
-    fw("% Reference to a point source in the origin\n")
-    fw("% accoring to the classical HRTF definition\n")
-    fw("% (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
-    fw("reference = ")
-    if reference:
-        fw("true;\n\n")
-    else:
-        fw("false;\n\n")
+    with open(os.path.join(filepath1, "parameters.json"), 'w') as file:
+        json.dump(parameters, file, indent=4)
 
-    # compute HRIRs
-    fw("% Compute HRIRs via the inverse Fourier transfrom.\n")
-    fw("% This will add data at 0 Hz, mirror the single sided spectrum, and\n")
-    fw("% shift the HRIRs in time. Requires reference = true.\n")
-    fw("computeHRIRs = ")
-    if computeHRIRs:
-        fw("true;\n\n")
-    else:
-        fw("false;\n\n")
-
-    # constants
-    fw("% Constants\n")
-    fw("speedOfSound = " + speedOfSound + "; % [m/s]\n")
-    fw("densityOfAir = " + densityOfMedium + "; % [kg/m^3]\n\n")
-
-    fw("% Collect the data simulated by NumCalc\n")
-    fw("Output2HRTF_Main(Mesh2HRTF_version, ...\n")
-    fw("                 sourceType, numSources, sourceCenter, sourceArea, ...\n")
-    fw("                 reference, computeHRIRs, ...\n")
-    fw("                 speedOfSound, densityOfAir);\n")
-    file.close
-
-def _write_output2VTK_m(filepath1, version):
-
-    # file handling
-    file = open(os.path.join(filepath1, "Output2VTK.m"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-
-    # header
-    fw("% Export the sound pressure files genereated by Output2HRTF.m as SPL to VTK-Files for visualization in Paraview.\n\n")
-
-    fw("close all; clear\n\n")
-
-    # Mesh2HRTF version
-    fw(f"Mesh2HRTF_version = '{version}';\n\n")
-
-    # create missing directories
-    fw("if ~exist(fullfile(pwd, 'Visualization'),'dir')\n")
-    fw("    mkdir(fullfile(pwd, 'Visualization'));\n")
-    fw("end\n")
-    fw("if ~exist(fullfile(pwd, 'Visualization', 'ObjectMesh'),'dir')\n")
-    fw("    mkdir(fullfile(pwd, 'Visualization', 'ObjectMesh'))\n")
-    fw("end\n\n")
-
-    # load data struct created by Output2HRTF.m
-    fw("load(fullfile(pwd, 'Output2HRTF', 'ObjectMesh_Reference.mat'))\n\n")
-
-    # export the sound pressure distribution as dB SPL in VTK-files
-    fw("EvalToolsExport2VTK(['Visualization' filesep 'ObjectMesh' filesep],nodes(:,2:end),elements(:,2:end),20*log10(abs(element_data{1})/0.00002),'amp')\n")
-    file.close
-
-def _write_output2HRTF_py(
-        filepath1, version, sourceType, numSources, unitFactor, reference,
-        computeHRIRs, speedOfSound, densityOfMedium, sourceXPosition,
-        sourceYPosition, sourceZPosition):
-
-    # file handling
-    file = open(os.path.join(filepath1, "Output2HRTF.py"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-
-    # header
-    fw("# Read the data simulated by NumCalc and save to the folder\n")
-    fw("# Output2HRTF inside project folder.\n\n")
-
-    fw("import numpy\n")
-    fw("import mesh2hrtf as m2h\n\n")
-
-    # Mesh2HRTF version
-    fw(f"Mesh2HRTF_version = '{version}'\n\n")
-
-    fw("# source information\n")
-    # initialize arrays for source information
-    if sourceType == 'Both ears':
-        fw("sourceCenter = numpy.zeros((2, 3))\n")
-        fw("sourceArea = numpy.zeros((2, 1))\n\n")
-    else:
-        fw("sourceCenter = numpy.zeros((1, 3))\n")
-        fw("sourceArea = numpy.zeros((1, 1))\n\n")
-
-    # add information about the source
-    fw(f"sourceType = '{sourceType}'\n")
-    fw(f"numSources = {numSources}\n")
-    if "ear" in sourceType:
-
-        # get the receiver/ear centers and areas
-        obj = bpy.data.objects['Reference']
-        obj_data = obj.data
-        earCenter, earArea = _calculateReceiverProperties(
-            obj, obj_data, unitFactor)
-
-        # write left ear data
-        if sourceType in ['Left ear', 'Both ears']:
-            fw("sourceCenter[0, :] = [%f, %f, %f]\n"
-                                            % (earCenter[0][0],
-                                               earCenter[0][1],
-                                               earCenter[0][2]))
-            fw("sourceArea[0, 0] = %g\n" % earArea[0])
-
-        # write right ear data
-        if sourceType in ['Right ear', 'Both ears']:
-            if sourceType == 'Right ear':
-                nn = 0
-            if sourceType == 'Both ears':
-                nn = 1
-
-            fw("sourceCenter[%d, :] = [%f, %f, %f]\n"
-                                            % (nn,
-                                               earCenter[1][0],
-                                               earCenter[1][1],
-                                               earCenter[1][2]))
-            fw("sourceArea[%d, 0] = %g\n" % (nn, earArea[1]))
-
-        fw("\n")
-    else:
-
-        fw("sourceCenter[0, :] = [%s, %s, %s]\n"
-                                            % (sourceXPosition,
-                                               sourceYPosition,
-                                               sourceZPosition))
-        fw("sourceArea[0, 0] = 1\n")
-
-    # referencing
-    fw("# Reference to a point source in the origin\n")
-    fw("# according to the classical HRTF definition\n")
-    fw("# (https://doi.org/10.1016/0003-682X(92)90046-U)\n")
-    fw("reference = ")
-    if reference:
-        fw("True\n\n")
-    else:
-        fw("False\n\n")
-
-    # compute HRIRs
-    fw("# Compute HRIRs via the inverse Fourier transfrom.\n")
-    fw("# This will add data at 0 Hz, mirror the single sided spectrum, and\n")
-    fw("# shift the HRIRs in time. Requires reference = true.\n")
-    fw("computeHRIRs = ")
-    if computeHRIRs:
-        fw("True\n\n")
-    else:
-        fw("False\n\n")
-
-    # constants
-    fw("# Constants\n")
-    fw("speedOfSound = " + speedOfSound + "  # [m/s]\n")
-    fw("densityOfAir = " + densityOfMedium + "  # [kg/m^3]\n\n")
-
-    # function call
-    fw("# Collect the data simulated by NumCalc\n")
-    fw("m2h.output_to_hrtf(Mesh2HRTF_version, sourceType,\n")
-    fw("                   numSources, sourceCenter, sourceArea,\n")
-    fw("                   reference, computeHRIRs,\n")
-    fw("                   speedOfSound, densityOfAir)\n")
-    file.close
 
 def _calculateReceiverProperties(obj, obj_data, unitFactor):
     """
@@ -1136,11 +932,11 @@ def _distribute_frequencies(minFrequency, maxFrequency,
     frequencies: list
         list that holds the frequencies in Hz that are calculated.
     frequencyStepSize: float
-        Step size between successive frequencies (written to Info.txt). This is
-        returned because it might be zero during the function call.
+        Step size between successive frequencies (written to parameters.json).
+        This is returned because it might be zero during the function call.
     numFrequencySteps: int
-        Number of frequencies to be simulated (written to Info.txt). This is
-        returned because it might be zero during the function call.
+        Number of frequencies to be simulated (written to parameters.json).
+        This is returned because it might be zero during the function call.
 
     """
 

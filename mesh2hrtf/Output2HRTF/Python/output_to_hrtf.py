@@ -9,57 +9,29 @@ import csv
 import warnings
 import numpy as np
 import glob
+import json
 import sofar as sf
 
 
-def output_to_hrtf(
-        Mesh2HRTF_version, sourceType, numSources, sourceCenter,
-        sourceArea, reference, computeHRIRs, speedOfSound, densityOfAir,
-        folder=None):
+def output_to_hrtf(folder=None):
     """
     Process NumCalc output and write data to disk.
 
-    All parameters are written to Output2HRTF.py upon exporting a Mesh2HRTF
-    project from Blender. This function will thus usually be called from an
-    Output2HRTF.py file.
-
     Processing the data is done in the following steps
 
-    1. use :py:func:`~project_report` to parse files in
+    1. Read project parameter `from parameters.json`
+    2. use :py:func:`~project_report` to parse files in
        project_folder/NumCalc/source_*/NC*.out, write project report to
        project_folder/Output2HRTF/report_source_*.csv. Raise a warning if any
        issues were detected and write report_issues.txt to the same folder
-    2. Read simulated pressures from project_folder/NumCalc/source_*/be.out.
+    3. Read simulated pressures from project_folder/NumCalc/source_*/be.out.
        This and the following steps are done, even if an issue was detected in
        the previous step
-    3. use :py:func:`~reference_hrtf` and :py:func:`~compute_hrir` to save the
+    4. use :py:func:`~reference_hrtf` and :py:func:`~compute_hrir` to save the
        results to SOFA files
 
     Parameters
     ----------
-    Mesh2HRTF_version : string
-        Mesh2HRTF version as string
-    numSources : integer
-        Number of sound sources in the simulation
-    sourceType : string
-        The source type ('Both ears', 'Left ear', 'Right ear',
-                         'Point source', 'Plane wave')
-    sourceCenter : array
-        The source position
-    sourceArea : array
-        The area of the source(s) if using vibrating elements as sourceType.
-        This is required for referencing the HRTFs. Use an area of 1 for a
-        point source.
-    reference : boolean
-        Indicate if the HRTF are referenced to the pressure in the center of
-        the head with the head absent.
-    computeHRIRs : boolean
-        Indicate if the HRIRs should be calculated by means of the inverse
-        Fourier transform.
-    speedOfSound : float
-        The speed of sound in m/s
-    densityOfAir : float
-        The density of air in kg/m^3
     folder : str, optional
         The path of the Mesh2HRTF project folder, i.e., the folder containing
         the subfolders EvaluationsGrids, NumCalc, and ObjectMeshes. The
@@ -70,13 +42,22 @@ def output_to_hrtf(
     if folder is None:
         folder = os.getcwd()
 
+    # check and load parameters, required parameters are:
+    # Mesh2HRTF_version, reference, computeHRIRs, speedOfSound, densityOfAir,
+    # numSources, sourceType, sourceCenter, sourceArea,
+    # numFrequencies, frequencies
+    params = os.path.join(folder, "parameters.json")
+    if not os.path.isfile(params):
+        raise ValueError((
+            f"The folder {folder} is not a valid Mesh2HRTF project. "
+            "It must contain the file 'parameters.json'"))
+
+    with open(params, "r") as file:
+        params = json.load(file)
+
     # output directory
     if not os.path.exists(os.path.join(folder, 'Output2HRTF')):
         os.makedirs(os.path.join(folder, 'Output2HRTF'))
-
-    # get the number of frequency steps
-    frequencies, numFrequencies = _get_frequencies(
-        os.path.join(folder, 'Info.txt'))
 
     # write the project report and check for issues
     print('\n Writing the project report ...')
@@ -96,7 +77,8 @@ def output_to_hrtf(
         os.path.join(folder, 'ObjectMeshes'))
 
     # Load ObjectMesh data
-    pressure = _read_pressure(numSources, numFrequencies, folder, 'pBoundary')
+    pressure = _read_pressure(
+        params["numSources"], params["numFrequencies"], folder, 'pBoundary')
 
     print('\nSaving ObjectMesh data ...')
     cnt = 0
@@ -112,7 +94,8 @@ def output_to_hrtf(
             folder, "Output2HRTF",
             "ObjectMesh_" + mesh + ".npz"), "w")
         np.savez_compressed(
-            file.name, frequencies=frequencies, pressure=element_data)
+            file.name, frequencies=params["frequencies"],
+            pressure=element_data)
         file.close()
 
         cnt = cnt + elements.shape[0]
@@ -124,7 +107,8 @@ def output_to_hrtf(
         print('\nLoading data for the evaluation grids ...')
 
         pressure = _read_pressure(
-            numSources, numFrequencies, folder, 'pEvalGrid')
+            params["numSources"], params["numFrequencies"],
+            folder, 'pEvalGrid')
 
     # save to struct
     cnt = 0
@@ -145,30 +129,33 @@ def output_to_hrtf(
         # objects. This way they are available to other users as well)
         sofa = _get_sofa_object(
             evaluationGrids[grid]["pressure"],
-            evaluationGrids[grid]["nodes"][:, 1:4], "cartesian", sourceCenter,
-            "HRTF", Mesh2HRTF_version, frequencies=frequencies)
+            evaluationGrids[grid]["nodes"][:, 1:4], "cartesian",
+            params["sourceCenter"], "HRTF", params["Mesh2HRTF_Version"],
+            frequencies=params["frequencies"])
 
         # reference to sound pressure at the center of the head
-        if reference:
-            sofa = reference_hrtf(sofa, sourceType, sourceArea, speedOfSound,
-                                  densityOfAir, mode="min")
+        if params["reference"]:
+            sofa = reference_hrtf(
+                sofa, params["sourceType"], params["sourceArea"],
+                params["speedOfSound"], params["densityOfMedium"], mode="min")
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
-            'Output2HRTF', f'HRTF_{grid}.sofa'), sofa)
+            folder, 'Output2HRTF', f'HRTF_{grid}.sofa'), sofa)
 
         # calculate and write HRIRs
-        if computeHRIRs:
-            if not reference:
+        if params["computeHRIRs"]:
+            if not params["reference"]:
                 raise ValueError("Computing HRIRs requires prior referencing")
 
             # calculate shift value (equivalent to a 30 cm shift)
             sampling_rate = round(2*sofa.N[-1])
-            n_shift = int(np.round(.30 / (1/sampling_rate * speedOfSound)))
+            n_shift = int(np.round(
+                .30 / (1/sampling_rate * params["speedOfSound"])))
 
             sofa = compute_hrir(sofa, n_shift)
             sf.write_sofa(os.path.join(
-                'Output2HRTF', f'HRIR_{grid}.sofa'), sofa)
+                folder, 'Output2HRTF', f'HRIR_{grid}.sofa'), sofa)
 
     print('Done\n')
 
@@ -451,8 +438,9 @@ def project_report(folder=None):
     # get sources and number of sources and frequencies
     sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
     num_sources = len(sources)
-    _, num_frequencies = _get_frequencies(
-        os.path.join(folder, "Info.txt"))
+
+    with open(os.path.join(folder, "parameters.json"), "r") as file:
+        params = json.load(file)
 
     # sort source files (not read in correct order in some cases)
     nums = [int(source.split("_")[-1]) for source in sources]
@@ -461,7 +449,7 @@ def project_report(folder=None):
 
     # parse all NC*.out files for all sources
     all_files, fundamentals, out, out_names = _parse_nc_out_files(
-        sources, num_sources, num_frequencies)
+        sources, num_sources, params["numFrequencies"])
 
     # write report as csv file
     _write_project_reports(folder, all_files, out, out_names)
@@ -866,7 +854,7 @@ def _get_sofa_object(data, source_position, source_position_type,
     if mode == "HRTF":
         sofa.Data_Real = np.real(data)
         sofa.Data_Imag = np.imag(data)
-        sofa.N = frequencies
+        sofa.N = np.array(frequencies).flatten()
     else:
         sofa.Data_IR = data
         sofa.Data_SamplingRate = sampling_rate
@@ -937,43 +925,3 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
         data[ii, :] = tmpData if tmpData else np.nan
 
     return data
-
-
-def _get_frequencies(path):
-    """
-    Read number of simulated frequency steps and frequencies from Info.txt
-
-    Parameters
-    ----------
-    path : str
-        path of Info.txt
-
-    Returns
-    -------
-    frequencies : numpy array
-        the simulated frequencies in Hz generated from the information in
-        Info.txt (number of frequencies, minimum frequency, frequency step
-        size)
-    frequency_steps : int
-        number of simulated frequency steps
-    """
-
-    # read info file
-    with open(path) as f:
-        lines = f.readlines()
-
-    # find number of frequency steps and minimum frequency
-    key_num = 'Frequency Steps: '
-    key_min = 'Minimum evaluated Frequency: '
-    key_step = 'Frequency Stepsize: '
-    for line in lines:
-        if line.startswith(key_num):
-            num_frequencies = int(line.strip()[len(key_num):])
-        if line.startswith(key_min):
-            min_frequency = float(line.strip()[len(key_min):])
-        if line.startswith(key_step):
-            frequency_step = float(line.strip()[len(key_step):])
-
-    frequencies = np.arange(num_frequencies) * frequency_step + min_frequency
-
-    return np.atleast_1d(frequencies), num_frequencies
