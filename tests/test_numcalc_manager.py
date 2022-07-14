@@ -1,6 +1,6 @@
 """
 Test numcalc_manger with default parameters. Testing parameter combinations is
-not done. Be carefull when changing numcalc_manger()!
+not done. Be careful when changing numcalc_manger()!
 """
 import pytest
 import subprocess
@@ -12,6 +12,20 @@ import mesh2hrtf as m2h
 
 cwd = os.path.dirname(__file__)
 data_shtf = os.path.join(cwd, 'resources', 'SHTF')
+
+# Build NumCalc locally to use for testing
+tmp = TemporaryDirectory()
+numcalc = os.path.join(tmp.name, "NumCalc", "bin", "NumCalc")
+
+shutil.copytree(
+    os.path.join(cwd, "..", "mesh2hrtf", "NumCalc"),
+    os.path.join(tmp.name, "NumCalc"))
+
+if os.path.isfile(numcalc):
+    os.remove(numcalc)
+
+subprocess.run(
+    ["make"], cwd=os.path.join(tmp.name, "NumCalc", "src"), check=True)
 
 
 @pytest.mark.parametrize("mode", ("function", "script"))
@@ -33,13 +47,14 @@ def test_defaults(mode):
 
     if mode == "function":
         # run as function
-        m2h.numcalc_manager(temp.name, wait_time=0)
+        m2h.numcalc_manager(temp.name, numcalc_path=numcalc, wait_time=0)
     elif mode == "script":
         # run as script
         script_path = os.path.join(cwd, "..", "mesh2hrtf", "NumCalc")
         subprocess.run([
             (f'python numcalc_manager.py --project_path {temp.name} '
-             '--wait_time 0 --confirm_errors False')],
+             f'--numcalc_path {numcalc} --wait_time 0 --confirm_errors False')
+            ],
              cwd=script_path, check=True, shell=True)
 
     # check if files exist
