@@ -72,7 +72,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
-        description=("Path to folder containing 'Mesh2Input' and other folders"
+        description=("Path to folder containing 'NumCalc' and other folders"
                      "(used to copy files to project folder during export)"),
         default=r"/path/to/mesh2hrtf",
         )
@@ -119,8 +119,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     # evaluation grids --------------------------------------------------------
     evaluationGrids: StringProperty(
         name="Name",
-        description=("Name of evalation grid inside "
-            "Mesh2Input/EvaluationsGrids or absolute path to user grid. "
+        description=("Name of evaluation grid inside "
+            "Tools/EvaluationsGrids/Data or absolute path to user grid. "
             "Multiple grids can be separated by semicolons (;)"),
         default='Default',
         )
@@ -399,7 +399,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # Read material data ----------------------------------------------------------
 
         # add the default mesh2hrtf path to the material search path
-        defaultPath = os.path.join(programPath, 'Mesh2Input', 'Materials')
+        defaultPath = os.path.join(programPath, 'Tools', 'Materials', 'Data')
         if materialSearchPaths == "None":
             materialSearchPaths = defaultPath
         else:
@@ -590,7 +590,7 @@ def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
 
     # default path for evaluation grids
     evaluationGridPath = os.path.join(
-        programPath, "Mesh2Input", "EvaluationGrids")
+        programPath, "Tools", "EvaluationGrids", "Data")
 
     # construct full paths and names
     evalGridPaths = []
