@@ -1,6 +1,6 @@
 # NumCalc build files
-mesh2hrtf/NumCalc/Source/*.o
-mesh2hrtf/NumCalc/Source/NumCalc
+mesh2hrtf/NumCalc/src/*.o
+mesh2hrtf/NumCalc/bin/NumCalc
 
 # Python cach and install files
 *__pycache__

@@ -866,7 +866,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
     time(&ltim[5]);
     lti_sst = ltim[5] - ltim[4];
     lti_sol += lti_sst;
-
+    
     // post process: compute and output the results
     NC_PostProcessing(NCout);
 

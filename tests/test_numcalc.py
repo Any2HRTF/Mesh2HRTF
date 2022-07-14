@@ -1,3 +1,4 @@
+# %%
 import pytest
 import subprocess
 import tempfile
@@ -12,14 +13,17 @@ base_dir = os.path.dirname(__file__)
 
 # Build NumCalc locally to use for testing
 tmp = tempfile.TemporaryDirectory()
-tmp_numcalc_path = os.path.join(tmp.name, "NumCalc")
+numcalc = os.path.join(tmp.name, "NumCalc", "bin", "NumCalc")
 
 shutil.copytree(
-    os.path.join(base_dir, "..", "mesh2hrtf",
-                 "NumCalc", "Source"),
-    tmp_numcalc_path)
+    os.path.join(base_dir, "..", "mesh2hrtf", "NumCalc"),
+    os.path.join(tmp.name, "NumCalc"))
 
-subprocess.run(["make"], cwd=tmp_numcalc_path, check=True)
+if os.path.isfile(numcalc):
+    os.remove(numcalc)
+
+subprocess.run(
+    ["make"], cwd=os.path.join(tmp.name, "NumCalc", "src"), check=True)
 
 
 def test_numcalc_invalid_parameter(capfd):
@@ -28,7 +32,7 @@ def test_numcalc_invalid_parameter(capfd):
     """
 
     try:
-        subprocess.run([f'{tmp_numcalc_path}/NumCalc -invalid_parameter'],
+        subprocess.run([f'{numcalc} -invalid_parameter'],
                        check=True, shell=True)
     except subprocess.CalledProcessError:
         _, err = capfd.readouterr()
@@ -68,7 +72,7 @@ def test_numcalc_commandline_nitermax(nitermax, use):
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'],
+    subprocess.run([f'{numcalc}{commandLineArgument}'],
                    cwd=tmp_path, check=True, shell=True)
 
     # Verify
@@ -119,7 +123,7 @@ def test_numcalc_commandline_istart_iend(istart, iend):
 
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{tmp_numcalc_path}/NumCalc{commandLineArgument}'],
+    subprocess.run([f'{numcalc}{commandLineArgument}'],
                    cwd=tmp_path, check=True, shell=True)
 
     # Verify
@@ -167,7 +171,7 @@ def test_numcalc_estimate_ram():
     shutil.copytree(data_shtf, os.path.join(cwd.name, 'SHTF'))
 
     # run NumCalc ram estimation
-    subprocess.run([f'{tmp_numcalc_path}/NumCalc -estimate_ram'],
+    subprocess.run([f'{numcalc} -estimate_ram'],
                    cwd=data_cwd, check=True, shell=True,
                    stdout=subprocess.DEVNULL)
 
@@ -220,7 +224,7 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
     # --- Exercise ---
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
+    subprocess.run([f'{numcalc}'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
     subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
@@ -295,11 +299,11 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
     # --- Exercise ---
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
+    subprocess.run([f'{numcalc}'], cwd=tmp_path, check=True)
     if source == "bothears":
         tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_2")
         subprocess.run(
-            [f'{tmp_numcalc_path}/NumCalc'], cwd=tmp_path, check=True)
+            [f'{numcalc}'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
     subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
