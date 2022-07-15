@@ -57,9 +57,12 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
         instance is launched until the number of available CPU cores given by
         ``psutil.cpu_count()`` is reached.
     wait_time : int, optional
-        Delay in seconds for waiting until the RAM and CPU usage is checked in
-        in case too little resources are available for starting the next
-        NumCalc instance. The default is 15.
+        Delay in seconds for waiting until the RAM and CPU usage is checked
+        after launching a NumCalc instance. This has to be sufficiently large
+        for the RAM and CPU to be fully used by the started NumCalc instance.
+        The default is 15. After this initial wait time, the resources are
+        checked every second. And the next instance is started, once enough
+        resources are available.
     starting_order : str, optional
         Control the order in which the frequency steps are launched.
 
@@ -107,6 +110,11 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
     text_color_red = '\033[31m'
     text_color_green = '\033[32m'
     text_color_reset = '\033[0m'
+
+    # wait time in seconds before checking resources again if we are busy
+    # (this is not the wait time directly after a NumCalc instance was
+    # launched. That is given by wait time!)
+    wait_time_busy = 1
 
     # check input -------------------------------------------------------------
     if max_instances > psutil.cpu_count():
@@ -300,7 +308,7 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                 if started_instance:
                     print_message(
                         (f"\n... waiting for resources (checking every "
-                         f"{5} seconds, {current_time}):\n"
+                         f"second, {current_time}):\n"
                          f" {running_instances} NumCalc instances running | "
                          f"   {cpu_load}% CPU load\n"
                          f"   {round(ram_available, 2)} GB RAM available    | "
@@ -309,7 +317,7 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                     started_instance = False
 
                 # wait and continue
-                time.sleep(5) # this waiting time can be reduced even lower
+                time.sleep(wait_time_busy)
                 continue
 
             # find frequency step with the highest possible RAM consumption
@@ -367,7 +375,7 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
         if numcalc_instances() == 0:
             break
 
-        time.sleep(5)
+        time.sleep(wait_time_busy)
 
     # Check all projects that may need to be executed -------------------------
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
