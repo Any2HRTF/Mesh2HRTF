@@ -63,8 +63,11 @@ parser.add_argument(
 parser.add_argument(
     "--wait_time", default=15, type=int,
     help=("Delay in seconds for waiting until the RAM and CPU usage is checked"
-          " in case too little resources are available for starting the next. "
-          "NumCalc instance."))
+          " after launching a NumCalc instance. This has to be sufficiently "
+          "arge for the RAM and CPU to be fully used by the started NumCalc "
+          "instance. The default is 15. After this initial wait time, the "
+          "resources are checked every second. And the next instance is "
+          "started, once enough resources are available."))
 parser.add_argument(
     "--starting_order", default='alternate',
     choices=('alternate', 'high', 'low'), type=str,
