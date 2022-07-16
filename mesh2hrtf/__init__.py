@@ -1,23 +1,19 @@
-from .Output2HRTF.Python.output2hrtf import (
-    output2hrtf,
-    reference_hrtf,
-    compute_hrir,
-    write_output_report)
+from .NumCalc.numcalc_manager import numcalc_manager
 
-from .Output2HRTF.Python.outputs2hrtfs import (
-    outputs2hrtfs,
-    outputs2trash)
+from .Output2HRTF.inspect_sofa_files import inspect_sofa_files
+from .Output2HRTF.merge_sofa_files import merge_sofa_files
+from .Output2HRTF.output2hrtf import (
+    output2hrtf, reference_hrtf, compute_hrir)
+from .Output2HRTF.output2vtk import output2vtk
+from .Output2HRTF.outputs2hrtfs import (outputs2hrtfs, outputs2trash)
+from .Output2HRTF.read_ram_estimates import read_ram_estimates
+from .Output2HRTF.write_output_report import write_output_report
 
-from .Output2HRTF.Python.utils import (
-    inspect_sofa_files,
-    merge_sofa_files,
-    write_evaluation_grid,
-    read_evaluation_grid,
-    read_ram_estimates,
-    output2vtk,
-    write_material)
-
-from .Output2HRTF.Python.numcalc import numcalc_manager
+from .Tools.EvaluationGrids.read_evaluation_grid import \
+    read_evaluation_grid
+from .Tools.EvaluationGrids.write_evaluation_grid import \
+    write_evaluation_grid
+from .Tools.Materials.write_material import write_material
 
 __all__ = [
     'output2hrtf',
