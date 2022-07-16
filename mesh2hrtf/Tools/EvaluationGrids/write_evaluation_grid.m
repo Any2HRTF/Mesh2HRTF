@@ -2,15 +2,15 @@
 %                Copyright (C) 2015 by Harald Ziegelwanger,
 %        Acoustics Research Institute, Austrian Academy of Sciences
 %                        mesh2hrtf.sourceforge.net
-% 
+%
 % If you use Mesh2HRTF:
 % - Provide credits:
 %   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
 % - In your publication, cite both articles:
 %   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
 %   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
-function writeMesh2HRTFevalGrid(nodes, path, doPlot, startCount)
-% WRITEMESH2HRTFEVALGRID(nodes, path, doPlot, startCount)
+function write_evaluation_grid(nodes, path, doPlot, startCount)
+% write_evaluation_grid(nodes, path, doPlot, startCount)
 %
 % writes evaluation grid in the format required by mesh2HRTF in the
 % location specified by path.
@@ -31,7 +31,7 @@ function writeMesh2HRTFevalGrid(nodes, path, doPlot, startCount)
 %              grid and a startCount of 300000 for the second.
 %
 % Author: fabian.brinkmann@tu-berlin.de
-% Audio Communication Group @ TU Berlin	
+% Audio Communication Group @ TU Berlin
 
 if ~exist('doPlot', 'var')
     doPlot = true;
@@ -89,7 +89,7 @@ end
 fclose(fileID);
 
 if doPlot
-    
+
     figure
     set(gcf,'Color',[1 1 1]);
     trisurf(elements,nodes(:,1),nodes(:,2),nodes(:,3), 'FaceColor', [.8 .8 .8], 'faceAlpha', 1, 'EdgeColor', 'none')
@@ -97,5 +97,5 @@ if doPlot
     scatter3(nodes(:,1), nodes(:,2), nodes(:,3), 75, '.k')
     axis equal
     xlabel x; ylabel y; zlabel z;
-    
+
 end
