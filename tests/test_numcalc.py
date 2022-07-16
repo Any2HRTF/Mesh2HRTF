@@ -200,7 +200,7 @@ def test_numcalc_commandline_estimate_ram():
 def test_numcalc_boundary_conditions_sources_types_numerical_methods(
         boundary_condition, source, bem_method, range_a, range_b=(-1, 1)):
     """
-    Test if NumCalc and output_to_hrtf generate correct output by comparing to
+    Test if NumCalc and output2hrtf generate correct output by comparing to
     analytical solutions. Tests different single source types, boundary
     conditions and BEM methods.
     """
@@ -230,9 +230,9 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
     subprocess.run([f'{numcalc}'], cwd=tmp_path, check=True)
-    # run output_to_hrtf
+    # run output2hrtf
     tmp_path = os.path.join(tmp.name, "project")
-    m2h.output_to_hrtf(tmp_path)
+    m2h.output2hrtf(tmp_path)
 
     # --- Verify ---
     # load HRTF data from simulation
@@ -273,7 +273,7 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
 def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
                                   range_a, range_b=(-1, 1)):
     """
-    Test if NumCalc and output_to_hrtf generate correct output by comparing to
+    Test if NumCalc and output2hrtf generate correct output by comparing to
     analytical solution. Tests the simulation of HRTF for left, right and both
     ears.
     """
@@ -308,7 +308,7 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
             [f'{numcalc}'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
-    m2h.output_to_hrtf(tmp_path)
+    m2h.output2hrtf(tmp_path)
 
     # --- Verify ---
     # load HRTF data from simulation as numpy

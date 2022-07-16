@@ -13,7 +13,7 @@ import json
 import sofar as sf
 
 
-def output_to_hrtf(folder=None):
+def output2hrtf(folder=None):
     """
     Process NumCalc output and write data to disk.
 

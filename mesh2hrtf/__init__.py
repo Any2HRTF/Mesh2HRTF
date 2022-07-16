@@ -1,5 +1,5 @@
-from .Output2HRTF.Python.output_to_hrtf import (
-    output_to_hrtf,
+from .Output2HRTF.Python.output2hrtf import (
+    output2hrtf,
     reference_hrtf,
     compute_hrir,
     project_report)
@@ -20,7 +20,7 @@ from .Output2HRTF.Python.utils import (
 from .Output2HRTF.Python.numcalc import numcalc_manager
 
 __all__ = [
-    'output_to_hrtf',
+    'output2hrtf',
     'outputs_to_hrtfs',
     'remove_outputs',
     'reference_hrtf',

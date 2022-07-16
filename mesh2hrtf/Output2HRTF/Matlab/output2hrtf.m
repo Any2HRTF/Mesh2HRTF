@@ -1,4 +1,4 @@
-function Output2HRTF(folder)
+function output2hrtf(folder)
 %   [] = OUTPUT2HRTF_MAIN(folder)
 %
 %   Process NumCalc output and write data to disk. All parameters are read
@@ -213,13 +213,13 @@ if params.reference
     % this might be a parameter in the function call
     refMode = 1;    % 1: reference to only one radius (the smallest found)
     % 2: reference to all indivudal radii
-    
+
     for ii = 1:numel(evaluationGrids)
-        
+
         xyz = evaluationGrids(ii).nodes;
         pressure = evaluationGrids(ii).pressure;
         freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
-        
+
         % distance of source positions from the origin
         if refMode == 1
             r = min(sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2));
@@ -228,38 +228,38 @@ if params.reference
             r = sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2);
             r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
         end
-        
+
         if strcmp(params.sourceType, 'Left ear') || ...
                 strcmp(params.sourceType, 'Right ear') || ...
                 strcmp(params.sourceType, 'Both ears')
-            
+
             volumeFlow = .1 * ones(size(pressure));
             if isfield(params, params.sourceArea)
                 for jj = 1:numel(params.sourceArea)
                     volumeFlow(:,:,jj) = volumeFlow(:,:,jj) * params.sourceArea(jj);
                 end
             end
-            
+
             % point source in the origin evaluated at r
             % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
             ps   = -1j * params.densityOfMedium * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
                 exp(1j * 2*pi*freqMatrix/params.speedOfSound .* r) ./ r;
-            
+
         elseif strcmp(params.sourceType, 'Point source')
-            
+
             amplitude = .1; % hard coded in Mesh2HRTF
             ps = amplitude * exp(1j * 2*pi*freqMatrix/params.speedOfSound .*r) ./ (4 * pi * r);
-            
+
         elseif strcmp(params.sourceType, 'Plane wave')
             error('Referencing for plane wave source type not yet implemented.\n');
         else
             error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.\n')
         end
-        
+
         evaluationGrids(ii).pressure = pressure ./ ps;
-        
+
     end
-    
+
     clear r freqMatrix ps ii jj
 end
 
@@ -268,9 +268,9 @@ fprintf('Saving complex pressure to SOFA file ...\n')
 SOFAstart;
 
 for ii = 1:numel(evaluationGrids)
-    
+
     xyz = evaluationGrids(ii).nodes;
-    
+
     % check if .sofa file already exists
     filename = fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']);
     if exist(filename, 'file')
@@ -285,7 +285,7 @@ for ii = 1:numel(evaluationGrids)
             error('Invalid input. Output2HRTF aborted.\n');
         end
     end
-    
+
     % get SOFA template according to number of sources
     if params.numSources == 2
         Obj = SOFAgetConventions('SimpleFreeFieldHRTF');
@@ -293,12 +293,12 @@ for ii = 1:numel(evaluationGrids)
         % Save as GeneralTF
         Obj = SOFAgetConventions('GeneralTF');
     end
-    
+
     % pressure has size N (frequencies) x M (measurements) x R (sources)
     pressure = evaluationGrids(ii).pressure;
     % get dimenson 3 explicitly, because it would be dropped if R=1
     NMR = [size(pressure, 1), size(pressure, 2), size(pressure, 3)];
-    
+
     % shift dimensions to MRN as expected by SOFA
     % (shifting loses leading and trailing dimensons of size 1)
     pressure = shiftdim(pressure, 1);
@@ -324,7 +324,7 @@ for ii = 1:numel(evaluationGrids)
     Obj.ReceiverPosition=params.sourceCenter;
     Obj.ReceiverPosition_Type='cartesian';
     Obj.ReceiverPosition_Units='metre';
-    
+
     Obj=SOFAupdateDimensions(Obj);
     SOFAsave(fullfile(folder, 'Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']),Obj);
     fprintf(['HRTF_' evaluationGrids(ii).name '.sofa saved!\n']);
@@ -336,20 +336,20 @@ clear Obj ii xyz pressure prompt replace_Obj
 %% Save time data data as SOFA file
 if params.computeHRIRs
     fprintf('Saving HRIR data to SOFA file ...\n')
-    for ii = 1:numel(evaluationGrids)        
+    for ii = 1:numel(evaluationGrids)
         % check if the frequency vector has the correct format
         if any(abs(diff(frequencies,2)) > .1) || frequencies(1) < .1
             error('The frequency vector must start at a frequency > 0.1 and continue in equidistant steps to the end.\n')
         end
-        
+
         % check if reference exists
         if ~params.reference
             error('HRIRs can only be computed if refernce=true\n')
         end
-        
+
         xyz = evaluationGrids(ii).nodes;
         pressure = evaluationGrids(ii).pressure;
-        
+
         % check if .sofa file already exists
         filename = fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']);
         if exist(filename, 'file')
@@ -365,7 +365,7 @@ if params.computeHRIRs
             end
         end
         clear prompt
-        
+
 %         prompt = ['The default sampling frequency is twice the highest occuring frequency. ', ...
 %             'In this case fs = ', num2str(2*frequencies(end)), '. \n', ...
 %             'Do you want to specify a different sampling frequency? [y/n]\n'];
@@ -385,7 +385,7 @@ if params.computeHRIRs
 %         else
 %             error('Invalid input. Writing HRIR to SOFA object aborted.\n');
 %         end
-        
+
         fs = 2*frequencies(end);
 
         % add 0 Hz bin
@@ -397,23 +397,23 @@ if params.computeHRIRs
         pressure = [pressure; flipud(conj(pressure(2:end-1,:,:)))];
         % ifft (take complex conjugate because sign conventions differ)
         hrir = ifft(conj(pressure), 'symmetric');
-        
+
         % shift 30 cm to make causal
         % (path differences between the origin and the ear are usually
         % smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
         n_shift = round(.30 / (1/fs * params.speedOfSound));
         hrir = circshift(hrir, n_shift);
-        
+
         % hrir has size N (samples) x M (measurements) x R (sources)
         % get dimenson 3 explicitly, because it would be dropped if R=1
         NMR = [size(hrir, 1), size(hrir, 2), size(hrir, 3)];
-        
+
         % shift dimensions to MRN as expected by SOFA
         % (shifting loses leading and trailing dimensons of size 1)
         hrir = shiftdim(hrir, 1);
         % force dimensions of 1
         hrir = reshape(hrir, NMR(2), NMR(3), NMR(1));
-        
+
         % get SOFA template according to number of sources
         if params.numSources == 2
             Obj = SOFAgetConventions('SimpleFreeFieldHRIR');
@@ -425,11 +425,11 @@ if params.computeHRIRs
         Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
         Obj.GLOBAL_ApplicationVersion = params.Mesh2HRTF_Version;
         Obj.GLOBAL_History = 'numerically calculated data';
-        
+
         Obj.Data.IR=hrir;
         Obj.Data.SamplingRate=fs;
         Obj.Data.Delay=zeros(1, size(hrir, 2));
-        
+
         Obj.ListenerPosition = [0 0 0];
         Obj.SourcePosition=xyz(:,2:4);
         Obj.SourcePosition_Type='cartesian';
@@ -437,7 +437,7 @@ if params.computeHRIRs
         Obj.ReceiverPosition=params.sourceCenter;
         Obj.ReceiverPosition_Type='cartesian';
         Obj.ReceiverPosition_Units='metre';
-        
+
         Obj=SOFAupdateDimensions(Obj);
         SOFAsave(fullfile(folder, 'Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
         fprintf(['HRIR_' evaluationGrids(ii).name '.sofa saved!\n']);
@@ -453,7 +453,7 @@ end % end of main function ------------------------------------------------
 
 function data = Output2HRTF_Load(foldername,filename, numFrequencies)
 %   data = OUTPUT2HRTF_LOAD(foldername,filename)
-%   
+%
 %   Loads results of the BEM-HRTF calculation from the NumCalc folder.
 %
 %   Input:
