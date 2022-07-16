@@ -33,12 +33,12 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
     # process outputs
     savedir = None if not savedir else join(tmp.name, "output")
     if not generate_error:
-        m2h.outputs_to_hrtfs(join(tmp.name, "*"))
+        m2h.outputs2hrtfs(join(tmp.name, "*"))
     else:
         match = ("Detected issues in NumCalc output. Check report files in "
                  ".*\n.*HRTF")
         with pytest.raises(ValueError, match=match):
-            m2h.outputs_to_hrtfs(join(tmp.name, "*"), savedir=savedir)
+            m2h.outputs2hrtfs(join(tmp.name, "*"), savedir=savedir)
 
     # check output directories (only if not moved to savedir)
     if not savedir:
@@ -97,7 +97,7 @@ def test_outputs_to_hrtfs_full():
     shutil.copytree(join(tmp.name, "left"), join(tmp.name, "right"))
 
     # process outputs
-    m2h.outputs_to_hrtfs(
+    m2h.outputs2hrtfs(
         (join(tmp.name, "left", "*"), join(tmp.name, "right", "*")),
         merge=True, inspect=True, pattern="HRIR",
         savedir=join(tmp.name, "output"))
