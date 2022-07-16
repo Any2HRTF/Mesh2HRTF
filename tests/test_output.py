@@ -241,7 +241,7 @@ def test_project_report(folders, issue, errors, nots):
                         os.path.join(tmp.name, "NumCalc", f"source_{ff + 1}"))
 
     # run the project report
-    issues, report = m2h.project_report(tmp.name)
+    issues, report = m2h.write_output_report(tmp.name)
 
     # test the output
     assert issues is issue

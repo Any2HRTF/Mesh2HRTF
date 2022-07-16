@@ -20,7 +20,7 @@ def output2hrtf(folder=None):
     Processing the data is done in the following steps
 
     1. Read project parameter `from parameters.json`
-    2. use :py:func:`~project_report` to parse files in
+    2. use :py:func:`~write_output_report` to parse files in
        project_folder/NumCalc/source_*/NC*.out, write project report to
        project_folder/Output2HRTF/report_source_*.csv. Raise a warning if any
        issues were detected and write report_issues.txt to the same folder
@@ -61,7 +61,7 @@ def output2hrtf(folder=None):
 
     # write the project report and check for issues
     print('\n Writing the project report ...')
-    found_issues, report = project_report(folder)
+    found_issues, report = write_output_report(folder)
 
     if found_issues:
         warnings.warn(report)
@@ -371,7 +371,7 @@ def compute_hrir(sofa, n_shift, sampling_rate=None):
     return sofa
 
 
-def project_report(folder=None):
+def write_output_report(folder=None):
     r"""
     Generate project report from NumCalc output files.
 
@@ -625,7 +625,7 @@ def _write_project_reports(folder, all_files, out, out_names):
     """
     Write project report to disk at folder/Output2HRTF/report_source_*.csv
 
-    For description of input parameter refer to project_report and
+    For description of input parameter refer to write_output_report and
     _parse_nc_out_files
     """
 

@@ -2,7 +2,7 @@ from .Output2HRTF.Python.output2hrtf import (
     output2hrtf,
     reference_hrtf,
     compute_hrir,
-    project_report)
+    write_output_report)
 
 from .Output2HRTF.Python.outputs2hrtfs import (
     outputs2hrtfs,
@@ -27,7 +27,7 @@ __all__ = [
     'compute_hrir',
     'inspect_sofa_files',
     'merge_sofa_files',
-    'project_report',
+    'write_output_report',
     'write_evaluation_grid',
     'read_evaluation_grid',
     'read_ram_estimates',

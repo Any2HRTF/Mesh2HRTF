@@ -98,27 +98,27 @@ for ii = 1:params.numSources
     % read from .out files according to latest calculation
     if NC_all_flag && ~NC_single_flag % only NC.out exists
         % read computation time
-        tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+        tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
         computationTime{ii}=[computationTime{ii}; tmp];
     elseif NC_single_flag && ~NC_all_flag % only NC*.out exist
         % read single files
         for jj = 1:length(NC_single_idx)
             % read computation time
-            tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+            tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
                 num2str(ii), filesep, boundaryElements(NC_single_idx(jj)).name]);
             computationTime{ii}=[computationTime{ii}; tmp];
         end
     elseif (NC_all_flag && NC_single_flag) && any(NC_all_date < NC_single_date) % both exist, at least one NC*.out exists whose frequencies replace the ones in NC.out
         % start with NC.out ...
-        tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+        tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
         computationTime{ii}=[computationTime{ii}; tmp];
         % ... then read single files that are newer than NC.out
         for jj = 1:length(NC_single_idx)
             if NC_all_date < NC_single_date(jj)
                 % read computation time
-                tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+                tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
                     num2str(ii), filesep, boundaryElements(NC_single_idx(jj)).name]);
                 computationTime{ii}(tmp(:,1),:) = tmp; % replace data only for current frequencies
             end
@@ -126,7 +126,7 @@ for ii = 1:params.numSources
     elseif (NC_all_flag && NC_single_flag) && all(NC_all_date > NC_single_date) % both exist, NC.out newest file
         % same as only NC.out exists
         % read computation time
-        tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+        tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
     else % what possible case is this?
         error('This case is not yet implemented. Please open an issue at the project page: https://github.com/Any2HRTF/Mesh2HRTF/issues');
@@ -492,74 +492,6 @@ for ii=1:numFrequencies
         data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
     else
         data(ii,:)      = NaN;
-    end
-end
-
-end %of function
-
-
-function data = Output2HRTF_ReadComputationTime(filename)
-%   [] = Output2HRTF_ReadBEMPerformance(filename)
-%
-%   Reads computation time data from NC.out file.
-%
-%   Input:
-%       filename ... read computation time from NC.out (output file from NumCalc)
-%
-%   Output:
-%       data ....... computation time in seconds, with columns:
-%                    'Frequency index', 'Frequency', 'Building', 'Solving',
-%                    'Postprocessing', 'Total', 'relative error', 'iterations',
-%                    'maximum number of iterations reached' (1 = yes, 0 = no)
-
-fid=fopen(filename);
-count=0;
-while ~feof(fid)
-    line=fgets(fid);
-    if strfind(line,'Frequency')
-        count=count+1;
-        idx1=strfind(line,'Step');
-        idx2=strfind(line,'Frequency');
-        data(count,1)=sscanf(line(idx1+4:idx2-1),'%d');
-        idx2=strfind(line,'=');
-        data(count,2)=sscanf(line(idx2+1:end),'%d');
-    end
-    if strfind(line,'Assembling the equation system  ')
-        idx=strfind(line,':');
-        data(count,3)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line,'Solving the equation system  ')
-        idx=strfind(line,':');
-        data(count,4)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line,'Post processing  ')
-        idx=strfind(line,':');
-        data(count,5)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line,'Total  ')
-        idx=strfind(line,':');
-        data(count,6)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line, 'relative error')
-        [~, endIdx] = regexp(line, '(relative error = )');
-        data(count,7)=sscanf(line(endIdx+1:end-1), '%f');
-    end
-    if contains(line, 'iterations') && ~contains(line, 'Warning')
-        [startIdx, endIdx] = regexp(line, '(number of iterations = )\S+[,]');
-        data(count,8) = sscanf(line(startIdx+23:endIdx-1), '%d');
-        data(count,9) = sscanf('0', '%d');
-    end
-%     if ~isempty(regexp(line, '^\d+\s\d+'))
-%         [idx1, idx2] = regexp(line, '\s');
-%         data(count,7) = sscanf(line(idx2+1:end-1), '%f');
-%         data(count,8) = sscanf(line(1:idx1-1), '%d');
-%         data(count,9) = sscanf('0', '%d');
-%     end
-    if strfind(line, 'Warning: Maximum number of iterations')
-        data(count,9) = sscanf('1', '%d');
-    end
-    if strfind(line,'Address computation ')
-        break
     end
 end
 

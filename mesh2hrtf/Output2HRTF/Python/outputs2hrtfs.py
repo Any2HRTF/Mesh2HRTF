@@ -16,7 +16,7 @@ def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
     1.
         Run :py:func:`~mesh2hrtf.output2hrtf` in folders specified by
         `paths`. This also calls
-        :py:func:`~mesh2hrtf.project_report`,
+        :py:func:`~mesh2hrtf.write_output_report`,
         :py:func:`~mesh2hrtf.reference_hrtf`, and
         :py:func:`~mesh2hrtf.compute_hrir`.
     2.
