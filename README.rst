@@ -19,9 +19,9 @@ Releases and Development
 ========================
 
 The ``master`` branch always contains the latest stable release and should be
-cloned or downloaded. Releases for versions 1.0.0 and above are tagged and can
-be accessed through the GitHub interface. Releases for versions 0.4.0 and below
-are contained in the folder ``releases``. If you want to contribute to
+cloned or downloaded. The ``develop`` branch contains the latest stable
+pre-release versions. All releases are available from
+https://github.com/Any2HRTF/Mesh2HRTF/releases. If you want to contribute to
 Mesh2HRTF please check `here <https://github.com/Any2HRTF/Mesh2HRTF/blob/develop/CONTRIBUTING.rst>`_.
 
 References
