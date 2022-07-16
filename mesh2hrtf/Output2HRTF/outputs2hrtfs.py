@@ -2,7 +2,6 @@ import os
 import shutil
 import glob
 import mesh2hrtf as m2h
-from . import utils
 
 
 def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
@@ -121,7 +120,7 @@ def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
     if merge:
         print("\nMerging SOFA files")
         print("------------------")
-        utils.merge_sofa_files(paths, pattern)
+        m2h.merge_sofa_files(paths, pattern)
 
         # if SOFA files were merged, only the merged files are used in the
         # following (merged files saved under paths[0])
@@ -137,7 +136,7 @@ def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
         print("---------------------")
         for pp, path in enumerate(paths_inspect):
             print(f"{path} ({pp+1}/{len(paths_inspect)})")
-            utils.inspect_sofa_files(path, pattern, plot, plane, atol)
+            m2h.inspect_sofa_files(path, pattern, plot, plane, atol)
 
     # return if data should be left in place ----------------------------------
     if savedir is None:
