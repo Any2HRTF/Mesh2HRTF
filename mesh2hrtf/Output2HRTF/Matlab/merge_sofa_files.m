@@ -1,5 +1,5 @@
-function finalizeHRTFsimulation(varargin)
-%  FINALIZEHRTFSIMULATION(varargin)
+function merge_sofa_files(varargin)
+%  merge_sofa_files(varargin)
 %  merge SOFA data from two separate Mesh2HRTF simulations for left & right ear.
 %  For usage details, please check the documentation!
 %
@@ -12,12 +12,12 @@ function finalizeHRTFsimulation(varargin)
 %                       + usually executes "output2hrtf.m" to run full pre-processing in one go.
 %   run this .m file from a dedicated folder (for example use folder "Finalize_HRTF_simulation")
 %   Move into the "Finalize_HRTF_simulation" folder exactly the 2 project folders that need to be merged.
-%   run this "finalizeHRTFsimulation.m" with Matlab.
+%   run this "merge_sofa_files.m" with Matlab.
 %   Merged SOFA files will be saved in a folder next to the project that was found.
 %
 %  MODE B - Input1 only = scan Input1 folder for 2 projects to merge.
 %   Move into any folder exactly the 2 project folders that need to be merged.
-%   run this "finalizeHRTFsimulation.m" file & specify "input_1" folder that contains projects to merge.
+%   run this "merge_sofa_files.m" file & specify "input_1" folder that contains projects to merge.
 %       This script searches and merges the SOFA files from the 2 projects it finds inside "input_1" path.
 %   Merged SOFA file will be saved in pwd.
 %
@@ -200,7 +200,7 @@ for ii = 1:2
     cd(folder_names{ii})
     if isfolder(fullfile(folder_names{ii}, 'Output2HRTF')) && ~isempty(dir(fullfile(folder_names{ii}, 'Output2HRTF', '*.sofa')))
         warning(['There are already SOFA files in ', fullfile(folder_names{ii}, 'Output2HRTF'), ...
-            '. If you want to overwrite them, please delete the .sofa files and rerun finalizeHRTFsimulation.m']);
+            '. If you want to overwrite them, please delete the .sofa files and rerun merge_sofa_files.m']);
     else
         disp(['Running output2hrtf in folder ', folder_names{ii}, ' ...']);
         output2hrtf;
@@ -208,14 +208,14 @@ for ii = 1:2
     % determine left and right ear data
     % source position along interaural axis. Positive = left, negative = right
     disp(['Determine L/R ear of project ', folder_names{ii}, ' ...']);
-    
+
     params = fullfile(folder_names{ii}, 'parameters.json');
     fid = fopen(params);
     params = fread(fid,inf);
     params = char(params');
     fclose(fid);
     params = jsondecode(params);
-    
+
     switch params.sourceType
         case 'Left ear'
             sofa_file_L = folder_names{ii};
