@@ -465,7 +465,7 @@ def output2vtk(folder=None, object_mesh=None, frequency_steps=None,
             f.write(vtk + pressure_txt)
 
 
-def write_boundary_condition(filename, kind, frequencies, data, comment=None):
+def write_material(filename, kind, frequencies, data, comment=None):
     """
     Write boundary condition to file.
 

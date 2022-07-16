@@ -15,7 +15,7 @@ from .Output2HRTF.Python.utils import (
     read_evaluation_grid,
     read_ram_estimates,
     output2vtk,
-    write_boundary_condition)
+    write_material)
 
 from .Output2HRTF.Python.numcalc import numcalc_manager
 
@@ -32,5 +32,5 @@ __all__ = [
     'read_evaluation_grid',
     'read_ram_estimates',
     'output2vtk',
-    'write_boundary_condition',
+    'write_material',
     'numcalc_manager']
