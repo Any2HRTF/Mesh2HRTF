@@ -6,7 +6,7 @@ from .Output2HRTF.Python.output2hrtf import (
 
 from .Output2HRTF.Python.outputs2hrtfs import (
     outputs2hrtfs,
-    remove_outputs)
+    outputs2trash)
 
 from .Output2HRTF.Python.utils import (
     inspect_sofa_files,
@@ -22,7 +22,7 @@ from .Output2HRTF.Python.numcalc import numcalc_manager
 __all__ = [
     'output2hrtf',
     'outputs2hrtfs',
-    'remove_outputs',
+    'outputs2trash',
     'reference_hrtf',
     'compute_hrir',
     'inspect_sofa_files',

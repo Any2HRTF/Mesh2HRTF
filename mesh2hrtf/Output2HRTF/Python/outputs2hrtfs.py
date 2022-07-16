@@ -6,7 +6,7 @@ from . import utils
 
 
 def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
-                     plot=None, plane="horizontal", atol=.1, savedir=None):
+                  plot=None, plane="horizontal", atol=.1, savedir=None):
     """
     Process NumCalc outputs from multiple projects and write data to disk.
 
@@ -195,9 +195,9 @@ def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
     return
 
 
-def remove_outputs(paths, boundary=False, grid=False,
-                   boundary_compressed=False, hrtf=False, vtk=False,
-                   reports=False):
+def outputs2trash(paths, boundary=False, grid=False,
+                  boundary_compressed=False, hrtf=False, vtk=False,
+                  reports=False):
     """
     Remove output data from Mesh2HRTF project folder.
 

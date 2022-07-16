@@ -136,7 +136,7 @@ def test_purge_outputs_numcalc_data(boundary, grid):
     tmp = TemporaryDirectory()
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
 
-    m2h.remove_outputs(join(tmp.name, "*"), boundary, grid)
+    m2h.outputs2trash(join(tmp.name, "*"), boundary, grid)
 
     for source in glob(join(tmp.name, "SHTF", "NumCalc", "source_*")):
         if boundary and grid:
@@ -161,7 +161,7 @@ def test_purge_outputs_output_data(boundary_compressed, hrtf, vtk, reports):
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
     folder = join(tmp.name, "SHTF", "Output2HRTF")
 
-    m2h.remove_outputs(join(tmp.name, "*"),
+    m2h.outputs2trash(join(tmp.name, "*"),
                        boundary_compressed=boundary_compressed,
                        hrtf=hrtf, vtk=vtk, reports=reports)
 
