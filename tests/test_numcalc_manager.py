@@ -52,7 +52,7 @@ def test_defaults(mode):
         # run as script
         script_path = os.path.join(cwd, "..", "mesh2hrtf", "NumCalc")
         subprocess.run([
-            (f'python numcalc_manager.py --project_path {temp.name} '
+            (f'python run_numcalc_manager.py --project_path {temp.name} '
              f'--numcalc_path {numcalc} --wait_time 0 --confirm_errors False')
             ],
              cwd=script_path, check=True, shell=True)

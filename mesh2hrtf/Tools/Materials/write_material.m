@@ -1,12 +1,12 @@
-function writeBoundaryCondition(filename, kind, frequencies, data, comment)
-% WRITEBOUNDARYCONDITION(filename, kind, frequencies, data, comment)
-% 
+function write_material(filename, kind, frequencies, data, comment)
+% write_material(filename, kind, frequencies, data, comment)
+%
 % Write boundary condition to file.
 % Mesh2HRTF supports non-rigid boundary conditions in the form of text
 % files. Such files can be written with this function.
-% 
+%
 % INPUT:
-% 
+%
 % filename ... Name of the material file that is written to disk. Must end with ".csv"
 % kind ....... Defines the kind of boundary condition
 %         pressure
@@ -26,7 +26,7 @@ function writeBoundaryCondition(filename, kind, frequencies, data, comment)
 % data .......... The values of the boundary condition at the frequencies given above.
 % comment ....... A comment that is written to the beginning of the material file.
 %                 The default ``None`` does omit the comment.
-% 
+%
 % Mesh2HRTF performs an interpolation in case the boundary condition is
 % required at frequencies that are not specified. The interpolation is linear
 % between the lowest and highest provided frequency and uses the nearest

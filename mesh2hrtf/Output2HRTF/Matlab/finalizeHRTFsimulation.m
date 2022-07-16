@@ -9,7 +9,7 @@ function finalizeHRTFsimulation(varargin)
 %  D - 3 inputs .... merge 2 projects specified in input 1 and 2 and save to folder in input 3
 %
 %  MODE A - no inputs = scan start folder for 2 projects to merge,
-%                       + usually executes "Output2HRTF.m" to run full pre-processing in one go.
+%                       + usually executes "output2hrtf.m" to run full pre-processing in one go.
 %   run this .m file from a dedicated folder (for example use folder "Finalize_HRTF_simulation")
 %   Move into the "Finalize_HRTF_simulation" folder exactly the 2 project folders that need to be merged.
 %   run this "finalizeHRTFsimulation.m" with Matlab.
@@ -196,33 +196,41 @@ else
 end
 
 for ii = 1:2
-    % run Output2HRTF script in project folder
+    % run output2hrtf script in project folder
     cd(folder_names{ii})
     if isfolder(fullfile(folder_names{ii}, 'Output2HRTF')) && ~isempty(dir(fullfile(folder_names{ii}, 'Output2HRTF', '*.sofa')))
         warning(['There are already SOFA files in ', fullfile(folder_names{ii}, 'Output2HRTF'), ...
             '. If you want to overwrite them, please delete the .sofa files and rerun finalizeHRTFsimulation.m']);
     else
-        disp(['Running Output2HRTF in folder ', folder_names{ii}, ' ...']);
-        Output2HRTF;
+        disp(['Running output2hrtf in folder ', folder_names{ii}, ' ...']);
+        output2hrtf;
     end
     % determine left and right ear data
     % source position along interaural axis. Positive = left, negative = right
     disp(['Determine L/R ear of project ', folder_names{ii}, ' ...']);
-    output2hrtf_text = fileread('Output2HRTF.m');
-    [~, endIdx] = regexp(output2hrtf_text, '(sourceType = )');
-    switch output2hrtf_text(endIdx+2)
-        case 'L'
+    
+    params = fullfile(folder_names{ii}, 'parameters.json');
+    fid = fopen(params);
+    params = fread(fid,inf);
+    params = char(params');
+    fclose(fid);
+    params = jsondecode(params);
+    
+    switch params.sourceType
+        case 'Left ear'
             sofa_file_L = folder_names{ii};
             sofa_files_tmp = dir(fullfile(folder_names{ii}, 'Output2HRTF', '*.sofa'));
             for jj = 1:numel(sofa_files_tmp)
                 sofa_files_L{jj} = fullfile(sofa_files_tmp(jj).folder, sofa_files_tmp(jj).name);
             end
-        case 'R'
+        case 'Right ear'
             sofa_file_R = folder_names{ii};
             sofa_files_tmp = dir(fullfile(folder_names{ii}, 'Output2HRTF', '*.sofa'));
             for jj = 1:numel(sofa_files_tmp)
                 sofa_files_R{jj} = fullfile(sofa_files_tmp(jj).folder, sofa_files_tmp(jj).name);
             end
+        otherwise
+            error('This function only works for sourceTypes Left ear and Right ear')
     end
 end
 clear ii

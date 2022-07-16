@@ -33,12 +33,12 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
     # process outputs
     savedir = None if not savedir else join(tmp.name, "output")
     if not generate_error:
-        m2h.outputs_to_hrtfs(join(tmp.name, "*"))
+        m2h.outputs2hrtfs(join(tmp.name, "*"))
     else:
         match = ("Detected issues in NumCalc output. Check report files in "
                  ".*\n.*HRTF")
         with pytest.raises(ValueError, match=match):
-            m2h.outputs_to_hrtfs(join(tmp.name, "*"), savedir=savedir)
+            m2h.outputs2hrtfs(join(tmp.name, "*"), savedir=savedir)
 
     # check output directories (only if not moved to savedir)
     if not savedir:
@@ -97,7 +97,7 @@ def test_outputs_to_hrtfs_full():
     shutil.copytree(join(tmp.name, "left"), join(tmp.name, "right"))
 
     # process outputs
-    m2h.outputs_to_hrtfs(
+    m2h.outputs2hrtfs(
         (join(tmp.name, "left", "*"), join(tmp.name, "right", "*")),
         merge=True, inspect=True, pattern="HRIR",
         savedir=join(tmp.name, "output"))
@@ -136,7 +136,7 @@ def test_purge_outputs_numcalc_data(boundary, grid):
     tmp = TemporaryDirectory()
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
 
-    m2h.remove_outputs(join(tmp.name, "*"), boundary, grid)
+    m2h.outputs2trash(join(tmp.name, "*"), boundary, grid)
 
     for source in glob(join(tmp.name, "SHTF", "NumCalc", "source_*")):
         if boundary and grid:
@@ -161,9 +161,9 @@ def test_purge_outputs_output_data(boundary_compressed, hrtf, vtk, reports):
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
     folder = join(tmp.name, "SHTF", "Output2HRTF")
 
-    m2h.remove_outputs(join(tmp.name, "*"),
-                       boundary_compressed=boundary_compressed,
-                       hrtf=hrtf, vtk=vtk, reports=reports)
+    m2h.outputs2trash(join(tmp.name, "*"),
+                      boundary_compressed=boundary_compressed,
+                      hrtf=hrtf, vtk=vtk, reports=reports)
 
     assert os.path.isfile(join(folder, "ObjectMesh_Reference.npz")) == \
         (not boundary_compressed)

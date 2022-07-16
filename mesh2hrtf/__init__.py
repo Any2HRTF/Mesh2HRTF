@@ -1,12 +1,12 @@
-from .Output2HRTF.Python.output_to_hrtf import (
-    output_to_hrtf,
+from .Output2HRTF.Python.output2hrtf import (
+    output2hrtf,
     reference_hrtf,
     compute_hrir,
-    project_report)
+    write_output_report)
 
-from .Output2HRTF.Python.outputs_to_hrtfs import (
-    outputs_to_hrtfs,
-    remove_outputs)
+from .Output2HRTF.Python.outputs2hrtfs import (
+    outputs2hrtfs,
+    outputs2trash)
 
 from .Output2HRTF.Python.utils import (
     inspect_sofa_files,
@@ -14,23 +14,23 @@ from .Output2HRTF.Python.utils import (
     write_evaluation_grid,
     read_evaluation_grid,
     read_ram_estimates,
-    export_to_vtk,
-    write_boundary_condition)
+    output2vtk,
+    write_material)
 
 from .Output2HRTF.Python.numcalc import numcalc_manager
 
 __all__ = [
-    'output_to_hrtf',
-    'outputs_to_hrtfs',
-    'remove_outputs',
+    'output2hrtf',
+    'outputs2hrtfs',
+    'outputs2trash',
     'reference_hrtf',
     'compute_hrir',
     'inspect_sofa_files',
     'merge_sofa_files',
-    'project_report',
+    'write_output_report',
     'write_evaluation_grid',
     'read_evaluation_grid',
     'read_ram_estimates',
-    'export_to_vtk',
-    'write_boundary_condition',
+    'output2vtk',
+    'write_material',
     'numcalc_manager']

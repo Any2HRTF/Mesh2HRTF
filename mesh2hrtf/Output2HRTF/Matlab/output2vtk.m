@@ -1,5 +1,5 @@
-function Output2VTK(path)
-%   []=EvalTools_export2VTK(path)
+function output2vtk(path)
+%   []=output2vtk(path)
 %   exports data to VTK file for visualization in Paraview
 %
 %   Input:
@@ -16,7 +16,7 @@ if ~exist(fullfile(path, 'Output2HRTF', 'ObjectMesh_vtk'),'dir')
     mkdir(fullfile(path, 'Output2HRTF', 'ObjectMesh_vtk'))
 end
 
-% load data struct created by Output2HRTF.m
+% load data struct created by output2hrtf.m
 load(fullfile(path, 'Output2HRTF', 'ObjectMesh_Reference.mat'), 'elements', 'nodes', 'element_data')
 nodes = nodes(:,2:end);
 elements = elements(:,2:end);
@@ -50,14 +50,14 @@ for ii=1:size(data,2)
     fprintf(file,'%i %i %i %i\n',transpose([size(elements,2)*ones(size(elements,1),1) elements]));
 
     fprintf(file,'\n');
-	
+
 	if size(data,1)==size(nodes,1)
     	fprintf(file,['POINT_DATA ' num2str(size(data,1)) '\n']);
 	end
 	if size(data,1)==size(elements,1)
 		fprintf(file,['CELL_DATA ' num2str(size(data,1)) '\n']);
 	end
-    	
+
     if size(data,3)>1
         fprintf(file,['SCALARS ' datatype '_l float 1\n']);
         fprintf(file,'LOOKUP_TABLE default\n');

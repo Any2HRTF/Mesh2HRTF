@@ -20,9 +20,9 @@ data_sofa = os.path.join(cwd, 'resources', 'SOFA_files')
 @pytest.mark.parametrize("num_sources", ([1], [2]))
 def test_output_two_hrtf_and_Output2HRTF(num_sources):
     """
-    Run output_to_hrtf to do a round trip test:
+    Run output2hrtf to do a round trip test:
 
-    - does output_to_hrtf run without errors for projects with 1 and 2
+    - does output2hrtf run without errors for projects with 1 and 2
       sources
     - are the report_source_*.csv files written correctly (2 sources only)
     - are the SOFA files written correctly (2 sources only)
@@ -47,8 +47,8 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
         with open(os.path.join(tmp_shtf, "parameters.json"), "w") as f:
             json.dump(params, f, indent=4)
 
-    # run output_to_hrtf
-    m2h.output_to_hrtf(tmp_shtf)
+    # run output2hrtf
+    m2h.output2hrtf(tmp_shtf)
 
     if num_sources == 1:
         return
@@ -241,7 +241,7 @@ def test_project_report(folders, issue, errors, nots):
                         os.path.join(tmp.name, "NumCalc", f"source_{ff + 1}"))
 
     # run the project report
-    issues, report = m2h.project_report(tmp.name)
+    issues, report = m2h.write_output_report(tmp.name)
 
     # test the output
     assert issues is issue
@@ -329,7 +329,7 @@ def test_export_to_vtk(frequency_steps, dB):
     shutil.copytree(data_shtf, cwd)
 
     # export to vtk
-    m2h.export_to_vtk(cwd, frequency_steps=frequency_steps, dB=dB)
+    m2h.output2vtk(cwd, frequency_steps=frequency_steps, dB=dB)
 
     # check results
     if frequency_steps is None:

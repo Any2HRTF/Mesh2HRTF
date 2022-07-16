@@ -1,4 +1,4 @@
-function Output2HRTF(folder)
+function output2hrtf(folder)
 %   [] = OUTPUT2HRTF_MAIN(folder)
 %
 %   Process NumCalc output and write data to disk. All parameters are read
@@ -29,6 +29,9 @@ params = fread(fid,inf);
 params = char(params');
 fclose(fid);
 params = jsondecode(params);
+if all(size(params.sourceCenter) == [3 1])
+    params.sourceCenter = params.sourceCenter';
+end
 
 fprintf('Load meta data ...\n');
 
@@ -95,27 +98,27 @@ for ii = 1:params.numSources
     % read from .out files according to latest calculation
     if NC_all_flag && ~NC_single_flag % only NC.out exists
         % read computation time
-        tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+        tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
         computationTime{ii}=[computationTime{ii}; tmp];
     elseif NC_single_flag && ~NC_all_flag % only NC*.out exist
         % read single files
         for jj = 1:length(NC_single_idx)
             % read computation time
-            tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+            tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
                 num2str(ii), filesep, boundaryElements(NC_single_idx(jj)).name]);
             computationTime{ii}=[computationTime{ii}; tmp];
         end
     elseif (NC_all_flag && NC_single_flag) && any(NC_all_date < NC_single_date) % both exist, at least one NC*.out exists whose frequencies replace the ones in NC.out
         % start with NC.out ...
-        tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+        tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
         computationTime{ii}=[computationTime{ii}; tmp];
         % ... then read single files that are newer than NC.out
         for jj = 1:length(NC_single_idx)
             if NC_all_date < NC_single_date(jj)
                 % read computation time
-                tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+                tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
                     num2str(ii), filesep, boundaryElements(NC_single_idx(jj)).name]);
                 computationTime{ii}(tmp(:,1),:) = tmp; % replace data only for current frequencies
             end
@@ -123,7 +126,7 @@ for ii = 1:params.numSources
     elseif (NC_all_flag && NC_single_flag) && all(NC_all_date > NC_single_date) % both exist, NC.out newest file
         % same as only NC.out exists
         % read computation time
-        tmp=Output2HRTF_ReadComputationTime([folder, filesep, 'NumCalc', filesep, 'source_', ...
+        tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
     else % what possible case is this?
         error('This case is not yet implemented. Please open an issue at the project page: https://github.com/Any2HRTF/Mesh2HRTF/issues');
@@ -213,13 +216,13 @@ if params.reference
     % this might be a parameter in the function call
     refMode = 1;    % 1: reference to only one radius (the smallest found)
     % 2: reference to all indivudal radii
-    
+
     for ii = 1:numel(evaluationGrids)
-        
+
         xyz = evaluationGrids(ii).nodes;
         pressure = evaluationGrids(ii).pressure;
         freqMatrix = repmat(frequencies, [1 size(pressure,2) size(pressure,3)]);
-        
+
         % distance of source positions from the origin
         if refMode == 1
             r = min(sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2));
@@ -228,38 +231,38 @@ if params.reference
             r = sqrt(xyz(:,2).^2 + xyz(:,3).^2 + xyz(:,4).^2);
             r = repmat(r', [size(pressure,1) 1 size(pressure, 3)]);
         end
-        
+
         if strcmp(params.sourceType, 'Left ear') || ...
                 strcmp(params.sourceType, 'Right ear') || ...
                 strcmp(params.sourceType, 'Both ears')
-            
+
             volumeFlow = .1 * ones(size(pressure));
             if isfield(params, params.sourceArea)
                 for jj = 1:numel(params.sourceArea)
                     volumeFlow(:,:,jj) = volumeFlow(:,:,jj) * params.sourceArea(jj);
                 end
             end
-            
+
             % point source in the origin evaluated at r
             % eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
             ps   = -1j * params.densityOfMedium * 2*pi*freqMatrix .* volumeFlow ./ (4*pi) .* ...
                 exp(1j * 2*pi*freqMatrix/params.speedOfSound .* r) ./ r;
-            
+
         elseif strcmp(params.sourceType, 'Point source')
-            
+
             amplitude = .1; % hard coded in Mesh2HRTF
             ps = amplitude * exp(1j * 2*pi*freqMatrix/params.speedOfSound .*r) ./ (4 * pi * r);
-            
+
         elseif strcmp(params.sourceType, 'Plane wave')
             error('Referencing for plane wave source type not yet implemented.\n');
         else
             error('Referencing is currently only implemented for sourceType ''vibratingElement'' and ''pointSource''.\n')
         end
-        
+
         evaluationGrids(ii).pressure = pressure ./ ps;
-        
+
     end
-    
+
     clear r freqMatrix ps ii jj
 end
 
@@ -268,9 +271,9 @@ fprintf('Saving complex pressure to SOFA file ...\n')
 SOFAstart;
 
 for ii = 1:numel(evaluationGrids)
-    
+
     xyz = evaluationGrids(ii).nodes;
-    
+
     % check if .sofa file already exists
     filename = fullfile('Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']);
     if exist(filename, 'file')
@@ -285,7 +288,7 @@ for ii = 1:numel(evaluationGrids)
             error('Invalid input. Output2HRTF aborted.\n');
         end
     end
-    
+
     % get SOFA template according to number of sources
     if params.numSources == 2
         Obj = SOFAgetConventions('SimpleFreeFieldHRTF');
@@ -293,12 +296,12 @@ for ii = 1:numel(evaluationGrids)
         % Save as GeneralTF
         Obj = SOFAgetConventions('GeneralTF');
     end
-    
+
     % pressure has size N (frequencies) x M (measurements) x R (sources)
     pressure = evaluationGrids(ii).pressure;
     % get dimenson 3 explicitly, because it would be dropped if R=1
     NMR = [size(pressure, 1), size(pressure, 2), size(pressure, 3)];
-    
+
     % shift dimensions to MRN as expected by SOFA
     % (shifting loses leading and trailing dimensons of size 1)
     pressure = shiftdim(pressure, 1);
@@ -324,7 +327,7 @@ for ii = 1:numel(evaluationGrids)
     Obj.ReceiverPosition=params.sourceCenter;
     Obj.ReceiverPosition_Type='cartesian';
     Obj.ReceiverPosition_Units='metre';
-    
+
     Obj=SOFAupdateDimensions(Obj);
     SOFAsave(fullfile(folder, 'Output2HRTF', ['HRTF_' evaluationGrids(ii).name '.sofa']),Obj);
     fprintf(['HRTF_' evaluationGrids(ii).name '.sofa saved!\n']);
@@ -336,20 +339,20 @@ clear Obj ii xyz pressure prompt replace_Obj
 %% Save time data data as SOFA file
 if params.computeHRIRs
     fprintf('Saving HRIR data to SOFA file ...\n')
-    for ii = 1:numel(evaluationGrids)        
+    for ii = 1:numel(evaluationGrids)
         % check if the frequency vector has the correct format
         if any(abs(diff(frequencies,2)) > .1) || frequencies(1) < .1
             error('The frequency vector must start at a frequency > 0.1 and continue in equidistant steps to the end.\n')
         end
-        
+
         % check if reference exists
         if ~params.reference
             error('HRIRs can only be computed if refernce=true\n')
         end
-        
+
         xyz = evaluationGrids(ii).nodes;
         pressure = evaluationGrids(ii).pressure;
-        
+
         % check if .sofa file already exists
         filename = fullfile('Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']);
         if exist(filename, 'file')
@@ -365,7 +368,7 @@ if params.computeHRIRs
             end
         end
         clear prompt
-        
+
 %         prompt = ['The default sampling frequency is twice the highest occuring frequency. ', ...
 %             'In this case fs = ', num2str(2*frequencies(end)), '. \n', ...
 %             'Do you want to specify a different sampling frequency? [y/n]\n'];
@@ -385,7 +388,7 @@ if params.computeHRIRs
 %         else
 %             error('Invalid input. Writing HRIR to SOFA object aborted.\n');
 %         end
-        
+
         fs = 2*frequencies(end);
 
         % add 0 Hz bin
@@ -397,23 +400,23 @@ if params.computeHRIRs
         pressure = [pressure; flipud(conj(pressure(2:end-1,:,:)))];
         % ifft (take complex conjugate because sign conventions differ)
         hrir = ifft(conj(pressure), 'symmetric');
-        
+
         % shift 30 cm to make causal
         % (path differences between the origin and the ear are usually
         % smaller than 30 cm but numerical HRIRs show stringer pre-ringing)
         n_shift = round(.30 / (1/fs * params.speedOfSound));
         hrir = circshift(hrir, n_shift);
-        
+
         % hrir has size N (samples) x M (measurements) x R (sources)
         % get dimenson 3 explicitly, because it would be dropped if R=1
         NMR = [size(hrir, 1), size(hrir, 2), size(hrir, 3)];
-        
+
         % shift dimensions to MRN as expected by SOFA
         % (shifting loses leading and trailing dimensons of size 1)
         hrir = shiftdim(hrir, 1);
         % force dimensions of 1
         hrir = reshape(hrir, NMR(2), NMR(3), NMR(1));
-        
+
         % get SOFA template according to number of sources
         if params.numSources == 2
             Obj = SOFAgetConventions('SimpleFreeFieldHRIR');
@@ -425,11 +428,11 @@ if params.computeHRIRs
         Obj.GLOBAL_ApplicationName = 'Mesh2HRTF';
         Obj.GLOBAL_ApplicationVersion = params.Mesh2HRTF_Version;
         Obj.GLOBAL_History = 'numerically calculated data';
-        
+
         Obj.Data.IR=hrir;
         Obj.Data.SamplingRate=fs;
         Obj.Data.Delay=zeros(1, size(hrir, 2));
-        
+
         Obj.ListenerPosition = [0 0 0];
         Obj.SourcePosition=xyz(:,2:4);
         Obj.SourcePosition_Type='cartesian';
@@ -437,7 +440,7 @@ if params.computeHRIRs
         Obj.ReceiverPosition=params.sourceCenter;
         Obj.ReceiverPosition_Type='cartesian';
         Obj.ReceiverPosition_Units='metre';
-        
+
         Obj=SOFAupdateDimensions(Obj);
         SOFAsave(fullfile(folder, 'Output2HRTF', ['HRIR_' evaluationGrids(ii).name '.sofa']),Obj);
         fprintf(['HRIR_' evaluationGrids(ii).name '.sofa saved!\n']);
@@ -453,7 +456,7 @@ end % end of main function ------------------------------------------------
 
 function data = Output2HRTF_Load(foldername,filename, numFrequencies)
 %   data = OUTPUT2HRTF_LOAD(foldername,filename)
-%   
+%
 %   Loads results of the BEM-HRTF calculation from the NumCalc folder.
 %
 %   Input:
@@ -489,74 +492,6 @@ for ii=1:numFrequencies
         data(ii,:)=transpose(tmpData.data(:,2)+1i*tmpData.data(:,3));
     else
         data(ii,:)      = NaN;
-    end
-end
-
-end %of function
-
-
-function data = Output2HRTF_ReadComputationTime(filename)
-%   [] = Output2HRTF_ReadBEMPerformance(filename)
-%
-%   Reads computation time data from NC.out file.
-%
-%   Input:
-%       filename ... read computation time from NC.out (output file from NumCalc)
-%
-%   Output:
-%       data ....... computation time in seconds, with columns:
-%                    'Frequency index', 'Frequency', 'Building', 'Solving',
-%                    'Postprocessing', 'Total', 'relative error', 'iterations',
-%                    'maximum number of iterations reached' (1 = yes, 0 = no)
-
-fid=fopen(filename);
-count=0;
-while ~feof(fid)
-    line=fgets(fid);
-    if strfind(line,'Frequency')
-        count=count+1;
-        idx1=strfind(line,'Step');
-        idx2=strfind(line,'Frequency');
-        data(count,1)=sscanf(line(idx1+4:idx2-1),'%d');
-        idx2=strfind(line,'=');
-        data(count,2)=sscanf(line(idx2+1:end),'%d');
-    end
-    if strfind(line,'Assembling the equation system  ')
-        idx=strfind(line,':');
-        data(count,3)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line,'Solving the equation system  ')
-        idx=strfind(line,':');
-        data(count,4)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line,'Post processing  ')
-        idx=strfind(line,':');
-        data(count,5)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line,'Total  ')
-        idx=strfind(line,':');
-        data(count,6)=sscanf(line(idx+1:end),'%d');
-    end
-    if strfind(line, 'relative error')
-        [~, endIdx] = regexp(line, '(relative error = )');
-        data(count,7)=sscanf(line(endIdx+1:end-1), '%f');
-    end
-    if contains(line, 'iterations') && ~contains(line, 'Warning')
-        [startIdx, endIdx] = regexp(line, '(number of iterations = )\S+[,]');
-        data(count,8) = sscanf(line(startIdx+23:endIdx-1), '%d');
-        data(count,9) = sscanf('0', '%d');
-    end
-%     if ~isempty(regexp(line, '^\d+\s\d+'))
-%         [idx1, idx2] = regexp(line, '\s');
-%         data(count,7) = sscanf(line(idx2+1:end-1), '%f');
-%         data(count,8) = sscanf(line(1:idx1-1), '%d');
-%         data(count,9) = sscanf('0', '%d');
-%     end
-    if strfind(line, 'Warning: Maximum number of iterations')
-        data(count,9) = sscanf('1', '%d');
-    end
-    if strfind(line,'Address computation ')
-        break
     end
 end
 

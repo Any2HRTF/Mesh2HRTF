@@ -5,8 +5,8 @@ import mesh2hrtf as m2h
 from . import utils
 
 
-def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
-                     plot=None, plane="horizontal", atol=.1, savedir=None):
+def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
+                  plot=None, plane="horizontal", atol=.1, savedir=None):
     """
     Process NumCalc outputs from multiple projects and write data to disk.
 
@@ -14,9 +14,9 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
     offers to merge and plot the results in one call:
 
     1.
-        Run :py:func:`~mesh2hrtf.output_to_hrtf` in folders specified by
+        Run :py:func:`~mesh2hrtf.output2hrtf` in folders specified by
         `paths`. This also calls
-        :py:func:`~mesh2hrtf.project_report`,
+        :py:func:`~mesh2hrtf.write_output_report`,
         :py:func:`~mesh2hrtf.reference_hrtf`, and
         :py:func:`~mesh2hrtf.compute_hrir`.
     2.
@@ -109,8 +109,8 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
             print((f"{name} (path {pp+1}/{len(paths)}, "
                    f"folder {ff+1}/{len(folders)})"))
 
-            # run output_to_hrtf
-            m2h.output_to_hrtf(folder)
+            # run output2hrtf
+            m2h.output2hrtf(folder)
 
             # track issues
             if os.path.isfile(os.path.join(
@@ -195,9 +195,9 @@ def outputs_to_hrtfs(paths, merge=False, inspect=False, pattern=None,
     return
 
 
-def remove_outputs(paths, boundary=False, grid=False,
-                   boundary_compressed=False, hrtf=False, vtk=False,
-                   reports=False):
+def outputs2trash(paths, boundary=False, grid=False,
+                  boundary_compressed=False, hrtf=False, vtk=False,
+                  reports=False):
     """
     Remove output data from Mesh2HRTF project folder.
 
@@ -226,7 +226,7 @@ def remove_outputs(paths, boundary=False, grid=False,
         Remove HRTFs saved in SOFA files saved in
         `project_folder/Output2HRTF/HRTF_*.sofa`.
     vtk : bool, optional
-        Remove vtk exports generated with :py:func:`~mesh2hrtf.export_to_vtk`
+        Remove vtk exports generated with :py:func:`~mesh2hrtf.output2vtk`
         and saved in `project_folder/Output2HRTF/*_vtk`.
     reports : bool, optional
         Remove project reports saved in `project_folder/Output2HRTF/report_*`.

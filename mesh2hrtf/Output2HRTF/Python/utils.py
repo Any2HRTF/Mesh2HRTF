@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import sofar as sf
 import pyfar as pf
-from .output_to_hrtf import _read_nodes_and_elements
+from .output2hrtf import _read_nodes_and_elements
 
 
 def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
@@ -340,8 +340,8 @@ def read_evaluation_grid(name, show=False):
     return coordinates
 
 
-def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
-                  dB=True, log_prefix=20, log_reference=1):
+def output2vtk(folder=None, object_mesh=None, frequency_steps=None,
+               dB=True, log_prefix=20, log_reference=1):
     """
     Export pressure on the (head) mesh to vtk files for importing in ParaView
 
@@ -385,7 +385,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
         del data
     else:
         raise ValueError((f"{object_name} does not exist. "
-                          "Run output_to_hrtf to create it"))
+                          "Run output2hrtf to create it"))
 
     # convert pressure to dB
     if dB:
@@ -465,7 +465,7 @@ def export_to_vtk(folder=None, object_mesh=None, frequency_steps=None,
             f.write(vtk + pressure_txt)
 
 
-def write_boundary_condition(filename, kind, frequencies, data, comment=None):
+def write_material(filename, kind, frequencies, data, comment=None):
     """
     Write boundary condition to file.
 
