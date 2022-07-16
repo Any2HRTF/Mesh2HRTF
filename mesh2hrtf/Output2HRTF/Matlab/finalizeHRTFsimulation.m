@@ -208,21 +208,29 @@ for ii = 1:2
     % determine left and right ear data
     % source position along interaural axis. Positive = left, negative = right
     disp(['Determine L/R ear of project ', folder_names{ii}, ' ...']);
-    output2hrtf_text = fileread('Output2HRTF.m');
-    [~, endIdx] = regexp(output2hrtf_text, '(sourceType = )');
-    switch output2hrtf_text(endIdx+2)
-        case 'L'
+    
+    params = fullfile(folder_names{ii}, 'parameters.json');
+    fid = fopen(params);
+    params = fread(fid,inf);
+    params = char(params');
+    fclose(fid);
+    params = jsondecode(params);
+    
+    switch params.sourceType
+        case 'Left ear'
             sofa_file_L = folder_names{ii};
             sofa_files_tmp = dir(fullfile(folder_names{ii}, 'Output2HRTF', '*.sofa'));
             for jj = 1:numel(sofa_files_tmp)
                 sofa_files_L{jj} = fullfile(sofa_files_tmp(jj).folder, sofa_files_tmp(jj).name);
             end
-        case 'R'
+        case 'Right ear'
             sofa_file_R = folder_names{ii};
             sofa_files_tmp = dir(fullfile(folder_names{ii}, 'Output2HRTF', '*.sofa'));
             for jj = 1:numel(sofa_files_tmp)
                 sofa_files_R{jj} = fullfile(sofa_files_tmp(jj).folder, sofa_files_tmp(jj).name);
             end
+        otherwise
+            error('This function only works for sourceTypes Left ear and Right ear')
     end
 end
 clear ii

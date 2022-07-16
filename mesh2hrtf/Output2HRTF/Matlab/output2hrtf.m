@@ -29,6 +29,9 @@ params = fread(fid,inf);
 params = char(params');
 fclose(fid);
 params = jsondecode(params);
+if all(size(params.sourceCenter) == [3 1])
+    params.sourceCenter = params.sourceCenter';
+end
 
 fprintf('Load meta data ...\n');
 
