@@ -6,14 +6,14 @@ Mesh2HRTF is an open-source project aiming at providing an easy-to-use software 
 Documentation
 =============
 
+Documentation
+    https://github.com/Any2HRTF/Mesh2HRTF/wiki
+
 Installation
-    https://sourceforge.net/p/mesh2hrtf/wiki/Installation/
+    https://github.com/Any2HRTF/Mesh2HRTF/wiki/Installation
 
 General Tutorials
-    https://sourceforge.net/p/mesh2hrtf/wiki/Tutorials/
-
-Python API Documentation
-    https://mesh2hrtf.readthedocs.io
+    https://github.com/Any2HRTF/Mesh2HRTF/wiki/Tutorials
 
 Releases and Development
 ========================

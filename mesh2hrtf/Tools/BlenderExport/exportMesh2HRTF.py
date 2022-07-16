@@ -1057,7 +1057,7 @@ def _write_nc_inp(filepath1, version, title,
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
     The file format is documented at:
-    https://sourceforge.net/p/mesh2hrtf/wiki/Structure%20of%20NC.inp_0.4.0/
+    https://github.com/Any2HRTF/Mesh2HRTF/wiki/Structure_of_NC.inp
     """
 
     # check the BEM method

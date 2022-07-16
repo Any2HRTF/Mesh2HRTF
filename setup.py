@@ -31,7 +31,6 @@ test_requirements = [
 
 setup(
     author="The mesh2hrtf developers",
-    author_email='mesh2hrtf-help@lists.sourceforge.net',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
