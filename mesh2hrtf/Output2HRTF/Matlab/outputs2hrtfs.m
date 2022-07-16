@@ -116,7 +116,7 @@ for nn = 1:numel(result_dirs)
     end
 
     % skip if it does not contain output2hrtf.m
-    if ~exist(fullfile(folder, 'output2hrtf.m'), 'file')
+    if ~exist(fullfile(folder, 'parameters.json'), 'file')
         continue
     end
 
