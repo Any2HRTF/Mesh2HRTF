@@ -162,8 +162,8 @@ def test_purge_outputs_output_data(boundary_compressed, hrtf, vtk, reports):
     folder = join(tmp.name, "SHTF", "Output2HRTF")
 
     m2h.outputs2trash(join(tmp.name, "*"),
-                       boundary_compressed=boundary_compressed,
-                       hrtf=hrtf, vtk=vtk, reports=reports)
+                      boundary_compressed=boundary_compressed,
+                      hrtf=hrtf, vtk=vtk, reports=reports)
 
     assert os.path.isfile(join(folder, "ObjectMesh_Reference.npz")) == \
         (not boundary_compressed)

@@ -329,7 +329,7 @@ def test_export_to_vtk(frequency_steps, dB):
     shutil.copytree(data_shtf, cwd)
 
     # export to vtk
-    m2h.export_to_vtk(cwd, frequency_steps=frequency_steps, dB=dB)
+    m2h.output2vtk(cwd, frequency_steps=frequency_steps, dB=dB)
 
     # check results
     if frequency_steps is None:

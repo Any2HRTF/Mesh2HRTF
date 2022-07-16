@@ -1,5 +1,5 @@
-function Output2VTK(path)
-%   []=EvalTools_export2VTK(path)
+function output2vtk(path)
+%   []=output2vtk(path)
 %   exports data to VTK file for visualization in Paraview
 %
 %   Input:
