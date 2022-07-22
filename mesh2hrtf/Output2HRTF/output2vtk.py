@@ -4,9 +4,8 @@ import numpy as np
 from .output2hrtf import _read_nodes_and_elements
 
 
-def output2vtk(folder=None, object=None, mode="magnitude",
-               frequency_steps=None, source=None,
-               dB=True, log_prefix=20, log_reference=1, unwrap_phase=False):
+def output2vtk(folder=None, object=None, frequency_steps=None,
+               dB=True, log_prefix=20, log_reference=1):
     """
     Export pressure on the (head) mesh to vtk files for importing in ParaView
 
