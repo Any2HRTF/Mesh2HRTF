@@ -1,57 +1,43 @@
-function ncdata2vtk(name,datatype,rootdir,datadir1, ...
-                                  meshdir, evaldir)
+function ncdata2vtk(name,datatype,fstep,rootdir,datadir, filename)
 % exports data from NumCalc results to vtk files for display with paraview
-%
-% we have to distinguish between two types of data
-% a) data on the scatterer. For that the values for the BEM nodes are
-% set by interpolating the data of all elements containing this
-% node. Alternatively one could use Cell_DATA entry to display the
-% constant data on each element, lets call this version elementwise =
-% 1, default is elementwise = 0, but for large meshes this may take
-% lot of time
-
-% b) Evalnodes. This time the value is given on the specific node, and
-%    we can use POINT_DATA
-%
-% Warning: This script assumed that the information about nodes is
-%          given in the file Nodes.txt,
-%         information about elements is given in Elements.txt
-%
-% Additional Warning: It is assumed that there are no jumps and holes
-%    in the nodenumbering and the elementnumbering for bem and eval
-%    mesh, thus nojumps = 1
-%
-% In the future, we will generalize these names and set them as input 
-  
-% input: 
-%   name: Name of the vtk file(s) to be produced
-%   datatype: type of data to be presented
+% 
+%% input: 
+%   name: string: Name of the vtk file(s) to be produced
+%            the outputfiles will be in ascii format and named
+%                      <name>_boundary_<frequencystep>.vtk
+%                      <name>_eval_<frequencystep>.vtk 
+%   datatype: integer: type of data to be presented
 %       0    pressure boundary
 %       1    part. velocity boundary
 %       2    pressure evalgrid
-%       3    part. velocity evalgrid
+%       3    part. velocity evalgrid (not implemented yet)
 %       4    pressure everywhere (default)
-%       5    part. velocity everywhere
-%       6    display all 
-%   rootdir: name of the root directory containing the be.out file,
+%       5    part. velocity everywhere (not implemented yet)
+%       6    display all (not implemented yet)
+%   fstep:   integer vector: numbers of the frequencysteps of interest,
+%            default all steps in datadir: fstep = 0
+%   rootdir: string. name of the root directory containing the be.out file,
 %        default the current directory
-%   datadir: name of the directory containing the data: default
+%   datadir: string. name of the directory containing the data: default
 %            be.out
-%   meshdir: directory that contains the mesh data. Default 
-%            rootdir/../../ObjectMeshes/Reference/
-%   evaldir: directory that contains the mesh data of the
-%            evalgrid. Default: rootdir/../../EvaluationGrids/3_ARI/
-%    
+%   inpfile: strin. name of the input file, containing the mesh data: default
+%            NC.inp
 % the data will be stored in the vtk file as Amplitude and Phase values
 %
-% written by Wolfgang Kreuzer, if you have any questions, suggestions 
+% written by kreiza, if you have any questions, suggestions 
 %   send me an email, depending on my workload I will try to reply
 %   in time: wolfgang.kreuzer@oeaw.ac.at
 %
-% if you start this script in the CPU_*_Core_* directory everything
-% should work without the need for input parameter, (see below for
-% the default input parameters)
 %
+%  The script should work with Octave as well as Matlab, however
+%  Matlab is a pain in the ass, because
+%    a) drmwrite is not encouraged by mathworks
+%    b) their alternative writematrix does not know how to append to a
+%    file in the 2019 version of matlab
+%    c) fprintf was also relatively slow
+%
+%   FYI: We stil use the drmwrite option
+%    
 %
 %   This script is distributed in the hope that it will be useful,              
 %   but WITHOUT ANY WARRANTY; without even the implied warranty of            
@@ -68,781 +54,856 @@ function ncdata2vtk(name,datatype,rootdir,datadir1, ...
 %   basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 %   express or implied. See the Licence for the specific language
 %   governing permissions and limitations under the Licence.
-  
-if(nargin < 4) 
-  datadir1 = 'be.out';
-  if(nargin < 3)
-    rootdir = '.';
-    if(nargin < 2)
-      datatype = 4;   
-      if(nargin < 1)
-        name = 'output';
+
+  if(nargin < 6)
+    filename = "NC.inp";
+    if(nargin < 5) 
+      datadir = 'be.out';
+      if(nargin < 4)
+        rootdir = '.';
+	if(nargin < 3)
+	  fstep = 0;
+          if(nargin < 2)
+            datatype = 4;   
+            if(nargin < 1)
+              name = 'output';
+            end
+          end
+	end
       end
     end
   end
-end
-%%
-% information about the geometry, these are the default blender export locations
-%%
-if(nargin < 6) 
-  evaldir = sprintf('%s/../../EvaluationGrids/3_ARI', ...
-                    rootdir);
-  if(nargin < 5)
-    meshdir = sprintf('%s/../../ObjectMeshes/Reference', ...
-                      rootdir);
-  end
-end
 
-isoctave = is_octave();
-nojumps = 1;
-elementwise = 1;
 
-if ( (datatype < 2) )
-  evaldir = [];
-end
-%% check consistency between datatype and evalname, no need to
-% try to find values for the evaluation grid if no evaluation grid is
-% given
-if( isempty(evaldir) && (datatype > 1) )
-    datatype = 1;
-end
-
-if( isempty(meshdir) && (datatype < 2 || datatype > 3) )
-    datatype = 3;
-end
-
-%% read the grid data of the scatterer, only one scattererfile is assumed
-if(~isempty(meshdir))
-  filename = sprintf('%s/Nodes.txt', ...
-                     meshdir);
-  fh = fopen(filename,'r');
-  if(fh == -1)
-    error('Sorry cannot open the objects node file');
-  end
   
-  nodes = dlmread(filename);  % matlab cannot read fh, octave can
-  nnodes = nodes(1,1);    % first entry should be the number of
-                          % nodes
-  nodes(1,:) = [];
-  fclose(fh);
-				%  read the elements
-  filename = sprintf('%s/Elements.txt', ...
-                     meshdir);
-   % I wish it would be as easy as above, but NumCalc allows us
-   % the use of triangles and quadrilaterals, so we may have different
-   % numbers of columns for different elements and filling those up
-   % with 0s may lead to wrong results, which means we have to
-   % parse the file, see read_elements
-  fh = fopen(filename,'r');
-  if(fh == -1)
-    error('Sorry cannot open the objects element file');
+  if( ismember(datatype,[5,6]) )
+    error("Sorry not implemented yet");
   end
-  if( isoctave )
-    %% importdata works like a charm here for octave,
-    % however for MATLAB you're out of luck and need the slow path
-    Elems = importdata(filename);
-    Elems(1,:) = []; % first line contains the number of elements
-    if( columns(Elems) == 7 )
-      Elem3 = Elems(:,1:4);
-      Elem4 = [];
-    else
-      e3 = find (isnan (Elems(:,8) ) );
-      if(~isempty(e3))
-	Elem3 = Elems(e3,1:4);
-	Elem(e3,:) = [];
-      end
-      Elem4 = Elem(:,1:5);
+  ifp = 0;
+  ifp = fopen(filename,'r');
+  if(ifp < 0)
+    error(sprintf("Sorry could not open %s\n",filename));
+  end
+
+  nodes = [];
+
+  inpline = [];
+  while ~strncmp(inpline,"NODES",5);
+    inpline = fgets(ifp);
+  end 
+  %% the next line should be either a comment or a filename
+  filename = strtrim(fgets(ifp)); % to get rid of leading and
+                                  % trailing whitespaces
+  while ~strncmp(filename,"ELEMENTS",4)
+    if(filename(1)~="#")
+      %% not comment thus, a real line
+      %% since the nodes have all the same columns,
+      %% importdata also works with matlab
+      %% the 1 gets rid of the first entry in the file, which is the
+      %% number of nodes in the file
+
+      % lets assume that there is a trailing whitespace, and get rid of that
+      % I haven't found a way to check if there is one
+      N = importdata(filename,' ',1);
+      N = N.data;
+      nodes = [nodes;N(1:end,:)];
     end
-  else
-    [Elem3,Elem4] = read_elements(fh); % triagles and quadrilaterals
-  end
+    filename = strtrim(fgets(ifp));
+  end			       % there may be more then one node files
 
-else
-  Elem3 = []; Elem4 = []; nodes = []; nnodes = 0;
-end
-
-
-% Do the same with the Evalgrid
-if(~isempty(evaldir))
-  filename = sprintf('%s/Nodes.txt', evaldir);
-  fh = fopen(filename,'r');
-  if(fh == -1)
-    error('Sorry cannot open the objects node file');
-  end
+  [nnodes,~] = size(nodes);
   
-  enodes = dlmread(filename); % matlab can only read filenames
-                              % not handles
-  ennodes = enodes(1,1);    % first entry should be the number of
-                            % nodes
-  enodes(1,:) = [];
-  fclose(fh);
-  
-  
-  filename = sprintf('%s/Elements.txt', evaldir);
-  fh = fopen(filename,'r');
-  if(fh == -1)
-    error('Sorry cannot open the objects element file');
-  end
-
-  if(isoctave)
-    EElems = importdata(filename);
-    EElems(1,:) = [];
-    if(columns(EElems) == 7)
-      EElem3 = EElems(:,1:4);
-      EElem4 = [];
-    else
-      e3 = find (isnan (EElems(:,8) ) );
-      if(~isempty(e3))
-	EElem3 = EElems(e3,1:4);
-	EElems(e3,:) = [];
+  E = [];
+  Elem3 = [];
+  Elem4 = [];
+  %% do the same thing as above
+  filename = strtrim(fgets(ifp));
+  while(~strncmp(filename,"BOUNDARY",5))
+    if(filename(1)~="#")
+      if is_octave()
+	Elems = importdata(filename,' ',1);
+	Elems = Elems.data;
       else
-	EElem3 = [];
+	Elems = readmatrix(filename);
       end
-      EElem4 = EElems(:,1:5);
     end
+    
+    [~,j] = size(Elems); 
+    if( j == 7 )
+      %% we have only triangles, hurray
+      Elem3 = [Elem3;Elems];
+    else
+      %% so we have a combination of quadrilaterals and triangles, or
+      %% just quadrilaterals
+      i = find(isnan(Elems(:,end)));
+      if(isempty(i))
+	%% only quadrilaterals
+	Elem4 = [Elem4;Elems];
+      else
+	Elem3 = [Elem3;Elems(i,1:7)];
+	Elems(i,:) = [];
+	Elem4 = [Elem4;Elems];
+      end
+    end
+    filename = strtrim(fgets(ifp));
+  end
+
+  disp("Read Geometry");
+
+%% find out if there are evalelements
+  if( isempty( Elem3 ) )
+    EElem3 = [];
   else
-    [EElem3,EElem4] = read_elements(fh);
+    i = find( Elem3(:,5) == 2 );
+    if(~isempty(i))
+      EElem3 = Elem3(i,:);
+      Elem3(i,:) = [];
+    else
+      EElem3 = [];
+    end
   end
-  fclose(fh);
-else
-  EElem3 = []; EElem4 = []; ennodes = 0; enodes = [];
-end
 
-% NumCalc would allow the nodes not to be ordered and to start with
-% an index different to 0 (which is used for the evaluation grid)
-% theoretically NumCalc would also allow to have jumps in the
-% indices (as it has been used for the nodes between eval and
-% object boundary), however, index jumps of eval nodes or boundary
-% nodes will not be considered here as a possibility, which means
-% that the results for meshes with index jumps will be diplayed incorrectly
-%
-% In case of jumps (which may be given, if you build up your mesh
-% in different parts) the script needs to be extended, or
-% even better NumCalc should be rewritten, to produce a better
-% output file, if one would want to extend the script one possible
-% way would be to compare the ordered indices with [1:nnodes] and
-% if jumps are detected change Elem* accordingly, a second option
-% would be a find and replace routine that replaces the index of
-% the node with its actual position in the ordered list, but a bit
-% of care has to be taken here, because you would not want the
-% overwrite already changed nodes
-% please remember, if you use all the mesh2hrtf routines
-% starting from a blender mesh, this should all be *no problem*,
-% everything is as it should be, however if you use your own
-% created input files, you may want to be careful
-%
-% Things to do for the future: From the NumCalc side it would not
-% be necessary to have the nodes order, because they can be
-% identified via its node index, however this has not been
-% considered here, it would make things a bit difficult for the vtk file
+  if( isempty( Elem4 ) )
+  EElem4 = [];
+  else
+    i = find( Elem4(:,6) == 2 );
+    if(~isempty(i))
+      EElem4 = Elem4(i,:);
+      Elem4(i,:) = [];
+    else
+      EElem4 = [];
+    end
+  end
+
+  
+  
+% check consistency between datatype and evalname
+%if( isempty(evaldir) && (datatype > 1) )
+%    datatype = 1;
+%end
+
+%% clean up the elements and the mesh
+%% problem is, that NumCalc allows jumps in the element numbers
+%% vtk does not
 
 
-% nodes in vtk files do not have explicit node numbers and are
-% assumed to be sorted and starting with 0 
+  
 
-if(nnodes > 0)   % there are nodes for the scatterer
-  [nodenum, order] = sort(nodes(:,1));
-  nodes = nodes(order,2:4);
-  if( size(Elem3,1) > 0)
-    Elem3 = Elem3(:,1:4);
-    Elem3(:,2:4) = Elem3(:,2:4) - nodenum(1);     %% vtk starts with 0 
+
+  if( isempty(EElem3) && isempty(EElem4) && (datatype > 1) )
+    datatype = 1;
   end
   
-  if( size(Elem4,1) > 0)
-    Elem4 = Elem4(:,1:5);
-    Elem4(:,2:5) = Elem4(:,2:5) - nodenum(1);     %% vtk starts with 0 
+  if( isempty(Elem3) && isempty(Elem4) && (datatype < 2 || datatype > 3) )
+    datatype = 3;
   end
-end
 
-%%do the same for the evalgrid, now the nodes definitely do not
-%%start with 0
+  %% lets see what data we have in the first place
+  [fnames] = dir( sprintf('%s/%s/be.*',rootdir,datadir) );
+  nf = length( fnames );
+  fstep0 = sscanf([fnames.name],"be.%d");
+    
+  if(fstep == 0)
+    %% works under linux,
+    %% windows user may have to adapt this part
+    fstep = fstep0;
+  else
+    fstep = intersect(fstep,fstep0);
+  end
 
-if(ennodes > 0)
-  [nodenum, order] = sort(enodes(:,1));
-  enodes = enodes(order,2:4);
   
-  if(size(EElem3,1) > 0)
-    EElem3 = EElem3(:,1:4);
-    EElem3(:,2:4) = EElem3(:,2:4) - nodenum(1);     %% vtk starts with 0 
-  end
   
-  if(size(EElem4,1) > 0)
-    EElem4 = EElem4(:,1:5);
-    EElem4(:,2:5) = EElem4(:,2:5) - nodenum(1);     %% vtk starts with 0 
+  printpb = 0;
+  printpe = 0;
+  printvb = 0;
+  printve = 0;
+  pB = [];
+  pE = [];
+  vB = [];
+  vE = [];
+  %%
+  %% checkout which nodes are eval nodes and which aren't
+  %%
+  
+  nnr = nodes(:,1);
+  evalnodes=[];
+
+  if(~isempty(EElem3))
+    i = ismember(nnr,EElem3(:,2:4));
+  else
+    i = [];
   end
-end
+  if(~isempty(i))
+    evalnodes = nodes(i,:);
+    nodes(i,:) = [];
+  end
+  if( ~isempty(EElem4))
+    i = ismember(nnr,EElem4(:,2:5));
+  else
+    i = [];
+  end
+  if(~isempty(i))
+    evalnodes = [evalnodes;nodes(i,:)];
+    nodes(i,:) = [];
+  end
+  % nodes should contain only bemnodes now
 
-% get the number of the frequency steps
-% if you know the relation between frequency and frequency step you
-% can create a time filter in paraview for displaying the right
-% frequency, just a remark
+  Elem = [];
+  EElem = [];
+  % we will use export_vtk thus triangles are assumed to have -1 in
+  % the last column
+  if(~isempty(Elem3))
+    Elem = Elem3(:,1:4);
+  end
+  if(~isempty(Elem4))
+    if(~isempty(Elem))
+      Elem(:,5) = -1;
+    end
+    Elem = [Elem;Elem4(:,1:5)];
+  end
+  Elem(:,1) = []; % get rid of the elemnumber
 
-% nf = length(ls(sprintf('%s/be.out',rootdir))); works only in
-% octave
-nf = length( dir( sprintf('%s/%s',rootdir,datadir1) ) ) - 2;
+  if(~isempty(EElem3))
+    EElem = EElem3(:,1:4);
+  end
+  if(~isempty(EElem4))
+    if(~isempty(EElem))
+      EElem(:,5) = -1;
+    end
+    EElem = [EElem;EElem4(:,1:5)];
+  end
+  EElem(:,1) = [];
 
 
-printpb = 0;
-printpe = 0;
-printvb = 0;
-printve = 0;
-pB = [];
-pE = [];
-vB = [];
-vE = [];
+  %% in theory there could be jumps in the node and element numbers
+  %% for the results of numcalc this is not a problem, however, for
+  %% the vtk geometry this could become a problem
+  nn = find(diff(nodes(:,1)) - 1);
+
+  if ~isempty(nn)
+    for n = nn,
+      delta = nodes(n+1,1) - n+1;
+      [i,j] = find(Elem3 > nodes(n,1)); % n is coorect
+      Elem3(i,j) = Elem3(i,j) - delta;
+      [i,j] = find(Elem4 > nodes(n,1));
+      Elem4(i,j) = Elem4(i,j) - delta;
+    end
+  end
+  %% the same for the eval
+  nn = find(diff(evalnodes(:,1)) - 1);
+  if ~isempty(nn)
+    for n = nn,
+      delta = evalnodes(n+1,1) - n+1;
+      [i,j] = find(EElem3 > evalnodes(n,1)); % n is coorect
+      EElem3(i,j) = EElem3(i,j) - delta;
+      [i,j] = find(EElem4 > evalnodes(n,1));
+      EElem4(i,j) = EElem4(i,j) - delta;
+    end
+  end
+
+  % we do not need the nodenumbers anymore now
+  evalnodes(:,1) = [];
+  nodes(:,1) = [];
+
+
+  
 %
 % we look at the data for all frequency steps so one can make an
 % animation out of the data, if you want things just for one
 % specific frequency you'll need to change nf below
 %
-for i = 1:nf,
-  if( ismember(datatype,[0,4,6]) )  
-    %% read the pressure data at the boundary
-    filename = sprintf('%s/%s/be.%d/pBoundary',rootdir, ...
-                       datadir1, i);
-    %% now that is a bit spooky because of the string in file
-    % but it seems to work, however just on octave
-    %pB = dlmread(filename);
-    %pB(1:3,:) = [];
-    printpb = 1;
-    %% should work in both matlab and octave
-    % throw away the first 3 lines
-    
-    D = importdata(filename, ' ', 3);
-    pB = D.data;
-    pB(:,2) = pB(:,2) + pB(:,3)*1.0i;
-    pB(:,3) = [];
-    
-    %% please NOTE: It is assumed that the Elements are ordered
-    % and have no index jumps
-  end
-  if( ismember(datatype,[2,4,6]) )
-    %% read the pressure data at the eval Grid
-    filename = sprintf('%s/%s/be.%d/pEvalGrid',rootdir, ...
-                       datadir1, i);
-    %%        pE = dlmread(filename2);
-    %pE(1:3,:) = [];
-    %pE(:,2) = pE(:,2) + pE(:,3)*1.0i;
-    %pE(:,3) = [];
-    D = importdata(filename, ' ', 3);
-    pE = D.data;
-    pE(:,2) = pE(:,2) + pE(:,3)*1.0i;
-    pE(:,3) = [];
-    printpe = 1;
-  end
-  if( ismember(datatype, [1,5,6]) )
-    %% read the velocity at the boundary
-    filename = sprintf('%s/%s/be.%d/vBoundary',rootdir, ...
-                       datadir1, i);
-    %%vB = dlmread(filename3);
-    D = importdata(filename, ' ', 3);
-    vB = D.data;
-    %%vB(1:3,:) = [];
-    vB(:,2) = vB(:,2) + vB(:,3)*1.0i;
-    vB(:,3) = [];
-    printvb = 1;
-	
-  end
-  if( ismember(datatype, [3,5,6]) )
-    %% read the velocity at the eval grid
-    filename = sprintf('%s/%s/be.%d/vEvalGrid',rootdir, ...
-                       datadir1, i);
-    D = importdata(filename, ' ', 3);
-    vE = D.data;
-  
-    %% this should ba a matix n times 7
-    vE(:,2) = vE(:,2) + 1.0i*vE(:,3);
-    vE(:,3) = vE(:,4) + 1.0i*vE(:,5);
-    vE(:,4) = vE(:,6) + 1.0i*vE(:,7);
-    vE(:,7) = [];
-    vE(:,6) = [];
-    vE(:,5) = [];
-    printve = 1;
-  end
-    
-% the value at the boundary is given at the collocations nodes which is the
-% midpoint of each element, however in order to get a smoother
-% graph we decided to assign a value to each nodes of the grid
-% if you do not like the idea, just reformulate the vtk file
-% with cell data instead of point data, this should work too
-  if(printpb && ~elementwise) 
-    pBound = zeros(nnodes,1);
-  end
-  if(printvb && ~elementwise) 
-    vBound = zeros(nnodes,1);
-  end
-  
-  if( ~elementwise ) % get the values at the BEM nodes by interpolation
-    for j = 1:nnodes,
-      if( ~isempty(Elem3) )
-			     % find the elements that contain the node
-	[n31,n32] = find( j-1 == Elem3(:,2:4) );
-      else
-	n31 = 0;
-      end
-      
-      if( ~isempty(Elem4) )
-	[n41,n42] = find( j-1 == Elem4(:,2:5) );
-      else
-	n41 = 0;
-      end
-      n = length(n41) + length(n31);
-      if( n31 )
-	if(printpb)
-          %% take the mean value of all elements ==
-          % collocation nodes containing the vertex
-          % 
-          % the index juggling may seem a bit unnecessary
-          % right now, but remember, it is possible to have
-          % jumps in the node numbers and element numbers so
-          % this can be helpful if the script will be
-         % extended for that case, howevert that takes a long time for
-	 % large meshes, thus assume nojumps and do it faster
-	  if(nojumps)
-	    pBound(j) = mean( pB(n31,2) );
-	  else
-            for j1 = 1:length(n31),
-              pBound(j) = pBound(j) + pB( find( pB(:,1) == Elem3(n31(j1),1) ...
-                                              ), 2);
-            end
-	  end
-	end
-	%% particle velocity on the boundary
-	if(printvb)
-	  if( nojumps )
-	    vBound(j) = mean( vb(n31,2) );
-	  else
-            for j1 = 1:length(n31),
-              vBound(j) = vBound(j) + vB( find( vB(:,1) == Elem3(n31(j1),1) ...
-                                              ), 2);
-            end
-          end
-	end
-      end
-      %% quadrilaterals
-      if( n41 )
-        if(printpb)
-	  if( nojumps )
-	    pBound(j) = mean( pB(n41,2) );
-	  else
-            for j1 = 1: length(n41),
-              pBound(j) = pBound(j) + pB( find( pB(:,1) == Elem4(n41(j1),1) ...
-                                              ), 2);
-            end
-          end
-	end
-        if(printvb)
-	  if( nojumps )
-	    vBound(j) = mean ( vB(n41,2) );
-	  else
-            for j1 = 1:length(n41),
-              vBound(j) = vBound(j) + vB( find( vB(:,1) == Elem4(n41(j1),1) ...
-                                              ), 2);
-            end
-          end 
-        end
-      end
-      if(printpb) % use the average over all elements containing
-		  % this node
-        pBound(j) = pBound(j) / n;
-      end
-      if(printvb)
-        vBound(j) = vBound(j) / n;
-      end
-    end % loop nodes
-  end % if elementwise
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%          write the vtk-files
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
-  filename = sprintf('%s_bound_%d.vtk', name, i);
-
-
-  %% in case of elementwise == 1
-  % pB, vB, pE, and vE contain number in column 1
-  % and the respective complex value in the rest of the columns
-  if(printpb + printvb == 2)
-    if( elementwise )
-      writefile(filename, 0, nodes, Elem3, Elem4, pB, vB);
-    else
-      writefile(filename, 0, nodes, Elem3, Elem4, pBound, vBound);
+  disp("Starting Frequency Loop");
+  for istep0 = 1:length(fstep),
+    istep = fstep(istep0);
+    if( ismember(datatype,[0,4,6]) )  
+      %% read the pressure data at the boundary
+      filename = sprintf('%s/%s/be.%d/pBoundary',rootdir, ...
+                         datadir, istep);
+      printpb = 1;
+      %% should work in both matlab and octave
+      % throw away the first 3 lines
+      % the first column should be the element number
+      D = importdata(filename, ' ', 3);
+      pB = D.data;
+      pB(:,2) = pB(:,2) + pB(:,3)*1.0i;
+      pB(:,3) = [];
+            % please NOTE: It is assumed that the Elements are ordered
+            % and have no index jumps
     end
-  else
+    if( ismember(datatype,[2,4,6]) )
+      %% read the pressure data at the eval Grid
+      filename = sprintf('%s/%s/be.%d/pEvalGrid',rootdir, ...
+                         datadir, istep);
+      
+      D = importdata(filename, ' ', 3);
+      pE = D.data;
+      pE(:,2) = pE(:,2) + pE(:,3)*1.0i;
+      pE(:,3) = [];
+      printpe = 1;
+    end
+    if( ismember(datatype, [1,5,6]) )
+      %% read the velocity at the boundary
+      filename = sprintf('%s/%s/be.%d/vBoundary',rootdir, ...
+                         datadir, istep);
+      D = importdata(filename, ' ', 3);
+      vB = D.data;
+      vB(:,2) = vB(:,2) + vB(:,3)*1.0i;
+      printvb = 1;
+
+    end
+    if( ismember(datatype, [5,6]) )
+        %% read the velocity at the eval grid
+        filename = sprintf('%s/%s/be.%d/vEvalGrid',rootdir, ...
+                            datadir, istep);
+        D = importdata(filename, ' ', 3);
+        vE = D.data;
+        vE(:,2) = vE(:,2) + 1.0i*vE(:,3);
+        vE(:,3) = [];
+        printve = 1;
+    end
+    
+    % the value at the boundary is given at the collocations nodes which is the
+    % midpoint of each element, however in order to get a smoother
+    % graph we decided to assign a value to each nodes of the grid
+    % if you do not like the idea, just reformulate the vtk file
+    % with cell data instead of point data, this should work too
+    %  if(printpb)
+    %      pBound = zeros(nnodes,1);
+    %  end
+    %  if(printvb) 
+    %      vBound = zeros(nnodes,1);
+    %  end
+    %   
+    %nnodes = rows(nodes);
+    %% this is some old code snipped, that takes some time, however
+    %% if you want to have a smooth graph, that works with nodal
+    %% values instead of constant elements, the lines should work
+    %% however, currently we use CELL structures to display the
+    %% constant elements
+   %    disp("Get the values for the BEM nodes")
+   %    % for paraview the nodes need to have the value not the elements
+   %    for j = 1:nnodes,
+   %      if( ~isempty(Elem3) )
+   %            % find the elements that contain the nodenumber
+   %        [n31,n32] = find( nodes(j,1)  == Elem3(:,2:4) );
+   %     	    % n31 contains the rownumbers of Elem3 that contain node j
+   %      else
+   %        n31 = 0;
+   %      end
+   %      
+   %      if( ~isempty(Elem4) )
+   %        [n41,n42] = find( nodes(j,1) == Elem4(:,2:5) );
+   %      else
+   %        n41 = 0;
+   %      end
+   %      n = length(n41) + length(n31);
+   %      
+   %      if( n31 )
+   %        if(printpb)
+   %                    % take the mean value of all elements ==
+   %                    % collocation nodes containing the vertex
+   %                    % 
+   %                    % the index juggling may seem a bit unnecessary
+   %                    % right now, but remember, it is possible to have
+   %                    % jumps in the node numbers and element numbers so
+   %                    % this can be helpful if the script will be
+   %                    % extended for that case
+   %          for j1 = 1:length(n31),
+   %            pBound(j) = pBound(j) + pB( find( pB(:,1) == Elem3(n31(j1),1) ...
+   %                                            ), 2);
+   %          end
+   %        end
+   %        if(printvb)
+   %          for j1 = 1:length(n31),
+   %            vBound(j) = vBound(j) + vB( find( vB(:,1) == Elem3(n31(j1),1) ...
+   %                                            ), 2);
+   %          end
+   %        end 
+   %      end
+   %      if( n41 )
+   %        if(printpb)
+   %          for j1 = 1: length(n41),
+   %            pBound(j) = pBound(j) + pB( find( pB(:,1) == Elem4(n41(j1),1) ...
+   %                                            ), 2);
+   %          end
+   %        end
+   %        if(printvb)
+   %          for j1 = 1:length(n41),
+   %            vBound(j) = vBound(j) + vB( find( vB(:,1) == Elem4(n41(j1),1) ...
+   %                                            ), 2);
+   %          end
+   %        end 
+   %        
+   %      end
+   %      if(printpb)
+   %        pBound(j) = pBound(j) / n;
+   %      end
+   %      if(printvb)
+   %        vBound(j) = vBound(j) / n;
+   %      end
+   %    end
+    
+        
+%%% put everything together in one file for now, think about the
+%%% rest later
+
+   %   if(!isempty(pE))
+   %     pBound(pE(:,1)) = pE(:,2);
+   %   end
+
+    disp("Data is read")
+    %% just a temporary solution, sooner or later we may want
+    %% to distinguish between eval and bem
+    %Elem3 = [Elem3;EElem3];
+    %Elem4 = [Elem4;EElem4];
+    
+    %% velocity won't work this way, because it may be a vector
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %          write the vtk-files
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+    %% if you are lazy like me, there is a chance that nodes also
+    %% contains evaluation nodes, just saying
+    filename = sprintf('%s_bound_%d.vtk', name, istep);
     if(printpb)
-      if( elementwise )
-	writefile(filename, 0, nodes, Elem3, Elem4, pB);
-      else
-	writefile(filename, 0, nodes, Elem3, Elem4, pBound);
-      end
+      pB = pB(:,2);
+      i = find( pB == 0 );
+      pB = 20 * log10(abs(pB)/2.0e-5);
+      pB(i) = -500;
+      export_vtk(nodes,Elem,filename,pB);
     end
     if(printvb)
-      if( elementwise )
-	writefile(filename, 1, nodes, Elem3, Elem4, vB);
-      else
-	writefile(filename, 1, nodes, Elem3, Elem4, vBound);
-      end
+      vB = vB(:,2);
+      i = find( vB == 0);
+      vB = 20 * log10(abs(vB)/5.0e-8);
+      vB(i) = -500;
+      export_vtk(nodes,Elem,filename,vB);
     end
-  end
+    filename = sprintf('%s_eval_%d.vtk', name, istep);
+    
 
-  
- %   if(~isempty(pE))
- %     pE(:,1) = [];
- %   end
- %   if(~isempty(vE))
- %     vE(:,1) = [];
- %   end
-  
-  filename = sprintf('%s_eval_%d.vtk', name, i);
-
-  if(printpe + printve == 2)
-    writefile(filename, 2, enodes, EElem3, EElem4, pE, vE);
-  else
     if(printpe)
-      writefile(filename, 2, enodes, EElem3, EElem4, pE);
+      pE = pE(:,2);
+      i = find( pE == 0 );
+      pE = 20 * log10(abs(pE)/2.0e-5);
+      pE(i) = -500;
+      export_vtk(evalnodes,EElem,filename,pE);
     end
-    if(printve)
-      writefile(filename, 3, enodes, EElem3, EElem4, vE);
-    end
-  end
-end  % loop over freqsteps
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%                 Function writefile
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function writefile(filename, datatype, N, E3, E4, data1, data2)    
-%
-% write the mesh data and the values at the mesh nodes to a vtk file
-% 
-% input: filename  : name of the output file
-%        datatype  : what should be shown
-%                    0 .... pressure (and velocity) boundary
-%                    1 .... velocity boundary
-%                    2 .... pressure (and velocity) eval
-%                    3 .... velocity eval
-%        N         : list of nodes (matrix nx3)
-%        E3        : list of all triangular elements (matrix mx3)
-%        E4        : list of all quadrilateral elements (matrix mx4)
-%        data1     : vector containing the comlex pressure or the
-%                    complex velocity
-%        data2     : optional data vector if both pressure and
-%                    velocity shall be displayed, can only be the
-%                    velocity
-%
-% One of the problems is that the velocity on the evaluation grid has
-% three components, we have to take care of that
-%
-% also there are two different kind of data1 types
-% 1) data1 contains the data on the nodes of BE and Evalelem
-%    in this case the first columns of data1 (and data2) already
-%    contains the value
-% 2) data1 contains the data on the collocation nodes, i.e. the
-%    midpoints of the elements: in this case data1 (and data2)
-%    contains the indexnumber of the element in the first columns
-% In the first case no ordering is necessary, that has already been
-% done when taking the mean value. In the second case we have to split
-% between triangular and quadrilateral elements
-if(nargin < 7)
-    data2 = [];
-end
-% E3 and E4 still contain the indices of the elements
-% get rid of them
-
-
-
-if(~isempty(E3))
-  i3 = E3(:,1);
-  E3(:,1) = [];
-else
-  i3 = [];
-end
-if(~isempty(E4))
-  i4 = E4(:,1);
-  E4(:,1) = [];
-else
-  i4 = [];
-end
-
-nnodes = size(N,1);
-
-fh = fopen(filename,'w');
-if (fh == -1) 
-    error('Sorry cound not open the output file.')
-end
-%
-%  write the header
-%
-fprintf(fh, '# vtk DataFile Version 3.0\n');
-fprintf(fh, 'Generated by data2vtk\n');
-fprintf(fh, 'ASCII\n');
-%    fprintf(fh, '\n');
-fprintf(fh, 'DATASET POLYDATA\n');
-fprintf(fh, 'POINTS %d double\n',nnodes);
-fprintf(fh, '%e %e %e\n', N');
-%
-%  write the triangle geo data
-%
-
-fprintf(fh, 'POLYGONS %d %d\n',size(E3,1)+size(E4,1), ...
-        size(E3,1)*4+size(E4,1)*5);
-
-if(size(E3,1) > 0)
-    fprintf(fh, '3 %d %d %d\n', E3');
-end
-%
-% write 4-sided geometry
-%
-if(size(E4,1) > 0)
-    fprintf(fh, '4 %d %d %d %d\n', E4');
-end
-%%%%%%%
-%
-%  geometry is written, lets think about the data we have
-%
-%%%%%%%%
-
-if( size(N,1) == size(data1,1) )
-  %
-  % write point data, this could either be the mean value over the
-  % boundary elements or data from the evaluationgrid
-  %
-  fprintf(fh, 'POINT_DATA %d\n', size(N,1) );
-  if (datatype == 0) 
-    fprintf(fh, 'SCALARS Abs(BEM_Pressure)_(dB) double\n');
-    data = 20*log10(abs(data1)/2e-5);
-    theta = angle(data1);
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', data);
-				%
-    fprintf(fh, 'SCALARS Phase(BEM_Pressure) double \n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta);
-  end
-
-  if(datatype == 1)
-    fprintf(fh, 'SCALARS Abs(BEM_Velocity) double\n');
-    data = abs(data1);
-    theta = angle(data1);
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', data);
-    fprintf(fh, 'SCALARS Phase(BEM_Velocity) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta);
-  end
-
-  if(datatype == 2)
-    fprintf(fh, 'SCALARS Abs(Eval_Pressure)_(dB) double\n');
-    data = 20*log10(abs(data1(:,2)/2e-5));
-    theta = angle(data1(:,2));
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', data);
-    fprintf(fh, 'SCALARS Phase(Eval_Pressure) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta);
-  end
-
-  if(datatype == 3)
-    data(:,1:3) = abs(data1(:,2:4));
-    theta(:,1:3) = angle(data1(:,2:4));
-    fprintf(fh, 'SCALARS Abs(Eval_V_x) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', data(:,1));
-    fprintf(fh, 'SCALARS Phase(Eval_V_x) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta(:,1));
-				%
-    fprintf(fh, 'SCALARS Abs(Eval_V_y) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', data(:,2));
-    fprintf(fh, 'SCALARS Phase(Eval_V_y) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta(:,2));
-				%
-    fprintf(fh, 'SCALARS Abs(Eval_V_z) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', data(:,3));
-    fprintf(fh, 'SCALARS Phase(Eval_V_z) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta(:,3));
-  end
-  %
-
-  %
-
-else
-  %% so we have data for the elements, split between triangles + quadril
-  %
-  % do the triangles first
-  i = ismember( data1(:,1) , i3);
-  j3 = find( i == 1 );
-  j4 = find( i == 0 );
-  % there may be a slight problem when we look at the particle
-  % velocity at the evalgrid, because there are three components
-
-  c = data1(j3,2:end);
-  c = [c;data1(j4,2:end)];
-
-  fprintf(fh, 'Cell_DATA %d\n', length(c));
-  [~,i] = size(c);
-%  if( i > 1 )   % we have a velocity
-%    theta = angle(c(:,1) + 1.0i*c(:,2));
-%    keyboard
-%  else
-  theta = angle(c);
-%  end
-%    if ( (datatype == 2) )
-%      %% velocity data
-%      if( i > 1 )
-%        fprintf(fh, 'SCALARS Eval_Abs(v_x) double 1\n');
-%        fprintf(fh, 'LOOKUP_TABLE default\n');
-%        fprintf(fh, '%e\n', abs(c(:,1)));
-%   				%
-%        fprintf(fh, 'SCALARS Eval_Abs(v_y) double 1\n');
-%        fprintf(fh, 'LOOKUP_TABLE default\n');
-%        fprintf(fh, '%e \n', abs(c(:,2)));
-%   				%	      
-%        fprintf(fh, 'SCALARS Eval_Abs(v_z) double 1\n');
-%        fprintf(fh, 'LOOKUP_TABLE default\n');
-%        fprintf(fh, '%e \n', abs(c(:,3)));
+%      if(printpb + printvb == 2)
+%          writefile(filename, nodes, Elem3, Elem4, pBound, vBound);
 %      else
-%        fprintf(fh, 'SCALARS Eval_Abs(v) double 1\n');
-%        fprintf(fh, 'LOOKUP_TABLE default\n');
-%        fprintf(fh, '%e\n',abs(c));
+%          if(printpb)
+%              writefile(filename, nodes, Elem3, Elem4, pBound);
+%          end
+%          if(printvb)
+%              writefile(filename, nodes, Elem3, Elem4, vBound);
+%          end
+%      end
+%      
+%      if(~isempty(pE))
+%          pE(:,1) = [];
+%      end
+%      if(~isempty(vE))
+%          vE(:,1) = [];
+%      end
+%      filename = sprintf('%s_eval_%d.vtk', name, i);
+    
+    % now there is a slight problem, because we have not defined the
+    % enodes yet, this is really lazy, we do not distinguish between
+    % eval nodes and bem nodes
+ %    enodes = nodes;
+ %    if(printpe + printve == 2)
+ %      writefile(filename, enodes, EElem3, EElem4, pE, vE);
+ %    else
+ %      if(printpe)
+ %        writefile(filename, enodes, EElem3, EElem4, pE);
+ %      end
+ %      if(printve)
+ %        writefile(filename, enodes, EElem3, EElem4, vE);
+ %      end
+ %    end
+    disp("Data is written  ");
+  end  % loop over freqsteps
+end
+
+
+%    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    %
+%    %                 Function writefile
+%    %
+%    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    function writefile(filename, N, E3, E4, data1, data2)    
+%    %
+%    % write the mesh data and the values at the mesh nodes to a vtk file
+%    % 
+%    % input: filename  : name of the output file
+%    %        N         : list of nodes (matrix nx3)
+%    %        E3        : list of all triangular elements (matrix mx3)
+%    %        E4        : list of all quadrilateral elements (matrix mx4)
+%    %        data1     : vector containing the comlex pressure or the
+%    %                    complex velocity
+%    %        data2     : optional data vector if both pressure and
+%    %                    velocity shall be displayed
+%    if(nargin < 6)
+%        data2 = [];
+%    end
+%    % E3 and E4 still contain the indices of the elements
+%    % get rid of them
+%     
+%    if(~isempty(E3))
+%        E3(:,1) = [];
+%    end
+%    if(~isempty(E4))
+%        E4(:,1) = [];
+%    end
+%     
+%    nnodes = size(N,1);
+%     
+%     
+%     
+%    %% lets do some correction of element numbers and vtk format
+%    %% N contains nodenumber and coordinates
+%    nrmin = min( N(:,1) );
+%    if(!isempty(E3))
+%      E3 = E3(:,1:3);
+%    end
+%    if(!isempty(E4))
+%      E4 = E4(:,1:4);
+%    end
+%     
+%     
+%    %% clean up E3 and E4
+%    %% this only works if nodes does not contain more nodes then the
+%    %% elements are using,
+%    %% however there still could be jumps, clean that,
+%    %% if you want to use that feature uncomment the next lines
+%    %   for i = 1:nnodes,
+%    %     [i1,i2] = find( E3 == N(i,1) );
+%    %     for j = 1:length(i1),
+%    %       E3(i1(j),i2(j)) = i - 1;
+%    %     end
+%    %     [i1,i2] = find( E4 == N(i,1) );
+%    %     for j = 1:length(i1),
+%    %       E4(i1(j),i2(j)) = i - 1;
+%    %     end
+%    %   end
+%     
+%    % lets assume that there are not jumps in the nodes, however nodes may
+%    % contain more nodenumbers than necessary for the elems
+%     
+%     
+%    dlist = [];
+%    for i = 1:nnodes,
+%      j = [];
+%      if( !isempty(E4) )
+%        j = find( N(i,1) == E4);
+%      end
+%     
+%      if( !isempty(E3) )
+%        j = find( N(i,1) == E3);
+%      end
+%     
+%      if( isempty(j) )
+%        dlist = [dlist,i];
 %      end
 %    end
-  %% this needs to be the sound pressure
-  if(datatype == 0)
-    fprintf(fh, 'SCALARS BEM_Abs(Pressure)_(db) double 1\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', 20 * log10(abs(c)/2.0e-5));
+%     
+%    % get rid of the nodes that are not used
+%    N(dlist,:) = [];
+%    nmin = min(N(:,1));
+%     
+%    nnodes = rows(N);
+%    % as I said assume, that there are no jumps
+%    if(!isempty(E3))
+%      E3 = E3 - nmin;
+%    end
+%     
+%    if(!isempty(E4))
+%      E4 = E4 - nmin;
+%    end
+%     	   
+%     
+%    N = N(:,2:4);
+%     
+%     
+%     
+%    fh = fopen(filename,'w');
+%    if (fh == -1) 
+%        error('Sorry cound not open the output file.')
+%    end
+%    %
+%    %  write the header
+%    %
+%    fprintf(fh, '# vtk DataFile Version 3.0\n');
+%    fprintf(fh, 'Generated by data2vtk\n');
+%    fprintf(fh, 'ASCII\n');
+%    %    fprintf(fh, '\n');
+%    fprintf(fh, 'DATASET POLYDATA\n');
+%    fprintf(fh, 'POINTS %d double\n',nnodes);
+%    fprintf(fh, '%e %e %e\n', N');
+%    %
+%    %  write the triangle geo data
+%    %
+%     
+%    fprintf(fh, 'POLYGONS %d %d\n',size(E3,1)+size(E4,1), ...
+%            size(E3,1)*4+size(E4,1)*5);
+%     
+%    if(size(E3,1) > 0)
+%        fprintf(fh, '3 %d %d %d\n', E3');
+%    end
+%    %
+%    % write 4-sided geometry
+%    %
+%    if(size(E4,1) > 0)
+%        fprintf(fh, '4 %d %d %d %d\n', E4');
+%    end
+%     
+%    fprintf(fh, 'POINT_DATA %d\n', size(N,1) );
+%    fprintf(fh, 'SCALARS Amplitude1(dB) double\n');
+%    fprintf(fh, 'LOOKUP_TABLE default\n');
+%     
+%    data = 20*log10(abs(data1)/2e-5);
+%    % this may happen if you use weird inputfiles
+%    i = find(data == -Inf);
+%    data(i) = -1000;
+%    fprintf(fh, '%e\n', data);
+%     
+%    fprintf(fh, 'SCALARS Phase1(rad) double\n');
+%    fprintf(fh, 'LOOKUP_TABLE default\n');
+%    data = angle(data1);
+%    fprintf(fh, '%e\n', data);
+%     
+%    if(~isempty(data2))
+%        fprintf(fh, 'SCALARS Amplitude2(dB) double\n');
+%        fprintf(fh, 'LOOKUP_TABLE default\n');
+%        i = find(abs(data2) < 1e-10);
+%        data2(i) = 1e-10;
+%        data = 20*log10(abs(data2)/2e-5);
+%        fprintf(fh, '%e\n', data);
+%     
+%        fprintf(fh, 'SCALARS Phase2(rad) double\n');
+%        fprintf(fh, 'LOOKUP_TABLE default\n');
+%        data = angle(data2);
+%        fprintf(fh, '%e\n', data);
+%    end
+%    fclose(fh);
+%     				% function end
+%     
+%     
 
-    fprintf(fh, 'SCALARS BEM_Phase(p) double 1\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta);
-    
+
+
+%   function [Elem3,Elem4] = read_elements(fh)
+%   % reads element number and element nodes from filehandle
+%   % assumes mesh2hrtf format
+%   % would be easier to use dlmread(filename,"emptyvalue",-1)
+%   nelems = str2num(fgets(fh));
+%   Elem3 = [];
+%   Elem4 = [];
+%   for j = 1:nelems
+%     str = fgets(fh);
+%     el = sscanf(str,'%f');
+%     n = length(el);
+%     if(n == 7)
+%    				% we have a triangle
+%       el = el(1:4);
+%       Elem3 = [Elem3;el'];  
+%     else
+%    				% quadrilateral
+%       el = el(1:5);
+%       Elem4 = [Elem4;el'];  
+%     end
+%   end
+
+function export_vtk(Nodes,Elems,filename,cvals)
+
+%%% Without reduced, Nodes is a matrix number nodes times 3
+% E is a matrix number of elements times 3 or 4
+% we can mix triangles and quadrilaterals, but since we need
+% a matrix, if we mix trianalges and quadrilaterals, the 4th
+% vertex for triangles is set to -1
+  if(nargin<4)
+    cvals = [];
   end
-
-  if(datatype == 1)
-    fprintf(fh, 'SCALARS Abs(V_BEM) double 1\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', abs(c));
-
-    fprintf(fh, 'SCALARS BEM_Phase(v) double 1\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta);
-  end
-				% now the quadrilaterals
-%  i = ismember( data1(:,1) , i4);
-%  j = find( i == 1 );
-%  c = data1(j,2);
-%  theta = [theta;angle(c)];
-%  fprintf(fh, '%e\n', 20 * log10(abs(c)/2.0e-5));
-	%  if( i > 1 )
-	%    fprintf(fh, 'SCALARS Phase_x double 1\n');
-	%    fprintf(fh, 'LOOKUP_TABLE default\n');
-	%    fprintf(fh, '%e\n', theta(:,1));
-	% 				%
-	%    fprintf(fh, 'SCALARS Phase_y double 1\n');
-	%    fprintf(fh, 'LOOKUP_TABLE default\n');
-	%    fprintf(fh, '%e\n', theta(:,2));
-	% 				%
-	%    fprintf(fh, 'SCALARS Phase_z double 1\n');
-	%    fprintf(fh, 'LOOKUP_TABLE default\n');
-	%    fprintf(fh, '%e\n', theta(:,3));
-	%  else
-
-
- end
-
-if(~isempty(data2))
-  % this can only be a velocity
-  if(datatype == 0)   %% BEM 
-    fprintf(fh, 'SCALARS BEM_Abs(Velo) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    i = find(abs(data2(:,2)) < 1e-10);
-    data2(i,2) = 1e-10;
-    data = abs(data2(:,2));
-    theta = angle(data2(:,2));
-    fprintf(fh, '%e\n',data);
-%
-    fprintf(fh, 'SCALARS BEM_Phase(Velo) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n',theta);
-  end
-%
-  if(datatype == 2) % eval
-    fprintf(fh, 'SCALARS Eval_Abs(v_x) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    c = abs(data2(:,2));
-    theta_x = angle(data2(:,2));
-    fprintf(fh, '%e\n', c);
-				%
-    fprintf(fh, 'SCALARS Eval_Abs(v_y) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    c = abs(data2(:,3));
-    theta_y = angle(data2(:,3));
-    fprintf(fh, '%e\n', c);
-				%     
-    fprintf(fh, 'SCALARS Eval_Abs(v_z) double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    c = abs(data2(:,4));
-    theta_z = angle(data2(:,4));
-    fprintf(fh, '%e\n', c);
-%%%%%%%%%%%%%%%%%%%%      
-    fprintf(fh, 'SCALARS Eval_Phase_x double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta_x);
-    %%
-    fprintf(fh, 'SCALARS Eval_Phase_y double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta_y);
-				%
-    fprintf(fh, 'SCALARS Eval_Phase_z double\n');
-    fprintf(fh, 'LOOKUP_TABLE default\n');
-    fprintf(fh, '%e\n', theta_z);
-  end    
-end
-fclose(fh);
-% function end
-
-
-
-
-
-function [Elem3,Elem4] = read_elements(fh)
-% This is slow and just for MATLAB users
-% reads element number and element nodes from filehandle
-% assumes mesh2hrtf format
-% there should be a faster version for MATLAB but importdata fills the
-% matrix incorrectly, and dlmread fills it with 0 which is not good
-% too
   
- 
-nelems = str2num(fgets(fh));
-Elem3 = [];
-Elem4 = [];
-for j = 1:nelems
-    str = fgets(fh);
-    el = sscanf(str,'%f');
-    n = length(el);
-    if(n == 7)
-        % we have a triangle
-        el = el(1:4);
-        Elem3 = [Elem3;el'];  
-    else
-        % quadrilateral
-        el = el(1:5);
-        Elem4 = [Elem4;el'];  
+  
+  [~,~,ngroups] = size(Nodes);
+  
+  [rN,cN] = size(Nodes(:,:,1));
+  if( rN < cN )
+    %% probably wrong format
+    for i = 1:ngroups,
+      Nodes(:,:,i) = Nodes(:,:,i)';
     end
+  end
+
+
+  
+  %% paraviews nodes start with 0, this should fix that
+  minE = min(Elems(find(Elems(:)>-1)));
+  
+  Elems = Elems - minE;
+  
+  
+  fid = fopen(filename, 'wt');
+  if (fid < 0)
+    error(sprintf("Sorry could not open file %s\n",filename));
+  end
+  fprintf(fid, "# vtk DataFile Version 3.0\n");
+  fprintf(fid, "Comment goes here\n");
+  fprintf(fid, "ASCII\n");
+  fprintf(fid, "\n");
+  fprintf(fid, "DATASET POLYDATA\n");
+  
+  [n1,n2,n3]=size(Nodes);
+  if( n1 == 3 )
+    
+    for i = 1:n3,
+	       % its a little bit tougher if we have multidim matrices
+      DNodes(:,:,i) = Nodes(:,:,i)';
+    end
+    Nodes = DNodes;
+    [n1,n2,n3]=size(Nodes);
+  end
+  
+  fprintf(fid, "POINTS   %d double\n", n3*n1);
+  
+%  for i=1:n3, 
+%    for j=1:n2,
+%      fprintf(fid,"%f %f %f\n",Nodes(1,j,i),Nodes(2,j,i),Nodes(3,j,i));
+%    end
+%  end
+
+  % fprintf is really slow in MATLAB so let's use dlmwrite, but
+  % surprise that again is not that easy in MATLAB, and additionally
+  % the internet says do not dlmwrite in matlab but writematrix
+  if is_octave()
+    dlmwrite(fid,Nodes,' ');
+  else
+    fclose(fid);
+    %works only for matlab > 2019
+    %writematrix(Nodes,filename,'Delimiter',' ','WriteMode','append');
+    % should work with older version, however it is not recommended
+    dlmwrite(filename,Nodes,'-append','Delimiter',' ');
+  end
+  
+      % see if there are possibly triangles in E that are marked by -1
+  trielems = 0;
+  [e1,e2,e3]=size(Elems);
+  
+		     % it is assumed that the nodenumber starts with 0
+		     % in nodes
+  
+  for i = 1:e3,   % maybe we have different faces
+    		  % do the triangles first
+	% there could be some hidden triangles in there where the last
+	% index is -1, remember the elem number is alread removed
+    
+    
+    [~,cE] = size(Elems(:,:,i));
+    if(cE == 4) 
+      trielems = find(Elems(:,4,i) < 0);
+    else
+      [rE,~] = size(Elems(:,:,i));
+      trielems = [1:rE];
+    end
+    
+    if(isempty(trielems))
+      trielems = 0;
+      Quads = Elems(:,:,i);
+      [quadelems,~] = size(Elems);
+    else
+      Quads = Elems(:,:,i);
+      Quads(trielems,:) = [];
+      Etri = Elems(trielems,:,i);
+      [trielems,~] = size(Etri);
+      if(isempty(Quads))
+	quadelems = 0;
+      else
+	[quadelems,~] = size(Quads);
+      end
+      [~,cE] = size(Etri);
+      if(cE == 4)
+				% get rid of the -1
+	Etri(:,4) = [];
+      end
+      
+    end
+
+    if ~is_octave()
+      fid = fopen(filename,'at');
+      if fid < 0
+	error( sprintf('Sorry could not open %s\n',filename) );
+      end
+    end
+    fprintf(fid, "POLYGONS %d %d\n", trielems + quadelems, ...
+	    4*trielems + 5*quadelems);
+    if(trielems > 0)
+      if is_octave()
+	dlmwrite(fid,[ones(trielems,1) * 3, Etri],' ');
+      else
+	dlmwrite(filename,[ones(trielems,1) * 3, Etri],'-append',...
+		 'Delimiter',' ');
+	%writematrix(filename,[ones(trielems,1) * 3, Etri],'WriteMode',
+	%	    'append');
+      end
+    end
+%    for j = 1:trielems,
+%      fprintf(fid,'3 %d %d %d \n', Etri(j,1),Etri(j,2),Etri(j,3));
+%    end
+      				%     keyboard
+    
+    
+    
+    
+    if(~isempty(Quads))
+  %	fprintf(fid, "POLYGONS %d %d\n", rows(Quads), 5*rows(Quads));
+%      [rQ,~] = size(Quads);
+%      for j = 1:rQ,
+% 	fprintf(fid,'4 %d %d %d %d\n', Quads(j,1),Quads(j,2),Quads(j,3),Quads(j,4));
+%      end
+      if is_octave()
+	dlmwrite(fid,[ones(quadelems,1)*4,Quads],' ');
+      else
+	dlmwrite(filename,[ones(quadelems,1)*4,Quads],'-append',...
+		 'Delimiter',' ');
+	%writematrix([ones(quadelems,1)*4,Quads],filename,'WriteMode',
+	%	    'append')
+      end
+    end	
+  end
+
+  
+  if(~isempty(cvals))
+     % we switched the dimension of the matrices somewhere in the code
+    if( ~is_octave() )
+      fid = fopen(filename,'at');
+      if fid < 0
+	error( sprintf("Sorry could not open %s\n",filename) );
+      end
+    end
+    [rN,~] = size(Nodes);
+    if( length(cvals) == rN )
+      %% we are good to go
+      fprintf(fid, "POINT_DATA %d\n", length(cvals));
+      text1 = sprintf('SCALARS dataset1 double\n');
+      fprintf(fid, text1);
+      fprintf(fid, 'LOOKUP_TABLE default\n');	
+      fprintf(fid, '%e\n', cvals');
+    end
+    [rE,~] = size( Elems );
+    if( length(cvals) == rE )
+      fprintf(fid, "Cell_DATA %d\n", length(cvals));
+      fprintf(fid, "SCALARS cell_scalars double 1\n");
+      fprintf(fid, "LOOKUP_TABLE default\n");
+      fprintf(fid, '%e\n', cvals');
+    end
+  end
+  fclose(fid);
 end
 
-function r = is_octave ()
-  persistent x;
-  if (isempty (x))
-    x = exist ('OCTAVE_VERSION', 'builtin');
-  end
-  r = x;
-
+function n = is_octave()
+  n = exist('OCTAVE_VERSION','builtin');
+end
