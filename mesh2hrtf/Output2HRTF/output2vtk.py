@@ -1,22 +1,24 @@
 import os
+import glob
 import numpy as np
 from .output2hrtf import _read_nodes_and_elements
 
 
-def output2vtk(folder=None, object_mesh=None, frequency_steps=None,
-               dB=True, log_prefix=20, log_reference=1):
+def output2vtk(folder=None, object=None, mode="magnitude",
+               frequency_steps=None, source=None,
+               dB=True, log_prefix=20, log_reference=1, unwrap_phase=False):
     """
     Export pressure on the (head) mesh to vtk files for importing in ParaView
 
     The exported vtk files are written to folder/Output2HRTF/Reference_vtk
-    where 'Reference' is given by `object_mesh`.
+    where 'Reference' is given by `object`.
 
     Parameters
     ----------
     folder : str, optional
         The Mesh2HRTF project folder. The default ``None`` uses the current
         folder
-    object_mesh : str, optional
+    object : str, optional
         The name of the mesh for which the pressure is exported. The default
         ``None`` selects the `Reference` mesh.
     frequency_steps : list, optional
@@ -34,12 +36,31 @@ def output2vtk(folder=None, object_mesh=None, frequency_steps=None,
     # check input data
     if folder is None:
         folder = os.getcwd()
-    if object_mesh is None:
-        object_mesh = "Reference"
+
+    if object is None:
+        object = "Reference"
+        object_type = "ObjectMeshes"
+    else:
+        object_type = None
+
+    # search object, if required
+    if object_type is None:
+
+        for obj in ["ObjectMeshes", "EvaluationGrids"]:
+            f = object in glob.glob(os.path.join(folder, obj, "*"))
+            f = [os.path.basename(f) for f in f if os.path.isdir(f)]
+            if object in f:
+                object_type = obj
+                break
+
+    if object_type is None:
+        raise ValueError(f"object '{object}' not found in {folder}")
+
+    # look up
 
     # load object mesh data
     object_name = os.path.join(
-            folder, "Output2HRTF", f"ObjectMesh_{object_mesh}.npz")
+            folder, "Output2HRTF", f"ObjectMesh_{object}.npz")
     if os.path.isfile(object_name):
         # contains: frequencies and pressure
         data = np.load(object_name, allow_pickle=False)
@@ -63,13 +84,13 @@ def output2vtk(folder=None, object_mesh=None, frequency_steps=None,
 
     # load object mesh
     grid, _ = _read_nodes_and_elements(os.path.join(folder, 'ObjectMeshes'))
-    nodes = grid[object_mesh]["nodes"]
-    elements = grid[object_mesh]["elements"]
-    num_nodes = grid[object_mesh]["num_nodes"]
+    nodes = grid[object]["nodes"]
+    elements = grid[object]["elements"]
+    num_nodes = grid[object]["num_nodes"]
     del grid
 
     # create output folder
-    savedir = os.path.join(folder, "Output2HRTF", f"{object_mesh}_vtk")
+    savedir = os.path.join(folder, "Output2HRTF", f"{object}_vtk")
     if not os.path.isdir(savedir):
         os.mkdir(savedir)
 

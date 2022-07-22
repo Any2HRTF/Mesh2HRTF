@@ -76,7 +76,7 @@ def output2hrtf(folder=None):
         os.path.join(folder, 'ObjectMeshes'))
 
     # Load ObjectMesh data
-    pressure = _read_pressure(
+    pressure, _ = _read_pressure(
         params["numSources"], params["numFrequencies"], folder, 'pBoundary')
 
     print('\nSaving ObjectMesh data ...')
@@ -105,7 +105,7 @@ def output2hrtf(folder=None):
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
 
-        pressure = _read_pressure(
+        pressure, _ = _read_pressure(
             params["numSources"], params["numFrequencies"],
             folder, 'pEvalGrid')
 
@@ -404,8 +404,9 @@ def _read_pressure(numSources, numFrequencies, folder, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
     pressure = []
 
-    if not (data == 'pBoundary' or data == 'pEvalGrid'):
-        raise ValueError('data must be pBoundary or pEvalGrid!')
+    if data not in ['pBoundary', 'pEvalGrid', 'vBoundary', 'vEvalGrid']:
+        raise ValueError(
+            'data must be pBoundary, pEvalGrid, vBoundary, or vEvalGrid')
 
     print('\n Loading %s data ...' % data)
     for source in range(numSources):
@@ -413,14 +414,14 @@ def _read_pressure(numSources, numFrequencies, folder, data):
 
         tmpFilename = os.path.join(
             folder, 'NumCalc', f'source_{source+1}', 'be.out')
-        tmpPressure = _output_to_hrtf_load(
+        tmpPressure, indices = _output_to_hrtf_load(
             tmpFilename, data, numFrequencies)
 
         pressure.append(tmpPressure)
 
     pressure = np.transpose(np.array(pressure), (2, 0, 1))
 
-    return pressure
+    return pressure, indices
 
 
 def _get_sofa_object(data, source_position, source_position_type,
@@ -521,7 +522,7 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
         vBoundary
             The sound velocity on the object mesh
         pEvalGrid
-            The sound pressure on the evaulation grid
+            The sound pressure on the evaluation grid
         vEvalGrid
             The sound velocity on the evaluation grid
     numFrequencies : int
@@ -530,26 +531,27 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
     Returns
     -------
     data : numpy array
-        Pressure or velocity values of shape (numFrequencies, numEntries)
+        Pressure or abs velocity values of shape (numFrequencies, numEntries)
     """
 
     # ---------------------check number of header and data lines---------------
-
-    idx1 = 0
-    idx2 = 0
-    ii = 0
-    with open(os.path.join(foldername, 'be.1', filename)) as file:
+    current_file = os.path.join(foldername, 'be.1', filename)
+    with open(current_file) as file:
         line = csv.reader(file, delimiter=' ', skipinitialspace=True)
-        for li in line:
-            ii += 1
-            if li not in (None, ""):
-                if len(li) == 3:
-                    idx1 = idx2
-                    idx2 = int(li[0])
-                    if idx2 - idx1 == 1:
-                        numHeaderlines_BE = ii - 2
-                        numDatalines = sum(1 for ll in line) + 2
-                        break
+        for idx, li in enumerate(line):
+            # read number of data points and head lines
+            if idx == 2:
+                if len(li) == 2:
+                    numHeaderlines = 3
+                    numDatalines = int(li[1])
+                else:
+                    raise ValueError((
+                        f"error reading {current_file}. Expected three header "
+                        "lines and the number of data points as second entry "
+                        "in the third line."))
+            # read starting index
+            if idx == 3:
+                start_index = int(li[0])
 
     # ------------------------------load data----------------------------------
     data = np.zeros((numFrequencies, numDatalines), dtype=complex)
@@ -558,11 +560,28 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
         tmpData = []
         current_file = os.path.join(foldername, 'be.%d' % (ii+1), filename)
         with open(current_file) as file:
+
             line = csv.reader(file, delimiter=' ', skipinitialspace=True)
+
             for li in line:
-                if line.line_num > numHeaderlines_BE:
+
+                if line.line_num <= numHeaderlines:
+                    continue
+
+                if filename.startswith("p"):
                     tmpData.append(complex(float(li[1]), float(li[2])))
+                elif filename == "vBoundary":
+                    tmpData.append(np.abs(complex(float(li[1]), float(li[2]))))
+                elif filename == "vEvalGrid":
+                    tmpData.append(np.sqrt(
+                        np.abs(complex(float(li[1]), float(li[2])))**2 +
+                        np.abs(complex(float(li[3]), float(li[4])))**2 +
+                        np.abs(complex(float(li[5]), float(li[6])))**2
+                        ))
 
         data[ii, :] = tmpData if tmpData else np.nan
 
-    return data
+    # make indices ------------------------------------------------------------
+    indices = np.arange(start_index, numDatalines + start_index)
+
+    return data, indices
