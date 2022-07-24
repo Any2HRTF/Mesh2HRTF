@@ -195,7 +195,7 @@ def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
 
 
 def outputs2trash(paths, boundary=False, grid=False,
-                  boundary_compressed=False, hrtf=False, vtk=False,
+                  hrtf=False, vtk=False,
                   reports=False):
     """
     Remove output data from Mesh2HRTF project folder.
@@ -217,10 +217,6 @@ def outputs2trash(paths, boundary=False, grid=False,
         Remove raw pressure and velocity simulated on the evaluation grid.This
         data is saved in
         `project_folder/NumCalc/source_*/be.out/be.*/*EvalGrid`
-    boundary_compressed : bool, optional
-        Remove compressed pressure and velocity simulated on the boundary,
-        i.e., the mesh. This data is saved in
-        `project_folder/Output2HRTF/ObjectMesh_*.npz`.
     hrtf : bool, optional
         Remove HRTFs saved in SOFA files saved in
         `project_folder/Output2HRTF/HRTF_*.sofa`.
@@ -280,9 +276,6 @@ def outputs2trash(paths, boundary=False, grid=False,
             if has_output:
                 for oo in output:
                     base = os.path.basename(oo)
-                    # remove compressed boundary data
-                    if base.endswith(".npz") and boundary_compressed:
-                        os.remove(oo)
                     # remove compressed boundary data
                     if base.startswith("HRTF_") and base.endswith(".sofa") \
                             and hrtf:

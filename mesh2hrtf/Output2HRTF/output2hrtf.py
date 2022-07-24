@@ -70,37 +70,6 @@ def output2hrtf(folder=None):
     evaluationGrids, _ = _read_nodes_and_elements(
         os.path.join(folder, 'EvaluationGrids'))
 
-    # get the object mesh
-    print('\n Loading the ObjectMeshes ...')
-    objectMeshes, _ = _read_nodes_and_elements(
-        os.path.join(folder, 'ObjectMeshes'))
-
-    # Load ObjectMesh data
-    pressure, _ = _read_numcalc_data(
-        params["numSources"], params["numFrequencies"], folder, 'pBoundary')
-
-    print('\nSaving ObjectMesh data ...')
-    cnt = 0
-    for mesh in objectMeshes:
-        elements = objectMeshes[mesh]["elements"]
-        element_data = pressure
-
-        for jj in range(pressure.shape[1]):
-            element_data[:, jj, :] = element_data[
-                cnt:cnt+elements.shape[0], jj, :]
-
-        file = open(os.path.join(
-            folder, "Output2HRTF",
-            "ObjectMesh_" + mesh + ".npz"), "w")
-        np.savez_compressed(
-            file.name, frequencies=params["frequencies"],
-            pressure=element_data)
-        file.close()
-
-        cnt = cnt + elements.shape[0]
-
-    del pressure, elements, mesh, jj, cnt, element_data
-
     # Load EvaluationGrid data
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
