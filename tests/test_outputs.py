@@ -165,7 +165,7 @@ def test_purge_outputs_output_data(hrtf, vtk, reports):
     assert os.path.isfile(join(folder, "HRTF_FourPointHorPlane_r100cm.sofa")) \
         == (not hrtf)
 
-    assert os.path.isdir(join(folder, "Reference_vtk")) \
+    assert os.path.isdir(join(folder, "vtk")) \
         == (not vtk)
 
     assert os.path.isfile(join(folder, "report_source_1.csv")) == \
