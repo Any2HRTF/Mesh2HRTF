@@ -311,10 +311,10 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
                     _print_message(
                         (f"\n... waiting for resources (checking every "
                          f"second, {current_time}):\n"
-                         f" {running_instances} NumCalc instances running | "
-                         f"   {cpu_load}% CPU load\n"
-                         f"   {round(ram_available, 2)} GB RAM available    | "
-                         f"   {round(ram_used, 2)} GB used\n"),
+                         f" {running_instances} NumCalc instances running ("
+                         f"{cpu_load}% CPU load)\n"
+                         f" {round(ram_available, 2)} GB RAM available ("
+                         f"{round(ram_used, 2)} GB used)\n"),
                         text_color_reset, log_file)
                     started_instance = False
 
