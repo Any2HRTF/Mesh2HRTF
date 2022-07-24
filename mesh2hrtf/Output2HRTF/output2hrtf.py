@@ -76,7 +76,7 @@ def output2hrtf(folder=None):
         os.path.join(folder, 'ObjectMeshes'))
 
     # Load ObjectMesh data
-    pressure, _ = _read_pressure(
+    pressure, _ = _read_numcalc_data(
         params["numSources"], params["numFrequencies"], folder, 'pBoundary')
 
     print('\nSaving ObjectMesh data ...')
@@ -105,7 +105,7 @@ def output2hrtf(folder=None):
     if not len(evaluationGrids) == 0:
         print('\nLoading data for the evaluation grids ...')
 
-        pressure, _ = _read_pressure(
+        pressure, _ = _read_numcalc_data(
             params["numSources"], params["numFrequencies"],
             folder, 'pEvalGrid')
 
@@ -422,7 +422,7 @@ def _read_nodes_and_elements(folder, objects=None):
     return grids, gridsNumNodes
 
 
-def _read_pressure(numSources, numFrequencies, folder, data):
+def _read_numcalc_data(numSources, numFrequencies, folder, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
     pressure = []
 
@@ -576,7 +576,8 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
                 start_index = int(li[0])
 
     # ------------------------------load data----------------------------------
-    data = np.zeros((numFrequencies, numDatalines), dtype=complex)
+    dtype = complex if filename.startswith("p") else float
+    data = np.zeros((numFrequencies, numDatalines), dtype=dtype)
 
     for ii in range(numFrequencies):
         tmpData = []

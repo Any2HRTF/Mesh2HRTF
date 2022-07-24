@@ -318,38 +318,96 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
     npt.assert_equal(coordinates.get_cart(), points)
 
 
-@pytest.mark.parametrize("frequency_steps,dB", (
-    [None, True], [[1, 2], True], [[1, 1], False]
+@pytest.mark.parametrize("mode,object,dB,deg,unwrap,folder", (
+    ["pressure", None, True, False, False, "Reference_pressure_db"],
+    ["pressure", None, False, False, False, "Reference_pressure_lin"],
+    ["phase", None, True, False, False, "Reference_phase_radians"],
+    ["phase", None, True, True, False, "Reference_phase_degree"],
+    ["phase", None, True, True, True, "Reference_phase_degree_unwrapped"],
+    ["velocity", "Reference", True, False, False, "Reference_velocity"],
+    ["velocity", "FourPointHorPlane_r100cm", True, False, False,
+     "FourPointHorPlane_r100cm_velocity"],
+    ["pressure", "FourPointHorPlane_r100cm", True, False, False,
+     "FourPointHorPlane_r100cm_pressure_db"]
 ))
-def test_export_to_vtk(frequency_steps, dB):
+def test_output2vtk_mode(mode, object, dB, deg, unwrap, folder):
+
+    # copy test data
+    tmp = TemporaryDirectory()
+    cwd = os.path.join(tmp.name, "SHTF")
+    shutil.copytree(data_shtf, cwd)
+    shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
+
+    # export to vtk
+    m2h.output2vtk(cwd, object, mode, dB=dB, deg=deg, unwrap=unwrap)
+
+    # check results
+    frequency_steps = [1, 60]
+
+    for ff in range(frequency_steps[0], frequency_steps[1]+1):
+
+        file = os.path.join(
+            "Output2HRTF", "vtk", folder, f"frequency_step_{ff}.vtk")
+
+        # check if all files are there
+        assert os.path.isfile(os.path.join(cwd, file))
+
+        # test file content against reference
+        # (references only exist for steps 1 and 60 to save space)
+        if ff in [1, 60]:
+            with open(os.path.join(data_shtf, file), "r") as f:
+                ref = "".join(f.readlines())
+            with open(os.path.join(cwd, file), "r") as f:
+                test = "".join(f.readlines())
+            assert test == ref
+
+
+def test_output2vtk_frequency_steps():
+    """Test the frequency steps variable of output2vtk"""
+
+    # copy test data
+    tmp = TemporaryDirectory()
+    cwd = os.path.join(tmp.name, "SHTF")
+    shutil.copytree(data_shtf, cwd)
+    shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
+
+    # export to vtk
+    m2h.output2vtk(cwd, frequency_steps=[1, 1])
+
+    # check results
+    folder = os.path.join(cwd, "Output2HRTF", "vtk", "Reference_pressure_db")
+
+    # check if all files exist / don't exist as they should
+    assert os.path.isfile(os.path.join(folder, "frequency_step_1.vtk"))
+    assert not os.path.isfile(os.path.join(folder, "frequency_step_2.vtk"))
+
+
+def test_output2vtk_assertions():
+    """Test assertions of output2vtk"""
 
     # copy test data
     tmp = TemporaryDirectory()
     cwd = os.path.join(tmp.name, "SHTF")
     shutil.copytree(data_shtf, cwd)
 
-    # export to vtk
-    m2h.output2vtk(cwd, frequency_steps=frequency_steps, dB=dB)
+    # invalid folder
+    with pytest.raises(ValueError, match="The folder"):
+        m2h.output2vtk()
 
-    # check results
-    if frequency_steps is None:
-        frequency_steps = [1, 60]
+    # invalid object
+    with pytest.raises(ValueError, match="object 'golden_ears'"):
+        m2h.output2vtk(cwd, 'golden_ears')
 
-    prefix = "db_frequency_step_" if dB else "lin_frequency_step_"
-
-    for ff in range(frequency_steps[0], frequency_steps[1]+1):
-
-        file = os.path.join(
-            "Output2HRTF", "Reference_vtk", f"{prefix}{ff}.vtk")
-
-        # check if all files are there
-        assert os.path.isfile(os.path.join(cwd, file))
-
-        # test file content against reference
-        # (references only exist for steps 1 and 2 to save space)
-        if ff == 1 or (ff == 2 and 2 in frequency_steps):
-            with open(os.path.join(data_shtf, file), "r") as f:
-                ref = "".join(f.readlines())
-            with open(os.path.join(cwd, file), "r") as f:
-                test = "".join(f.readlines())
-            assert test == ref
+    # invalid frequency steps
+    # not enough values
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.output2vtk(cwd, frequency_steps=1)
+    # too many values
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.output2vtk(cwd, frequency_steps=[1, 2, 3])
+    # value too small
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.output2vtk(cwd, frequency_steps=[0, 10])
+    # value too large
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.output2vtk(cwd, frequency_steps=[1, 1000])
