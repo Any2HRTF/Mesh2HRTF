@@ -370,30 +370,52 @@ def compute_hrir(sofa, n_shift, sampling_rate=None):
     return sofa
 
 
-def _read_nodes_and_elements(data):
+def _read_nodes_and_elements(folder, objects=None):
     """
     Read the nodes and elements of the evaluation grids or object meshes.
+
+    Parameters
+    ----------
+    folder : str
+        Folder containing the object. Must end with EvaluationGrids or
+        Object Meshes
+    objects : str, options
+        Name of the object. The default ``None`` reads all objects in folder
+
+    Returns
+    -------
+    grids : dict
+        One item per object (with the item name being the object name). Each
+        item has the sub-items `nodes`, `elements`, `num_nodes`, `num_elements`
+    gridsNumNodes : int
+        Number of nodes in all grids
     """
-    if os.path.basename(data) not in ['EvaluationGrids', 'ObjectMeshes']:
-        raise ValueError('data must be EvaluationGrids or ObjectMeshes!')
+    # check input
+    if os.path.basename(folder) not in ['EvaluationGrids', 'ObjectMeshes']:
+        raise ValueError('folder must be EvaluationGrids or ObjectMeshes!')
+
+    if objects is None:
+        objects = os.listdir(folder)
+    elif isinstance(objects, str):
+        objects = [objects]
 
     grids = {}
-    gridsList = os.listdir(data)
     gridsNumNodes = 0
 
-    for grid in gridsList:
+    for grid in objects:
         tmpNodes = np.loadtxt(os.path.join(
-            data, grid, 'Nodes.txt'),
+            folder, grid, 'Nodes.txt'),
             delimiter=' ', skiprows=1)
 
         tmpElements = np.loadtxt(os.path.join(
-            data, grid, 'Elements.txt'),
+            folder, grid, 'Elements.txt'),
             delimiter=' ', skiprows=1)
 
         grids[grid] = {
             "nodes": tmpNodes,
             "elements": tmpElements,
-            "num_nodes": tmpNodes.shape[0]}
+            "num_nodes": tmpNodes.shape[0],
+            "num_elements": tmpElements.shape[0]}
 
         gridsNumNodes += grids[grid]['num_nodes']
 
