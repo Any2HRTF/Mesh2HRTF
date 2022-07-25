@@ -207,9 +207,9 @@ def test_merge_sofa_files(pattern):
 
 
 @pytest.mark.parametrize("folders,issue,errors,nots", (
-    # no issues single NC.inp file
+    # no issues single NC.out file
     [["case_0"], False, [], []],
-    # issues in NC.inp that are corrected by second file NC1-1.inp
+    # issues in NC.out that are corrected by second file NC1-1.out
     [["case_4"], False, [], []],
     # missing frequencies
     [["case_1"], True,
@@ -253,7 +253,7 @@ def test_project_report(folders, issue, errors, nots):
         assert os.path.isfile(os.path.join(
             tmp.name, "Output2HRTF", "report_issues.txt"))
         assert ("For more information check Output2HRTF/report_source_*.csv "
-                "and the NC*.inp files located at NumCalc/source_*") in report
+                "and the NC*.out files located at NumCalc/source_*") in report
     else:
         assert not os.path.isfile(os.path.join(
             tmp.name, "Output2HRTF", "report_issues.txt"))

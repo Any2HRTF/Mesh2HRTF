@@ -10,11 +10,11 @@ def write_output_report(folder=None):
     Generate project report from NumCalc output files.
 
     NumCalc (Mesh2HRTF's numerical core) writes information about the
-    simulations to the files `NC*.inp` located under `NumCalc/source_*`. The
-    file `NC.inp` exists if NumCalc was ran without the additional command line
+    simulations to the files `NC*.out` located under `NumCalc/source_*`. The
+    file `NC.out` exists if NumCalc was ran without the additional command line
     parameters ``-istart`` and ``-iend``. If these parameters were used, there
-    is at least one `NC\*-\*.inp`. If this is the case, information from
-    `NC\*-\*.inp` overwrites information from NC.inp in the project report.
+    is at least one `NC\*-\*.out`. If this is the case, information from
+    `NC\*-\*.out` overwrites information from NC.out in the project report.
 
     .. note::
 
@@ -149,7 +149,7 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
     # loop sources
     for ss, source in enumerate(sources):
 
-        # list of NC*.inp files for parsing
+        # list of NC*.out files for parsing
         files = glob.glob(os.path.join(source, "NC*.out"))
 
         # make sure that NC.out is first
@@ -161,17 +161,7 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
         fundamentals.append([0 for f in range(len(files))])
         all_files.append([os.path.basename(f) for f in files])
 
-        # frequency steps simulated in each file
-        # (code not needed and does not yet catch NCuntil*.inp and NCfrom*.inp)
-        # steps = []
-        # for file in files:
-        #     parts = os.path.basename(file).split('-')
-        #     if len(parts) == 1:
-        #         steps.append([1, num_frequencies])
-        #     else:
-        #         steps.append([int(parts[0][2:]), int(parts[1][:-4])])
-
-        # get content from all NC*.inp
+        # get content from all NC*.out
         for ff, file in enumerate(files):
 
             # read the file and join all lines
@@ -274,7 +264,7 @@ def _write_project_reports(folder, all_files, out, out_names):
             report += (
                 f"{int(f[0])}, "                # frequency step
                 f"{float(f[1])}, "              # frequency in Hz
-                f"{all_files[ss][int(f[2])]},"  # NC*.inp file
+                f"{all_files[ss][int(f[2])]},"  # NC*.out file
                 f"{int(f[3])}, "                # input check
                 f"{int(f[4])}, "                # convergence
                 f"{int(f[5])}, "                # number of iterations
@@ -349,10 +339,10 @@ def _check_project_report(folder, fundamentals, out):
         report = ("\nDetected unknown issues\n"
                   "-----------------------\n"
                   "Check the project reports in Output2HRTF,\n"
-                  "and the NC*.inp files in NumCalc/source_*\n\n")
+                  "and the NC*.out files in NumCalc/source_*\n\n")
 
     report += ("For more information check Output2HRTF/report_source_*.csv "
-               "and the NC*.inp files located at NumCalc/source_*")
+               "and the NC*.out files located at NumCalc/source_*")
 
     # write to disk
     report_name = os.path.join(

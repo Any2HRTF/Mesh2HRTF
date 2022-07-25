@@ -222,10 +222,8 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
     Test the exportMesh2HRTF Blender plugin
 
     1. Copy test data
-    2. Modify python script to test different export parameters
-    3. Run the python script inside blender
-    4. Test the export by comparing the NC.inp and Output2HRTF.py files against
-       given references
+    2. Do scripted Mesh2HRTF exports with varying parameters
+    3.
     """
 
     # --- check path ---
@@ -270,7 +268,7 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
             print(f"Searching {match_nc[s][m]} in {NCinp_filepath}")
             assert match_nc[s][m] in NCinp_text
 
-    # compare Output2HRTF.py against reference strings
+    # compare parameters.json against reference
     with open(os.path.join(tmp.name, "parameters.json")) as params_json:
         act_params = json.load(params_json)
 
