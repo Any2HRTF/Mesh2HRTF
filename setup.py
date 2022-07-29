@@ -41,9 +41,9 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9'
     ],
-    description="Boundary Element Method (BEM) solver for acoustics",
+    description="Numerical calculation of head-related transfer functions",
     install_requires=requirements,
-    license="MIT license",
+    license="EUPL v1.2",
     long_description=readme,
     include_package_data=True,
     keywords='mesh2hrtf',
