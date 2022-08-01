@@ -2,11 +2,11 @@
 Mesh2Input: Tools to prepare the project folder
 ==========================================================================
 
-Mesh2Input (was: BlenderExport)
+mesh2input.py (was: BlenderExport/exportMesh2HRTF.py)
 =============
 
-This is the main functionality to create the project folder for
-the numerical HRTF calculations by NumCalc. To this end, 
+This file contains the main functionality to create the project folder which stores all the input for the numerical HRTF calculations by NumCalc. To this end, 
+
 1. Define this file as an AddOn in Blender
 2. Prepare your mesh for the calculations
 3. Start this AddOn (in Blender) to create the project folder. 
@@ -42,5 +42,6 @@ References
 ==========
 
 1 H. Ziegelwanger, W. Kreuzer, and P. Majdak, "A-priori mesh grading for the numerical calculation of the head-related transfer functions," Appl. Acoust. 114, 99–110 (2016). doi:`10.1016/j.apacoust.2016.07.005 <https://doi.org/10.1016/j.apacoust.2016.07.005>`_
+
 2 T. Palm, S. Koch, F. Brinkmann, and M. Alexa, "`Curvature-adaptive mesh grading for numerical approximation of head-related transfer functions <https://www.researchgate.net/publication/280007918_MESH2HRTF_AN_OPEN-SOURCE_SOFTWARE_PACKAGE_FOR_THE_NUMERICAL_CALCULATION_OF_HEAD-RELATED_TRANFER_FUNCTIONS>`_", in Fortschritte der Akustik – DAGA 2021 (Vienna, Austria, 2021) pp. 1111–1114.
 
