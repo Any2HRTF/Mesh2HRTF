@@ -3,7 +3,7 @@ History
 
 v1.0.0
 -------
-* Project export from Blender (handled by the Blender plugin `Tools/BlenderExport/exportMesh2HRTF.py`)
+* Project export from Blender (handled by the Blender plugin `Mesh2Input/BlenderExport/exportMesh2HRTF.py`)
 	* Upgraded to Blender >= 2.80.0
 	* Better organization and modularization of the Blender plugin
 	* Re-design the parameters, appearance, and in-app documentation of the export menu to be less prone to erroneous input

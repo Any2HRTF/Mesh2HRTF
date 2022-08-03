@@ -240,8 +240,8 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
         os.path.join(tmp.name, 'blender_script.py'),
         tmp.name,
         os.path.join(base_dir, "..", "mesh2hrtf"),
-        os.path.join(base_dir, "..", "mesh2hrtf", "Tools", "BlenderExport",
-                     "exportMesh2HRTF.py"),
+        os.path.join(base_dir, "..", "mesh2hrtf", "Mesh2Input",
+                     "BlenderExport", "exportMesh2HRTF.py"),
         os.path.join(blender_path, addon_path),
         params
         )

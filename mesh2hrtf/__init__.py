@@ -9,11 +9,11 @@ from .Output2HRTF.outputs2hrtfs import (outputs2hrtfs, outputs2trash)
 from .Output2HRTF.read_ram_estimates import read_ram_estimates
 from .Output2HRTF.write_output_report import write_output_report
 
-from .Tools.EvaluationGrids.read_evaluation_grid import \
+from .Mesh2Input.EvaluationGrids.read_evaluation_grid import \
     read_evaluation_grid
-from .Tools.EvaluationGrids.write_evaluation_grid import \
+from .Mesh2Input.EvaluationGrids.write_evaluation_grid import \
     write_evaluation_grid
-from .Tools.Materials.write_material import write_material
+from .Mesh2Input.Materials.write_material import write_material
 
 __all__ = [
     'output2hrtf',
