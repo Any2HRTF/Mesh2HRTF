@@ -27,7 +27,7 @@ bl_info = {
 
 class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     '''Export an object as Mesh2HRTF input files'''
-    bl_idname = "export_mesh2hrtf.inp"
+    bl_idname = "mesh2input.inp"
     bl_label = "Export Mesh2HRTF"
 
     filename_ext = ""
@@ -1092,7 +1092,7 @@ def _write_nc_inp(filepath1, version, title,
 
         # header --------------------------------------------------------------
         fw("##-------------------------------------------\n")
-        fw("## This file was created by export_mesh2hrtf\n")
+        fw("## This file was created by mesh2input\n")
         fw("## Date: %s\n" % datetime.date.today())
         fw("##-------------------------------------------\n")
         fw("Mesh2HRTF %s\n" % version)

@@ -1,5 +1,5 @@
 ##-------------------------------------------
-## This file was created by export_mesh2hrtf
+## This file was created by mesh2input
 ## Date: 2022-04-07
 ##-------------------------------------------
 Mesh2HRTF 1.0.0
@@ -12,7 +12,7 @@ SHTF for testing
 ## Controlparameter II
 1 60 0.000001 0.00e+00 1 0 0
 ##
-## Load Frequency Curve 
+## Load Frequency Curve
 0 61
 0.000000 0.000000e+00 0.0
 0.000001 0.010000e+04 0.0

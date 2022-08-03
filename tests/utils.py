@@ -106,7 +106,7 @@ def write_blender_export_script(
         "overwrite=True, filepath=addonFile)\n"
         "bpy.ops.preferences.addon_enable(module='mesh2input')\n\n"
         "# save Mesh2HRTF project\n"
-        "bpy.ops.export_mesh2hrtf.inp(\n"
+        "bpy.ops.mesh2input.inp(\n"
         f"    filepath='{projectPath}',\n"
         f"    programPath='{programPath}',\n")
 
