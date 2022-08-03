@@ -4,7 +4,7 @@ import glob
 import mesh2hrtf as m2h
 
 
-def outputs2hrtfs(paths, merge=False, inspect=False, pattern=None,
+def process_multiple_outputs2hrtf(paths, merge=False, inspect=False, pattern=None,
                   plot=None, plane="horizontal", atol=.1, savedir=None):
     """
     Process NumCalc outputs from multiple projects and write data to disk.
