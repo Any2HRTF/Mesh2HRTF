@@ -219,7 +219,7 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
 def test_blender_export(blender_path, addon_path, blender_file_name, params,
                         match_nc, match_params):
     """
-    Test the exportMesh2HRTF Blender plugin
+    Test the mesh2input Blender plugin
 
     1. Copy test data
     2. Do scripted Mesh2HRTF exports with varying parameters
@@ -241,13 +241,13 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
         tmp.name,
         os.path.join(base_dir, "..", "mesh2hrtf"),
         os.path.join(base_dir, "..", "mesh2hrtf", "Mesh2Input",
-                     "BlenderExport", "exportMesh2HRTF.py"),
+                     "mesh2input.py"),
         os.path.join(blender_path, addon_path),
         params
         )
 
     # --- Exercise ---
-    # run exportMesh2HRTF from Blender command line interface w/ Python script
+    # run mesh2input from Blender command line interface w/ Python script
     subprocess.run(
         [os.path.join(blender_path, 'blender'), '--background',
          blender_file_name, '--python',
