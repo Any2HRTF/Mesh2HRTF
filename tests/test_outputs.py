@@ -33,12 +33,13 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
     # process outputs
     savedir = None if not savedir else join(tmp.name, "output")
     if not generate_error:
-        m2h.outputs_to_hrtfs(join(tmp.name, "*"))
+        m2h.process_multiple_outputs2hrtf(join(tmp.name, "*"))
     else:
         match = ("Detected issues in NumCalc output. Check report files in "
                  ".*\n.*HRTF")
         with pytest.raises(ValueError, match=match):
-            m2h.outputs_to_hrtfs(join(tmp.name, "*"), savedir=savedir)
+            m2h.process_multiple_outputs2hrtf(
+                join(tmp.name, "*"), savedir=savedir)
 
     # check output directories (only if not moved to savedir)
     if not savedir:
@@ -46,7 +47,6 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
 
             files = ["HRIR_FourPointHorPlane_r100cm.sofa",
                      "HRTF_FourPointHorPlane_r100cm.sofa",
-                     "ObjectMesh_Reference.npz",
                      "report_source_1.csv",
                      "report_source_2.csv"]
             if generate_error and folder == "HRTF":
@@ -97,7 +97,7 @@ def test_outputs_to_hrtfs_full():
     shutil.copytree(join(tmp.name, "left"), join(tmp.name, "right"))
 
     # process outputs
-    m2h.outputs_to_hrtfs(
+    m2h.process_multiple_outputs2hrtf(
         (join(tmp.name, "left", "*"), join(tmp.name, "right", "*")),
         merge=True, inspect=True, pattern="HRIR",
         savedir=join(tmp.name, "output"))
@@ -151,9 +151,9 @@ def test_purge_outputs_numcalc_data(boundary, grid):
                 assert glob(join(be, "*EvalGrid")) == []
 
 
-@pytest.mark.parametrize("boundary_compressed,hrtf,vtk,reports", [
-    (True, False, True, False), (False, True, False, True)])
-def test_purge_outputs_output_data(boundary_compressed, hrtf, vtk, reports):
+@pytest.mark.parametrize("hrtf,vtk,reports", [
+    (False, True, False), (True, False, True)])
+def test_purge_outputs_output_data(hrtf, vtk, reports):
     """Test purging the processed data in Output2HRTF"""
 
     # copy required data to temporary directory
@@ -161,17 +161,13 @@ def test_purge_outputs_output_data(boundary_compressed, hrtf, vtk, reports):
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
     folder = join(tmp.name, "SHTF", "Output2HRTF")
 
-    m2h.remove_outputs(join(tmp.name, "*"),
-                       boundary_compressed=boundary_compressed,
-                       hrtf=hrtf, vtk=vtk, reports=reports)
-
-    assert os.path.isfile(join(folder, "ObjectMesh_Reference.npz")) == \
-        (not boundary_compressed)
+    m2h.remove_outputs(
+        join(tmp.name, "*"), hrtf=hrtf, vtk=vtk, reports=reports)
 
     assert os.path.isfile(join(folder, "HRTF_FourPointHorPlane_r100cm.sofa")) \
         == (not hrtf)
 
-    assert os.path.isdir(join(folder, "Reference_vtk")) \
+    assert os.path.isdir(join(folder, "vtk")) \
         == (not vtk)
 
     assert os.path.isfile(join(folder, "report_source_1.csv")) == \

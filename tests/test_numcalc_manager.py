@@ -47,12 +47,12 @@ def test_defaults(mode):
 
     if mode == "function":
         # run as function
-        m2h.numcalc_manager(temp.name, numcalc_path=numcalc, wait_time=0)
+        m2h.manage_numcalc(temp.name, numcalc_path=numcalc, wait_time=0)
     elif mode == "script":
         # run as script
         script_path = os.path.join(cwd, "..", "mesh2hrtf", "NumCalc")
         subprocess.run([
-            (f'python numcalc_manager.py --project_path {temp.name} '
+            (f'python manage_numcalc_script.py --project_path {temp.name} '
              f'--numcalc_path {numcalc} --wait_time 0 --confirm_errors False')
             ],
              cwd=script_path, check=True, shell=True)

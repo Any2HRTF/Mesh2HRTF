@@ -6,14 +6,14 @@ import os
 from tempfile import TemporaryDirectory
 
 
-def test_write_boundary_condition():
+def test_write_material():
     # test write boundary condition with default values
 
     tmp = TemporaryDirectory()
     filename = os.path.join(tmp.name, "test_material.csv")
 
     # write data
-    m2h.write_boundary_condition(
+    m2h.write_material(
         filename, "admittance", [100, 200], [1 + 0j, 1.5 + 0.5j])
 
     # read and check data
@@ -29,14 +29,14 @@ def test_write_boundary_condition():
     ["admittance", ["ADMI", "PRES", "VELO"]],
     ["pressure", ["PRES", "ADMI", "VELO"]],
     ["velocity", ["VELO", "ADMI", "PRES"]]))
-def test_write_boundary_condition_kind(kind, check_kind):
+def test_write_material_kind(kind, check_kind):
     # test if the kind of boundary condition is written correctly
 
     tmp = TemporaryDirectory()
     filename = os.path.join(tmp.name, "test_material.csv")
 
     # write data
-    m2h.write_boundary_condition(
+    m2h.write_material(
         filename, kind, [100, 200], [1 + 0j, 1.5 + 0.5j])
 
     # read and check data
@@ -48,7 +48,7 @@ def test_write_boundary_condition_kind(kind, check_kind):
     assert f"{check_kind[2]}\n" not in file
 
 
-def test_write_boundary_condition_comment():
+def test_write_material_comment():
     # test if the comment is written
 
     tmp = TemporaryDirectory()
@@ -56,7 +56,7 @@ def test_write_boundary_condition_comment():
     comment = "Weird, random data"
 
     # write data
-    m2h.write_boundary_condition(
+    m2h.write_material(
         filename, "pressure", [100, 200], [1 + 0j, 1.5 + 0.5j], comment)
 
     # read and check data

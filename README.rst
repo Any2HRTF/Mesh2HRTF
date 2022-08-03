@@ -1,28 +1,31 @@
 Mesh2HRTF
 =========
 
-Mesh2HRTF is an open-source project aiming at providing an easy-to-use software package for the numerical calculation of head-related transfer functions (HRTFs). It targets researchers in the field of binaural audio. In a nutshell, Mesh2HRTF simply reads geometrical data, calculates the corresponding sound field and outputs HRTFs in the SOFA format.
+Mesh2HRTF is an open-source project aiming at providing an easy-to-use software package for the numerical calculation of head-related transfer functions (HRTFs). It targets researchers in the field of binaural audio. In a nutshell, Mesh2HRTF consists of three parts:
+- Mesh2Input: prepares geometrical data and acoustic parameters,
+- NumCalc: based on the input from Mesh2Input, it calculates the corresponding sound field
+- Output2HRTFs: processes the output from NumCalc to HRTFs saved in the SOFA format.
 
 Documentation
 =============
 
+Documentation
+    https://github.com/Any2HRTF/Mesh2HRTF/wiki
+
 Installation
-    https://sourceforge.net/p/mesh2hrtf/wiki/Installation/
+    https://github.com/Any2HRTF/Mesh2HRTF/wiki/Installation
 
 General Tutorials
-    https://sourceforge.net/p/mesh2hrtf/wiki/Tutorials/
-
-Python API Documentation
-    https://mesh2hrtf.readthedocs.io
+    https://github.com/Any2HRTF/Mesh2HRTF/wiki/Tutorials
 
 Releases and Development
 ========================
 
-The ``master`` branch always contains the latest stable release and should be
-cloned or downloaded. Releases for versions 1.0.0 and above are tagged and can
-be accessed through the GitHub interface. Releases for versions 0.4.0 and below
-are contained in the folder ``releases``. If you want to contribute to
-Mesh2HRTF please check `here <https://github.com/Any2HRTF/Mesh2HRTF/blob/develop/CONTRIBUTING.rst>`_.
+Releases are available at https://github.com/Any2HRTF/Mesh2HRTF/releases. 
+
+The ``master`` branch contains the latest stable code basis and is available for cloning, forking, or downloads. 
+
+The ``develop`` branch contains the latest stable developer version. Other branches track the more recent development, which might be unstable. If you would like to contribute to Mesh2HRTF please check `here <https://github.com/Any2HRTF/Mesh2HRTF/blob/develop/CONTRIBUTING.rst>`_.
 
 References
 ==========

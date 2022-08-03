@@ -3,7 +3,7 @@ History
 
 v1.0.0
 -------
-* Project export from Blender (handled by the Blender plugin `Mesh2Input/exportMesh2HRTF.py`)
+* Project export from Blender (handled by the Blender plugin `Mesh2Input/mesh2input.py`)
 	* Upgraded to Blender >= 2.80.0
 	* Better organization and modularization of the Blender plugin
 	* Re-design the parameters, appearance, and in-app documentation of the export menu to be less prone to erroneous input
@@ -20,12 +20,14 @@ v1.0.0
 	* Boundary conditions can now be frequency dependent
 	* Files containing custom evaluation grids and material data can be located outside the Mesh2HRTF repository
 * NumCalc (contained in NumCalc/Source)
+	* Added NumCalc manager for automatic parallelization of frequency steps
 	* Bugfix: when NC.inp does not contain an "END" of file, NumCalc now throws one error and aborts programme execution (was infinite loop resulting in large output files)
 	* Introduced command line parameters `istart` and `iend` to select a range of frequencies for simulation and to ease parallelization
 	* Introduce command line parameter `nitermax` to control the maximum number of iterations
+	* Introduce command line parameter `estimate_ram` for an a priori estimate of the RAM consumption per frequency step
 	* Reduce the default number of maximum iterations to 250
 	* Minor bug fixes and stability improvements
-* Added a Python API for processing NumCalc output and save HRTF and HRIR data (contained in `Output2HRTF/Python`)
+* Added a Python API for processing NumCalc output and save HRTF and HRIR data
 	* Installable via pip
 	* Full online documentation
 	* Added function to generate a project report and notify in case of issues and/or errors that occurred during the NumCalc simulation
@@ -39,8 +41,11 @@ v1.0.0
 	* Data for multiple evaluation grids is now stored in separate files
 	* Frequencies in SOFA files now contain decimal values
 * Added testing
-	* All three arts of Mesh2HRTF (Project export, NumCalc, and Output2HRTF) are tested using pytest to improve and monitor the code quality
+	* All three parts of Mesh2HRTF (Project export, NumCalc, and Output2HRTF) are tested using pytest to improve and monitor the code quality
 	* The Matlab/Octave API is not tested. New users are recommended to use the Python API
+* General
+	* Unified names of functions across programming languages
+	* Updated project wiki and moved to github
 
 
 v0.4.0
@@ -91,30 +96,40 @@ v1.0.2 (18.6.2016)
 ------------------
 * initial commit
 
+Mesh2HRTF Developers
+====================
+
+Mesh2HRTF is currently maintained and developed by
+Piotr Majdak (Conceptualization),
+Fabian Brinkmann (Python & Matlab API, Blender Export, Testing, Documentation),
+Wolfang Kreuzer (NumCalc, Documentation),
+Katharina Pollack (Matlab API, Documentation)
+
 Contributors
 ============
 
-* Fabian Brinkmann, AC-TUB
-* Zhengsheng Chen, ARI
-* Slim Ghorbal, IETR/CentraleSupélec, Mimi
-* Junaid Khan, FH Technikum Wien
-* Michael Kalcher, ARI
-* Wolfgang Kreuzer, ARI
-* Piotr Majdak, ARI
-* Robert Pelzer, AC-TUB
-* Johan Pauwels, ICL
-* Katharina Pollack, ARI
-* Jeffrey Thomsen, AC-TUB
-* Filip Tsai, KTH
-* Oliver Weissbarth, CG-TUB
-* Harald Ziegelwanger, ARI
+The following persons contributed to Mesh2HRTF, named in reverse chronological
+order
+
+* Jeffrey Thomsen (2022): Testing and documentation
+* Sergejs Dombrovskis (2022): Initial NumCalc manager version, documentation and tutorials
+* Timon Palm (2021): Hybrid mesh grading tool
+* Sebastian Koch (2021): Hybrid meh grading tool
+* Junaid Khan (2020): Bugfixes and restructuring
+* Oliver Weissbarth (2020): Update of the OpenFlipper mesh grading plug-in
+* Slim Ghorbal (2019): Improved Blender export
+* Robert Pelzer (2018): Blender AddOns for head centering and material assignment
+* Harald Ziegelwanger (2016-2018): Initial development of Mesh2HRTF
+* Z. S. Chen (2016): Initial development of NumCalc
+* Michael Kalcher
+* Johan Pauwels
 
 **Institutions**
 
-* ARI: Austrian Research Institute, Austian Academy of Sciences, Vienna
-* AC-TUB: Audio Communication Group, Technical University of Berlin
-* CG-TUB: Computer Graphics Group, Technical University of Berlin
-* FH Technikum Wien: University of Applied Sciences, Technikum Wien
-* ICL: Imperial College London, UK
-* KTH: Royal Institute of Technology, Stockholm, Sweden
-* Mimi: Mimi Hearing Technologies, Berlin, Germany
+* Austrian Research Institute, Austian Academy of Sciences, Vienna
+* Audio Communication Group, Technical University of Berlin
+* Computer Graphics Group, Technical University of Berlin
+* University of Applied Sciences, Technikum Wien
+* Imperial College London, UK
+* Royal Institute of Technology, Stockholm, Sweden
+* Mimi Hearing Technologies, Berlin, Germany

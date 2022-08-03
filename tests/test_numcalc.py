@@ -7,6 +7,7 @@ import os
 import scipy.io
 import numpy
 import utils
+import mesh2hrtf as m2h
 
 # directory of this file
 base_dir = os.path.dirname(__file__)
@@ -161,7 +162,7 @@ def test_numcalc_commandline_istart_iend(istart, iend):
         assert nStepsActual == nStepsExpected
 
 
-def test_numcalc_estimate_ram():
+def test_numcalc_commandline_estimate_ram():
     """Test NumCalc's RAM estimation using -estimate_ram"""
 
     # copy test data
@@ -199,7 +200,7 @@ def test_numcalc_estimate_ram():
 def test_numcalc_boundary_conditions_sources_types_numerical_methods(
         boundary_condition, source, bem_method, range_a, range_b=(-1, 1)):
     """
-    Test if NumCalc and Output2HRTF.py generate correct output by comparing to
+    Test if NumCalc and output2hrtf generate correct output by comparing to
     analytical solutions. Tests different single source types, boundary
     conditions and BEM methods.
     """
@@ -220,14 +221,18 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
         os.path.join(base_dir, 'resources', 'test_numcalc', 'ncinp_files',
                      f'NC_{boundary_condition}_{source}_{bem_method}.inp'),
         os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
+    shutil.copyfile(
+        os.path.join(base_dir, 'resources', 'test_numcalc', 'parameters',
+                     f'parameters_{source}.json'),
+        os.path.join(tmp.name, 'project', 'parameters.json'))
 
     # --- Exercise ---
     # run NumCalc with subprocess
     tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
     subprocess.run([f'{numcalc}'], cwd=tmp_path, check=True)
-    # run Output2HRTF.py
+    # run output2hrtf
     tmp_path = os.path.join(tmp.name, "project")
-    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
+    m2h.output2hrtf(tmp_path)
 
     # --- Verify ---
     # load HRTF data from simulation
@@ -259,15 +264,16 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
 
 
 @pytest.mark.parametrize("boundary_condition", [("rigid")])
-@pytest.mark.parametrize("source,range_a", [("leftear", (40, -40)),
-                         ("rightear", (40, -40)),
-                         ("bothears", (40, -40))
-                         ])
+@pytest.mark.parametrize("source,range_a", [
+    ("leftear", (40, -40)),
+    ("rightear", (40, -40)),
+    ("bothears", (40, -40))
+])
 @pytest.mark.parametrize("bem_method", [("ml-fmm-bem")])
 def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
                                   range_a, range_b=(-1, 1)):
     """
-    Test if NumCalc and Output2HRTF.py generate correct output by comparing to
+    Test if NumCalc and output2hrtf generate correct output by comparing to
     analytical solution. Tests the simulation of HRTF for left, right and both
     ears.
     """
@@ -283,14 +289,10 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
         os.path.join(tmp.name, 'project'))
 
     # copy correct input files for the source type
-    shutil.copy(
+    shutil.copyfile(
         os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'project_folder_ears', source, 'Info.txt'),
-        os.path.join(tmp.name, 'project'))
-    shutil.copy(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'project_folder_ears', source, 'Output2HRTF.py'),
-        os.path.join(tmp.name, 'project'))
+                     'parameters', f'parameters_{source}.json'),
+        os.path.join(tmp.name, 'project', 'parameters.json'))
     shutil.copytree(
         os.path.join(base_dir, 'resources', 'test_numcalc',
                      'project_folder_ears', source, 'NumCalc'),
@@ -306,7 +308,7 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
             [f'{numcalc}'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
-    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_path, check=True)
+    m2h.output2hrtf(tmp_path)
 
     # --- Verify ---
     # load HRTF data from simulation as numpy

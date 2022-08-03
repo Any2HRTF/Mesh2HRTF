@@ -1,8 +1,10 @@
 import pytest
+import numpy.testing as npt
 import subprocess
 import tempfile
 import os
 import utils
+import json
 
 # define and check paths to your Blender versions
 blender_paths = utils.blender_paths(2)
@@ -13,7 +15,7 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
 
 
 @pytest.mark.parametrize("blender_path, addon_path", blender_paths)
-@pytest.mark.parametrize("blender_file_name, params, match_nc, match_o2hrtf", [
+@pytest.mark.parametrize("blender_file_name, params, match_nc, match_params", [
     # test default paramters - pictures disabled due to long rendering time
     (os.path.join(data_dir, 'test_export.blend'),
      {"pictures": False},
@@ -35,14 +37,18 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "# Right ear velocity source\n"
        "ELEM 20478 TO 20478 VELO 0.1 -1 0.0 -1\n"
        "RETU"]],
-     ["sourceType = 'Both ears'\n"
-      "numSources = 2\n"
-      "sourceCenter[0, :] = [-0.000087, -0.000000, 0.000002]\n"
-      "sourceArea[0, 0] = 5.43588e-12\n"
-      "sourceCenter[1, :] = [0.000087, 0.000000, 0.000002]\n"
-      "sourceArea[1, 0] = 5.29446e-12",
-      "reference = False", "computeHRIRs = False",
-      "speedOfSound = 346.18", "densityOfAir = 1.1839"]),
+     {"projectTitle": "Head-Related Transfer Functions",
+      "BEM_Type": "ML-FMM BEM",
+      "sourceType": "Both ears",
+      "numSources": 2,
+      "sourceCenter":
+        [[-8.746444061399e-05, -3.090826794505e-11, 1.520398097352e-06],
+         [8.746536821127e-05, 7.858034223318e-12, 1.500441343524e-06]],
+      "sourceArea": [5.43588e-12, 5.29446e-12],
+      "reference": False,
+      "computeHRIRs": False,
+      "speedOfSound": 346.18,
+      "densityOfMedium": 1.1839}),
 
     # test varying most parameters
     (os.path.join(data_dir, 'test_export.blend'),
@@ -53,34 +59,40 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "Main Parameters I\n2 45313 23132 0 0 2 1 1 0",
        "/EvaluationGrids/PlaneHorizontal/Nodes.txt",
        "Main Parameters IV\n300 1e+00"]],
-     ["sourceType = 'Point source'\n"
-      "numSources = 1\n"
-      "sourceCenter[0, :] = [0.00020000000298023225, 0.0, 0.0]\n"
-      "sourceArea[0, 0] = 1\n",
-      "speedOfSound = 300", "densityOfAir = 1"]),
+     {"3D_SceneUnit": "mm",
+      "sourceType": 'Point source',
+      "numSources": 1,
+      "sourceCenter": [0.00020000000298023225, 0.0, 0.0],
+      "sourceArea": [1],
+      "speedOfSound": 300,
+      "densityOfMedium": 1}),
 
     # test unit m (default is mm)
     (os.path.join(data_dir, 'test_export.blend'),
      {"sourceType": "Point source", "unit": "m", "pictures": False},
      [["POINT SOURCES\n0 0.20000000298023224 0.0 0.0 0.1 -1 0.0 -1"]],
-     ["sourceCenter[0, :] = [0.20000000298023224, 0.0, 0.0]\n"]),
+     {"sourceCenter": [0.20000000298023224, 0.0, 0.0],
+      "3D_SceneUnit": "m"}),
 
     # test remaining BEM method
     (os.path.join(data_dir, 'test_export.blend'),
      {"sourceType": "Point source", "method": "BEM", "pictures": False},
      [["POINT SOURCES",
-      "Main Parameters I\n2 24176 12092 0 0 2 1 0 0"]], []),
+      "Main Parameters I\n2 24176 12092 0 0 2 1 0 0"]],
+     {"BEM_Type": "BEM"}),
 
     # test point source
     (os.path.join(data_dir, 'test_export.blend'),
      {"sourceType": "Point source", "pictures": False},
      [["POINT SOURCES"]],
-     ["sourceType = 'Point source'"]),
+     {"sourceType": 'Point source'}),
+
     # test plane wave
     (os.path.join(data_dir, 'test_export.blend'),
      {"sourceType": "Plane wave", "pictures": False},
      [["PLANE WAVE"]],
-     ["sourceType = 'Plane wave'"]),
+     {"sourceType": 'Plane wave'}),
+
     # test left ear
     (os.path.join(data_dir, 'test_export.blend'),
      {"sourceType": "Left ear", "pictures": False},
@@ -88,7 +100,8 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "# Left ear velocity source\n"
        "ELEM 20479 TO 20479 VELO 0.1 -1 0.0 -1\n"
        "RETU\n"]],
-     ["sourceType = 'Left ear'"]),
+     {"sourceType": 'Left ear'}),
+
     # test right ear
     (os.path.join(data_dir, 'test_export.blend'),
      {"sourceType": "Right ear", "pictures": False},
@@ -96,7 +109,8 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "# Right ear velocity source\n"
        "ELEM 20478 TO 20478 VELO 0.1 -1 0.0 -1\n"
        "RETU"]],
-     ["sourceType = 'Right ear'"]),
+     {"sourceType": 'Right ear'}),
+
     # test both ears
     (os.path.join(data_dir, 'test_export.blend'),
      {"sourceType": "Both ears", "pictures": False},
@@ -108,7 +122,7 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "# Right ear velocity source\n"
        "ELEM 20478 TO 20478 VELO 0.1 -1 0.0 -1\n"
        "RETU"]],
-     ["sourceType = 'Both ears'"]),
+     {"sourceType": 'Both ears'}),
 
     # test built-in sound soft material
     (os.path.join(data_dir, 'test_export_soundsoft.blend'),
@@ -116,14 +130,15 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
      [["BOUNDARY\n"
        "# Material: SoundSoft\n"
        "ELEM 0 TO 20479 PRES 1.0 1 1.0 2\n"
-       "RETU"]], []),
+       "RETU"]], {}),
 
     # test multiple built-in grids
     (os.path.join(data_dir, 'test_export.blend'),
      {"evaluationGrids": "ARI;PlaneFrontal;PlaneMedian", "pictures": False},
      [["../../EvaluationGrids/ARI/Nodes.txt\n"
        "../../EvaluationGrids/PlaneFrontal/Nodes.txt\n"
-       "../../EvaluationGrids/PlaneMedian/Nodes.txt"]], []),
+       "../../EvaluationGrids/PlaneMedian/Nodes.txt"]],
+     {"evaluationGrids": ["ARI", "PlaneFrontal", "PlaneMedian"]}),
 
     # test multiple external grids
     (os.path.join(data_dir, 'test_export.blend'),
@@ -134,7 +149,8 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
       "pictures": False},
      [["../../EvaluationGrids/test_grid_a/Nodes.txt\n"
        "../../EvaluationGrids/test_grid_b/Nodes.txt\n"
-       "../../EvaluationGrids/test_grid_c/Nodes.txt"]], []),
+       "../../EvaluationGrids/test_grid_c/Nodes.txt"]],
+     {"evaluationGrids": ["test_grid_a", "test_grid_b", "test_grid_c"]}),
 
     # test external materials
     (os.path.join(data_dir, 'test_export_external_materials.blend'),
@@ -146,7 +162,7 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "ELEM 0 TO 12743 ADMI 1.0 1 1.0 2\n"
        "# Material: test_material_b\n"
        "ELEM 12744 TO 20479 PRES 1.0 3 1.0 4\n"
-       "RETU\n"]], []),
+       "RETU\n"]], {}),
 
     # test frequency vector option 'Num steps'
     (os.path.join(data_dir, 'test_export.blend'),
@@ -168,7 +184,8 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "0.000007 0.333333e+04 0.0\n"
        "0.000008 0.355556e+04 0.0\n"
        "0.000009 0.377778e+04 0.0\n"
-       "0.000010 0.400000e+04 0.0\n"]], []),
+       "0.000010 0.400000e+04 0.0\n"]],
+     {"numFrequencies": 10}),
 
     # test frequency vector option 'Step size'
     (os.path.join(data_dir, 'test_export.blend'),
@@ -183,29 +200,30 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "0.000000 0.000000e+00 0.0\n"
        "0.000001 0.200000e+04 0.0\n"
        "0.000002 0.300000e+04 0.0\n"
-       "0.000003 0.400000e+04 0.0\n"]], []),
+       "0.000003 0.400000e+04 0.0\n"]],
+     {"frequencyStepSize": 1000}),
 
     # test Output2HRTF flags reference and computeHRIRs
     (os.path.join(data_dir, 'test_export.blend'),
      {"reference": True, "computeHRIRs": True, "pictures": False},
      [[]],
-     ["reference = True", "computeHRIRs = True"]),
+     {"reference": True,
+      "computeHRIRs": True}),
 
     # test picture generation (look for .png)
     (os.path.join(data_dir, 'test_export.blend'),
      {"pictures": True},
-     [], [])
-    ])
+     [],
+     {"exportPictures": True})
+])
 def test_blender_export(blender_path, addon_path, blender_file_name, params,
-                        match_nc, match_o2hrtf):
+                        match_nc, match_params):
     """
-    Test the exportMesh2HRTF Blender plugin
+    Test the mesh2input Blender plugin
 
     1. Copy test data
-    2. Modify python script to test different export parameters
-    3. Run the python script inside blender
-    4. Test the export by comparing the NC.inp and Output2HRTF.py files against
-       given references
+    2. Do scripted Mesh2HRTF exports with varying parameters
+    3.
     """
 
     # --- check path ---
@@ -223,13 +241,13 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
         tmp.name,
         os.path.join(base_dir, "..", "mesh2hrtf"),
         os.path.join(base_dir, "..", "mesh2hrtf", "Mesh2Input",
-                     "exportMesh2HRTF.py"),
+                     "mesh2input.py"),
         os.path.join(blender_path, addon_path),
         params
         )
 
     # --- Exercise ---
-    # run exportMesh2HRTF from Blender command line interface w/ Python script
+    # run mesh2input from Blender command line interface w/ Python script
     subprocess.run(
         [os.path.join(blender_path, 'blender'), '--background',
          blender_file_name, '--python',
@@ -237,7 +255,7 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
         cwd=tmp.name, check=True, capture_output=True)
 
     # --- Verify ---
-    # compare NC.inp against refrerence strings
+    # compare NC.inp against reference strings
     # (nested list to check NC.inp of multiple sources)
     for s in range(len(match_nc)):
         NCinp_filepath = os.path.join(
@@ -250,14 +268,20 @@ def test_blender_export(blender_path, addon_path, blender_file_name, params,
             print(f"Searching {match_nc[s][m]} in {NCinp_filepath}")
             assert match_nc[s][m] in NCinp_text
 
-    # compare Output2HRTF.py against reference strings
-    with open(os.path.join(tmp.name, "Output2HRTF.py")) as o2hrtf_file:
-        o2hrtf_text = o2hrtf_file.read()
+    # compare parameters.json against reference
+    with open(os.path.join(tmp.name, "parameters.json")) as params_json:
+        act_params = json.load(params_json)
 
-    for m in range(len(match_o2hrtf)):
-        print((f"Searching {match_o2hrtf[m]} in "
-               f"{os.path.join(tmp.name, 'Output2HRTF.py')}"))
-        assert match_o2hrtf[m] in o2hrtf_text
+    for key, val in match_params.items():
+        print(f"testing {key}")
+        if isinstance(val, list):
+            if isinstance(val[0], str):
+                for v, a in zip(val, act_params[key]):
+                    assert v == a
+            else:
+                npt.assert_array_almost_equal(val, act_params[key], decimal=12)
+        else:
+            assert val == act_params[key]
 
     # check if pictures were created or not
     if "pictures" in params:

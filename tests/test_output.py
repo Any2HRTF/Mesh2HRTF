@@ -1,11 +1,11 @@
 import pytest
 import numpy as np
 import numpy.testing as npt
-import subprocess
 from tempfile import TemporaryDirectory
 import shutil
 import os
 import glob
+import json
 import pyfar as pf
 import sofar as sf
 import mesh2hrtf as m2h
@@ -20,9 +20,9 @@ data_sofa = os.path.join(cwd, 'resources', 'SOFA_files')
 @pytest.mark.parametrize("num_sources", ([1], [2]))
 def test_output_two_hrtf_and_Output2HRTF(num_sources):
     """
-    Run Output2HRTF.py script to do a round trip test:
+    Run output2hrtf to do a round trip test:
 
-    - does output_to_hrtf run without errors for projects with 1 and 2
+    - does output2hrtf run without errors for projects with 1 and 2
       sources
     - are the report_source_*.csv files written correctly (2 sources only)
     - are the SOFA files written correctly (2 sources only)
@@ -34,19 +34,21 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
     shutil.copytree(data_shtf, tmp_shtf)
     shutil.rmtree(os.path.join(tmp_shtf, "Output2HRTF"))
 
-    # manipulate output script
+    # manipulate parameters
     if num_sources == 1:
-        with open(os.path.join(tmp_shtf, "Output2HRTF.py"), "r") as f:
-            script = "".join(f.readlines())
+        with open(os.path.join(tmp_shtf, "parameters.json"), "r") as f:
+            params = json.load(f)
 
-        script.replace("numSources = 2", "numSources = 1")
-        assert "numSources = 1" in script
+        params["sourceType"] = "Left ear"
+        params["numSources"] = 1
+        params["sourceCenter"] = params["sourceCenter"][0]
+        params["sourceArea"] = [params["sourceArea"][0]]
 
-        with open(os.path.join(tmp_shtf, "Output2HRTF.py"), "w") as f:
-            f.write(script)
+        with open(os.path.join(tmp_shtf, "parameters.json"), "w") as f:
+            json.dump(params, f, indent=4)
 
-    # run Output2HRTF.py
-    subprocess.run(["python", "Output2HRTF.py"], cwd=tmp_shtf, check=True)
+    # run output2hrtf
+    m2h.output2hrtf(tmp_shtf)
 
     if num_sources == 1:
         return
@@ -73,12 +75,12 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
         # test data entries with tolerance
         # (results differ across operating systems)
         if sofa.startswith("HRTF"):
-            npt.assert_allclose(test.Data_Real, ref.Data_Real)
-            npt.assert_allclose(test.Data_Imag, ref.Data_Imag)
+            npt.assert_allclose(test.Data_Real, ref.Data_Real, rtol=1e-5)
+            npt.assert_allclose(test.Data_Imag, ref.Data_Imag, rtol=1e-5)
         else:
-            npt.assert_allclose(test.Data_IR, ref.Data_IR)
+            npt.assert_allclose(test.Data_IR, ref.Data_IR, rtol=1e-1)
 
-        # test remaining entries without tolerance
+        # test remaining entries
         ignore = ["Data_Real", "Data_Imag", "Data_IR", "GLOBAL_APIVersion"]
         for key, value in test.__dict__.items():
             if key.startswith("_") or "Date" in key or key in ignore:
@@ -87,7 +89,8 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
             print(f"{sofa}: {key}")
 
             if isinstance(value, np.ndarray):
-                npt.assert_equal(value, getattr(ref, key))
+                npt.assert_allclose(
+                    value, getattr(ref, key), atol=1e-6, rtol=1e-3)
             else:
                 assert value == getattr(ref, key)
 
@@ -137,7 +140,7 @@ def test_compute_hrir_custom_sampling_rate():
     """Test compute HRIR with custom sampling rate"""
 
     # test with default (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrir(
+    sofa = m2h.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -147,7 +150,7 @@ def test_compute_hrir_custom_sampling_rate():
     npt.assert_almost_equal(np.abs(hrir.freq_raw), np.ones_like(hrir.freq_raw))
 
     # test with valid sampling rate (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrir(
+    sofa = m2h.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44100)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -158,7 +161,7 @@ def test_compute_hrir_custom_sampling_rate():
 
     # test with invalid sampling rate
     with pytest.raises(ValueError, match="sampling rate is invalid"):
-        sofa = m2h.compute_hrir(
+        sofa = m2h.compute_hrirs(
             os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44110)
 
 
@@ -204,9 +207,9 @@ def test_merge_sofa_files(pattern):
 
 
 @pytest.mark.parametrize("folders,issue,errors,nots", (
-    # no issues single NC.inp file
+    # no issues single NC.out file
     [["case_0"], False, [], []],
-    # issues in NC.inp that are corrected by second file NC1-1.inp
+    # issues in NC.out that are corrected by second file NC1-1.out
     [["case_4"], False, [], []],
     # missing frequencies
     [["case_1"], True,
@@ -231,14 +234,14 @@ def test_project_report(folders, issue, errors, nots):
     tmp = TemporaryDirectory()
     os.mkdir(os.path.join(tmp.name, "NumCalc"))
     os.mkdir(os.path.join(tmp.name, "Output2HRTF"))
-    shutil.copyfile(os.path.join(data_nc, "Info.txt"),
-                    os.path.join(tmp.name, "Info.txt"))
+    shutil.copyfile(os.path.join(data_nc, "parameters.json"),
+                    os.path.join(tmp.name, "parameters.json"))
     for ff, folder in enumerate(folders):
         shutil.copytree(os.path.join(data_nc, folder),
                         os.path.join(tmp.name, "NumCalc", f"source_{ff + 1}"))
 
     # run the project report
-    issues, report = m2h.project_report(tmp.name)
+    issues, report = m2h.write_output_report(tmp.name)
 
     # test the output
     assert issues is issue
@@ -250,7 +253,7 @@ def test_project_report(folders, issue, errors, nots):
         assert os.path.isfile(os.path.join(
             tmp.name, "Output2HRTF", "report_issues.txt"))
         assert ("For more information check Output2HRTF/report_source_*.csv "
-                "and the NC*.inp files located at NumCalc/source_*") in report
+                "and the NC*.out files located at NumCalc/source_*") in report
     else:
         assert not os.path.isfile(os.path.join(
             tmp.name, "Output2HRTF", "report_issues.txt"))
@@ -315,38 +318,96 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
     npt.assert_equal(coordinates.get_cart(), points)
 
 
-@pytest.mark.parametrize("frequency_steps,dB", (
-    [None, True], [[1, 2], True], [[1, 1], False]
+@pytest.mark.parametrize("mode,object,dB,deg,unwrap,folder", (
+    ["pressure", None, True, False, False, "Reference_pressure_db"],
+    ["pressure", None, False, False, False, "Reference_pressure_lin"],
+    ["phase", None, True, False, False, "Reference_phase_radians"],
+    ["phase", None, True, True, False, "Reference_phase_degree"],
+    ["phase", None, True, True, True, "Reference_phase_degree_unwrapped"],
+    ["velocity", "Reference", True, False, False, "Reference_velocity"],
+    ["velocity", "FourPointHorPlane_r100cm", True, False, False,
+     "FourPointHorPlane_r100cm_velocity"],
+    ["pressure", "FourPointHorPlane_r100cm", True, False, False,
+     "FourPointHorPlane_r100cm_pressure_db"]
 ))
-def test_export_to_vtk(frequency_steps, dB):
+def test_output2vtk_mode(mode, object, dB, deg, unwrap, folder):
+
+    # copy test data
+    tmp = TemporaryDirectory()
+    cwd = os.path.join(tmp.name, "SHTF")
+    shutil.copytree(data_shtf, cwd)
+    shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
+
+    # export to vtk
+    m2h.export_vtk(cwd, object, mode, dB=dB, deg=deg, unwrap=unwrap)
+
+    # check results
+    frequency_steps = [1, 60]
+
+    for ff in range(frequency_steps[0], frequency_steps[1]+1):
+
+        file = os.path.join(
+            "Output2HRTF", "vtk", folder, f"frequency_step_{ff}.vtk")
+
+        # check if all files are there
+        assert os.path.isfile(os.path.join(cwd, file))
+
+        # test file content against reference
+        # (references only exist for steps 1 and 60 to save space)
+        if ff in [1, 60]:
+            with open(os.path.join(data_shtf, file), "r") as f:
+                ref = "".join(f.readlines())
+            with open(os.path.join(cwd, file), "r") as f:
+                test = "".join(f.readlines())
+            assert test == ref
+
+
+def test_output2vtk_frequency_steps():
+    """Test the frequency steps variable of export_vtk"""
+
+    # copy test data
+    tmp = TemporaryDirectory()
+    cwd = os.path.join(tmp.name, "SHTF")
+    shutil.copytree(data_shtf, cwd)
+    shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
+
+    # export to vtk
+    m2h.export_vtk(cwd, frequency_steps=[1, 1])
+
+    # check results
+    folder = os.path.join(cwd, "Output2HRTF", "vtk", "Reference_pressure_db")
+
+    # check if all files exist / don't exist as they should
+    assert os.path.isfile(os.path.join(folder, "frequency_step_1.vtk"))
+    assert not os.path.isfile(os.path.join(folder, "frequency_step_2.vtk"))
+
+
+def test_output2vtk_assertions():
+    """Test assertions of export_vtk"""
 
     # copy test data
     tmp = TemporaryDirectory()
     cwd = os.path.join(tmp.name, "SHTF")
     shutil.copytree(data_shtf, cwd)
 
-    # export to vtk
-    m2h.export_to_vtk(cwd, frequency_steps=frequency_steps, dB=dB)
+    # invalid folder
+    with pytest.raises(ValueError, match="The folder"):
+        m2h.export_vtk()
 
-    # check results
-    if frequency_steps is None:
-        frequency_steps = [1, 60]
+    # invalid object
+    with pytest.raises(ValueError, match="object 'golden_ears'"):
+        m2h.export_vtk(cwd, 'golden_ears')
 
-    prefix = "db_frequency_step_" if dB else "lin_frequency_step_"
-
-    for ff in range(frequency_steps[0], frequency_steps[1]+1):
-
-        file = os.path.join(
-            "Output2HRTF", "Reference_vtk", f"{prefix}{ff}.vtk")
-
-        # check if all files are there
-        assert os.path.isfile(os.path.join(cwd, file))
-
-        # test file content against reference
-        # (references only exist for steps 1 and 2 to save space)
-        if ff == 1 or (ff == 2 and 2 in frequency_steps):
-            with open(os.path.join(data_shtf, file), "r") as f:
-                ref = "".join(f.readlines())
-            with open(os.path.join(cwd, file), "r") as f:
-                test = "".join(f.readlines())
-            assert test == ref
+    # invalid frequency steps
+    # not enough values
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.export_vtk(cwd, frequency_steps=1)
+    # too many values
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.export_vtk(cwd, frequency_steps=[1, 2, 3])
+    # value too small
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.export_vtk(cwd, frequency_steps=[0, 10])
+    # value too large
+    with pytest.raises(ValueError, match="frequency_steps must contain"):
+        m2h.export_vtk(cwd, frequency_steps=[1, 1000])
