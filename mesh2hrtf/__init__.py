@@ -1,4 +1,4 @@
-from .NumCalc.numcalc_manager import numcalc_manager
+from .NumCalc.manage_numcalc import manage_numcalc
 
 from .Output2HRTF.inspect_sofa_files import inspect_sofa_files
 from .Output2HRTF.merge_sofa_files import merge_sofa_files
@@ -32,4 +32,4 @@ __all__ = [
     'read_ram_estimates',
     'output2vtk',
     'write_material',
-    'numcalc_manager']
+    'manage_numcalc']

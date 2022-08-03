@@ -100,8 +100,8 @@ args["max_ram_load"] = None if args["max_ram_load"] is False \
 args["max_instances"] = psutil.cpu_count() if args["max_instances"] == 0 \
     else args["max_instances"]
 
-# launch numcalc_manager ------------------------------------------------------
-m2h.numcalc_manager(
+# launch manage_numcalc ------------------------------------------------------
+m2h.manage_numcalc(
     args["project_path"],
     args["numcalc_path"],
     args["max_ram_load"],

@@ -7,11 +7,10 @@ import numpy as np
 import mesh2hrtf as m2h
 
 
-def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
-                    max_ram_load=None, ram_safety_factor=1.05, max_cpu_load=90,
-                    max_instances=psutil.cpu_count(), wait_time=15,
-                    starting_order='alternate',
-                    confirm_errors=False):
+def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
+                   max_ram_load=None, ram_safety_factor=1.05, max_cpu_load=90,
+                   max_instances=psutil.cpu_count(), wait_time=15,
+                   starting_order='alternate', confirm_errors=False):
     """
     Run NumCalc on one or multiple Mesh2HRTF project folders.
 
@@ -23,9 +22,9 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
 
     .. note ::
 
-        The `numcalc_manager` can also be launched by running the python script
-        `numcalc_manager.py` contained in the subfolder `mesh2hrtf/NumCalc` of
-        the Mesh2HRTF Git repository.
+        `manage_numcalc` can also be launched by running the python script
+        `numcalc_manager_script.py` contained in the subfolder
+        `mesh2hrtf/NumCalc` of the Mesh2HRTF Git repository.
 
     Parameters
     ----------
@@ -150,7 +149,7 @@ def numcalc_manager(project_path=os.getcwd(), numcalc_path=None,
 
     # echo input parameters ---------------------------------------------------
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
-    message = ("\nStarting numcalc_manager with the following arguments "
+    message = ("\nStarting manage_numcalc with the following arguments "
                f"[{current_time}]\n")
     message += "-" * (len(message) - 2) + "\n"
     message += (
