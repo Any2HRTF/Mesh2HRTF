@@ -30,7 +30,7 @@ def remove_outputs(paths, boundary=False, grid=False,
         Remove HRTFs saved in SOFA files saved in
         `project_folder/Output2HRTF/HRTF_*.sofa`.
     vtk : bool, optional
-        Remove vtk exports generated with :py:func:`~mesh2hrtf.output2vtk`
+        Remove vtk exports generated with :py:func:`~mesh2hrtf.export_vtk`
         and saved in `project_folder/Output2HRTF/vtk`.
     reports : bool, optional
         Remove project reports saved in `project_folder/Output2HRTF/report_*`.

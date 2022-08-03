@@ -5,7 +5,7 @@ from .Output2HRTF.merge_sofa_files import merge_sofa_files
 from .Output2HRTF.output2hrtf import output2hrtf
 from .Output2HRTF.reference_hrtfs import reference_hrtfs
 from .Output2HRTF.compute_hrirs import compute_hrirs
-from .Output2HRTF.output2vtk import output2vtk
+from .Output2HRTF.export_vtk import export_vtk
 from .Output2HRTF.process_multiple_outputs2hrtf import (
     process_multiple_outputs2hrtf)
 from .Output2HRTF.remove_outputs import remove_outputs
@@ -30,6 +30,6 @@ __all__ = [
     'write_evaluation_grid',
     'read_evaluation_grid',
     'read_ram_estimates',
-    'output2vtk',
+    'export_vtk',
     'write_material',
     'manage_numcalc']
