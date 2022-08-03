@@ -17,7 +17,7 @@ mesh2hrtf.output2hrtf and inspect_sofa_files
 
 SOFA_files
 ----------
-SOFA file for testing compute_hrir
+SOFA file for testing compute_hrirs
 
 test_blender_export
 ----

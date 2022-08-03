@@ -140,7 +140,7 @@ def test_compute_hrir_custom_sampling_rate():
     """Test compute HRIR with custom sampling rate"""
 
     # test with default (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrir(
+    sofa = m2h.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -150,7 +150,7 @@ def test_compute_hrir_custom_sampling_rate():
     npt.assert_almost_equal(np.abs(hrir.freq_raw), np.ones_like(hrir.freq_raw))
 
     # test with valid sampling rate (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrir(
+    sofa = m2h.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44100)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -161,7 +161,7 @@ def test_compute_hrir_custom_sampling_rate():
 
     # test with invalid sampling rate
     with pytest.raises(ValueError, match="sampling rate is invalid"):
-        sofa = m2h.compute_hrir(
+        sofa = m2h.compute_hrirs(
             os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44110)
 
 

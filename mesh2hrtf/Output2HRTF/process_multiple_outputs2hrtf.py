@@ -18,7 +18,7 @@ def process_multiple_outputs2hrtf(
         `paths`. This also calls
         :py:func:`~mesh2hrtf.write_output_report`,
         :py:func:`~mesh2hrtf.reference_hrtfs`, and
-        :py:func:`~mesh2hrtf.compute_hrir`.
+        :py:func:`~mesh2hrtf.compute_hrirs`.
     2.
         Run :py:func:`~mesh2hrtf.merge_sofa_files` (optional).
     3.

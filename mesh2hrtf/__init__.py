@@ -2,9 +2,9 @@ from .NumCalc.numcalc_manager import numcalc_manager
 
 from .Output2HRTF.inspect_sofa_files import inspect_sofa_files
 from .Output2HRTF.merge_sofa_files import merge_sofa_files
-from .Output2HRTF.output2hrtf import (
-    output2hrtf, compute_hrir)
+from .Output2HRTF.output2hrtf import output2hrtf
 from .Output2HRTF.reference_hrtfs import reference_hrtfs
+from .Output2HRTF.compute_hrirs import compute_hrirs
 from .Output2HRTF.output2vtk import output2vtk
 from .Output2HRTF.process_multiple_outputs2hrtf import (
     process_multiple_outputs2hrtf)
@@ -23,7 +23,7 @@ __all__ = [
     'process_multiple_outputs2hrtf',
     'remove_outputs',
     'reference_hrtfs',
-    'compute_hrir',
+    'compute_hrirs',
     'inspect_sofa_files',
     'merge_sofa_files',
     'write_output_report',
