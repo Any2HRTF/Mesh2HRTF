@@ -7,7 +7,8 @@ from .Output2HRTF.output2hrtf import (
 from .Output2HRTF.reference_hrtfs import reference_hrtfs
 from .Output2HRTF.output2vtk import output2vtk
 from .Output2HRTF.process_multiple_outputs2hrtf import (
-    process_multiple_outputs2hrtf, outputs2trash)
+    process_multiple_outputs2hrtf)
+from .Output2HRTF.remove_outputs import remove_outputs
 from .Output2HRTF.read_ram_estimates import read_ram_estimates
 from .Output2HRTF.write_output_report import write_output_report
 
@@ -20,7 +21,7 @@ from .Mesh2Input.Materials.write_material import write_material
 __all__ = [
     'output2hrtf',
     'process_multiple_outputs2hrtf',
-    'outputs2trash',
+    'remove_outputs',
     'reference_hrtfs',
     'compute_hrir',
     'inspect_sofa_files',

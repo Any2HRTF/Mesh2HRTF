@@ -38,7 +38,8 @@ def test_outputs_to_hrtfs_minimum(savedir, generate_error):
         match = ("Detected issues in NumCalc output. Check report files in "
                  ".*\n.*HRTF")
         with pytest.raises(ValueError, match=match):
-            m2h.process_multiple_outputs2hrtf(join(tmp.name, "*"), savedir=savedir)
+            m2h.process_multiple_outputs2hrtf(
+                join(tmp.name, "*"), savedir=savedir)
 
     # check output directories (only if not moved to savedir)
     if not savedir:
@@ -135,7 +136,7 @@ def test_purge_outputs_numcalc_data(boundary, grid):
     tmp = TemporaryDirectory()
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
 
-    m2h.outputs2trash(join(tmp.name, "*"), boundary, grid)
+    m2h.remove_outputs(join(tmp.name, "*"), boundary, grid)
 
     for source in glob(join(tmp.name, "SHTF", "NumCalc", "source_*")):
         if boundary and grid:
@@ -160,7 +161,8 @@ def test_purge_outputs_output_data(hrtf, vtk, reports):
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
     folder = join(tmp.name, "SHTF", "Output2HRTF")
 
-    m2h.outputs2trash(join(tmp.name, "*"), hrtf=hrtf, vtk=vtk, reports=reports)
+    m2h.remove_outputs(
+        join(tmp.name, "*"), hrtf=hrtf, vtk=vtk, reports=reports)
 
     assert os.path.isfile(join(folder, "HRTF_FourPointHorPlane_r100cm.sofa")) \
         == (not hrtf)
