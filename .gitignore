@@ -12,4 +12,4 @@ mesh2hrtf.egg-info/*
 *.asv
 
 # Sphinx
-docs_python/_build
+docs/_build

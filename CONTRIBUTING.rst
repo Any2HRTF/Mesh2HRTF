@@ -96,7 +96,7 @@ Submodules
 
 To update the submodules containing the conventions and verification rules run
 
-$ git submodule update --remote mesh2hrtf/Tools/MeshManipulation/GradingHybrid
+$ git submodule update --remote mesh2hrtf/Mesh2Input/MeshManipulation/GradingHybrid
 
 Releasing
 ---------

@@ -1,5 +1,5 @@
-function output2vtk(path)
-%   []=output2vtk(path)
+function export_vtk(path)
+%   []=export_vtk(path)
 %   exports data to VTK file for visualization in Paraview
 %
 %   Input:

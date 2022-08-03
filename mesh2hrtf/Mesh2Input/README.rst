@@ -2,14 +2,14 @@
 Mesh2Input: Tools to prepare the project folder
 ==========================================================================
 
-mesh2input.py (was: BlenderExport/exportMesh2HRTF.py)
+mesh2input.py
 =============
 
-This file contains the main functionality to create the project folder which stores all the input for the numerical HRTF calculations by NumCalc. To this end, 
+This file contains the main functionality to create the project folder which stores all the input for the numerical HRTF calculations by NumCalc. To this end,
 
 1. Define this file as an AddOn in Blender
 2. Prepare your mesh for the calculations
-3. Start this AddOn (in Blender) to create the project folder. 
+3. Start this AddOn (in Blender) to create the project folder.
 
 EvaluationGrids
 ===============
@@ -31,7 +31,7 @@ Materials are used to define acoustic boundary conditions for a mesh. The follow
 Meshes
 ======
 
-Here, we provide various tools to manipulate meshes. The following tools are available: 
+Here, we provide various tools to manipulate meshes. The following tools are available:
 
 - **AssignmenMaterials**: A Blender AddOn to automatically assign the default materials *Skin*, *Left ear*, and *Right ear* to a mesh. Requires a centered head mesh.
 - **CenterHead**: A Blender AddOn to semi-automatic center the mesh in the origin of coordinates and orient it along the interaural axis.

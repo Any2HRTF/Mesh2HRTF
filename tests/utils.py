@@ -66,14 +66,14 @@ def write_blender_export_script(
     programPath : str
         Path to the mesh2hrtf foler inside the Mesh2HRTF repository
     addonFile : str
-        Path to the `exportMesh2HRTF.py` Python addon for Blender
+        Path to the `mesh2input.py` Python addon for Blender
     addonPath : str
         Path under which the addon is to be installed (e.g. the folder
         3.1/scripts/addons for Blender 3.1 on Linux systems)
     params : dict
         Optional parameters for exporting the project, e.g.,
         ``{speedOfSound: "343", "Pictures": False}``. For a full list of
-        parameters see `exportMesh2HRTF.py` or the Mesh2HRTF export menue in
+        parameters see `mesh2input.py` or the Mesh2HRTF export menue in
         Blender.
     """
 
@@ -104,9 +104,9 @@ def write_blender_export_script(
         "bpy.utils.refresh_script_paths()\n"
         "bpy.ops.preferences.addon_install("
         "overwrite=True, filepath=addonFile)\n"
-        "bpy.ops.preferences.addon_enable(module='exportMesh2HRTF')\n\n"
+        "bpy.ops.preferences.addon_enable(module='mesh2input')\n\n"
         "# save Mesh2HRTF project\n"
-        "bpy.ops.export_mesh2hrtf.inp(\n"
+        "bpy.ops.mesh2input.inp(\n"
         f"    filepath='{projectPath}',\n"
         f"    programPath='{programPath}',\n")
 

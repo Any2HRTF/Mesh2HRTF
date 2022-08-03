@@ -140,7 +140,7 @@ def test_compute_hrir_custom_sampling_rate():
     """Test compute HRIR with custom sampling rate"""
 
     # test with default (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrir(
+    sofa = m2h.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -150,7 +150,7 @@ def test_compute_hrir_custom_sampling_rate():
     npt.assert_almost_equal(np.abs(hrir.freq_raw), np.ones_like(hrir.freq_raw))
 
     # test with valid sampling rate (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrir(
+    sofa = m2h.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44100)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -161,7 +161,7 @@ def test_compute_hrir_custom_sampling_rate():
 
     # test with invalid sampling rate
     with pytest.raises(ValueError, match="sampling rate is invalid"):
-        sofa = m2h.compute_hrir(
+        sofa = m2h.compute_hrirs(
             os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44110)
 
 
@@ -339,7 +339,7 @@ def test_output2vtk_mode(mode, object, dB, deg, unwrap, folder):
     shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
 
     # export to vtk
-    m2h.output2vtk(cwd, object, mode, dB=dB, deg=deg, unwrap=unwrap)
+    m2h.export_vtk(cwd, object, mode, dB=dB, deg=deg, unwrap=unwrap)
 
     # check results
     frequency_steps = [1, 60]
@@ -363,7 +363,7 @@ def test_output2vtk_mode(mode, object, dB, deg, unwrap, folder):
 
 
 def test_output2vtk_frequency_steps():
-    """Test the frequency steps variable of output2vtk"""
+    """Test the frequency steps variable of export_vtk"""
 
     # copy test data
     tmp = TemporaryDirectory()
@@ -372,7 +372,7 @@ def test_output2vtk_frequency_steps():
     shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
 
     # export to vtk
-    m2h.output2vtk(cwd, frequency_steps=[1, 1])
+    m2h.export_vtk(cwd, frequency_steps=[1, 1])
 
     # check results
     folder = os.path.join(cwd, "Output2HRTF", "vtk", "Reference_pressure_db")
@@ -383,7 +383,7 @@ def test_output2vtk_frequency_steps():
 
 
 def test_output2vtk_assertions():
-    """Test assertions of output2vtk"""
+    """Test assertions of export_vtk"""
 
     # copy test data
     tmp = TemporaryDirectory()
@@ -392,22 +392,22 @@ def test_output2vtk_assertions():
 
     # invalid folder
     with pytest.raises(ValueError, match="The folder"):
-        m2h.output2vtk()
+        m2h.export_vtk()
 
     # invalid object
     with pytest.raises(ValueError, match="object 'golden_ears'"):
-        m2h.output2vtk(cwd, 'golden_ears')
+        m2h.export_vtk(cwd, 'golden_ears')
 
     # invalid frequency steps
     # not enough values
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.output2vtk(cwd, frequency_steps=1)
+        m2h.export_vtk(cwd, frequency_steps=1)
     # too many values
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.output2vtk(cwd, frequency_steps=[1, 2, 3])
+        m2h.export_vtk(cwd, frequency_steps=[1, 2, 3])
     # value too small
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.output2vtk(cwd, frequency_steps=[0, 10])
+        m2h.export_vtk(cwd, frequency_steps=[0, 10])
     # value too large
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.output2vtk(cwd, frequency_steps=[1, 1000])
+        m2h.export_vtk(cwd, frequency_steps=[1, 1000])

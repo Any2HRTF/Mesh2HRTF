@@ -27,7 +27,7 @@ bl_info = {
 
 class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     '''Export an object as Mesh2HRTF input files'''
-    bl_idname = "export_mesh2hrtf.inp"
+    bl_idname = "mesh2input.inp"
     bl_label = "Export Mesh2HRTF"
 
     filename_ext = ""
@@ -120,7 +120,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     evaluationGrids: StringProperty(
         name="Name",
         description=("Name of evaluation grid inside "
-            "Tools/EvaluationsGrids/Data or absolute path to user grid. "
+            "Mesh2Input/EvaluationsGrids/Data or absolute path to user grid. "
             "Multiple grids can be separated by semicolons (;)"),
         default='Default',
         )
@@ -399,7 +399,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # Read material data ----------------------------------------------------------
 
         # add the default mesh2hrtf path to the material search path
-        defaultPath = os.path.join(programPath, 'Tools', 'Materials', 'Data')
+        defaultPath = os.path.join(
+            programPath, 'Mesh2Input', 'Materials', 'Data')
         if materialSearchPaths == "None":
             materialSearchPaths = defaultPath
         else:
@@ -590,7 +591,7 @@ def _split_and_sort_evaluation_grids(evaluationGrids, programPath):
 
     # default path for evaluation grids
     evaluationGridPath = os.path.join(
-        programPath, "Tools", "EvaluationGrids", "Data")
+        programPath, "Mesh2Input", "EvaluationGrids", "Data")
 
     # construct full paths and names
     evalGridPaths = []
@@ -1091,7 +1092,7 @@ def _write_nc_inp(filepath1, version, title,
 
         # header --------------------------------------------------------------
         fw("##-------------------------------------------\n")
-        fw("## This file was created by export_mesh2hrtf\n")
+        fw("## This file was created by mesh2input\n")
         fw("## Date: %s\n" % datetime.date.today())
         fw("##-------------------------------------------\n")
         fw("Mesh2HRTF %s\n" % version)

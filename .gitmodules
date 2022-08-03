@@ -1,3 +1,3 @@
-[submodule "mesh2hrtf/Tools/MeshManipulation/GradingHybrid"]
-	path = mesh2hrtf/Tools/MeshManipulation/GradingHybrid
+[submodule "mesh2hrtf/Mesh2Input/MeshManipulation/GradingHybrid"]
+	path = mesh2hrtf/Mesh2Input/MeshManipulation/GradingHybrid
 	url = https://github.com/cg-tub/hrtf_mesh_grading.git

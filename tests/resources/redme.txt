@@ -17,12 +17,12 @@ mesh2hrtf.output2hrtf and inspect_sofa_files
 
 SOFA_files
 ----------
-SOFA file for testing compute_hrir
+SOFA file for testing compute_hrirs
 
 test_blender_export
 ----
 
-Contains Blender files and a Python script for testing the installtion of the Blender exportMesh2HRTF add-on and exporting mesh2HRTF projects with all variations of export parameters
+Contains Blender files and a Python script for testing the installtion of the Blender mesh2input add-on and exporting mesh2HRTF projects with all variations of export parameters
 
 test_numcalc
 ----

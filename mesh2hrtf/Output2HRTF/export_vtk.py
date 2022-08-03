@@ -5,7 +5,7 @@ import numpy as np
 from .output2hrtf import _read_nodes_and_elements, _read_numcalc_data
 
 
-def output2vtk(folder=None, object=None, mode="pressure",
+def export_vtk(folder=None, object=None, mode="pressure",
                frequency_steps=None, dB=True, log_prefix=20, log_reference=1,
                deg=False, unwrap=False):
     """
