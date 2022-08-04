@@ -8,7 +8,8 @@ import pyfar as pf
 
 
 def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
-                       atol=0.1, savedir=None):
+                       atol=0.1, savedir=None, dB_time=False, dB_freq=True,
+                       freq_scale='log'):
     """
     Inspect SOFA files through plots.
 
@@ -25,8 +26,8 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
         E.g., if `path` is ``"some/path/HRIRs_*"`` files in all folder
         starting with "HRIRs" would be scanned for SOFA files.
     pattern : str
-        Merge only files that contain `pattern` in their filename. The default
-        ``None`` merges all SOFA files.
+        Plot only files that contain `pattern` in their filename. The default
+        ``None`` plots all SOFA files.
     plot : str, optional
         ``"2D"``
             generate line plots of four sources on the horizontal plane
@@ -46,6 +47,13 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
     savedir : str
         Directory for saving the merged SOFA files. The default ``None`` saves
         the files to the directory given by `path`.
+    dB_time : bool, optional
+        Plot the logarithmic time data. The default is ``'False'``.
+    dB_freq : bool, optional
+        Plot the logarithmic magnitude data. The default is ``'True'``.
+    freq_scale : str, optional
+        ``'log'`` to plot on a logarithmic frequency axis and ``'linear'`` to
+        plot on a linear frequency axis. The default is ``'log'``.
     """
 
     # check input
@@ -85,10 +93,12 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
 
             # inspect data
             save_to = folder if savedir is None else None
-            _inspect_sofa_files(file, save_to, atol, plot, plane)
+            _inspect_sofa_files(file, save_to, atol, plot, plane,
+                                dB_time, dB_freq, freq_scale)
 
 
-def _inspect_sofa_files(file, savedir, atol, plot, plane):
+def _inspect_sofa_files(file, savedir, atol, plot, plane,
+                        dB_time, dB_freq, freq_scale):
 
     with Dataset(file, "r", format="NETCDF4") as sofa_file:
         data_type = getattr(sofa_file, "DataType")
@@ -134,10 +144,13 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
                 # plot
                 if mode == "hrir":
                     pf.plot.time_freq(
-                        signal[idx], ax=[ax_time[nn], ax_freq[nn]])
+                        signal[idx], ax=[ax_time[nn], ax_freq[nn]],
+                        dB_time=dB_time, dB_freq=dB_freq,
+                        freq_scale=freq_scale)
                     ax_time[nn].set_title(name)
                 else:
-                    pf.plot.freq(signal[idx], ax=ax_freq[nn])
+                    pf.plot.freq(signal[idx], ax=ax_freq[nn], dB=dB_freq,
+                                 freq_scale=freq_scale)
                     ax_freq[nn].set_title(name)
 
                 max_db = np.max([ax_freq[nn].get_ylim()[1], max_db])
@@ -205,7 +218,7 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
                 # plot time data
                 if mode == "hrir":
                     _, qm, _ = pf.plot.time_2d(
-                        signal[mask, cc], indices=angles,
+                        signal[mask, cc], indices=angles, dB=dB_time,
                         ax=ax_time[cc], cmap="coolwarm")
                     ax_time[cc].set_title(name)
 
@@ -216,8 +229,9 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane):
                     qm.set_clim(-c_lim, c_lim)
 
                 # plot frequency data
-                _, qm, _ = pf.plot.freq_2d(signal[mask, cc], ax=ax_freq[cc],
-                                           indices=angles, cmap="Reds")
+                _, qm, _ = pf.plot.freq_2d(
+                    signal[mask, cc], ax=ax_freq[cc], indices=angles,
+                    dB=dB_freq, freq_scale=freq_scale, cmap="Reds")
                 if mode == "hrir":
                     ax_freq[cc].set_xlabel(f"{angle} in degree")
                     ax_time[cc].set_xlabel("")
