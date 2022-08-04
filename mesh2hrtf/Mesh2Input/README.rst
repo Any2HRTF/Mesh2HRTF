@@ -35,6 +35,7 @@ Here, we provide various tools to manipulate meshes. The following tools are ava
 
 - **AssignmenMaterials**: A Blender AddOn to automatically assign the default materials *Skin*, *Left ear*, and *Right ear* to a mesh. Requires a centered head mesh.
 - **CenterHead**: A Blender AddOn to semi-automatic center the mesh in the origin of coordinates and orient it along the interaural axis.
+- **Data**: An example of a head mesh that can be used for testing Mesh2HRTF. This is the mesh also being used in the online tutorials.
 - **Grading, Distance based** (discontinued): A C++ tools for a distance-based grading of a mesh in order to reduce the number of faces and thus to decrease the duration of the numerical calculations [1].
 - **Grading, Hybrid** (recommended): A C++ tool for a distance-based grading considering the local curvature [2].
 
