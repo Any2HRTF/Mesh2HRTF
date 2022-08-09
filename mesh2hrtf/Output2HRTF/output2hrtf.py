@@ -154,6 +154,8 @@ def _read_nodes_and_elements(folder, objects=None):
 
     if objects is None:
         objects = os.listdir(folder)
+        # discard hidden folders that might occur on Mac OS
+        objects = [o for o in objects if not o.startswith('.')]
     elif isinstance(objects, str):
         objects = [objects]
 

@@ -78,7 +78,9 @@ def export_vtk(folder=None, object=None, mode="pressure",
 
         for obj in ["ObjectMeshes", "EvaluationGrids"]:
             f = glob.glob(os.path.join(folder, obj, "*"))
-            f = [os.path.basename(f) for f in f if os.path.isdir(f)]
+            # discard hidden folders that might occur on Mac OS
+            f = [os.path.basename(f) for f in f
+                 if os.path.isdir(f) and not f.startswith(".")]
             if object in f:
                 object_type = obj
                 break
