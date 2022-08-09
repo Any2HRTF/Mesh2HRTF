@@ -154,6 +154,8 @@ def _read_nodes_and_elements(folder, objects=None):
 
     if objects is None:
         objects = os.listdir(folder)
+        # discard hidden folders that might occur on Mac OS
+        objects = [o for o in objects if not o.startswith('.')]
     elif isinstance(objects, str):
         objects = [objects]
 
@@ -316,22 +318,18 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
 
     # ---------------------check number of header and data lines---------------
     current_file = os.path.join(foldername, 'be.1', filename)
+    numDatalines = None
     with open(current_file) as file:
         line = csv.reader(file, delimiter=' ', skipinitialspace=True)
         for idx, li in enumerate(line):
             # read number of data points and head lines
-            if idx == 2:
-                if len(li) == 2:
-                    numHeaderlines = 3
-                    numDatalines = int(li[1])
-                else:
-                    raise ValueError((
-                        f"error reading {current_file}. Expected three header "
-                        "lines and the number of data points as second entry "
-                        "in the third line."))
+            if len(li) == 2 and not li[0].startswith("Mesh"):
+                numDatalines = int(li[1])
+
             # read starting index
-            if idx == 3:
+            elif numDatalines and len(li) > 2:
                 start_index = int(li[0])
+                break
 
     # ------------------------------load data----------------------------------
     dtype = complex if filename.startswith("p") else float
@@ -346,7 +344,8 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
 
             for li in line:
 
-                if line.line_num <= numHeaderlines:
+                # data lines have 3 ore more entries
+                if len(li) < 3:
                     continue
 
                 if filename.startswith("p"):
@@ -357,12 +356,8 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
                     tmpData.append(np.sqrt(
                         np.abs(complex(float(li[1]), float(li[2])))**2 +
                         np.abs(complex(float(li[3]), float(li[4])))**2 +
-                        np.abs(complex(float(li[5]), float(li[6])))**2
-                        ))
+                        np.abs(complex(float(li[5]), float(li[6])))**2))
 
         data[ii, :] = tmpData if tmpData else np.nan
 
-    # make indices ------------------------------------------------------------
-    indices = np.arange(start_index, numDatalines + start_index)
-
-    return data, indices
+    return data, np.arange(start_index, numDatalines + start_index)
