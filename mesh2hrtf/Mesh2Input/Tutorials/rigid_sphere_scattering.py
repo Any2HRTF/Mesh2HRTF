@@ -3,9 +3,9 @@ import bpy
 
 # user parameters -------------------------------------------------------------
 # this is the folder to which the project is exported
-file_path = r'path/to/your/project_folder'
-# this is the folder of the mesh2hrtf git repository
-program_path = r'file/to/your/Mesh2HRTF/mesh2hrtf'
+file_path = 'path/to/your/project_folder'
+# this is the folder mesh2hrtf inside the Mesh2HRTF git repository
+program_path = 'path/to/your/Mesh2HRTF/mesh2hrtf'
 
 
 # prepare the scene -----------------------------------------------------------

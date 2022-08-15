@@ -44,9 +44,9 @@ def blender_paths(computer_id):
     return blender_paths
 
 
-def instal_blender_addons(blender_binary, addon_path, addons, script_path):
+def blender_addons_installer(blender_binary, addon_path, addons, script_path):
     """
-    Instal Blender addons
+    Generate script for installing Blender addons
 
     Parameters
     ----------
@@ -57,9 +57,10 @@ def instal_blender_addons(blender_binary, addon_path, addons, script_path):
     addons : list
         List of tuples for installing the addons. The first entry of the tuple
         contains the path to the addon that is installed. The second entry
-        contains the name of the addon for enabling it.
+        contains the name of the addon for enabling it. The second entry is
+        optional.
     script_path : str
-        Full path for saving the script under the name install_addons.py
+        Full path for saving the script.
     """
 
     # generate script for installing the addons -------------------------------
@@ -67,17 +68,19 @@ def instal_blender_addons(blender_binary, addon_path, addons, script_path):
     script = (
         "import bpy\n\n"
         "# set addon directory\n"
-        f"bpy.context.preferences.filepaths.script_directory = {addon_path}\n"
+        "bpy.context.preferences.filepaths.script_directory = "
+        f"'{addon_path}'\n"
         "bpy.utils.refresh_script_paths()\n")
     # add code for installing addons
     for path, name in addons:
         script += (
-            f"\n# install {name}\n"
+            f"\n# install {os.path.basename(path)}\n"
             "bpy.ops.preferences.addon_install("
-            f"overwrite=True, filepath={path})\n"
-            f"bpy.ops.preferences.addon_enable(module='{name}')\n")
+            f"overwrite=True, filepath='{path}')\n")
+        if name is not None:
+            script += f"bpy.ops.preferences.addon_enable(module='{name}')\n"
 
-    with open(os.path.join(script_path, 'install_addons.py'), 'w') as file:
+    with open(script_path, 'w') as file:
         file.writelines(script)
 
 
