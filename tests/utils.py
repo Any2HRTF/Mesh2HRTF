@@ -44,6 +44,43 @@ def blender_paths(computer_id):
     return blender_paths
 
 
+def instal_blender_addons(blender_binary, addon_path, addons, script_path):
+    """
+    Instal Blender addons
+
+    Parameters
+    ----------
+    blender_binary : str
+        Blender binary for which the addons are refreshed
+    addon_path : str
+        Addon path under which the addons are saved
+    addons : list
+        List of tuples for installing the addons. The first entry of the tuple
+        contains the path to the addon that is installed. The second entry
+        contains the name of the addon for enabling it.
+    script_path : str
+        Full path for saving the script under the name install_addons.py
+    """
+
+    # generate script for installing the addons -------------------------------
+    # initialize
+    script = (
+        "import bpy\n\n"
+        "# set addon directory\n"
+        f"bpy.context.preferences.filepaths.script_directory = {addon_path}\n"
+        "bpy.utils.refresh_script_paths()\n")
+    # add code for installing addons
+    for path, name in addons:
+        script += (
+            f"\n# install {name}\n"
+            "bpy.ops.preferences.addon_install("
+            f"overwrite=True, filepath={path})\n"
+            f"bpy.ops.preferences.addon_enable(module='{name}')\n")
+
+    with open(os.path.join(script_path, 'install_addons.py'), 'w') as file:
+        file.writelines(script)
+
+
 def write_blender_export_script(
         scriptPath, projectPath, programPath, addonFile, addonPath, params):
     """
