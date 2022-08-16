@@ -1,5 +1,7 @@
 """Utilities to be used in testing"""
 import os
+import shutil
+import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf
@@ -9,8 +11,8 @@ def blender_paths(computer_id):
     """
     Define Blender paths for different computers for easier switching of
     test environments. First entry of tuple contains the path under which the
-    `blender` executable is located. Second entry is relative to the first
-    entry and contains the Blender addon directory.
+    `blender` executable is located. Second and third entry are relative to the
+    first entry and contains the Blender addon and startup directories.
     """
 
     if computer_id == 1:
@@ -18,35 +20,42 @@ def blender_paths(computer_id):
         base_dir = os.path.join(os.sep, 'home', 'matheson', 'Apps')
         blender_paths = [
             (os.path.join(base_dir, 'blender-2.83.10'),
-             os.path.join('2.83', 'scripts', 'addons')),
+             os.path.join('2.83', 'scripts', 'addons'),
+             os.path.join('2.83', 'scripts', 'startup')),
             (os.path.join(base_dir, 'blender-2.91.0'),
-             os.path.join('2.91', 'scripts', 'addons')),
+             os.path.join('2.91', 'scripts', 'addons'),
+             os.path.join('2.91', 'scripts', 'startup')),
             (os.path.join(base_dir, 'blender-2.93.8'),
-             os.path.join('2.93', 'scripts', 'addons')),
+             os.path.join('2.93', 'scripts', 'addons'),
+             os.path.join('2.93', 'scripts', 'startup')),
             (os.path.join(base_dir, 'blender-3.1.2'),
-             os.path.join('3.1', 'scripts', 'addons'))]
+             os.path.join('3.1', 'scripts', 'addons'),
+             os.path.join('3.1', 'scripts', 'startup'))]
     elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
             ('/home/bruel/Daten/Applications/blender-3.2.1-linux-x64/',
-             '3.2/scripts/addons')]
+             '3.2/scripts/addons',
+             '3.2/scripts/startup')]
     else:
         raise ValueError("Invalid computer id")
 
     # check paths
     for path in blender_paths:
-        for p in [path[0], os.path.join(path[0], path[1])]:
-            if not os.path.isdir(p):
-                raise ValueError((
-                    f"path {path} does not exist. Insert correct paths in "
-                    "function blender_paths before testing."))
+        for relative in [path[1], path[2]]:
+            for p in [path[0], os.path.join(path[0], relative)]:
+                if not os.path.isdir(p):
+                    raise ValueError((
+                        f"path {path} does not exist. Insert correct paths in"
+                        " function blender_paths before testing."))
 
     return blender_paths
 
 
-def blender_addons_installer(blender_binary, addon_path, addons, script_path):
+def install_blender_addons_and_scripts(
+        blender_path, addon_path, addons, script_path, scripts, save_path):
     """
-    Generate script for installing Blender addons
+    Install Blender addons and scripts
 
     Parameters
     ----------
@@ -58,7 +67,7 @@ def blender_addons_installer(blender_binary, addon_path, addons, script_path):
         List of tuples for installing the addons. The first entry of the tuple
         contains the path to the addon that is installed. The second entry
         contains the name of the addon for enabling it. The second entry is
-        optional.
+        optional. Passing
     script_path : str
         Full path for saving the script.
     """
@@ -69,19 +78,30 @@ def blender_addons_installer(blender_binary, addon_path, addons, script_path):
         "import bpy\n\n"
         "# set addon directory\n"
         "bpy.context.preferences.filepaths.script_directory = "
-        f"'{addon_path}'\n"
+        f"'{os.path.join(blender_path, addon_path)}'\n"
         "bpy.utils.refresh_script_paths()\n")
     # add code for installing addons
     for path, name in addons:
         script += (
             f"\n# install {os.path.basename(path)}\n"
             "bpy.ops.preferences.addon_install("
-            f"overwrite=True, filepath='{path}')\n")
-        if name is not None:
-            script += f"bpy.ops.preferences.addon_enable(module='{name}')\n"
+            f"overwrite=True, filepath='{path}')\n"
+            f"bpy.ops.preferences.addon_enable(module='{name}')\n")
 
-    with open(script_path, 'w') as file:
+    with open(save_path, 'w') as file:
         file.writelines(script)
+
+    # install addons using blender --------------------------------------------
+    subprocess.run(
+        [os.path.join(blender_path, 'blender'), '--background',
+         '--python', save_path],
+        check=True, capture_output=True)
+
+    # copy scripts to startup folder ------------------------------------------
+    for script in scripts:
+        shutil.copyfile(
+            script,
+            os.path.join(blender_path, script_path, os.path.basename(script)))
 
 
 def write_blender_export_script(

@@ -14,7 +14,8 @@ base_dir = os.path.dirname(__file__)
 data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
 
 
-@pytest.mark.parametrize("blender_path, addon_path", blender_paths)
+@pytest.mark.parametrize(
+    "blender_path, addon_path, script_path", blender_paths)
 @pytest.mark.parametrize("blender_file_name, params, match_nc, match_params", [
     # test default paramters - pictures disabled due to long rendering time
     (os.path.join(data_dir, 'test_export.blend'),
@@ -216,8 +217,9 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
      [],
      {"exportPictures": True})
 ])
-def test_blender_export(blender_path, addon_path, blender_file_name, params,
-                        match_nc, match_params):
+def test_blender_export(
+        blender_path, addon_path, script_path, blender_file_name, params,
+        match_nc, match_params):
     """
     Test the mesh2input Blender plugin
 
