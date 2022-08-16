@@ -1,4 +1,3 @@
-# %%
 import pytest
 import os
 import subprocess
@@ -6,11 +5,14 @@ import tempfile
 import utils
 import mesh2hrtf as m2h
 
-base_dir = os.path.dirname(__file__)
-install_script = os.path.join(base_dir, 'resources', 'install_addons.py')
-
 # define and check paths to your Blender versions (only use one blender)
 blender_path = utils.blender_paths(2)[0]
+
+# set test parameters
+run_numcalc = False
+
+base_dir = os.path.dirname(__file__)
+install_script = os.path.join(base_dir, 'resources', 'install_addons.py')
 
 # addons to be installed
 addons = [
@@ -64,10 +66,11 @@ def test_test(tutorial):
          '--python', os.path.join(tmp.name, tutorial)],
         cwd=tmp.name, check=True, capture_output=True)
 
-    # run manage_numcalc
-    print("running NumCalc")
-    m2h.manage_numcalc(os.path.join(tmp.name, tutorial[-3]))
+    if run_numcalc:
+        # run manage_numcalc
+        print("running NumCalc")
+        m2h.manage_numcalc(os.path.join(tmp.name, tutorial[-3]))
 
-    # run manage_numcalc
-    print("running output2hrtf")
-    m2h.output2hrtf(os.path.join(tmp.name, tutorial[-3]))
+        # run manage_numcalc
+        print("running output2hrtf")
+        m2h.output2hrtf(os.path.join(tmp.name, tutorial[-3]))
