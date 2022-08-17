@@ -369,7 +369,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     # wait for last NumCalc instances to finish
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
     message = (f"\n... waiting for the last NumCalc instances to finish "
-               f"(checking every 5 s, {current_time})")
+               f"(checking every second, {current_time})")
     _print_message(message, text_color_reset, log_file)
     while True:
 
