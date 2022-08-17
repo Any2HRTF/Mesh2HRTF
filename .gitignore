@@ -13,3 +13,6 @@ mesh2hrtf.egg-info/*
 
 # Sphinx
 docs/_build
+
+# temporary test files
+tests/resources/install_addons.py
