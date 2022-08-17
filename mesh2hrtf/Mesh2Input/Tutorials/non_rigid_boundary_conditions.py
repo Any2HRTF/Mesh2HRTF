@@ -1,6 +1,5 @@
 # Export the 'Radiation from a vibrating element on a rigid sphere' tutorial
 import bpy
-import os
 
 # user parameters -------------------------------------------------------------
 # this is the folder to which the project is exported

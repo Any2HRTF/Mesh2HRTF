@@ -9,7 +9,10 @@ import mesh2hrtf as m2h
 blender_path, addon_path, script_path = utils.blender_paths(2)[0]
 
 # set test parameters
-tutorials = ['rigid_sphere_scattering.py', 'hrtf.py']
+tutorials = ['rigid_sphere_scattering.py',
+             'radiation_from_a_vibrating_element.py',
+             'non_rigid_boundary_conditions.py',
+             'hrtf.py']
 run_numcalc = True
 
 base_dir = os.path.dirname(__file__)
