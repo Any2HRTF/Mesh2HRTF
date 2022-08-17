@@ -345,7 +345,7 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
             for li in line:
 
                 # data lines have 3 ore more entries
-                if len(li) < 3:
+                if len(li) < 3 or li[0].startswith("Mesh"):
                     continue
 
                 if filename.startswith("p"):
