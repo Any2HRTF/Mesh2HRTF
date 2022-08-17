@@ -1,5 +1,6 @@
 import pytest
 import os
+import shutil
 import subprocess
 import tempfile
 import utils
@@ -28,6 +29,20 @@ scripts = [os.path.join(base_dir, '..', 'mesh2hrtf', 'Mesh2Input', 'Meshes',
 # generate script for installing addons
 utils.install_blender_addons_and_scripts(
     blender_path, addon_path, addons, script_path, scripts, install_script)
+
+# Build NumCalc locally to use for testing
+tmp = tempfile.TemporaryDirectory()
+numcalc = os.path.join(tmp.name, "NumCalc", "bin", "NumCalc")
+
+shutil.copytree(
+    os.path.join(base_dir, "..", "mesh2hrtf", "NumCalc"),
+    os.path.join(tmp.name, "NumCalc"))
+
+if os.path.isfile(numcalc):
+    os.remove(numcalc)
+
+subprocess.run(
+    ["make"], cwd=os.path.join(tmp.name, "NumCalc", "src"), check=True)
 
 
 @pytest.mark.parametrize('tutorial', tutorials)
@@ -65,7 +80,7 @@ def test_tutorials(tutorial):
     if run_numcalc:
         # run manage_numcalc
         print("running NumCalc")
-        m2h.manage_numcalc(os.path.join(tmp.name, tutorial[:-3]))
+        m2h.manage_numcalc(os.path.join(tmp.name, tutorial[:-3]), numcalc)
 
         # run manage_numcalc
         print("running output2hrtf")
