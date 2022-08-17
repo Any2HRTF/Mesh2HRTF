@@ -39,6 +39,12 @@ Here, we provide various tools to manipulate meshes. The following tools are ava
 - **Grading, Distance based** (discontinued): A C++ tools for a distance-based grading of a mesh in order to reduce the number of faces and thus to decrease the duration of the numerical calculations [1].
 - **Grading, Hybrid** (recommended): A C++ tool for a distance-based grading considering the local curvature [2].
 
+Tutorials
+=========
+Here, we provide python scripts to generate the projects folders for the `online tutorials <https://github.com/Any2HRTF/Mesh2HRTF/wiki/Unix_Tutorials>`_.
+To generate the project folders, execute the scripts in Blender as described in the `scripting Section <https://github.com/Any2HRTF/Mesh2HRTF/wiki/Scripting>`_.
+
+
 References
 ==========
 
