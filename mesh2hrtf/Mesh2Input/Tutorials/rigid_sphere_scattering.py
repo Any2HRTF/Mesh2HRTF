@@ -36,6 +36,7 @@ bpy.ops.mesh2input.inp(
     method='ML-FMM BEM',
     sourceType='Point source',
     pictures=False,
+    unit='m',
     speedOfSound='343.18',
     evaluationGrids='PlaneHorizontal',
     minFrequency=1000,
