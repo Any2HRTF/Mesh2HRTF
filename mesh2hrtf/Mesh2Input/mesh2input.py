@@ -780,6 +780,15 @@ def _write_parameters_json(
         obj_data = obj.data
         sourceCenter, sourceArea = _calculateReceiverProperties(
             obj, obj_data, unitFactor)
+
+        # select ear specific data
+        if sourceType == "Left ear":
+            sourceCenter = sourceCenter[0]
+            sourceArea = [sourceArea[0]]
+        if sourceType == "Right ear":
+            sourceCenter = sourceCenter[1]
+            sourceArea = [sourceArea[1]]
+
     else:
         sourceCenter = [sourceXPosition, sourceYPosition, sourceZPosition]
         sourceArea = [1]
