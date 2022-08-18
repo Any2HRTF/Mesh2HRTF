@@ -1040,177 +1040,176 @@ void NC_ContributionFMM
 	Vector<bool> rfdi_cl(NDIM);
 
     // loop over clusters of internal points
-	for(ipc=0; ipc<numInternalPointsClusters_; ipc++)
-	{
-		// compute the array indicating if a cluster is located in the far field
-		for(i=0; i<numOriginalReflectedClusters_; i++)
-		{
-			di0 = Dispoi_dim3_(ClustArray[i].CoorCent, ipcluarry[ipc].CoorCent);
-			dik = ClustArray[i].RadiClus + ipcluarry[ipc].RadiClus;
-			if(di0 > farFieldClusterFactor_*dik && di0 > minClusterDistance_) 
-				iffarclus[i] = true; else iffarclus[i] = false;
-		}
+	for(ipc=0; ipc<numInternalPointsClusters_; ipc++) {
+	  // compute the array indicating if a cluster is located in the far field
+	  for(i=0; i<numOriginalReflectedClusters_; i++)
+	    {
+	      di0 = Dispoi_dim3_(ClustArray[i].CoorCent, ipcluarry[ipc].CoorCent);
+	      dik = ClustArray[i].RadiClus + ipcluarry[ipc].RadiClus;
+	      if(di0 > farFieldClusterFactor_*dik && di0 > minClusterDistance_) 
+		iffarclus[i] = true; else iffarclus[i] = false;
+	    }
 
-		// loop over clusters
-		isum = 0;
-		for(ic=0; ic<numOriginalReflectedClusters_; ic++)
+	  // loop over clusters
+	  isum = 0;
+	  for(ic=0; ic<numOriginalReflectedClusters_; ic++)
+	    {
+	      if(iffarclus[ic]) // for a far field cluster using the FM-method
 		{
-			if(iffarclus[ic]) // for a far field cluster using the FM-method
+		  // difference between the two cluster centers
+		  for(j=0; j<NDIM; j++) dwk0[j] = ipcluarry[ipc].CoorCent[j] - 
+					  ClustArray[ic].CoorCent[j];
+		  Vcnorm_dim3_(dwk0, di0);
+		  dik = di0*waveNumbers_;
+		  
+		  // compute the Hankel functions
+		  NC_SphericalHankel(NCout, zH0m, numExpansionTerms_, dik);
+		  
+		  // compute the vector D*T
+		  for(j=0; j<numIntegrationPointsUnitSphere_; j++)
+		    {
+		      scprd = Scprod_dim3_(dwk0, uvcsphe[j]);
+		      
+		      // compute the Legendre plynomes
+		      NC_LegendrePolynomes(NCout, Pm, numExpansionTerms_, scprd);
+		      
+		      // compute the function Mu_n
+		      zmun.set(0.0, 0.0);
+		      zi.set(1.0, 0.0);
+		      for(k=0; k<numExpansionTerms_; k++)
 			{
-				// difference between the two cluster centers
-				for(j=0; j<NDIM; j++) dwk0[j] = ipcluarry[ipc].CoorCent[j] - 
-					ClustArray[ic].CoorCent[j];
-				Vcnorm_dim3_(dwk0, di0);
-				dik = di0*waveNumbers_;
-
-				// compute the Hankel functions
-				NC_SphericalHankel(NCout, zH0m, numExpansionTerms_, dik);
-
-				// compute the vector D*T
-				for(j=0; j<numIntegrationPointsUnitSphere_; j++)
-				{
-					scprd = Scprod_dim3_(dwk0, uvcsphe[j]);
-
-					// compute the Legendre plynomes
-					NC_LegendrePolynomes(NCout, Pm, numExpansionTerms_, scprd);
-
-					// compute the function Mu_n
-					zmun.set(0.0, 0.0);
-					zi.set(1.0, 0.0);
-					for(k=0; k<numExpansionTerms_; k++)
-					{
-						zmun += zi*zH0m[k]*Pm[k]*(double)(2*k + 1);
-						zi.mul_i(harmonicTimeFactor_); // _ruimag!
-					}
-					zdt_vct[j] = zmun*ztvcwork[isum + j]*weisphe[j];
-				} // end of loop J
-
-				// loop over points of the current cluster of internal points
-				for(ipp=0; ipp<ipcluarry[ipc].NumOfIps; ipp++)
-				{
-					// initialize the countributions of the current cluster to potential and velocity of the current internal point
-					zprip.set(0.0, 0.0);
-					for(i=0; i<NDIM; i++) zveip[i].set(0.0, 0.0);
-
-					// local number and nodal number of the current internal point
-					inp = ipcluarry[ipc].NumsOfIps[ipp];
-					ndip = nuinnode[inp];
-
-					// coordinate difference of the current point and the cluster center
-					for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i] - 
-						ipcluarry[ipc].CoorCent[i];
-
-					// compute the contributions of the current cluster
-					for(j=0; j<numIntegrationPointsUnitSphere_; j++) {
-						scprd = Scprod_dim3_(crdip, uvcsphe[j])*wavruim;
-						zi.set(cos(scprd), sin(scprd));
-						zi *= zdt_vct[j];
-						zprip += zi;
-						for(k=0; k<NDIM; k++)
-						{
-							dik = wavruim*uvcsphe[j][k];
-							zk.set(-zi.im()*dik, zi.re()*dik);
-							zveip[k] += zk;
-						}
-					} // end of loop J
-
-					// add ZPRIP and ZVEIP to the global arrays
-					zprint[inp] += zprip;
-					for(j=0; j<NDIM; j++) zveint(inp, j) += zveip[j];  
-				} // end of loop IPP
+			  zmun += zi*zH0m[k]*Pm[k]*(double)(2*k + 1);
+			  zi.mul_i(harmonicTimeFactor_); // _ruimag!
 			}
-			else // for a near field cluster using the conventional method
+		      zdt_vct[j] = zmun*ztvcwork[isum + j]*weisphe[j];
+		    } // end of loop J
+		  
+		      // loop over points of the current cluster of internal points
+		  for(ipp=0; ipp<ipcluarry[ipc].NumOfIps; ipp++)
+		    {
+		      // initialize the countributions of the current cluster to potential and velocity of the current internal point
+		      zprip.set(0.0, 0.0);
+		      for(i=0; i<NDIM; i++) zveip[i].set(0.0, 0.0);
+		      
+		      // local number and nodal number of the current internal point
+		      inp = ipcluarry[ipc].NumsOfIps[ipp];
+		      ndip = nuinnode[inp];
+		      
+		      // coordinate difference of the current point and the cluster center
+		      for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i] - 
+					      ipcluarry[ipc].CoorCent[i];
+		      
+		      // compute the contributions of the current cluster
+		      for(j=0; j<numIntegrationPointsUnitSphere_; j++) {
+			scprd = Scprod_dim3_(crdip, uvcsphe[j])*wavruim;
+			zi.set(cos(scprd), sin(scprd));
+			zi *= zdt_vct[j];
+			zprip += zi;
+			for(k=0; k<NDIM; k++)
+			  {
+			    dik = wavruim*uvcsphe[j][k];
+			    zk.set(-zi.im()*dik, zi.re()*dik);
+			    zveip[k] += zk;
+			  }
+		      } // end of loop J
+		      
+		      // add ZPRIP and ZVEIP to the global arrays
+		      zprint[inp] += zprip;
+		      for(j=0; j<NDIM; j++) zveint(inp, j) += zveip[j];  
+		    } // end of loop IPP
+		}
+	      else // for a near field cluster using the conventional method
+		{
+		  // cluster parameters
+		  nrf_cl = ClustArray[ic].nuref;
+		  rfa_cl = ClustArray[ic].rffac;
+		  if(nrf_cl)
+		    {
+		      mir_cl = ClustArray[ic].ifmirro;
+		      for(i=0; i<NDIM; i++) rfdi_cl[i] = ClustArray[ic].ifrfdi[i];
+		    }
+		  
+		  // loop over members of the current cluster of internal points
+		  for(ipp=0; ipp<ipcluarry[ipc].NumOfIps; ipp++)
+		    {
+		      // local number and nodal number of the current internal point
+		      inp = ipcluarry[ipc].NumsOfIps[ipp];
+		      ndip = nuinnode[inp];
+		      
+		      // coordinates of the current point
+		      for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i];
+		      
+		      // loop over elements in the current cluster
+		      for(ig=0; ig<ClustArray[ic].NumOfEl; ig++)
 			{
-				// cluster parameters
-				nrf_cl = ClustArray[ic].nuref;
-				rfa_cl = ClustArray[ic].rffac;
-				if(nrf_cl)
+			  ie = ClustArray[ic].NumsOfEl[ig]; // element number
+			  
+			  // data of the current element
+			  NC_ComputeElementData(ie, 0, inode, ivi_d,
+						ifadmii, idofaddre, centeri, norveci, zadmi,
+						zvi_d, crdeli);
+			  areli = areael[ie];
+			  
+			  zpotd = cVpotele(ie, 0);
+			  for(k=0; k<inode; k++) zvi_d[k] = cVeloele(ie, k);
+			  
+			  ivi_d = 0;
+			  for(k=0; k<inode; k++) 
+			    {
+			      if(zvi_d[k].norm() > EPSY)
 				{
-					mir_cl = ClustArray[ic].ifmirro;
-					for(i=0; i<NDIM; i++) rfdi_cl[i] = ClustArray[ic].ifrfdi[i];
+				  ivi_d = 1;
+				  break;
 				}
-
-				// loop over members of the current cluster of internal points
-				for(ipp=0; ipp<ipcluarry[ipc].NumOfIps; ipp++)
-				{
-					// local number and nodal number of the current internal point
-					inp = ipcluarry[ipc].NumsOfIps[ipp];
-					ndip = nuinnode[inp];
-
-					// coordinates of the current point
-					for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i];
-
-					// loop over elements in the current cluster
-					for(ig=0; ig<ClustArray[ic].NumOfEl; ig++)
-					{
-						ie = ClustArray[ic].NumsOfEl[ig]; // element number
-
-						// data of the current element
-						NC_ComputeElementData(ie, 0, inode, ivi_d,
-							ifadmii, idofaddre, centeri, norveci, zadmi,
-							zvi_d, crdeli);
-						areli = areael[ie];
-
-                        zpotd = cVpotele(ie, 0);
-                        for(k=0; k<inode; k++) zvi_d[k] = cVeloele(ie, k);
-
-						ivi_d = 0;
-						for(k=0; k<inode; k++) 
-						{
-							if(zvi_d[k].norm() > EPSY)
-							{
-								ivi_d = 1;
-								break;
-							}
-						}
-
-						// reflection of the element
-						if(nrf_cl) NC_ReflectElementFMM(rfa_cl, mir_cl, rfdi_cl, inode, 0,
-							centeri, norveci, zvi_d, crdeli);
-						if(nrf_cl && rfa_cl == -1) zpotd.nega();
-			
-						// local coordinates of the nodes
-						if(inode == NETYP3)	for(k=0; k<inode; k++)
-						{
-								csip[k] = CSI6[k];
-								etap[k] = ETA6[k];
-						}
-						else for(k=0; k<inode; k++)
-						{
-							csip[k] = CSI8[k];
-							etap[k] = ETA8[k];
-						}
-
-						// generate the subelements
-						nsbe = NC_GenerateSubelements(NCout, ndip, crdip, ie, crdeli, areli,
+			    }
+			  
+			  // reflection of the element
+			  if(nrf_cl) NC_ReflectElementFMM(rfa_cl, mir_cl, rfdi_cl, inode, 0,
+							  centeri, norveci, zvi_d, crdeli);
+			  if(nrf_cl && rfa_cl == -1) zpotd.nega();
+			  
+			  // local coordinates of the nodes
+			  if(inode == NETYP3)	for(k=0; k<inode; k++)
+						  {
+						    csip[k] = CSI6[k];
+						    etap[k] = ETA6[k];
+						  }
+			  else for(k=0; k<inode; k++)
+				 {
+				   csip[k] = CSI8[k];
+				   etap[k] = ETA8[k];
+				 }
+			  
+			  // generate the subelements
+			  nsbe = NC_GenerateSubelements(NCout, ndip, crdip, ie, crdeli, areli,
 							inode, csip, etap, inode, xisbp,
 							etsbp, fasbp, ngsbp);
-
-						// initialize the countributions of the current element
-						zprip.set(0.0, 0.0);
-						for(i=0; i<NDIM; i++) zveip[i].set(0.0, 0.0);
-
-						// loop over the subelements
-						for(jsb=0; jsb<nsbe; jsb++)
-							zprip += NC_IntegrationTBEM(NCout, crdip, xisbp[jsb], etsbp[jsb],
-								ngsbp[jsb], fasbp[jsb], inode, crdeli,
-								zpotd, ivi_d, zvi_d, zveip,
-								inode, ie);
-
-						// add ZPRIP and ZVEIP to the global arrays
-						if(Tao_ != 1.0)
-						{
-							zprip.mul_r(Tao_);
-							for(j=0; j<NDIM; j++) zveip[j].mul_r(Tao_);
-						}
-						zprint[inp] += zprip;
-						for(j=0; j<NDIM; j++) zveint(inp, j) += zveip[j];
-
-					} // end of loop IG
-				} // end of loop IPP
-			} // end of ELSE
-			isum += numIntegrationPointsUnitSphere_;
-		} // end of loop IC
+			  
+			  // initialize the countributions of the current element
+			  zprip.set(0.0, 0.0);
+			  for(i=0; i<NDIM; i++) zveip[i].set(0.0, 0.0);
+			  
+			  // loop over the subelements
+			  for(jsb=0; jsb<nsbe; jsb++)
+			    zprip += NC_IntegrationTBEM(NCout, crdip, xisbp[jsb], etsbp[jsb],
+							ngsbp[jsb], fasbp[jsb], inode, crdeli,
+							zpotd, ivi_d, zvi_d, zveip,
+							inode, ie);
+			  
+			  // add ZPRIP and ZVEIP to the global arrays
+			  if(Tao_ != 1.0)
+			    {
+			      zprip.mul_r(Tao_);
+			      for(j=0; j<NDIM; j++) zveip[j].mul_r(Tao_);
+			    }
+			  zprint[inp] += zprip;
+			  for(j=0; j<NDIM; j++) zveint(inp, j) += zveip[j];
+			      
+			} // end of loop IG
+		    } // end of loop IPP
+		} // end of ELSE
+	      isum += numIntegrationPointsUnitSphere_;
+	    } // end of loop IC
 	} // end of loop IPC
 }
 
