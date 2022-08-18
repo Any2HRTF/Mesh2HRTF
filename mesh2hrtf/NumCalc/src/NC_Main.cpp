@@ -58,7 +58,8 @@ extern void NC_PostProcessing(ofstream&);
 // variables declared in NC_ConstantsVariables.h
 ofstream NCout;
 FILE *inputFile_, *tmpFile_;
-char jobTitle_[SIZE_LINE], versionNumber_[30];
+//char jobTitle_[SIZE_LINE], versionNumber_[30];
+string jobTitle_, versionNumber_;
 int currentFrequency_, numFrequencies_, istart_;
 double firstFrequencyStep_, frequencyStepIncrement_;
 int numElementGroups_, numElements_, numNodes_, minExpansionTermsFMM_, liorcn_, numSymmetricPlanes_, numIncidentPlaneWaves_, numPointSources_,

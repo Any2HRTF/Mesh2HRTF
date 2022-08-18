@@ -444,8 +444,8 @@ void NC_WriteResultsObjectMesh
 	lu_load = fopen(Dfname_3d, "w");
         if(!lu_load) NC_Error_Exit_1(NCout,  "Can not open the file ", Dfname_3d);
     */
-    fprintf(Lu_pBoundary, "%s\n", versionNumber_);
-    fprintf(Lu_vBoundary, "%s\n", versionNumber_);
+    fprintf(Lu_pBoundary, "%s\n", versionNumber_.c_str());
+    fprintf(Lu_vBoundary, "%s\n", versionNumber_.c_str());
     /* fe.out stuff removed for now kreiza
 	fprintf(lu_load, "%s\n", versionNumber_);
 	fprintf(lu_load, "1 0.0 %E %d\n", frequency_, currentFrequency_ + 1);
@@ -602,8 +602,8 @@ void NC_WriteResultsEvaluationGrid
     lu_vEvalGrid = fopen(Dfname_3d, "w");
     if(!lu_vEvalGrid) NC_Error_Exit_1(NCout,  "Can not open the file ", Dfname_3d);
     
-    fprintf(lu_pEvalGrid, "%s\n", versionNumber_);
-    fprintf(lu_vEvalGrid, "%s\n", versionNumber_);
+    fprintf(lu_pEvalGrid, "%s\n", versionNumber_.c_str());
+    fprintf(lu_vEvalGrid, "%s\n", versionNumber_.c_str());
 
 	// local variables and arrays
 	int inp, i, j, ndip, idip;

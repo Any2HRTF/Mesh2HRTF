@@ -157,24 +157,37 @@ void NC_ReadBasicParametersA
     if(chterms[0].compare("Mesh2HRTF")) NC_Error_Exit_0(NCout, "Key word Mesh2HRTF expected!");
 
     j1 = 0;
-    for(j=0; j<(int)chterms[0].length(); j++) versionNumber_[j1++] = chterms[0][j];
+    //    for(j=0; j<(int)chterms[0].length(); j++) versionNumber_[j1++] = chterms[0][j];
+    versionNumber_ = chterms[0];
+    /* this does not make sense right now, but if in the future we need 
+       a version number we have it in one of the chterms
+    */
     for(i=1; i<nterms; i++)
     {
-        strcat(versionNumber_, " ");
+      /*        strcat(versionNumber_, " ");
         j1++;
         for(j=0; j<(int)chterms[i].length(); j++) versionNumber_[j1++] = chterms[i][j];
+      */
+      versionNumber_ = versionNumber_ + " " + chterms[i];
     }
 
     // job title
     nterms = 0;
+    /* it is a bit weird to use NC_GetLine here that splits a string 
+       at " ", just to merge it later, but it also gets rid of comments
+    */
     while(!nterms){nterms = NC_GetLine(inputFile_, chinpline, chterms);}
     j1 = 0;
-    for(j=0; j<(int)chterms[0].length(); j++) jobTitle_[j1++] = chterms[0][j];
+    // for(j=0; j<(int)chterms[0].length(); j++) jobTitle_[j1++] = chterms[0][j];
+    jobTitle_ = chterms[0];
     for(i=1; i<nterms; i++)
     {
+      jobTitle_ = jobTitle_ + " " + chterms[i];
+      /*
         strcat(jobTitle_, " ");
         j1++;
         for(j=0; j<(int)chterms[i].length(); j++) jobTitle_[j1++] = chterms[i][j];
+      */
     }
 
     cout << "Job title: " << jobTitle_ << endl;

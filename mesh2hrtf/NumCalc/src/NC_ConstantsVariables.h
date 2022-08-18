@@ -66,8 +66,9 @@ extern ofstream NCout;  /* output stream */
 
 extern FILE *inputFile_, *tmpFile_;   /* input and output files */
 
-extern char jobTitle_[SIZE_LINE],   /* title of the job */
-            versionNumber_[30];     /* version number */
+//extern char jobTitle_[SIZE_LINE];   /* title of the job */
+extern string jobTitle_;
+extern string versionNumber_;     /* version number */
 
 extern int currentFrequency_,   /* number of the current frequency */
 		   numFrequencies_;     /* number of frequencies */
