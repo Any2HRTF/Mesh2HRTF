@@ -264,7 +264,7 @@ void NC_ReadBasicParametersB
 		methodFMM_ = 3; // DMLFMBEM
 		break;
 	default:
-		NC_Error_Exit_1(NCout, "methodBEM_ must be in [0 4]!", "methodBEM_ = ", methodBEM_);
+		NC_Error_Exit_1(NCout, "methodBEM_ must be in {0,1,4}!", "methodBEM_ = ", methodBEM_);
 	}
 
 	if(methodFMM_ && methodSolver_ == 4) methodSolver_ = 0;
