@@ -260,7 +260,7 @@ Labsettradibem:
 	if(numRowsOfCoefficientMatrix_ < Max_Dofs_TBEM) {
 	  goto Labsettradibem;
 	} else {
-	  NC_Error_Exit_1(NCout, "Frquency is too low, the single level FMBEM can not be used!",
+	  NC_Error_Exit_1(NCout, "Frquency is too low, the single level FMBEM can not be used! Also, the number of elements for the traditioal BEM is limited to 20000 Elements (~ 6.4Gb). Stopping NumCalc",
 			  "Frequency = ", frequency_);
 	}
       }
@@ -1173,118 +1173,142 @@ int NC_GenerateClustersEvalGrid
         dif_xyz[j] /= (double)(i);
     }
 
-    // compute the numbers of the intervals in the three coordinate directions for each internal point, in which it is located
-    for(j=0; j<NDIM; j++)
-    {
-        d0 = xyz_min[j];
-        for(k=0; k<ndiv_xyz[j]; k++)
-        {
-            d1 = d0 + dif_xyz[j];
-            for(i=0; i<numNodesOfEvaluationMesh_; i++)
-            {
-                ind = nuinnode[i];
-                if(nuindxyz(i, j) == -1 && nodesCoordinates[ind][j] >= d0 && nodesCoordinates[ind][j] < d1)
-                    nuindxyz(i, j) = k;
-            }
-            d0 = d1;
-        }
-    }
 
-    // check the results of the interval nubers
-    for(i=0; i<numNodesOfEvaluationMesh_; i++) for(j=0; j<NDIM; j++){
-        if(nuindxyz(i, j) == -1) {
+    nclus = ndiv_xyz[0]*ndiv_xyz[1]*ndiv_xyz[2];
+    if( (nclus > numNodesOfEvaluationMesh_) ) {
+      /* kreiza: 17.08.22 
+	 this will happen if the BEM mesh and the Eval mesh 
+	 differ in size very much. Let's try a new approach, every 
+	 evaluation node is its own clusters. This is not really ellegant, 
+	 but it  saves trouble in the postprocessing */
+      cout << "Warning: This feature is very experimental, and has not been tested yet. There is a problem, that the evaluation grid is much bigger then the BEM grid, are you sure that you have the correct units for both of them?\n";
+      iclus = numNodesOfEvaluationMesh_;
+      if(iclus > 0) ipcluarry = new IpCluster[iclus];
+      for (i = 0; i < iclus; i++) {
+	ipcluarry[i].NumOfIps = 1;
+	ipcluarry[i].NumsOfIps = new int[1];
+	ipcluarry[i].NumsOfIps[0] = i;
+	ind = nuinnode[i];
+	for (j = 0; j < NDIM; j++) {
+	  ipcluarry[i].CoorCent[j] = nodesCoordinates[ind][j];
+	}
+	ipcluarry[i].RadiClus = 0.0;
+      }
+    }
+    else {
+      // really cluster the evalgrid
+      // compute the numbers of the intervals in the three coordinate directions for each internal point, in which it is located
+      for(j=0; j<NDIM; j++)
+	{
+	  d0 = xyz_min[j];
+	  for(k=0; k<ndiv_xyz[j]; k++)
+	    {
+	      d1 = d0 + dif_xyz[j];
+	      for(i=0; i<numNodesOfEvaluationMesh_; i++)
+		{
+		  ind = nuinnode[i];
+		  if(nuindxyz(i, j) == -1 && nodesCoordinates[ind][j] >= d0 && nodesCoordinates[ind][j] < d1)
+                    nuindxyz(i, j) = k;
+		}
+	      d0 = d1;
+	    }
+	}
+      
+      // check the results of the interval nubers
+      for(i=0; i<numNodesOfEvaluationMesh_; i++) for(j=0; j<NDIM; j++){
+	  if(nuindxyz(i, j) == -1) {
             NC_Error_Exit_2(NCout, "The interval number of a internal point is not found!",
                             "number of the internal point = ", extNumbersOfNodes[nuinnode[i]],
                             "number of the direction = ", j);
-        }
-    }
-
-    // compute (1) number of the internal points in each cluster (nip_clus)
-    //         (2) the sequential number of each point in the clusters (nuip_clus)
-    nclus = ndiv_xyz[0]*ndiv_xyz[1]*ndiv_xyz[2];
-    Vector<int> nip_clus(nclus, 0), nuip_clus(numNodesOfEvaluationMesh_);
-
-    iclus = 0;
-    i1 = 0;
-    for(i=0; i<ndiv_xyz[0]; i++) for(j=0; j<ndiv_xyz[1]; j++) for(k=0; k<ndiv_xyz[2]; k++)
-    {
-        l1 = 0;
-        for(l=0; l<numNodesOfEvaluationMesh_; l++)
-            if(nuindxyz(l, 0) == i && nuindxyz(l, 1) == j && nuindxyz(l, 2) == k)
-            {
-                l1++;
-                nuip_clus[i1++] = l;
-            }
-        nip_clus[iclus] = l1;
-
-        iclus++;
-    }
-
-    // compute the number of clusters
-    iclus = 0;
-    for(j=0; j<nclus; j++) if(nip_clus[j] > 0) iclus++;
-
-    // generate the cluster array of the internal points
-    if(iclus > 0) ipcluarry = new IpCluster[iclus];
-
-    l1 = l = 0;
-    minClusterRadiusRM_ = 1.0e15;
-    avgClusterRadiusRM_ = maxClusterRadiusRM_ = 0.0;
-    for(i=0; i<nclus; i++)
-    {
-        // if there are not points in the cluster
-        if(nip_clus[i] == 0) continue;
-
-        // number of innternal points in the cluster
-        ipcluarry[l1].NumOfIps = nip_clus[i];
-
-        // the sequential numbers of internal points in the cluster
-        ipcluarry[l1].NumsOfIps = new int[nip_clus[i]];
-        for(j=0; j<nip_clus[i]; j++) ipcluarry[l1].NumsOfIps[j] = nuip_clus[l++];
-
-        // coordinates of the center of the cluster
-        for(j=0; j<NDIM; j++) xyz_max[j] = 0.0;
-        for(j=0; j<ipcluarry[l1].NumOfIps; j++)
-        {
-            ind = nuinnode[ipcluarry[l1].NumsOfIps[j]];
-            for(k=0; k<NDIM; k++) xyz_max[k] += nodesCoordinates[ind][k];
-        }
-        for(j=0; j<NDIM; j++) ipcluarry[l1].CoorCent[j] =
-            xyz_max[j]/(double)(ipcluarry[l1].NumOfIps);
-
-        // radius of the clusters
-        radi = 0.0;
-        for(j=0; j<ipcluarry[l1].NumOfIps; j++)
-        {
-            ind = nuinnode[ipcluarry[l1].NumsOfIps[j]];
-            d0 = 0.0;
-            for(k=0; k<NDIM; k++)
-            {
-                d1 = nodesCoordinates[ind][k] - ipcluarry[l1].CoorCent[k];
-                d0 += d1*d1;
-            }
-            d0 = sqrt(d0);
-            if(d0 > radi) radi = d0;
-        }
-        ipcluarry[l1].RadiClus = radi;
-
-        // compute the maximum, minimum and average radius of the clusters
-        if(radi > maxClusterRadiusRM_) maxClusterRadiusRM_ = radi;
-        if(radi < minClusterRadiusRM_) minClusterRadiusRM_ = radi;
-        avgClusterRadiusRM_ += radi;
-        l1++;
-    }
-    avgClusterRadiusRM_ /= (double)l1;
-
-    if(methodFMM_ >= 2) {radi = clulevarry[0].RadiMaxLv;}
-    else if(methodFMM_ == 1) {radi = maxClusterRadiusBE_;}
-    if(maxClusterRadiusRM_ > radi)
-    {
-        NC_Error_Warning_2(NCout, "Maximum radius of evaluation clusters >  that of BE clusters!",
-                           "Maximum radius of evaluation clusters = ", maxClusterRadiusRM_,
-                           "Maximum radius of BE clusters = ", radi);
-    }
-
+	  }
+	}
+      
+      // compute (1) number of the internal points in each cluster (nip_clus)
+      //         (2) the sequential number of each point in the clusters (nuip_clus)
+      
+      Vector<int> nip_clus(nclus, 0), nuip_clus(numNodesOfEvaluationMesh_);
+      
+      iclus = 0;
+      i1 = 0;
+      for(i=0; i<ndiv_xyz[0]; i++) for(j=0; j<ndiv_xyz[1]; j++) for(k=0; k<ndiv_xyz[2]; k++)
+								  {
+								    l1 = 0;
+								    for(l=0; l<numNodesOfEvaluationMesh_; l++)
+								      if(nuindxyz(l, 0) == i && nuindxyz(l, 1) == j && nuindxyz(l, 2) == k)
+									{
+									  l1++;
+									  nuip_clus[i1++] = l;
+									}
+								    nip_clus[iclus] = l1;
+								    
+								    iclus++;
+								  }
+      
+      // compute the number of clusters
+      iclus = 0;
+      for(j=0; j<nclus; j++) if(nip_clus[j] > 0) iclus++;
+      
+      // generate the cluster array of the internal points
+      if(iclus > 0) ipcluarry = new IpCluster[iclus];
+      
+      l1 = l = 0;
+      minClusterRadiusRM_ = 1.0e15;
+      avgClusterRadiusRM_ = maxClusterRadiusRM_ = 0.0;
+      for(i=0; i<nclus; i++)
+	{
+	  // if there are not points in the cluster
+	  if(nip_clus[i] == 0) continue;
+	  
+	  // number of innternal points in the cluster
+	  ipcluarry[l1].NumOfIps = nip_clus[i];
+	  
+	  // the sequential numbers of internal points in the cluster
+	  ipcluarry[l1].NumsOfIps = new int[nip_clus[i]];
+	  for(j=0; j<nip_clus[i]; j++) ipcluarry[l1].NumsOfIps[j] = nuip_clus[l++];
+	  
+	  // coordinates of the center of the cluster
+	  for(j=0; j<NDIM; j++) xyz_max[j] = 0.0;
+	  for(j=0; j<ipcluarry[l1].NumOfIps; j++)
+	    {
+	      ind = nuinnode[ipcluarry[l1].NumsOfIps[j]];
+	      for(k=0; k<NDIM; k++) xyz_max[k] += nodesCoordinates[ind][k];
+	    }
+	  for(j=0; j<NDIM; j++) ipcluarry[l1].CoorCent[j] =
+				  xyz_max[j]/(double)(ipcluarry[l1].NumOfIps);
+	  
+	  // radius of the clusters
+	  radi = 0.0;
+	  for(j=0; j<ipcluarry[l1].NumOfIps; j++)
+	    {
+	      ind = nuinnode[ipcluarry[l1].NumsOfIps[j]];
+	      d0 = 0.0;
+	      for(k=0; k<NDIM; k++)
+		{
+		  d1 = nodesCoordinates[ind][k] - ipcluarry[l1].CoorCent[k];
+		  d0 += d1*d1;
+		}
+	      d0 = sqrt(d0);
+	      if(d0 > radi) radi = d0;
+	    }
+	  ipcluarry[l1].RadiClus = radi;
+	  
+	  // compute the maximum, minimum and average radius of the clusters
+	  if(radi > maxClusterRadiusRM_) maxClusterRadiusRM_ = radi;
+	  if(radi < minClusterRadiusRM_) minClusterRadiusRM_ = radi;
+	  avgClusterRadiusRM_ += radi;
+	  l1++;
+	}
+      avgClusterRadiusRM_ /= (double)l1;
+      
+      if(methodFMM_ >= 2) {radi = clulevarry[0].RadiMaxLv;}
+      else if(methodFMM_ == 1) {radi = maxClusterRadiusBE_;}
+      if(maxClusterRadiusRM_ > radi)
+	{
+	  NC_Error_Warning_2(NCout, "Maximum radius of evaluation clusters >  that of BE clusters!",
+			     "Maximum radius of evaluation clusters = ", maxClusterRadiusRM_,
+			     "Maximum radius of BE clusters = ", radi);
+	}
+    } // that should be the if statement about the regular clusters
     return(iclus);
 }
 
