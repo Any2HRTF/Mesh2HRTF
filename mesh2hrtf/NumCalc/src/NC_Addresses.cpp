@@ -1181,7 +1181,7 @@ int NC_GenerateClustersEvalGrid
 	 differ in size very much. Let's try a new approach, every 
 	 evaluation node is its own clusters. This is not really ellegant, 
 	 but it  saves trouble in the postprocessing */
-      cout << "Warning: This feature is very experimental, and has not been tested yet. There is a problem, that the evaluation grid is much bigger then the BEM grid, are you sure that you have the correct units for both of them?\n";
+      //cout << "Warning: This feature is very experimental, and has not been tested yet. There is a problem, that the evaluation grid is much bigger then the BEM grid, are you sure that you have the correct units for both of them?\n";
       iclus = numNodesOfEvaluationMesh_;
       if(iclus > 0) ipcluarry = new IpCluster[iclus];
       for (i = 0; i < iclus; i++) {
