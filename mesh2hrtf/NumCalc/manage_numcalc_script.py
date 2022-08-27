@@ -111,3 +111,8 @@ m2h.manage_numcalc(
     args["wait_time"],
     args["starting_order"],
     args["confirm_errors"] == 'True')
+
+# keep window from closing if script is launched from a GUI:
+if args["confirm_errors"]:
+    print('\n\n\n NumCalc simulations Complete.')
+    input("     >>> Press Enter <<<     to exit manage_numcalc_script")
