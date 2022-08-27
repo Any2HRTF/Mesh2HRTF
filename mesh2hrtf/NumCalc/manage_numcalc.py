@@ -416,7 +416,6 @@ def _raise_error(message, text_color, log_file, confirm_errors):
     # error to console
     if confirm_errors:
         if os.name == 'nt':  # Windows detected
-            text_color = ''  # color codes do not work as intended on Win10
             print(message)
             input("Press Enter to exit manage_numcalc")
         else:  # elif os.name == 'posix': Linux or Mac detected

@@ -7,10 +7,10 @@ directory and an error is raised if any unfinished instances are detected.
 
 HOW TO USE
 ----------
-run ``python num_calc_manager -h`` for help (requires Python and psutil).
+for help, run ``python manage_numcalc_script.py -h``
 
 Tips:
-  1- It is not recommended to run multiple NumCalcManager.py scripts on the
+  1- It is not recommended to run multiple manage_numcalc_script.py scripts on the
      same computer (but it would work)
   2- avoid folder names with spaces. Code is not tested for that.
   3- If there is a problem with some instance result delete its output folder
@@ -78,8 +78,8 @@ parser.add_argument(
           "the two approaches."))
 parser.add_argument(
     "--confirm_errors", default='True', choices=('True', 'False'), type=str,
-    help=("If True, num_calc_manager waits for user input in case an error "
-          "occurs."))
+    help=("If True, manage_numcalc_script waits for user input in case an "
+          "error occurs."))
 
 args = vars(parser.parse_args())
 
