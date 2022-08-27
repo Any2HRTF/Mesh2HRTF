@@ -123,11 +123,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             text_color_red, log_file, confirm_errors)
 
     # Detect what the project_path or "getcwd()" is pointing to:
-    if os.path.basename(project_path) == 'NumCalc':
-        # project_path is a NumCalc folder
-        all_projects = [os.path.dirname(project_path)]
-        log_file = os.path.join(project_path, '..', log_file)
-    elif os.path.isfile(os.path.join(project_path, 'parameters.json')):
+    if os.path.isfile(os.path.join(project_path, 'parameters.json')):
         # project_path is a Mesh2HRTF project folder
         all_projects = [project_path]
         log_file = os.path.join(project_path, log_file)
