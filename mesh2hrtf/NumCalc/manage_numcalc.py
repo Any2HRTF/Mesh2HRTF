@@ -265,9 +265,6 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
         # sort instances according to RAM consumption (lowest first)
         instances_to_run = instances_to_run[np.argsort(instances_to_run[:, 3])]
-        # assure highest first if demanded
-        if starting_order != "low":
-            instances_to_run = np.flip(instances_to_run, axis=0)
 
         # check if available memory is enough for running the instance with the
         # highest memory consumption
@@ -279,6 +276,10 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                 f"{int(instances_to_run[0, 1])} requires "
                 f"{round(instances_to_run[0, 3] * ram_safety_factor, 2)} GB."),
                 text_color_red, log_file, confirm_errors)
+
+        # assure highest first if demanded
+        if starting_order != "low":
+            instances_to_run = np.flip(instances_to_run, axis=0)
 
         # main loop for starting instances
         started_instance = True
