@@ -493,7 +493,7 @@ def _check_project(project, numcalc_executable, log_file):
             if os.name == 'nt':  # Windows detected
                 # run NumCalc and route all printouts to a log file
                 subprocess.run(
-                    [f"{numcalc_executable} -estimate_ram"],
+                    f"{numcalc_executable} -estimate_ram",
                     stdout=subprocess.DEVNULL, cwd=ff, check=True)
 
             else:  # elif os.name == 'posix': Linux or Mac detected
