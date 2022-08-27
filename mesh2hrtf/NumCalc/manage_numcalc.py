@@ -23,7 +23,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     .. note ::
 
         `manage_numcalc` can also be launched by running the python script
-        `numcalc_manager_script.py` contained in the subfolder
+        `manage_numcalc_script.py` contained in the subfolder
         `mesh2hrtf/NumCalc` of the Mesh2HRTF Git repository.
 
     Parameters
@@ -75,7 +75,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             mixes the two approaches above.
 
     confirm_errors : bool, optional
-        If True, num_calc_manager waits for user input in case an error "
+        If True, manage_numcalc waits for user input in case an error "
         occurs. The default false exits the function immediately if an error
         occurs.
     """
@@ -83,7 +83,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     # log_file initialization -------------------------------------------------
     current_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
     log_file = os.path.join(
-        project_path, f"numcalc_manager_{current_time}.txt")
+        project_path, f"manage_numcalc_{current_time}.txt")
 
     # remove old log-file
     if os.path.isfile(log_file):
@@ -139,7 +139,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
         # stop if no project folders were detected
         if len(all_projects) == 0:
-            message = ("num_calc_manager could not detect any Mesh2HRTF "
+            message = ("manage_numcalc could not detect any Mesh2HRTF "
                        f"projects at project_path={project_path}")
             _raise_error(message, text_color_red, log_file, confirm_errors)
 
@@ -188,7 +188,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         for calc_file in NumCalc_runtime_files:
             if not os.path.isfile(os.path.join(numcalc_path, calc_file)):
                 message = (
-                    f"The file {calc_file} is missing or num_calc_manager "
+                    f"The file {calc_file} is missing or manage_numcalc "
                     f"did not find the containing folder 'NumCalc_WindowsExe'")
                 _raise_error(message, text_color_red, log_file, confirm_errors)
 
@@ -417,9 +417,12 @@ def _raise_error(message, text_color, log_file, confirm_errors):
     if confirm_errors:
         if os.name == 'nt':  # Windows detected
             text_color = ''  # color codes do not work as intended on Win10
-        print(text_color + message)
-        input(text_color + "Press Enter to exit num_calc_manager\033[0m")
-        raise Exception("num_calc_manager was stopped due to an error")
+            print(message)
+            input("Press Enter to exit manage_numcalc")
+        else:  # elif os.name == 'posix': Linux or Mac detected
+            print(text_color + message)
+            input(text_color + "Press Enter to exit manage_numcalc\033[0m")
+        raise Exception("manage_numcalc was stopped due to an error")
     else:
         raise ValueError(message)
 
