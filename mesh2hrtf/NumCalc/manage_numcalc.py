@@ -414,6 +414,8 @@ def _raise_error(message, text_color, log_file, confirm_errors):
 
     # error to console
     if confirm_errors:
+        if os.name == 'nt':  # Windows detected
+            text_color = ''  # color codes do not work as intended on Win10
         print(text_color + message)
         input(text_color + "Press Enter to exit num_calc_manager\033[0m")
         raise Exception("num_calc_manager was stopped due to an error")
@@ -424,6 +426,8 @@ def _raise_error(message, text_color, log_file, confirm_errors):
 def _print_message(message, text_color, log_file):
     """Print message to console and log file"""
 
+    if os.name == 'nt':  # Windows detected
+        text_color = ''  # color codes do not work as intended on Win10
     print(text_color + message)
 
     with open(log_file, "a", encoding="utf8", newline="\n") as f:
