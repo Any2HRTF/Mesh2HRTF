@@ -91,7 +91,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
     # default values ----------------------------------------------------------
     if os.name == "nt":
-        numcalc_path = "Searching NumCalc.exe"\
+        numcalc_path = "Searching for NumCalc_WindowsExe"\
              if numcalc_path is None else numcalc_path
     else:
         numcalc_path = "NumCalc" if numcalc_path is None else numcalc_path
@@ -337,9 +337,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
             if os.name == 'nt':  # Windows detected
                 # create a log file for all print-outs
-                LogFileHandle = open(f"NC{step}-{step}_log.txt", "w")
+                LogFileHandle = open(f"{cwd}\\NC{step}-{step}_log.txt", "w")
                 # run NumCalc and route all printouts to a log file
-                subprocess.run(
+                subprocess.Popen(
                     f"{numcalc_executable} -istart {step} -iend {step}",
                     stdout=LogFileHandle, cwd=cwd)
 
