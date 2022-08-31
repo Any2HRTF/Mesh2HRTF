@@ -14,7 +14,7 @@ Tips:
      same computer (but it would work)
   2- avoid folder names with spaces. Code is not tested for that.
   3- If there is a problem with some instance result delete its output folder
-     folder "be.X" and the Manager will automatically re-run that instance on
+     "be.X" and the Manager will automatically re-run that instance on
      the next run.
 """
 
@@ -28,10 +28,10 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
     "--project_path", default=False, type=str,
-    help=("The working directory. This can be a directory that contains "
-          "multiple Mesh2HRTF project folders, a Mesh2HRTF project folder or "
-          "a NumCalc folder inside a Mesh2HRTF project folder. The default "
-          "uses the directory containing this file"))
+    help=('The directory to simulate: It can be path to either '
+          '1- directory that contains multiple Mesh2HRTF project folders or '
+          '2- one Mesh2HRTF project folder (folder with ""parameters.json"")'
+          ' The default uses the directory containing this script.'))
 parser.add_argument(
     "--numcalc_path", default=False, type=str,
     help=("On Unix, this is the path to the NumCalc binary (by default "

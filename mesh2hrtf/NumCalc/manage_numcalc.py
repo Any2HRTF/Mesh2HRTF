@@ -29,9 +29,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     Parameters
     ----------
     project_path : str, optional
-        The directory containing the Mesh2HRTF projects. This can be a
-        directory that contains multiple Mesh2HRTF project folders, a Mesh2HRTF
-        project folder or a NumCalc folder inside a Mesh2HRTF project folder.
+        The directory to simulate: It can be path to either
+        1- directory that contains multiple Mesh2HRTF project folders or
+        2- one Mesh2HRTF project folder (folder containing "parameters.json").
         The default is os.getcwd()
     numcalc_path : str, optional
         On Unix, this is the path to the NumCalc binary (by default 'NumCalc'
@@ -338,7 +338,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
             if os.name == 'nt':  # Windows detected
                 # create a log file for all print-outs
-                LogFileHandle = open(f"{cwd}\\NC{step}-{step}_log.txt", "w")
+                LogFileHandle = open(os.path.join(cwd, "NC{step}-{step}_log.txt", "w")
                 # run NumCalc and route all printouts to a log file
                 subprocess.Popen(
                     f"{numcalc_executable} -istart {step} -iend {step}",

@@ -1,6 +1,6 @@
 """
-Test numcalc_manger with default parameters. Testing parameter combinations is
-not done. Be careful when changing numcalc_manger()!
+Test manage_numcalc with default parameters. Testing parameter combinations is
+not done. Be careful when changing manage_numcalc()!
 """
 import pytest
 import subprocess
@@ -58,7 +58,7 @@ def test_defaults(mode):
              cwd=script_path, check=True, shell=True)
 
     # check if files exist
-    assert len(glob.glob(os.path.join(temp.name, "numcalc_manager_*txt")))
+    assert len(glob.glob(os.path.join(temp.name, "manage_numcalc_*txt")))
 
     base = os.path.join(temp.name, "SHTF", "NumCalc", "source_1")
     assert os.path.isfile(os.path.join(base, "Memory.txt"))
