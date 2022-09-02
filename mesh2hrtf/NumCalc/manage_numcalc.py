@@ -285,7 +285,8 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             instances_to_run = np.flip(instances_to_run, axis=0)
 
         # main loop for starting instances
-        started_instance = True
+        started_instance = False  # init
+        ram_budget = 99999.9  # init. keeps track of free RAM in the system
 
         while instances_to_run.shape[0]:
 
@@ -296,6 +297,12 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             ram_available, ram_used = _get_current_ram(ram_offset)
             cpu_load = psutil.cpu_percent(.1)
             running_instances = _numcalc_instances()
+
+            if ram_budget - ram_required < 0:
+                # wait for proper initialization of NumCalc:
+                time.sleep(wait_time)
+                ram_budget = -1.0  # flag to re-initialize ram_budget
+            #  print(f"debug: ram_budget = {ram_budget}")
 
             # wait if
             # - CPU usage too high
@@ -354,15 +361,19 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                     f"{numcalc_executable} -istart {step} -iend {step}"
                     f" >NC{step}-{step}_log.txt"), shell=True, cwd=cwd)
 
-            # set flag to indicate started instance
-            # (controls command line output)
-            started_instance = True
             # prepare instances for next loop
             instances_to_run = np.delete(instances_to_run, idx, 0)
             if starting_order == "alternate":
                 instances_to_run = np.flip(instances_to_run, axis=0)
-            # wait for next loop
-            time.sleep(wait_time)
+
+
+            if started_instance and ram_budget < 0:
+                ram_budget -= ram_required  # substract from budget
+                #  time.sleep(wait_time_busy)   # optional wait for 1sec
+            else:
+                ram_budget = ram_available  # reset
+                # set flag to indicate started instance
+                started_instance = True
 
         #  END of per project loop --------------------------------------------
     #  END of all projects loop -----------------------------------------------
