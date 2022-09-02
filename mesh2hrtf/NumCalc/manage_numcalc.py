@@ -267,14 +267,17 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         instances_to_run = instances_to_run[np.argsort(instances_to_run[:, 3])]
 
         # check if available memory is enough for running the instance with the
-        # highest memory consumption
+        # highest memory consumption without ever exceeding 100% of RAM.
         ram_available, ram_used = _get_current_ram(ram_offset)
         if ram_available < instances_to_run[-1, 3] * ram_safety_factor:
+            # note: it IS possible to run simulations that use even more than
+            # 100% of available system RAM - only the performance will be poor.
             _raise_error((
+                f"Stop - not sufficient free RAM for this simulation project: "
                 f"Available RAM is {round(ram_available, 2)} GB, but frequency"
-                f" step {int(instances_to_run[0, 1])} of source "
-                f"{int(instances_to_run[0, 1])} requires "
-                f"{round(instances_to_run[0, 3] * ram_safety_factor, 2)} GB."),
+                f" step {int(instances_to_run[-1, 1])} of source "
+                f"{int(instances_to_run[-1, 0])} requires "
+                f"{round(instances_to_run[-1, 3] * ram_safety_factor, 2)} GB."),
                 text_color_red, log_file, confirm_errors)
 
         # assure highest first if demanded
@@ -310,7 +313,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                          f" {running_instances} NumCalc instances running ("
                          f"{cpu_load}% CPU load)\n"
                          f" {round(ram_available, 2)} GB RAM available ("
-                         f"{round(ram_used, 2)} GB used)\n"),
+                         f"{round(ram_required, 2)} GB RAM needed next)\n"),
                         text_color_reset, log_file)
                     started_instance = False
 
@@ -338,7 +341,8 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
             if os.name == 'nt':  # Windows detected
                 # create a log file for all print-outs
-                LogFileHandle = open(os.path.join(cwd, "NC{step}-{step}_log.txt", "w")
+                LogFileHandle = open(
+                    os.path.join(cwd, "NC{step}-{step}_log.txt"), "w")
                 # run NumCalc and route all printouts to a log file
                 subprocess.Popen(
                     f"{numcalc_executable} -istart {step} -iend {step}",
