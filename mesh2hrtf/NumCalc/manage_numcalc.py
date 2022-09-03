@@ -290,19 +290,19 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
         while instances_to_run.shape[0]:
 
-            # current time and resources
-            current_time = time.strftime(
-                "%b %d %Y, %H:%M:%S", time.localtime())
             ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
-            ram_available, ram_used = _get_current_ram(ram_offset)
-            cpu_load = psutil.cpu_percent(.1)
-            running_instances = _numcalc_instances()
-
             if ram_budget - ram_required < 0:
                 # wait for proper initialization of NumCalc:
                 time.sleep(wait_time)
                 ram_budget = -1.0  # flag to re-initialize ram_budget
-            #  print(f"debug: ram_budget = {ram_budget}")
+            print(f"debug: ram_budget = {ram_budget}")
+
+            # current time and resources
+            current_time = time.strftime(
+                "%b %d %Y, %H:%M:%S", time.localtime())
+            ram_available, ram_used = _get_current_ram(ram_offset)
+            cpu_load = psutil.cpu_percent(.1)
+            running_instances = _numcalc_instances()
 
             # wait if
             # - CPU usage too high
@@ -367,8 +367,8 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                 instances_to_run = np.flip(instances_to_run, axis=0)
 
 
-            if started_instance and ram_budget < 0:
-                ram_budget -= ram_required  # substract from budget
+            if started_instance and ram_budget > 0:
+                ram_budget -= max(ram_required * 1.1, 2.0)  # substract from budget
                 #  time.sleep(wait_time_busy)   # optional wait for 1sec
             else:
                 ram_budget = ram_available  # reset
