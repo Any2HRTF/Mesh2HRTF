@@ -286,16 +286,17 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
         # main loop for starting instances
         started_instance = False  # init
-        ram_budget = 99999.9  # init. keeps track of free RAM in the system
+        # ram_budget = 99999.9  # init. keeps track of free RAM in the system
 
         while instances_to_run.shape[0]:
 
             ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
-            if ram_budget - ram_required < 0:
-                # wait for proper initialization of NumCalc:
-                time.sleep(wait_time)
-                ram_budget = -1.0  # flag to re-initialize ram_budget
-            print(f"debug: ram_budget = {ram_budget}")
+
+            # if ram_budget - ram_required < 0:
+            #     # wait for proper initialization of NumCalc:
+            #     time.sleep(wait_time)
+            #     ram_budget = -1.0  # flag to re-initialize ram_budget
+            # print(f"debug: ram_budget = {ram_budget}")
 
             # current time and resources
             current_time = time.strftime(
@@ -366,14 +367,14 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             if starting_order == "alternate":
                 instances_to_run = np.flip(instances_to_run, axis=0)
 
-
-            if started_instance and ram_budget > 0:
-                ram_budget -= max(ram_required * 1.1, 2.0)  # substract from budget
-                #  time.sleep(wait_time_busy)   # optional wait for 1sec
-            else:
-                ram_budget = ram_available  # reset
-                # set flag to indicate started instance
-                started_instance = True
+            started_instance = True
+            time.sleep(wait_time)  # long wait to initialize RAM
+            # if started_instance and ram_budget > 0:
+            #     ram_budget -= max(ram_required * 2.0, 2.0)  # substract from budget
+            # else:
+            #     ram_budget = ram_available  # reset
+            #     # set flag to indicate started instance
+            #     started_instance = True
 
         #  END of per project loop --------------------------------------------
     #  END of all projects loop -----------------------------------------------
