@@ -23,15 +23,15 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     .. note ::
 
         `manage_numcalc` can also be launched by running the python script
-        `numcalc_manager_script.py` contained in the subfolder
+        `manage_numcalc_script.py` contained in the subfolder
         `mesh2hrtf/NumCalc` of the Mesh2HRTF Git repository.
 
     Parameters
     ----------
     project_path : str, optional
-        The directory containing the Mesh2HRTF projects. This can be a
-        directory that contains multiple Mesh2HRTF project folders, a Mesh2HRTF
-        project folder or a NumCalc folder inside a Mesh2HRTF project folder.
+        The directory to simulate: It can be path to either
+        1- directory that contains multiple Mesh2HRTF project folders or
+        2- one Mesh2HRTF project folder (folder containing "parameters.json").
         The default is os.getcwd()
     numcalc_path : str, optional
         On Unix, this is the path to the NumCalc binary (by default 'NumCalc'
@@ -75,7 +75,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             mixes the two approaches above.
 
     confirm_errors : bool, optional
-        If True, num_calc_manager waits for user input in case an error "
+        If True, manage_numcalc waits for user input in case an error "
         occurs. The default false exits the function immediately if an error
         occurs.
     """
@@ -83,7 +83,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     # log_file initialization -------------------------------------------------
     current_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
     log_file = os.path.join(
-        project_path, f"numcalc_manager_{current_time}.txt")
+        project_path, f"manage_numcalc_{current_time}.txt")
 
     # remove old log-file
     if os.path.isfile(log_file):
@@ -91,7 +91,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
     # default values ----------------------------------------------------------
     if os.name == "nt":
-        numcalc_path = "Searching NumCalc.exe"\
+        numcalc_path = "Searching for NumCalc_WindowsExe"\
              if numcalc_path is None else numcalc_path
     else:
         numcalc_path = "NumCalc" if numcalc_path is None else numcalc_path
@@ -123,11 +123,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             text_color_red, log_file, confirm_errors)
 
     # Detect what the project_path or "getcwd()" is pointing to:
-    if os.path.basename(project_path) == 'NumCalc':
-        # project_path is a NumCalc folder
-        all_projects = [os.path.dirname(project_path)]
-        log_file = os.path.join(project_path, '..', log_file)
-    elif os.path.isfile(os.path.join(project_path, 'parameters.json')):
+    if os.path.isfile(os.path.join(project_path, 'parameters.json')):
         # project_path is a Mesh2HRTF project folder
         all_projects = [project_path]
         log_file = os.path.join(project_path, log_file)
@@ -143,7 +139,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
         # stop if no project folders were detected
         if len(all_projects) == 0:
-            message = ("num_calc_manager could not detect any Mesh2HRTF "
+            message = ("manage_numcalc could not detect any Mesh2HRTF "
                        f"projects at project_path={project_path}")
             _raise_error(message, text_color_red, log_file, confirm_errors)
 
@@ -192,7 +188,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         for calc_file in NumCalc_runtime_files:
             if not os.path.isfile(os.path.join(numcalc_path, calc_file)):
                 message = (
-                    f"The file {calc_file} is missing or num_calc_manager "
+                    f"The file {calc_file} is missing or manage_numcalc "
                     f"did not find the containing folder 'NumCalc_WindowsExe'")
                 _raise_error(message, text_color_red, log_file, confirm_errors)
 
@@ -269,30 +265,42 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
         # sort instances according to RAM consumption (lowest first)
         instances_to_run = instances_to_run[np.argsort(instances_to_run[:, 3])]
+
+        # check if available memory is enough for running the instance with the
+        # highest memory consumption without ever exceeding 100% of RAM.
+        ram_available, ram_used = _get_current_ram(ram_offset)
+        if ram_available < instances_to_run[-1, 3] * ram_safety_factor:
+            # note: it IS possible to run simulations that use even more than
+            # 100% of available system RAM - only the performance will be poor.
+            _raise_error((
+                f"Stop - not sufficient free RAM for this simulation project: "
+                f"Available RAM is {round(ram_available, 2)} GB, but frequency"
+                f" step {int(instances_to_run[-1, 1])} of source "
+                f"{int(instances_to_run[-1, 0])} requires "
+                f"{round(instances_to_run[-1, 3] * ram_safety_factor, 2)} GB."),
+                text_color_red, log_file, confirm_errors)
+
         # assure highest first if demanded
         if starting_order != "low":
             instances_to_run = np.flip(instances_to_run, axis=0)
 
-        # check if available memory is enough for running the instance with the
-        # highest memory consumption
-        ram_available, ram_used = _get_current_ram(ram_offset)
-        if ram_available < instances_to_run[-1, 3] * ram_safety_factor:
-            _raise_error((
-                f"Available RAM is {round(ram_available, 2)} GB, but frequency"
-                f" step {int(instances_to_run[0, 1])} of source "
-                f"{int(instances_to_run[0, 1])} requires "
-                f"{round(instances_to_run[0, 3] * ram_safety_factor, 2)} GB."),
-                text_color_red, log_file, confirm_errors)
-
         # main loop for starting instances
-        started_instance = True
+        started_instance = False  # init
+        # ram_budget = 99999.9  # init. keeps track of free RAM in the system
 
         while instances_to_run.shape[0]:
+
+            ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
+
+            # if ram_budget - ram_required < 0:
+            #     # wait for proper initialization of NumCalc:
+            #     time.sleep(wait_time)
+            #     ram_budget = -1.0  # flag to re-initialize ram_budget
+            # print(f"debug: ram_budget = {ram_budget}")
 
             # current time and resources
             current_time = time.strftime(
                 "%b %d %Y, %H:%M:%S", time.localtime())
-            ram_required = np.min(instances_to_run[:, 3]) * ram_safety_factor
             ram_available, ram_used = _get_current_ram(ram_offset)
             cpu_load = psutil.cpu_percent(.1)
             running_instances = _numcalc_instances()
@@ -313,7 +321,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                          f" {running_instances} NumCalc instances running ("
                          f"{cpu_load}% CPU load)\n"
                          f" {round(ram_available, 2)} GB RAM available ("
-                         f"{round(ram_used, 2)} GB used)\n"),
+                         f"{round(ram_required, 2)} GB RAM needed next)\n"),
                         text_color_reset, log_file)
                     started_instance = False
 
@@ -341,9 +349,10 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
             if os.name == 'nt':  # Windows detected
                 # create a log file for all print-outs
-                LogFileHandle = open(f"NC{step}-{step}_log.txt", "w")
+                LogFileHandle = open(
+                    os.path.join(cwd, "NC{step}-{step}_log.txt"), "w")
                 # run NumCalc and route all printouts to a log file
-                subprocess.run(
+                subprocess.Popen(
                     f"{numcalc_executable} -istart {step} -iend {step}",
                     stdout=LogFileHandle, cwd=cwd)
 
@@ -353,15 +362,19 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                     f"{numcalc_executable} -istart {step} -iend {step}"
                     f" >NC{step}-{step}_log.txt"), shell=True, cwd=cwd)
 
-            # set flag to indicate started instance
-            # (controls command line output)
-            started_instance = True
             # prepare instances for next loop
             instances_to_run = np.delete(instances_to_run, idx, 0)
             if starting_order == "alternate":
                 instances_to_run = np.flip(instances_to_run, axis=0)
-            # wait for next loop
-            time.sleep(wait_time)
+
+            started_instance = True
+            time.sleep(wait_time)  # long wait to initialize RAM
+            # if started_instance and ram_budget > 0:
+            #     ram_budget -= max(ram_required * 2.0, 2.0)  # substract from budget
+            # else:
+            #     ram_budget = ram_available  # reset
+            #     # set flag to indicate started instance
+            #     started_instance = True
 
         #  END of per project loop --------------------------------------------
     #  END of all projects loop -----------------------------------------------
@@ -418,9 +431,13 @@ def _raise_error(message, text_color, log_file, confirm_errors):
 
     # error to console
     if confirm_errors:
-        print(text_color + message)
-        input(text_color + "Press Enter to exit num_calc_manager\033[0m")
-        raise Exception("num_calc_manager was stopped due to an error")
+        if os.name == 'nt':  # Windows detected
+            print(message)
+            input("Press Enter to exit manage_numcalc")
+        else:  # elif os.name == 'posix': Linux or Mac detected
+            print(text_color + message)
+            input(text_color + "Press Enter to exit manage_numcalc\033[0m")
+        raise Exception("manage_numcalc was stopped due to an error")
     else:
         raise ValueError(message)
 
@@ -428,6 +445,8 @@ def _raise_error(message, text_color, log_file, confirm_errors):
 def _print_message(message, text_color, log_file):
     """Print message to console and log file"""
 
+    if os.name == 'nt':  # Windows detected
+        text_color = ''  # color codes do not work as intended on Win10
     print(text_color + message)
 
     with open(log_file, "a", encoding="utf8", newline="\n") as f:
@@ -497,7 +516,7 @@ def _check_project(project, numcalc_executable, log_file):
             if os.name == 'nt':  # Windows detected
                 # run NumCalc and route all printouts to a log file
                 subprocess.run(
-                    [f"{numcalc_executable} -estimate_ram"],
+                    f"{numcalc_executable} -estimate_ram",
                     stdout=subprocess.DEVNULL, cwd=ff, check=True)
 
             else:  # elif os.name == 'posix': Linux or Mac detected

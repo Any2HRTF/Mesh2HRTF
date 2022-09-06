@@ -7,14 +7,14 @@ directory and an error is raised if any unfinished instances are detected.
 
 HOW TO USE
 ----------
-run ``python num_calc_manager -h`` for help (requires Python and psutil).
+for help, run ``python manage_numcalc_script.py -h``
 
 Tips:
-  1- It is not recommended to run multiple NumCalcManager.py scripts on the
+  1- It is not recommended to run multiple manage_numcalc_script.py scripts on the
      same computer (but it would work)
   2- avoid folder names with spaces. Code is not tested for that.
   3- If there is a problem with some instance result delete its output folder
-     folder "be.X" and the Manager will automatically re-run that instance on
+     "be.X" and the Manager will automatically re-run that instance on
      the next run.
 """
 
@@ -28,10 +28,10 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
     "--project_path", default=False, type=str,
-    help=("The working directory. This can be a directory that contains "
-          "multiple Mesh2HRTF project folders, a Mesh2HRTF project folder or "
-          "a NumCalc folder inside a Mesh2HRTF project folder. The default "
-          "uses the directory containing this file"))
+    help=('The directory to simulate: It can be path to either '
+          '1- directory that contains multiple Mesh2HRTF project folders or '
+          '2- one Mesh2HRTF project folder (folder with ""parameters.json"")'
+          ' The default uses the directory containing this script.'))
 parser.add_argument(
     "--numcalc_path", default=False, type=str,
     help=("On Unix, this is the path to the NumCalc binary (by default "
@@ -78,8 +78,8 @@ parser.add_argument(
           "the two approaches."))
 parser.add_argument(
     "--confirm_errors", default='True', choices=('True', 'False'), type=str,
-    help=("If True, num_calc_manager waits for user input in case an error "
-          "occurs."))
+    help=("If True, manage_numcalc_script waits for user input in case an "
+          "error occurs."))
 
 args = vars(parser.parse_args())
 
@@ -111,3 +111,8 @@ m2h.manage_numcalc(
     args["wait_time"],
     args["starting_order"],
     args["confirm_errors"] == 'True')
+
+# keep window from closing if script is launched from a GUI:
+if args["confirm_errors"]:
+    print('\n\n\n NumCalc simulations Complete.')
+    input("     >>> Press Enter <<<     to exit manage_numcalc_script")
