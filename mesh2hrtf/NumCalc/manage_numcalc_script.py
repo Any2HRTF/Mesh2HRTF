@@ -100,6 +100,8 @@ args["max_ram_load"] = None if args["max_ram_load"] is False \
 args["max_instances"] = psutil.cpu_count() if args["max_instances"] == 0 \
     else args["max_instances"]
 
+args["confirm_errors"] = True if args["confirm_errors"] == "True" else False
+
 # launch manage_numcalc ------------------------------------------------------
 m2h.manage_numcalc(
     args["project_path"],
@@ -110,7 +112,7 @@ m2h.manage_numcalc(
     args["max_instances"],
     args["wait_time"],
     args["starting_order"],
-    args["confirm_errors"] == 'True')
+    args["confirm_errors"])
 
 # keep window from closing if script is launched from a GUI:
 if args["confirm_errors"]:
