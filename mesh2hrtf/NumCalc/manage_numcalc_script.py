@@ -10,8 +10,8 @@ HOW TO USE
 for help, run ``python manage_numcalc_script.py -h``
 
 Tips:
-  1- It is not recommended to run multiple manage_numcalc_script.py scripts on the
-     same computer (but it would work)
+  1- It is not recommended to run multiple manage_numcalc_script.py scripts on
+     the same computer (but it would work)
   2- avoid folder names with spaces. Code is not tested for that.
   3- If there is a problem with some instance result delete its output folder
      "be.X" and the Manager will automatically re-run that instance on

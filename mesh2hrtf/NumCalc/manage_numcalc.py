@@ -277,8 +277,8 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                 f"Available RAM is {round(ram_available, 2)} GB, but frequency"
                 f" step {int(instances_to_run[-1, 1])} of source "
                 f"{int(instances_to_run[-1, 0])} requires "
-                f"{round(instances_to_run[-1, 3] * ram_safety_factor, 2)} GB."),
-                text_color_red, log_file, confirm_errors)
+                f"{round(instances_to_run[-1, 3] * ram_safety_factor, 2)} "
+                "GB."), text_color_red, log_file, confirm_errors)
 
         # assure highest first if demanded
         if starting_order != "low":
