@@ -3,7 +3,6 @@ numpy
 flake8
 Sphinx
 pytest
-psutil
 autodocsumm
 insipid-sphinx-theme
 pyfar
