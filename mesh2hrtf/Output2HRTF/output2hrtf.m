@@ -14,11 +14,6 @@ if ~exist('folder', 'var')
     folder = pwd;
 end
 
-% output directory
-if ~exist(fullfile(folder, 'Output2HRTF'), 'dir')
-    mkdir(fullfile(folder, 'Output2HRTF'))
-end
-
 % load parameters
 if ~isfile(fullfile(folder, 'parameters.json'))
     error('parameters.json not found.')
@@ -31,6 +26,11 @@ fclose(fid);
 params = jsondecode(params);
 if all(size(params.sourceCenter) == [3 1])
     params.sourceCenter = params.sourceCenter';
+end
+
+% output directory
+if ~exist(fullfile(folder, 'Output2HRTF'), 'dir')
+    mkdir(fullfile(folder, 'Output2HRTF'))
 end
 
 fprintf('Load meta data ...\n');
