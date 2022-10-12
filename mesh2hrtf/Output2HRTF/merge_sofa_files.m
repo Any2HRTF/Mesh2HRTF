@@ -164,13 +164,13 @@ for ii = 1:2
                 happy_end = 1;
             end
         end
+        if happy_end == 1
+            disp(['Great! The calculation of', NCout_files{kk}, ' finished successfully.']);
+        else
+            warning(['FYI: The calculation of', NCout_files{kk}, ' did not finish successfully.']);
+        end
     end
     fclose(fid);
-    if happy_end == 1
-        disp(['Great! The calculation of', NCout_files{kk}, ' finished successfully.']);
-    else
-        warning(['FYI: The calculation of', NCout_files{kk}, ' did not finish successfully.']);
-    end
 
     if numel(corrupt_freq) > 1 % we have corrupt data
         if lowest_corrupt_frq(ii) == 0
