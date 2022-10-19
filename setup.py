@@ -19,7 +19,7 @@ requirements = [
     'scipy>=1.5.0',
     'psutil',
     'sofar',
-    'pyfar'
+    'pyfar>=0.5.0'
 ]
 
 setup_requirements = ['pytest-runner', ]
