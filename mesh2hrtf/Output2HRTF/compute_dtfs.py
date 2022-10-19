@@ -1,10 +1,10 @@
 import numpy as np
 import sofar as sf
 import pyfar as pf
-from pyfar.io.io import _sofa_pos
 
 
-def compute_dtfs(sofa, smooth_fractions=None, phase="minimum"):
+def compute_dtfs(
+        sofa, smooth_fractions=None, phase="minimum", weights="equal"):
     r"""
     Compute directional transfer functions from HRIRs.
 
@@ -23,23 +23,21 @@ def compute_dtfs(sofa, smooth_fractions=None, phase="minimum"):
         \mathrm{DFTF} = \sqrt{\sum_{n=0}^{N-1} |\mathrm{HRTF}|^2_{l,n}\,w_n +
         \sum_{n=0}^{N-1} |\mathrm{HRTF}|^2_{r,n}\,w_n}
 
-    where the index :math:`n` denotes the source position, :math:`|\cdot|` the
+    The index :math:`n` denotes the source position, :math:`|\cdot|` the
     absolute spectrum, and :math:`\sum_n w_n` normalized area weights for
-    numerical integration. `Spherical Voronoi weights
-    <https://pyfar.readthedocs.io/en/latest/modules/pyfar.samplings.html\
-    ?highlight=voronoi#pyfar.samplings.calculate_sph_voronoi_weights>`_ are
-    used for this purpose.
+    numerical integration (see below). The average across ears is made to not
+    alter binaural cues.
 
     Parameters
     ----------
     sofa : sofar Sofa object, str
        Sofa object containing the sound pressure or filename of a SOFA file to
        be loaded. SOFA object/file must be of the convention
-       SimpleFreeFieldHRTF or GeneralTF
+       SimpleFreeFieldHRIR or GeneralFIR
     smooth_fractions : number, None, optional
         Apply `fractional octave smoothing
         <https://pyfar.readthedocs.io/en/latest/modules/pyfar.dsp.html\
-        ?highlight=smooth#pyfar.dsp.smooth_fractional_octave>`_ to theDFTF.
+        ?highlight=smooth#pyfar.dsp.smooth_fractional_octave>`_ to the DFTF.
         E.g. a value of ``3`` applies third octave smoothing and a value of
         ``1`` applies octave smoothing. The default ``None`` does not apply any
         smoothing.
@@ -50,6 +48,20 @@ def compute_dtfs(sofa, smooth_fractions=None, phase="minimum"):
         `linear phase <https://pyfar.readthedocs.io/en/latest/modules/pyfar.\
         dsp.html?highlight=linear%20phase#pyfar.dsp.linear_phase>`_ response.
         The default is ``'minimum'``.
+    weights : optional
+        Define the weights used for the numerical integration
+
+        ``'equal'``
+            Uses equal weights across source positions
+        ``'voronoi'``
+             Uses spherical Voronoi weights <https://pyfar.readthedocs.io/en/
+             latest/modules/pyfar.samplings.html\?highlight=voronoi#pyfar.
+             samplings.calculate_sph_voronoi_weights>`_
+        array like
+            Uses the weights provided in a list or numpy array. The size of the
+            array like must agree with the number of HRTFs
+
+        The default is ``'equal'``
 
     Returns
     -------
@@ -74,32 +86,34 @@ def compute_dtfs(sofa, smooth_fractions=None, phase="minimum"):
                           "SimpleFreeFieldHRIR or GeneralFIR"))
 
     # get pyfar objects (use pf.io.convert_sofa once released)
-    hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
-    s_domain, s_convention, s_unit = _sofa_pos(sofa.SourcePosition_Type)
-    coordinates = pf.Coordinates(
-        sofa.SourcePosition[:, 0],
-        sofa.SourcePosition[:, 1],
-        sofa.SourcePosition[:, 2],
-        domain=s_domain,
-        convention=s_convention,
-        unit=s_unit)
+    hrir, coordinates, _ = pf.io.convert_sofa(sofa)
+
+    # get or check the weights
+    if weights == "equal":
+        weights = None
+    elif weights == "voronoi":
+        weights = pf.samplings.calculate_sph_voronoi_weights(coordinates)
+        weights = weights[..., None]
+    elif isinstance(weights, (list, np.ndarray)):
+        weights = np.asarray(weights).flatten()
+        if weights.size != hrir.cshape[0]:
+            raise ValueError((
+                f"{weights.size} provided but {hrir.cshape[0]} expected "
+                "(number of HRIRs)"))
+        weights = weights[..., None]
+    else:
+        raise ValueError("weights must be 'equal', 'voronoi' or an array like")
 
     # compute DTFT
-    dtft = hrir.copy()
-    weights = pf.samplings.calculate_sph_voronoi_weights(coordinates)
-    if dtft.cshape[1] == 2:
-        weights /= 2
-    dtft.freq_raw = np.sqrt(np.sum(
-        np.abs(dtft.freq_raw)**2 * weights[..., None, None], (0, 1)))
+    dtft = pf.dsp.average(
+        hrir, "power", caxis=(0, 1), weights=weights)
 
     if smooth_fractions is not None:
-        raise NotImplementedError(
-            "Will be available with the next pyfar release")
+        dtft, _ = pf.dsp.smooth_fractional_octave(dtft, smooth_fractions)
 
     # get inverse DTFT
     if phase == "minimum":
-        raise NotImplementedError(
-            "Will be available with the next pyfar release")
+        dtft_inv = pf.dsp.minimum_phase(1 / dtft, truncate=False)
     elif phase == "linear":
         dtft_inv = pf.dsp.linear_phase(1 / dtft, dtft.n_samples / 2)
     else:
