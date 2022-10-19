@@ -13,9 +13,9 @@ def compute_dtfs(
 
     .. math::
 
-        \mathrm{DTF} = \frac{\mathrm{HRTF}}{\mathrm{DTFT}}
+        \mathrm{DTF} = \frac{\mathrm{HRTF}}{\mathrm{DFTF}}
 
-    where the CTF is computed as the energetic average across source positions
+    where the DFTF is computed as the energetic average across source positions
     and ears
 
     .. math::
@@ -24,7 +24,7 @@ def compute_dtfs(
         \sum_{n=0}^{N-1} |\mathrm{HRTF}|^2_{r,n}\,w_n}
 
     The index :math:`n` denotes the source position, :math:`|\cdot|` the
-    absolute spectrum, and :math:`\sum_n w_n` normalized area weights for
+    absolute spectrum, and :math:`\sum_n w_n=1` normalized area weights for
     numerical integration (see below). The average across ears is made to not
     alter binaural cues.
 
@@ -42,11 +42,19 @@ def compute_dtfs(
         ``1`` applies octave smoothing. The default ``None`` does not apply any
         smoothing.
     phase : string, optional
-        Define the phase of the DTFT. ``'minimum'`` generates a `minimum phase
-        <https://pyfar.readthedocs.io/en/latest/modules/pyfar.dsp.html?\
-        highlight=minimum%20phase#pyfar.dsp.minimum_phase>`_ and ``'linear'`` a
-        `linear phase <https://pyfar.readthedocs.io/en/latest/modules/pyfar.\
-        dsp.html?highlight=linear%20phase#pyfar.dsp.linear_phase>`_ response.
+        Define the phase of the inverse DFTF.
+
+        ``'minimum'``
+            generate a `minimum phase response
+            <https://pyfar.readthedocs.io/en/latest/modules/pyfar.dsp.html?\
+            highlight=minimum%20phase#pyfar.dsp.minimum_phase>`_
+        ``'linear'``
+            generate a `linear phase response
+            <https://pyfar.readthedocs.io/en/latest/modules/pyfar.dsp.html?\
+            highlight=linear%20phase#pyfar.dsp.linear_phase>`_
+        ``'zero'``
+            generates a zero phase response.
+
         The default is ``'minimum'``.
     weights : optional
         Define the weights used for the numerical integration
@@ -54,9 +62,9 @@ def compute_dtfs(
         ``'equal'``
             Uses equal weights across source positions
         ``'voronoi'``
-             Uses spherical Voronoi weights <https://pyfar.readthedocs.io/en/
-             latest/modules/pyfar.samplings.html\?highlight=voronoi#pyfar.
-             samplings.calculate_sph_voronoi_weights>`_
+            Uses `spherical Voronoi weights
+            <https://pyfar.readthedocs.io/en/latest/modules/pyfar.samplings.html\
+            ?highlight=voronoi#pyfar.samplings.calculate_sph_voronoi_weights>`_
         array like
             Uses the weights provided in a list or numpy array. The size of the
             array like must agree with the number of HRTFs
@@ -67,10 +75,10 @@ def compute_dtfs(
     -------
     sofa : sofar Sofa.object
         The DTFs as Sofa object. Can be written to disk with `sofar.write_sofa
-        <https://sofar.readthedocs.io/en/latest/sofar.html#\
+        <https://sofar.readthedocs.io/en/latest/sofar.html#sofar.sofar.write_sofa\
         sofar.sofar.write_sofa>`_.
     DTFT_inverse : pyfar Signal object
-        The inverse directional transfer function as a `pyfar signal object
+        The inverse diffuse field transfer function as a `pyfar signal object
         <https://pyfar.readthedocs.io/en/latest/classes/pyfar.audio.html#\
         pyfar.classes.audio.Signal>`_
     """
@@ -104,23 +112,26 @@ def compute_dtfs(
     else:
         raise ValueError("weights must be 'equal', 'voronoi' or an array like")
 
-    # compute DTFT
-    dtft = pf.dsp.average(
+    # compute DFTF
+    dftf = pf.dsp.average(
         hrir, "power", caxis=(0, 1), weights=weights)
 
     if smooth_fractions is not None:
-        dtft, _ = pf.dsp.smooth_fractional_octave(dtft, smooth_fractions)
+        dftf, _ = pf.dsp.smooth_fractional_octave(dftf, smooth_fractions)
 
-    # get inverse DTFT
+    # get inverse DFTF
     if phase == "minimum":
-        dtft_inv = pf.dsp.minimum_phase(1 / dtft, truncate=False)
+        dftf_inv = pf.dsp.minimum_phase(1 / dftf, truncate=False)
     elif phase == "linear":
-        dtft_inv = pf.dsp.linear_phase(1 / dtft, dtft.n_samples / 2)
+        dftf_inv = pf.dsp.linear_phase(1 / dftf, dftf.n_samples / 2)
+    elif phase == "zero":
+        dftf_inv = 1 / dftf
     else:
         raise ValueError(
             f"phase is '{phase}' but must be 'minimum' or 'linear'")
 
     # compute DTF
-    dtf = hrir * dtft_inv
+    dtf = hrir * dftf_inv
+    sofa.Data_IR = dtf.time
 
-    return dtf, dtft_inv
+    return sofa, dftf_inv
