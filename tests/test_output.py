@@ -165,6 +165,60 @@ def test_compute_hrir_custom_sampling_rate():
             os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44110)
 
 
+@pytest.mark.parametrize("smooth_fractions,phase,weights", (
+    [None, "minimum", "equal"],                 # default parameter
+    [1, "minimum", "equal"],                    # test smoothing
+    [None, "linear", "equal"],                  # test linear phase filters
+    [None, "zero", "equal"],                    # test zero phase filters
+    [None, "minimum", 'voronoi'],               # test voronoi weights
+    [None, "minimum", [1, 0, 0, 0, 0, 0]]))     # test custom weights
+def test_compute_dtfs(smooth_fractions, phase, weights):
+    """Test all possible parameter values independently"""
+
+    # compute DTFs and invers DFTF
+    dtf, dftf_inverse = m2h.compute_dtfs(
+        os.path.join("tests", "resources", "SOFA_files", "HRIR_6_points.sofa"),
+        smooth_fractions, phase, weights)
+
+    # load reference data
+    if isinstance(weights, list):
+        name = f"compute_dtfs_{smooth_fractions}_{phase}_custom"
+    else:
+        name = f"compute_dtfs_{smooth_fractions}_{phase}_{weights}"
+
+    ref = pf.io.read(os.path.join("tests", "references", name))
+
+    # check DTFs
+    assert isinstance(dtf, sf.Sofa)
+    assert dtf.get_dimension("M") == 6
+    assert dtf.get_dimension("R") == 2
+    assert dtf.get_dimension("N") == 256
+    npt.assert_almost_equal(dtf.Data_IR, ref["dtf"], decimal=14)
+
+    # check DFTF
+    assert isinstance(dftf_inverse, pf.Signal)
+    assert dftf_inverse.cshape == (1, )
+    assert dftf_inverse.n_samples == 256
+    npt.assert_almost_equal(dftf_inverse.time, ref["dftf_inverse"], decimal=14)
+
+
+def test_compute_dtfs_assertions():
+    """Test all assertions"""
+
+    # input SOFA file with wrong convention
+    with pytest.raises(ValueError, match="Sofa object must have"):
+        m2h.compute_dtfs(sf.Sofa("GeneralTF"))
+
+    # wrong type for weights
+    with pytest.raises(ValueError, match="weights must be"):
+        m2h.compute_dtfs(sf.Sofa("SimpleFreeFieldHRIR"), None, "minimum", None)
+
+    # wrong value for phase
+    with pytest.raises(ValueError, match="phase is 'smooth'"):
+        with pytest.warns(UserWarning, match="Averaging one dimensional"):
+            m2h.compute_dtfs(sf.Sofa("SimpleFreeFieldHRIR"), None, "smooth")
+
+
 @pytest.mark.parametrize("pattern", (None, "HRIR", "HRTF"))
 def test_merge_sofa_files(pattern):
     """

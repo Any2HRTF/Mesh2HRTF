@@ -6,5 +6,5 @@ pytest
 psutil
 autodocsumm
 insipid-sphinx-theme
-pyfar
+pyfar>=0.5.0
 sofar
