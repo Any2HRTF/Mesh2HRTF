@@ -237,7 +237,7 @@ if params.reference
                 strcmp(params.sourceType, 'Both ears')
 
             volumeFlow = .1 * ones(size(pressure));
-            if isfield(params, params.sourceArea)
+            if isfield(params, 'sourceArea')
                 for jj = 1:numel(params.sourceArea)
                     volumeFlow(:,:,jj) = volumeFlow(:,:,jj) * params.sourceArea(jj);
                 end
@@ -392,7 +392,7 @@ if params.computeHRIRs
         fs = 2*frequencies(end);
 
         % add 0 Hz bin
-        pressure = [zeros(1, size(pressure,2), size(pressure,3));
+        pressure = [ones(1, size(pressure,2), size(pressure,3));
             pressure];
         % make fs/2 real
         pressure(end,:,:) = abs(pressure(end,:,:));
