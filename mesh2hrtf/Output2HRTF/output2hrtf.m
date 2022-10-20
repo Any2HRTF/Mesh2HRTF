@@ -392,7 +392,7 @@ if params.computeHRIRs
         fs = 2*frequencies(end);
 
         % add 0 Hz bin
-        pressure = [ones(1, size(pressure,2), size(pressure,3));
+        pressure = [zeros(1, size(pressure,2), size(pressure,3));
             pressure];
         % make fs/2 real
         pressure(end,:,:) = abs(pressure(end,:,:));
