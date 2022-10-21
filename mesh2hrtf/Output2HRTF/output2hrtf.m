@@ -151,8 +151,10 @@ for ii = 1:params.numSources
         end
     end
     warning('on', 'backtrace');
+    % sort computation time after frequency steps
+    [~, sort_idx] = sort(computationTime{ii}(:,1));
+    computationTime{ii} = computationTime{ii}(sort_idx,:);
 end
-
 
 fprintf('Write computation time to .mat file ...\n');
 description={'Frequency index','Frequency','Building','Solving','Postprocessing','Total', 'relative error', 'number of iterations', 'maximum number of iterations reached'};
