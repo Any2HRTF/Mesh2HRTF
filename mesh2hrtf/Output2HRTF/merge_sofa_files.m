@@ -297,9 +297,9 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
         Obj.GLOBAL_Title = sofa_read_L.GLOBAL_Title;
     end
 
-    if isempty(sofa_read_L.GLOBAL_Origin) % added for spat5
+    if isfield(sofa_read_L, 'GLOBAL_Origin') && isempty(sofa_read_L.GLOBAL_Origin) % added for spat5
         Obj.GLOBAL_Origin = 'Mesh2HRTF_simulation';
-    else
+    elseif isfield(sofa_read_L, 'GLOBAL_Origin')
         Obj.GLOBAL_Origin = sofa_read_L.GLOBAL_Origin;
     end
 
