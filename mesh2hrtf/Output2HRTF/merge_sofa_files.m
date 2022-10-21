@@ -333,11 +333,6 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
     SOFAsave(fullfile(targetdir, [SOFA_type, '_', num2str(fs_out), 'fs.sofa']), Obj, 9); % choose highest compression of 9
 end
 
-% copy parameters.json to targetdir
-if isfile(fullfile(folder_names{1}, 'parameters.json'))
-    copyfile(fullfile(folder_names{1}, 'parameters.json'), targetdir);
-end
-
 disp(['Done! Merged SOFA files saved in ', targetdir]);
 
 end
