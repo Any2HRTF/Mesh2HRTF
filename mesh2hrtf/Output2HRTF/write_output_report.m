@@ -22,7 +22,7 @@ while ~feof(fid)
         idx2=strfind(line,'Frequency');
         data(count,1)=sscanf(line(idx1+4:idx2-1),'%d');
         idx2=strfind(line,'=');
-        data(count,2)=sscanf(line(idx2+1:end),'%d');
+        data(count,2)=sscanf(line(idx2+1:end),'%f');
     end
     if strfind(line,'Assembling the equation system  ')
         idx=strfind(line,':');
