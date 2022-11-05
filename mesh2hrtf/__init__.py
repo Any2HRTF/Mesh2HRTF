@@ -11,6 +11,7 @@ from .Output2HRTF.process_multiple_outputs2hrtf import (
     process_multiple_outputs2hrtf)
 from .Output2HRTF.remove_outputs import remove_outputs
 from .Output2HRTF.read_ram_estimates import read_ram_estimates
+from .Output2HRTF.resample_sofa_file import resample_sofa_file
 from .Output2HRTF.write_output_report import write_output_report
 
 from .Mesh2Input.EvaluationGrids.read_evaluation_grid import \
@@ -32,6 +33,7 @@ __all__ = [
     'write_evaluation_grid',
     'read_evaluation_grid',
     'read_ram_estimates',
+    'resample_sofa_file',
     'export_vtk',
     'write_material',
     'manage_numcalc']
