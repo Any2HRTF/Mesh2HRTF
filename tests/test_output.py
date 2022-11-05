@@ -465,3 +465,46 @@ def test_output2vtk_assertions():
     # value too large
     with pytest.raises(ValueError, match="frequency_steps must contain"):
         m2h.export_vtk(cwd, frequency_steps=[1, 1000])
+
+
+@pytest.mark.parametrize("load_from_disk", (False, True))
+def test_resample_sofa_file(load_from_disk):
+
+    # input signal
+    sofa = sf.Sofa("SimpleFreeFieldHRIR")
+    time = pf.signals.impulse(
+        256, np.array([[20, 40], [30, 30], [40, 20]], dtype=int)).time
+    sofa.Data_IR = time.copy()
+    sofa.Data_SamplingRate = 44100
+    sofa.SourcePosition = [[20, 0, 1], [0, 0, 1], [340, 0, 1]]
+
+    if load_from_disk:
+        tmp_dir = TemporaryDirectory()
+        tmp_name = os.path.join(tmp_dir.name, "test.sofa")
+        sf.write_sofa(tmp_name, sofa)
+        sofa = tmp_name
+
+    # resample
+    sofa_resample = m2h.resample_sofa_file(sofa, 48000)
+
+    # check original signal
+    if not load_from_disk:
+        sofa.Data_SamplingRate = 44100
+        npt.assert_equal(time, sofa.Data_IR)
+
+        # check resamples data
+        assert sofa_resample.Data_SamplingRate == 48000
+        assert sofa_resample.get_dimension("N") > sofa.get_dimension("N")
+        assert sofa_resample.get_dimension("M") == sofa.get_dimension("M")
+        assert sofa_resample.get_dimension("E") == sofa.get_dimension("E")
+
+
+def test_resample_sofa_file_assertions():
+
+    # wrong input for sofa file
+    with pytest.raises(TypeError, match="sofa must be a sofar Sofa object"):
+        m2h.resample_sofa_file([1, 2, 3], 44100)
+
+    # sofa file with wong DataType
+    with pytest.raises(TypeError, match="The DataType of the sofa file"):
+        m2h.resample_sofa_file(sf.Sofa("GeneralTF"), 44100)
