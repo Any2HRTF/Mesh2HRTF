@@ -202,7 +202,22 @@ function ncdata2vtk(name,datatype,fstep,rootdir,datadir, filename)
   [fnames] = dir( sprintf('%s/%s/be.*',rootdir,datadir) );
   nf = length( fnames );
   fstep0 = sscanf([fnames.name],"be.%d");
-    
+  if isempty(fstep0)
+    %% there are two possible reasons for that
+    % a) there is no be.* file in be.out
+    % b) there is only one be.* file in be.out, which is the trickier
+    % one
+    [fnames] = dir( sprintf('%s/%s', rootdir, datadir) );
+    if( length(fnames) < 3)
+      error("Sorry, I cannot find any output directory be.*");
+    else
+      [~,fstep0] = strtok(fnames(3).name,'.'); % parse the be.*
+      fstep0 = str2num(fstep0) * 10; % there is still the dot left
+    end
+  end
+
+
+  
   if(fstep == 0)
     %% works under linux,
     %% windows user may have to adapt this part
