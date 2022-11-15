@@ -202,7 +202,9 @@ function ncdata2vtk(name,datatype,fstep,rootdir,datadir, filename)
   [fnames] = dir( sprintf('%s/%s/be.*',rootdir,datadir) );
   nf = length( fnames );
   fstep0 = sscanf([fnames.name],"be.%d");
-  if isempty(fstep0)
+
+
+ if isempty(fstep0)
     %% there are two possible reasons for that
     % a) there is no be.* file in be.out
     % b) there is only one be.* file in be.out, which is the trickier
@@ -215,7 +217,6 @@ function ncdata2vtk(name,datatype,fstep,rootdir,datadir, filename)
       fstep0 = str2num(fstep0) * 10; % there is still the dot left
     end
   end
-
 
   
   if(fstep == 0)
@@ -263,6 +264,95 @@ function ncdata2vtk(name,datatype,fstep,rootdir,datadir, filename)
   end
   % nodes should contain only bemnodes now
 
+
+
+  %% in theory there could be jumps in the node and element numbers
+  %% for the results of numcalc this is not a problem, however, for
+  %% the vtk geometry this could become a problem
+  nn = find(diff(nodes(:,1)) - 1);
+
+  if ~isempty(nn)
+%     for n1 = 1:length(nn),
+%       n = nn(n1);
+%       delta = nodes(n+1,1) - nodes(n,1) + 1;
+%       if( !isempty(Elem3) )
+%  	[i,j] = find(Elem3(:,2:4) > nodes(n,1)); % n is correct
+%  	Elem3(i,j+1) = Elem3(i,j+1) - delta;
+%       end
+%       if( !isempty(Elem4) )
+%  	[i,j] = find(Elem4(:,2:5) > nodes(n,1));
+%  	Elem4(i,j+1) = Elem4(i,j+1) - delta;
+%       end
+%     end
+    if( !isempty(Elem3) )
+      A = replace_entries(Elem3(:,2:4));
+      Elem3(:,2:4) = A;
+    end
+    if( !isempty(Elem4) )
+      A = replace_entries(Elem4(:,2:5));
+      Elem4(:,2:5) = A;
+    end
+   end
+  %% the same for the eval
+  nn = find(diff(evalnodes(:,1)) - 1);
+  if ~isempty(nn)
+%     for n1 = 1:length(nn),
+%       n = nn(n1);
+%       delta = evalnodes(n+1,1) - evalnodes(n,1) + 1;
+%      
+%       if( !isempty(EElem3) )
+%  	[i,j] = find(EElem3(:,2:4) > evalnodes(n,1)); % n is correct
+%  	EElem3(i,j+1) = EElem3(i,j+1) - delta;
+%       end
+%       if( !isempty(EElem4) )
+%  	[i,j] = find(EElem4(:,2:5) > evalnodes(n,1));
+%  	EElem4(i,j+1) = EElem4(i,j+1) - delta;
+%       end
+%     end
+    if( !isempty(EElem3) )
+      A = replace_entries( EElem3(:,2:4) );
+      EElem3(:,2:4) = A;
+    end
+    if( !isempty(EElem4) )
+      A = replace_entries( EElem4(:,2:5) );
+      EElem4(:,2:5) = A;
+    end
+  end
+
+  % vtk numbering starts with 0
+  
+  if( !isempty(Elem3) )
+    a = min(min(Elem3(:,2:4)));
+    if( a > 0 )
+      Elem3(:,2:4) -= a;
+    end
+  end
+
+  if( !isempty(EElem3) )
+    a = min(min(EElem3(:,2:4)));
+    if( a > 0 )
+      EElem3(:,2:4) -= a;
+    end
+  end
+
+  if ( !isempty(Elem4) )
+    a = min(min( Elem4(:,2:5) ));
+    if( a > 0 )
+      Elem4(:,2:5) -= a;
+    end
+  end
+
+  if ( !isempty(EElem4) )
+    a = min(min( EElem4(:,2:5) ));
+    if( a > 0 )
+      EElem4(:,2:5) -= a;
+    end
+  end
+  
+  % we do not need the nodenumbers anymore now
+  evalnodes(:,1) = [];
+  nodes(:,1) = [];
+
   Elem = [];
   EElem = [];
   % we will use export_vtk thus triangles are assumed to have -1 in
@@ -289,44 +379,13 @@ function ncdata2vtk(name,datatype,fstep,rootdir,datadir, filename)
   end
   EElem(:,1) = [];
 
-
-  %% in theory there could be jumps in the node and element numbers
-  %% for the results of numcalc this is not a problem, however, for
-  %% the vtk geometry this could become a problem
-  nn = find(diff(nodes(:,1)) - 1);
-
-  if ~isempty(nn)
-    for n = nn,
-      delta = nodes(n+1,1) - n+1;
-      [i,j] = find(Elem3 > nodes(n,1)); % n is coorect
-      Elem3(i,j) = Elem3(i,j) - delta;
-      [i,j] = find(Elem4 > nodes(n,1));
-      Elem4(i,j) = Elem4(i,j) - delta;
-    end
-  end
-  %% the same for the eval
-  nn = find(diff(evalnodes(:,1)) - 1);
-  if ~isempty(nn)
-    for n = nn,
-      delta = evalnodes(n+1,1) - n+1;
-      [i,j] = find(EElem3 > evalnodes(n,1)); % n is coorect
-      EElem3(i,j) = EElem3(i,j) - delta;
-      [i,j] = find(EElem4 > evalnodes(n,1));
-      EElem4(i,j) = EElem4(i,j) - delta;
-    end
-  end
-
-  % we do not need the nodenumbers anymore now
-  evalnodes(:,1) = [];
-  nodes(:,1) = [];
-
-
   
 %
 % we look at the data for all frequency steps so one can make an
 % animation out of the data, if you want things just for one
 % specific frequency you'll need to change nf below
 %
+
   disp("Starting Frequency Loop");
   for istep0 = 1:length(fstep),
     istep = fstep(istep0);
@@ -743,7 +802,7 @@ function export_vtk(Nodes,Elems,filename,cvals)
     cvals = [];
   end
   
-  
+
   [~,~,ngroups] = size(Nodes);
   
   [rN,cN] = size(Nodes(:,:,1));
@@ -921,4 +980,25 @@ end
 
 function n = is_octave()
   n = exist('OCTAVE_VERSION','builtin');
+end
+
+
+
+function B = replace_entries(A,x0)
+  %% exchanges all the entries in the integer matrix so the entries
+  %% are between 0 and (number of different entries - 1)
+  B = zeros(size(A));
+  i = unique(A(:));
+  for n = length(i):-1:1,
+    j = find( i(n) == A(:) );
+    B(j) = n;
+  end
+  x = min(min(B));
+  if(nargin < 2)
+    x0 = x;
+  end
+  delta = x - x0;
+  if( delta != 0) 
+    B = B - delta;
+  end
 end
