@@ -53,6 +53,14 @@ extern void NC_SetupEquationSystem(ofstream&);
 extern void NC_UpdateFreqCurves(ofstream&,double*);
 extern void NC_PostProcessing(ofstream&);
 
+// 17.11.22  Let's include LAPACK
+#ifdef USE_LAPACK
+extern "C" {
+#include<lapacke_config.h>
+#include<lapacke_utils.h>
+#include<lapacke.h>
+}
+#endif
 
 
 // variables declared in NC_ConstantsVariables.h
@@ -823,10 +831,32 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	NC_IterativeSolverCGS(NCout);
 	break;
       case 4: // direct method, usable only to the TBEM factorize the coefficient matrix
+#ifdef USE_LAPACK
+	int info = 0;
+	int* ipiv;
+	cout << "Using LAPACK\n";
+	ipiv = new int[numRowsOfCoefficientMatrix_];
+
+	info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR,numRowsOfCoefficientMatrix_, numRowsOfCoefficientMatrix_, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv);
+	if(info != 0) {
+	  cerr << "Problem with factorization of the stiffness matrix.\n";
+	  cerr << "Info = " << info << "\n";
+	  exit(-1);
+	}
+	info = LAPACKE_zgetrs(LAPACK_ROW_MAJOR, 'N', numRowsOfCoefficientMatrix_, 1, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv,  (lapack_complex_double*)zrhs, 1);
+	if(info != 0) {
+	  cerr << "Problem with the solution of the system (LAPACKE).\n";
+	  cerr << "Info = "<< info << "\n";
+	  exit(-1);
+	}
+	delete[] ipiv;
+#else
+	
 	Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
 
 	// forward substitution and backward eliminations
 	Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
+#endif
 	break;
       }
 
