@@ -14,6 +14,7 @@ function data = write_output_report(filename)
 
 fid=fopen(filename);
 count=0;
+data=zeros(1,9);
 while ~feof(fid)
     line=fgets(fid);
     if strfind(line,'Frequency')
@@ -47,7 +48,6 @@ while ~feof(fid)
     if contains(line, 'iterations') && ~contains(line, 'Warning')
         [startIdx, endIdx] = regexp(line, '(number of iterations = )\S+[,]');
         data(count,8) = sscanf(line(startIdx+23:endIdx-1), '%d');
-        data(count,9) = sscanf('0', '%d');
     end
 %     if ~isempty(regexp(line, '^\d+\s\d+'))
 %         [idx1, idx2] = regexp(line, '\s');
