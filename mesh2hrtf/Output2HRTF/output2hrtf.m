@@ -424,7 +424,7 @@ if params.computeHRIRs
         if params.numSources == 2
             Obj = SOFAgetConventions('SimpleFreeFieldHRIR');
         else
-            % Save as GeneralTF
+            % Save as GeneralFIR
             Obj = SOFAgetConventions('GeneralFIR');
         end
 
