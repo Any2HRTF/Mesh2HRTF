@@ -141,14 +141,14 @@ for ii = 1:params.numSources
     if ~isempty(iter_error_idx)
         for jj=1:length(iter_error_idx)
             warning(['Number of iterations for frequency ', num2str(computationTime{ii}(iter_error_idx(jj), 2)), ...
-                ' Hz has reached the maximum.\n'], '\n');
+                ' Hz has reached the maximum.'], '\n');
         end
         clear jj
     end
     if ~isempty(rel_error_idx)
         for jj=1:length(rel_error_idx)
             warning(['Relative error for frequency ', num2str(computationTime{ii}(rel_error_idx(jj), 2)), ...
-                ' Hz is greater than 1e-9.\n'], '\n');
+                ' Hz is greater than 1e-9.'], '\n');
         end
     end
     warning('on', 'backtrace');
