@@ -128,6 +128,7 @@ for ii = 1:params.numSources
         % read computation time
         tmp=write_output_report([folder, filesep, 'NumCalc', filesep, 'source_', ...
             num2str(ii), filesep, boundaryElements(NC_all_idx).name]);
+        computationTime{ii}=[computationTime{ii}; tmp];
     else % what possible case is this?
         error('This case is not yet implemented. Please open an issue at the project page: https://github.com/Any2HRTF/Mesh2HRTF/issues');
     end
