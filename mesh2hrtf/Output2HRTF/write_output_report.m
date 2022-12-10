@@ -59,6 +59,7 @@ while ~feof(fid)
         data(count,9) = sscanf('1', '%d');
     end
     if strfind(line,'Address computation ')
+        fclose(fid);
         break
     end
 end
