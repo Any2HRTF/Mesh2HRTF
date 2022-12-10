@@ -169,8 +169,8 @@ for ii = 1:2
         else
             warning(['FYI: The calculation of', NCout_files{kk}, ' did not finish successfully.']);
         end
-    end
     fclose(fid);
+    end
 
     if numel(corrupt_freq) > 1 % we have corrupt data
         if lowest_corrupt_frq(ii) == 0
