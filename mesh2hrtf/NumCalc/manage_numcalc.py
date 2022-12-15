@@ -363,19 +363,20 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             started_instance = True
             time.sleep(wait_time)  # long wait to initialize RAM
         #  END of per project loop --------------------------------------------
+
+        # wait for last NumCalc instances to finish
+        current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
+        message = (f"\n... waiting for the last NumCalc instances to finish "
+                   f"(checking every second, {current_time})")
+        _print_message(message, text_color_reset, log_file)
+        while True:
+
+            if _numcalc_instances() == 0:
+                break
+
+            time.sleep(wait_time_busy)
+
     #  END of all projects loop -----------------------------------------------
-
-    # wait for last NumCalc instances to finish
-    current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
-    message = (f"\n... waiting for the last NumCalc instances to finish "
-               f"(checking every second, {current_time})")
-    _print_message(message, text_color_reset, log_file)
-    while True:
-
-        if _numcalc_instances() == 0:
-            break
-
-        time.sleep(wait_time_busy)
 
     # Check all projects that may need to be executed -------------------------
     current_time = time.strftime("%b %d %Y, %H:%M:%S", time.localtime())
