@@ -12,12 +12,12 @@ from bpy.props import StringProperty, BoolProperty, EnumProperty, \
 from bpy_extras.io_utils import ExportHelper
 
 bl_info = {
-    "name": "Mesh2HRTF input format",
+    "name": "Mesh2HRTF export add-on",
     "author": "The Mesh2HRTF developers",
     "version": (1, 0, 0),
     "blender": (2, 80, 0),
     "location": "File > Export",
-    "description": "Export Mesh2HRTF input files",
+    "description": "Export Blender scene as Mesh2HRTF project",
     "warning": "",
     "wiki_url": "",
     "tracker_url": "",
@@ -26,7 +26,7 @@ bl_info = {
 
 
 class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
-    '''Export an object as Mesh2HRTF input files'''
+    '''Export Blender scene as Mesh2HRTF project'''
     bl_idname = "mesh2input.inp"
     bl_label = "Export Mesh2HRTF"
 
