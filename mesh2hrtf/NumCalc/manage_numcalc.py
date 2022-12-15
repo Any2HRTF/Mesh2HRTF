@@ -268,17 +268,23 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
 
         # check if available memory is enough for running the instance with the
         # highest memory consumption without ever exceeding 100% of RAM.
-        ram_available, ram_used = _get_current_ram(ram_offset)
-        if ram_available < instances_to_run[-1, 3] * ram_safety_factor:
+        # wait if not enough RAM available
+        while True:
+            ram_available, ram_used = _get_current_ram(ram_offset)
+            if ram_available >= instances_to_run[-1, 3] * ram_safety_factor:
+                break
             # note: it IS possible to run simulations that use even more than
             # 100% of available system RAM - only the performance will be poor.
-            _raise_error((
-                f"Stop - not sufficient free RAM for this simulation project: "
-                f"Available RAM is {round(ram_available, 2)} GB, but frequency"
+            _print_message((
+                f"\n... waiting for resources (checking every "
+                f"second, {current_time}):\n"
+                f"{round(ram_available, 2)} GB RAM available (frequency"
                 f" step {int(instances_to_run[-1, 1])} of source "
                 f"{int(instances_to_run[-1, 0])} requires "
                 f"{round(instances_to_run[-1, 3] * ram_safety_factor, 2)} "
-                "GB."), text_color_red, log_file, confirm_errors)
+                f"GB.)\n"), text_color_reset, log_file)
+            time.sleep(wait_time_busy)
+            continue
 
         # assure highest first if demanded
         if starting_order != "low":
