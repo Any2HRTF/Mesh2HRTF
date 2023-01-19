@@ -5,6 +5,7 @@ import tempfile
 import os
 import utils
 import json
+import numpy as np
 
 # define and check paths to your Blender versions
 blender_paths = utils.blender_paths(2)
@@ -204,6 +205,26 @@ data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
        "0.000003 0.400000e+04 0.0\n"]],
      {"frequencyStepSize": 1000}),
 
+    # test frequency vector option 'Numinal Ocatave'
+    (os.path.join(data_dir, 'test_export.blend'),
+     {"sourceType": "Point source", "minFrequency": 1250, "maxFrequency": 5000,
+      "frequencyVectorType": "Nominal n-th octave", "frequencyVectorValue": 3,
+      "pictures": False},
+     [["## Controlparameter II\n"
+       "1 7 0.000001 0.00e+00 1 0 0\n"
+       "##\n"
+       "## Load Frequency Curve \n"
+       "0 8\n"
+       "0.000000 0.000000e+00 0.0\n"
+       "0.000001 0.125000e+04 0.0\n"
+       "0.000002 0.160000e+04 0.0\n"
+       "0.000003 0.200000e+04 0.0\n"
+       "0.000004 0.250000e+04 0.0\n"
+       "0.000005 0.315000e+04 0.0\n"
+       "0.000006 0.400000e+04 0.0\n"
+       "0.000007 0.500000e+04 0.0\n"]],
+     {"numFrequencies": 7}),
+
     # test Output2HRTF flags reference and computeHRIRs
     (os.path.join(data_dir, 'test_export.blend'),
      {"reference": True, "computeHRIRs": True, "pictures": False},
@@ -295,3 +316,98 @@ def test_blender_export(
             for az in [0, 45, 90, 135, 180, 225, 270, 315]:
                 assert not os.path.exists(os.path.join(
                     tmp.name, "Pictures", f'{az}_deg_azimuth.png'))
+
+
+@pytest.mark.parametrize(
+  "frequencyType, minFrequency, maxFrequency, frequencyValue, frequencies", [
+    ('Nominal n-th octave', 1250, 5000, 3,
+     [1250, 1600, 2000, 2500, 3150, 4000, 5000]),
+    ('Nominal n-th octave', 1240, 5004, 3,
+     [1250, 1600, 2000, 2500, 3150, 4000, 5000]),
+    ('Nominal n-th octave', 1240, 5004, 1,
+     [2000, 4000]),
+    ('Nominal n-th octave', 50, 20000, 1,
+     [63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]),
+    ('Exact n-th octave', 1000, 5000, 1,
+     [1000, 2000, 4000]),
+    ('Exact n-th octave', 20, 5000, 1,
+     [31.25, 62.5, 125, 250, 500, 1000, 2000, 4000]),
+    ('Exact n-th octave', 50, 20000, 1,
+     [62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]),
+    ('Exact n-th octave', 1000, 2000, 3,
+     [1000, 1259.921, 1587.401, 2000]),
+    ('Step size', 100, 200, 100, [100, 200]),
+    ('Step size', 1000, 5000, 1000, [1000, 2000, 3000, 4000, 5000]),
+    ('Num steps', 1000, 5000, 5, [1000, 2000, 3000, 4000, 5000]),
+    ('Num steps', 37, 115, 5, [37., 56.5, 76., 95.5, 115.]),
+  ])
+@pytest.mark.parametrize(
+    "blender_path, addon_path, script_path", blender_paths)
+@pytest.mark.parametrize(
+    "blender_file_name", [os.path.join(data_dir, "test_export.blend")])
+def test_blender_export_frequencies(
+        frequencyType, minFrequency, maxFrequency, frequencyValue,
+        frequencies, blender_path, addon_path, script_path, blender_file_name):
+    """
+    Test the mesh2input Blender plugin
+
+    1. Copy test data
+    2. Do scripted Mesh2HRTF exports with varying parameters
+    3.
+    """
+
+    # --- check path ---
+    if not os.path.isdir(blender_path):
+        raise ValueError("Blender path does not exist and must be configured")
+    if not os.path.isdir(os.path.join(blender_path, addon_path)):
+        raise ValueError("Addon path does not exist and must be configured")
+
+    # --- Setup ---
+    # create a temporary directory and write export script
+    params = {
+      "sourceType": "Point source",
+      "minFrequency": minFrequency,
+      "maxFrequency": maxFrequency,
+      "frequencyVectorType": frequencyType,
+      "frequencyVectorValue": frequencyValue,
+      "pictures": False}
+
+    tmp = tempfile.TemporaryDirectory()
+
+    utils.write_blender_export_script(
+        os.path.join(tmp.name, 'blender_script.py'),
+        tmp.name,
+        os.path.join(base_dir, "..", "mesh2hrtf"),
+        os.path.join(base_dir, "..", "mesh2hrtf", "Mesh2Input",
+                     "mesh2input.py"),
+        os.path.join(blender_path, addon_path),
+        params
+        )
+
+    # --- Exercise ---
+    # run mesh2input from Blender command line interface w/ Python script
+    subprocess.run(
+        [os.path.join(blender_path, 'blender'), '--background',
+         blender_file_name, '--python',
+         os.path.join(tmp.name, 'blender_script.py')],
+        cwd=tmp.name, check=True, capture_output=True)
+
+    # --- Verify ---
+    # compare parameters.json against reference
+    with open(os.path.join(tmp.name, "parameters.json")) as params_json:
+        act_params = json.load(params_json)
+
+    if 'Exact' in frequencyType:
+        npt.assert_array_almost_equal(
+            np.array(act_params['frequencies']), np.array(frequencies),
+            decimal=2)
+    else:
+        assert act_params['frequencies'] == frequencies
+    assert act_params['minFrequency'] == frequencies[0]
+    assert act_params['maxFrequency'] == frequencies[-1]
+    assert act_params['numFrequencies'] == len(frequencies)
+    if frequencyType in ('Step size', 'Num steps'):
+        assert act_params['frequencyStepSize'] == \
+          frequencies[1] - frequencies[0]
+    else:
+        assert act_params['frequencyStepSize'] == 0

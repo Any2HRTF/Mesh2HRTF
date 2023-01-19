@@ -10,6 +10,7 @@ import json
 from bpy.props import StringProperty, BoolProperty, EnumProperty, \
     IntProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper
+import numpy as np
 
 bl_info = {
     "name": "Mesh2HRTF export add-on",
@@ -74,7 +75,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'NumCalc' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"/path/to/mesh2hrtf",
+        default=r"/home/anne/git/mesh2hrtf/Mesh2HRTF/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -157,7 +158,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     ("Simulate frequencies between the min. and max. "
                      "with a fixed step size.")),
                ('Num steps', 'Num steps',
-                    "Simulate N frequencies the min. and max. frequency.")],
+                    "Simulate N frequencies the min. and max. frequency."),
+               ('Nominal n-th octave', 'Nominal n-th octave',
+                    "Simulate the nominal (rounded) center frequencies "
+                    "specified in the standard. Nominal frequencies are only "
+                    "returned for octave bands and third octave bands"),
+               ('Exact n-th octave', 'Exact n-th octave',
+                    "The exact center frequencies, resulting in a uniform "
+                    "distribution of frequency bands over the frequency range.")],
         default='Step size',
         )
     frequencyVectorValue: FloatProperty(
@@ -424,17 +432,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
 # Calculate frequency information ---------------------------------------------
 
-        # check how the frequency vector is defined
-        if frequencyVectorType == 'Step size':
-            frequencyStepSize = frequencyVectorValue
-            numFrequencySteps = 0
-        else:
-            frequencyStepSize = 0
-            numFrequencySteps = int(frequencyVectorValue)
-
         frequencies, frequencyStepSize, numFrequencySteps = \
-            _distribute_frequencies(minFrequency, maxFrequency,
-                                    frequencyStepSize, numFrequencySteps)
+            _calc_frequencies_from_input(
+                frequencyVectorType, frequencyVectorValue, 
+                minFrequency, maxFrequency)
 
 # Write parameters.json (feedback for user, not used by NumCalc) --------------
         _write_parameters_json(
@@ -1281,3 +1282,105 @@ def register():
 def unregister():
     bpy.utils.unregister_class(ExportMesh2HRTF)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+
+def _calc_frequencies_from_input(
+        frequencyVectorType, frequencyVectorValue, minFrequency, maxFrequency):
+    # check how the frequency vector is defined
+    if frequencyVectorType == 'Step size':
+        frequencyStepSize = frequencyVectorValue
+        numFrequencySteps = 0
+    elif frequencyVectorType == 'Num steps':
+        frequencyStepSize = 0
+        numFrequencySteps = int(frequencyVectorValue)
+
+    if frequencyVectorType in ('Step size', 'Num steps'):
+        frequencies, frequencyStepSize, numFrequencySteps = \
+            _distribute_frequencies(minFrequency, maxFrequency,
+                                    frequencyStepSize, numFrequencySteps)
+    if frequencyVectorType in ('Nominal n-th octave', 'Exact n-th octave'):
+        nominal, exact = _center_frequencies_fractional_octaves_iec(
+            int(frequencyVectorValue))
+        frequencyStepSize = 0
+        if frequencyVectorType == 'Nominal n-th octave':
+            frequencies = nominal
+            if int(frequencyVectorValue) == 1:
+                all_frequencies = [
+                    31.5, 63, 125, 250, 500, 1000, 
+                    2000, 4000, 8000, 16000]
+            elif int(frequencyVectorValue) == 3:
+                all_frequencies = [
+                    25, 31.5, 40, 50, 63, 80, 100, 125, 160,
+                    200, 250, 315, 400, 500, 630, 800, 1000,
+                    1250, 1600, 2000, 2500, 3150, 4000, 5000,
+                    6300, 8000, 10000, 12500, 16000, 20000]
+            else:
+                raise ValueError(
+                    'Just 1st and 3rd ocatve are allowed in nominal, use exact'
+                    ' instead.')                    
+        elif frequencyVectorType == 'Exact n-th octave':
+            all_frequencies = 10**3 * np.power(
+                2, np.arange(-18., 20., 1.)/frequencyVectorValue)
+        frequencies = []
+        for f in all_frequencies:
+            if f >= minFrequency and f <= maxFrequency:
+                frequencies.append(f)
+        numFrequencySteps = len(frequencies)
+    return frequencies, frequencyStepSize, numFrequencySteps
+
+
+def _center_frequencies_fractional_octaves_iec(num_fractions):
+    """Returns the exact center frequencies for fractional octave bands
+    according to the IEC 61260:1:2014 standard.
+    octave ratio
+    .. G = 10^{3/10}
+    center frequencies
+    .. f_m = f_r G^{x/b}
+    .. f_m = f_e G^{(2x+1)/(2b)}
+    where b is the number of octave fractions, f_r is the reference frequency
+    chosen as 1000Hz and x is the index of the frequency band.
+
+    Parameters
+    ----------
+    num_fractions : 1, 3
+        The number of octave fractions. 1 returns octave center frequencies,
+        3 returns third octave center frequencies.
+
+    Returns
+    -------
+    nominal : array, float
+        The nominal (rounded) center frequencies specified in the standard.
+        Nominal frequencies are only returned for octave bands and third octave
+        bands
+    exact : array, float
+        The exact center frequencies, resulting in a uniform distribution of
+        frequency bands over the frequency range.
+    """
+    if num_fractions == 1:
+        nominal = np.array([
+            31.5, 63, 125, 250, 500, 1e3,
+            2e3, 4e3, 8e3, 16e3], dtype=float)
+    elif num_fractions == 3:
+        nominal = np.array([
+            25, 31.5, 40, 50, 63, 80, 100, 125, 160,
+            200, 250, 315, 400, 500, 630, 800, 1000,
+            1250, 1600, 2000, 2500, 3150, 4000, 5000,
+            6300, 8000, 10000, 12500, 16000, 20000], dtype=float)
+
+    reference_freq = 1e3
+    octave_ratio = 10**(3/10)
+
+    iseven = np.mod(num_fractions, 2) == 0
+    if ~iseven:
+        indices = np.around(
+            num_fractions * np.log(nominal/reference_freq)
+            / np.log(octave_ratio))
+        exponent = (indices/num_fractions)
+    else:
+        indices = np.around(
+            2.0*num_fractions *
+            np.log(nominal/reference_freq) / np.log(octave_ratio) - 1)/2
+        exponent = ((2*indices + 1) / num_fractions / 2)
+
+    exact = reference_freq * octave_ratio**exponent
+
+    return nominal, exact
