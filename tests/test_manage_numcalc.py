@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 import shutil
 import os
 import glob
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 cwd = os.path.dirname(__file__)
 data_shtf = os.path.join(cwd, 'resources', 'SHTF')
@@ -18,7 +18,7 @@ tmp = TemporaryDirectory()
 numcalc = os.path.join(tmp.name, "NumCalc", "bin", "NumCalc")
 
 shutil.copytree(
-    os.path.join(cwd, "..", "mesh2hrtf", "NumCalc"),
+    os.path.join(cwd, "..", "mesh2scattering", "NumCalc"),
     os.path.join(tmp.name, "NumCalc"))
 
 if os.path.isfile(numcalc):
@@ -47,10 +47,10 @@ def test_defaults(mode):
 
     if mode == "function":
         # run as function
-        m2h.manage_numcalc(temp.name, numcalc_path=numcalc, wait_time=0)
+        m2s.manage_numcalc(temp.name, numcalc_path=numcalc, wait_time=0)
     elif mode == "script":
         # run as script
-        script_path = os.path.join(cwd, "..", "mesh2hrtf", "NumCalc")
+        script_path = os.path.join(cwd, "..", "mesh2scattering", "NumCalc")
         subprocess.run([
             (f'python manage_numcalc_script.py --project_path {temp.name} '
              f'--numcalc_path {numcalc} --wait_time 0 --confirm_errors False')

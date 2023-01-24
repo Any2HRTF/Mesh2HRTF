@@ -14,7 +14,8 @@ Types of Contributions
 Report Bugs and Submit Feedback
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The best way to report bugs of send feedback is to open an issue at https://github.com/Any2HRTF/mesh2hrtf/issues.
+The best way to report bugs of send feedback is to open an issue at 
+https://github.com/ahms5/Mesh2scattering/pulls.
 
 If you are reporting a bug, please include:
 
@@ -39,28 +40,28 @@ contact us first, to see if anyone is already working on it.
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
 
-Mesh2HRTF could always use more documentation, whether as part of the
-official Mesh2HRTF docs, in docstrings, or even on the web in blog posts,
+Mesh2scattering could always use more documentation, whether as part of the
+official Mesh2scattering docs, in docstrings, or even on the web in blog posts,
 articles, and such.
 
 Start Contributing
 ------------------
 
-Ready to contribute? Here's how to set up `Mesh2HRTF` for local development.
+Ready to contribute? Here's how to set up `Mesh2scattering` for local development.
 Work on the numerical core `NumCalc` and the Matlab/Octave API can directly be
-done. Working on the Python API requires a local copy of mesh2hrtf to install
-the API for local development
+done. Working on the Python API requires a local copy of Mesh2scattering to 
+install the API for local development
 
-1. Fork the `Mesh2HRTF` repo on GitHub.
-2. Clone your fork locally and cd into the Mesh2HRTF directory::
+1. Fork the `Mesh2scattering` repo on GitHub.
+2. Clone your fork locally and cd into the Mesh2scattering directory::
 
-    $ git clone https://github.com/Any2HRTF/Mesh2HRTF.git
-    $ cd Mesh2HRTF
+    $ git clone https://github.com/ahms5/Mesh2scattering.git
+    $ cd Mesh2scattering
 
 3. Install your local copy into a virtualenv. Assuming you have Anaconda or Miniconda installed, this is how you set up your fork for local development::
 
-    $ conda create --name mesh2hrtf python
-    $ conda activate mesh2hrtf
+    $ conda create --name mesh2scattering python
+    $ conda activate mesh2scattering
     $ conda install pip
     $ pip install -e .
     $ pip install -r requirements_python.txt
@@ -72,7 +73,7 @@ ideas please create a new branch based on develop.
 Testing
 -------
 
-Mesh2HRTF uses py ``pytest`` for testing. For all tests to work, you must
+mesh2scattering uses py ``pytest`` for testing. For all tests to work, you must
 configure your blender path in `test_export` (variable ``blender_paths``).
 
 - All tests are ran by
@@ -96,12 +97,12 @@ Submodules
 
 To update the submodules containing the conventions and verification rules run
 
-$ git submodule update --remote mesh2hrtf/Mesh2Input/Meshes/GradingHybrid
+$ git submodule update --remote Mesh2scattering/Mesh2Input/Meshes/GradingHybrid
 
 Releasing
 ---------
 
-To release a new Mesh2HRTF version do the following
+To release a new Mesh2scattering version do the following
 
 - Write the new version to the file VERSION
 - Update HISTORY.rst (also include new contributors)

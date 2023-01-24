@@ -4,7 +4,7 @@ import time
 import psutil
 import subprocess
 import numpy as np
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 
 def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
@@ -512,7 +512,7 @@ def _check_project(project, numcalc_executable, log_file):
                     shell=True, stdout=subprocess.DEVNULL, cwd=ff, check=True)
 
         # get RAM estimates and prepend source number
-        estimates = m2h.read_ram_estimates(ff)
+        estimates = m2s.read_ram_estimates(ff)
         estimates = np.concatenate(
             ((source_id + 1) * np.ones((estimates.shape[0], 1)), estimates),
             axis=1)

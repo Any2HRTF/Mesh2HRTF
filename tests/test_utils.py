@@ -1,4 +1,4 @@
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -13,7 +13,7 @@ def test_write_material():
     filename = os.path.join(tmp.name, "test_material.csv")
 
     # write data
-    m2h.write_material(
+    m2s.write_material(
         filename, "admittance", [100, 200], [1 + 0j, 1.5 + 0.5j])
 
     # read and check data
@@ -36,7 +36,7 @@ def test_write_material_kind(kind, check_kind):
     filename = os.path.join(tmp.name, "test_material.csv")
 
     # write data
-    m2h.write_material(
+    m2s.write_material(
         filename, kind, [100, 200], [1 + 0j, 1.5 + 0.5j])
 
     # read and check data
@@ -56,7 +56,7 @@ def test_write_material_comment():
     comment = "Weird, random data"
 
     # write data
-    m2h.write_material(
+    m2s.write_material(
         filename, "pressure", [100, 200], [1 + 0j, 1.5 + 0.5j], comment)
 
     # read and check data
@@ -70,7 +70,7 @@ def test_write_material_comment():
 
 def test_read_ram_estimates():
 
-    estimates = m2h.read_ram_estimates(os.path.join(
+    estimates = m2s.read_ram_estimates(os.path.join(
         os.path.dirname(__file__), "resources", "SHTF", "NumCalc", "source_1"))
 
     assert isinstance(estimates, np.ndarray)
@@ -83,4 +83,4 @@ def test_read_ram_estimates_assertions():
     """test assertions for read_ram_estimates"""
 
     with pytest.raises(ValueError, match="does not contain a Memory.txt"):
-        m2h.read_ram_estimates(os.getcwd())
+        m2s.read_ram_estimates(os.getcwd())

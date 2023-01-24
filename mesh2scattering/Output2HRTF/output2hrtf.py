@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 import json
 import sofar as sf
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 
 def output2hrtf(folder=None):
@@ -60,7 +60,7 @@ def output2hrtf(folder=None):
 
     # write the project report and check for issues
     print('\n Writing the project report ...')
-    found_issues, report = m2h.write_output_report(folder)
+    found_issues, report = m2s.write_output_report(folder)
 
     if found_issues:
         warnings.warn(report)
@@ -103,7 +103,7 @@ def output2hrtf(folder=None):
 
         # reference to sound pressure at the center of the head
         if params["reference"]:
-            sofa = m2h.reference_hrtfs(
+            sofa = m2s.reference_hrtfs(
                 sofa, params["sourceType"], params["sourceArea"],
                 params["speedOfSound"], params["densityOfMedium"], mode="min")
 
@@ -121,7 +121,7 @@ def output2hrtf(folder=None):
             n_shift = int(np.round(
                 .30 / (1/sampling_rate * params["speedOfSound"])))
 
-            sofa = m2h.compute_hrirs(sofa, n_shift)
+            sofa = m2s.compute_hrirs(sofa, n_shift)
             sf.write_sofa(os.path.join(
                 folder, 'Output2HRTF', f'HRIR_{grid}.sofa'), sofa)
 

@@ -7,7 +7,7 @@ import os
 import scipy.io
 import numpy
 import utils
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 # directory of this file
 base_dir = os.path.dirname(__file__)
@@ -17,7 +17,7 @@ tmp = tempfile.TemporaryDirectory()
 numcalc = os.path.join(tmp.name, "NumCalc", "bin", "NumCalc")
 
 shutil.copytree(
-    os.path.join(base_dir, "..", "mesh2hrtf", "NumCalc"),
+    os.path.join(base_dir, "..", "mesh2scattering", "NumCalc"),
     os.path.join(tmp.name, "NumCalc"))
 
 if os.path.isfile(numcalc):
@@ -232,7 +232,7 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
     subprocess.run([f'{numcalc}'], cwd=tmp_path, check=True)
     # run output2hrtf
     tmp_path = os.path.join(tmp.name, "project")
-    m2h.output2hrtf(tmp_path)
+    m2s.output2hrtf(tmp_path)
 
     # --- Verify ---
     # load HRTF data from simulation
@@ -308,7 +308,7 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
             [f'{numcalc}'], cwd=tmp_path, check=True)
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
-    m2h.output2hrtf(tmp_path)
+    m2s.output2hrtf(tmp_path)
 
     # --- Verify ---
     # load HRTF data from simulation as numpy

@@ -30,30 +30,30 @@ test_requirements = [
 ]
 
 setup(
-    author="The mesh2hrtf developers",
+    author="The mesh2scattering developers",
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: EUPL 1.2'
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9'
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10'
     ],
     description="Numerical calculation of head-related transfer functions",
     install_requires=requirements,
     license="EUPL v1.2",
     long_description=readme,
     include_package_data=True,
-    keywords='mesh2hrtf',
-    name='mesh2hrtf',
+    keywords='mesh2scattering',
+    name='mesh2scattering',
     packages=find_packages(),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/mesh2hrtf',
+    url='https://github.com/ahms5/mesh2scattering',
     version=version,
     zip_safe=False,
-    python_requires='>=3.7'
+    python_requires='>=3.8'
 )
