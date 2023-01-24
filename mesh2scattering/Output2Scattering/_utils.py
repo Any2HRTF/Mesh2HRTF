@@ -2,98 +2,7 @@ import os
 import re
 import numpy as np
 import glob
-import json
-
-
-def write_output_report(folder=None):
-    r"""
-    Generate project report from NumCalc output files.
-
-    NumCalc (Mesh2HRTF's numerical core) writes information about the
-    simulations to the files `NC*.out` located under `NumCalc/source_*`. The
-    file `NC.out` exists if NumCalc was ran without the additional command line
-    parameters ``-istart`` and ``-iend``. If these parameters were used, there
-    is at least one `NC\*-\*.out`. If this is the case, information from
-    `NC\*-\*.out` overwrites information from NC.out in the project report.
-
-    .. note::
-
-        The project reports are written to the files
-        `Output2HRTF/report_source_*.csv`. If issues were detected, they are
-        listed in `Output2HRTF/report_issues.csv`.
-
-    The report contain the following information
-
-    Frequency step
-        The index of the frequency.
-    Frequency in Hz
-        The frequency in Hz.
-    NC input
-        Name of the input file from which the information was taken.
-    Input check passed
-        Contains a 1 if the check of the input data passed and a 0 otherwise.
-        If the check failed for one frequency, the following frequencies might
-        be affected as well.
-    Converged
-        Contains a 1 if the simulation converged and a 0 otherwise. If the
-        simulation did not converge, the relative error might be high.
-    Num. iterations
-        The number of iterations that were required to converge
-    relative error
-        The relative error of the final simulation
-    Comp. time total
-        The total computation time in seconds
-    Comp. time assembling
-        The computation time for assembling the matrices in seconds
-    Comp. time solving
-        The computation time for solving the matrices in seconds
-    Comp. time post-proc
-        The computation time for post-processing the results in seconds
-
-
-    Parameters
-    ----------
-    folder : str, optional
-        The path of the Mesh2HRTF project folder, i.e., the folder containing
-        the subfolders EvaluationsGrids, NumCalc, and ObjectMeshes. The
-        default, ``None`` uses the current working directory.
-
-    Returns
-    -------
-    found_issues : bool
-        ``True`` if issues were found, ``False`` otherwise
-    report : str
-        The report or an empty string if no issues were found
-    """
-
-    if folder is None:
-        folder = os.getcwd()
-
-    # get sources and number of sources and frequencies
-    sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
-    num_sources = len(sources)
-
-    with open(os.path.join(folder, "parameters.json"), "r") as file:
-        params = json.load(file)
-
-    # sort source files (not read in correct order in some cases)
-    nums = [int(source.split("_")[-1]) for source in sources]
-    sources = np.array(sources)
-    sources = sources[np.argsort(nums)]
-
-    # parse all NC*.out files for all sources
-    all_files, fundamentals, out, out_names = _parse_nc_out_files(
-        sources, num_sources, params["numFrequencies"])
-
-    # write report as csv file
-    _write_project_reports(folder, all_files, out, out_names)
-
-    # look for errors
-    report = _check_project_report(folder, fundamentals, out)
-
-    found_issues = True if report else False
-
-    return found_issues, report
+import csv
 
 
 def _parse_nc_out_files(sources, num_sources, num_frequencies):
@@ -351,3 +260,155 @@ def _check_project_report(folder, fundamentals, out):
         f_id.write(report)
 
     return report
+
+
+def _read_nodes_and_elements(folder, objects=None):
+    """
+    Read the nodes and elements of the evaluation grids or object meshes.
+
+    Parameters
+    ----------
+    folder : str
+        Folder containing the object. Must end with EvaluationGrids or
+        Object Meshes
+    objects : str, options
+        Name of the object. The default ``None`` reads all objects in folder
+
+    Returns
+    -------
+    grids : dict
+        One item per object (with the item name being the object name). Each
+        item has the sub-items `nodes`, `elements`, `num_nodes`, `num_elements`
+    gridsNumNodes : int
+        Number of nodes in all grids
+    """
+    # check input
+    if os.path.basename(folder) not in ['EvaluationGrids', 'ObjectMeshes']:
+        raise ValueError('folder must be EvaluationGrids or ObjectMeshes!')
+
+    if objects is None:
+        objects = os.listdir(folder)
+        # discard hidden folders that might occur on Mac OS
+        objects = [o for o in objects if not o.startswith('.')]
+    elif isinstance(objects, str):
+        objects = [objects]
+
+    grids = {}
+    gridsNumNodes = 0
+
+    for grid in objects:
+        tmpNodes = np.loadtxt(os.path.join(
+            folder, grid, 'Nodes.txt'),
+            delimiter=' ', skiprows=1, dtype=np.float64)
+
+        tmpElements = np.loadtxt(os.path.join(
+            folder, grid, 'Elements.txt'),
+            delimiter=' ', skiprows=1, dtype=np.float64)
+
+        grids[grid] = {
+            "nodes": tmpNodes,
+            "elements": tmpElements,
+            "num_nodes": tmpNodes.shape[0],
+            "num_elements": tmpElements.shape[0]}
+
+        gridsNumNodes += grids[grid]['num_nodes']
+
+    return grids, gridsNumNodes
+
+
+def _read_numcalc_data(numSources, numFrequencies, folder, data):
+    """Read the sound pressure on the object meshes or evaluation grid."""
+    pressure = []
+
+    if data not in ['pBoundary', 'pEvalGrid', 'vBoundary', 'vEvalGrid']:
+        raise ValueError(
+            'data must be pBoundary, pEvalGrid, vBoundary, or vEvalGrid')
+
+    for source in range(numSources):
+
+        tmpFilename = os.path.join(
+            folder, 'NumCalc', f'source_{source+1}', 'be.out')
+        tmpPressure, indices = _load_results(
+            tmpFilename, data, numFrequencies)
+
+        pressure.append(tmpPressure)
+
+    pressure = np.transpose(np.array(pressure), (2, 0, 1))
+
+    return pressure, indices
+
+
+def _load_results(foldername, filename, numFrequencies):
+    """
+    Load results of the BEM calculation.
+
+    Parameters
+    ----------
+    foldername : string
+        The folder from which the data is loaded. The data to be read is
+        located in the folder be.out inside NumCalc/source_*
+    filename : string
+        The kind of data that is loaded
+
+        pBoundary
+            The sound pressure on the object mesh
+        vBoundary
+            The sound velocity on the object mesh
+        pEvalGrid
+            The sound pressure on the evaluation grid
+        vEvalGrid
+            The sound velocity on the evaluation grid
+    numFrequencies : int
+        the number of simulated frequencies
+
+    Returns
+    -------
+    data : numpy array
+        Pressure or abs velocity values of shape (numFrequencies, numEntries)
+    """
+
+    # ---------------------check number of header and data lines---------------
+    current_file = os.path.join(foldername, 'be.1', filename)
+    numDatalines = None
+    with open(current_file) as file:
+        line = csv.reader(file, delimiter=' ', skipinitialspace=True)
+        for idx, li in enumerate(line):
+            # read number of data points and head lines
+            if len(li) == 2 and not li[0].startswith("Mesh"):
+                numDatalines = int(li[1])
+
+            # read starting index
+            elif numDatalines and len(li) > 2:
+                start_index = int(li[0])
+                break
+
+    # ------------------------------load data----------------------------------
+    dtype = complex if filename.startswith("p") else float
+    data = np.zeros((numFrequencies, numDatalines), dtype=dtype)
+
+    for ii in range(numFrequencies):
+        tmpData = []
+        current_file = os.path.join(foldername, 'be.%d' % (ii+1), filename)
+        with open(current_file) as file:
+
+            line = csv.reader(file, delimiter=' ', skipinitialspace=True)
+
+            for li in line:
+
+                # data lines have 3 ore more entries
+                if len(li) < 3 or li[0].startswith("Mesh"):
+                    continue
+
+                if filename.startswith("p"):
+                    tmpData.append(complex(float(li[1]), float(li[2])))
+                elif filename == "vBoundary":
+                    tmpData.append(np.abs(complex(float(li[1]), float(li[2]))))
+                elif filename == "vEvalGrid":
+                    tmpData.append(np.sqrt(
+                        np.abs(complex(float(li[1]), float(li[2])))**2 +
+                        np.abs(complex(float(li[3]), float(li[4])))**2 +
+                        np.abs(complex(float(li[5]), float(li[6])))**2))
+
+        data[ii, :] = tmpData if tmpData else np.nan
+
+    return data, np.arange(start_index, numDatalines + start_index)

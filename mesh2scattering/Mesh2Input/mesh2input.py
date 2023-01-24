@@ -75,7 +75,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'NumCalc' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"/home/anne/git/mesh2hrtf/Mesh2HRTF/mesh2hrtf",
+        default=r"/path/to/mesh2scattering/mesh2scattering",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -922,13 +922,13 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
     # estimate the center from min and max x,y,z-values
     earCenter = [
         [  # left ear center
-        (earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,
-        (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
-        (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
+         (earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,
+         (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
+         (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
         [  # right ear center
-        (earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,
-        (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
-        (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
+         (earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,
+         (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
+         (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
 
     return earCenter, earArea
 
@@ -1020,7 +1020,7 @@ def _render_pictures(filepath1, unitFactor):
     light = bpy.data.objects['Light']
     lightradius = 5 / unitFactor
     bpy.data.lights['Light'].use_custom_distance = False
-    bpy.data.lights['Light'].energy = 800 / unitFactor** 2
+    bpy.data.lights['Light'].energy = 800 / unitFactor ** 2
     bpy.data.lights['Light'].shadow_soft_size = .1 / unitFactor
     bpy.data.lights['Light'].cutoff_distance = 10 / unitFactor
     bpy.data.lights['Light'].shadow_buffer_clip_start = .05 / unitFactor
@@ -1199,11 +1199,11 @@ def _write_nc_inp(filepath1, version, title,
         # write velocity condition for the ears if using vibrating
         # elements as the sound source
         if "ear" in sourceType:
-            if source==0 and \
+            if source == 0 and \
                     sourceType in ['Both ears', 'Left ear']:
-                tmpEar='Left ear'
+                tmpEar = 'Left ear'
             else:
-                tmpEar='Right ear'
+                tmpEar = 'Right ear'
             fw(f"# {tmpEar} velocity source\n")
             fw("ELEM %i TO %i VELO 0.1 -1 0.0 -1\n" % (
                 materials[tmpEar]["index_start"],
@@ -1271,17 +1271,21 @@ def _write_nc_inp(filepath1, version, title,
         fw("END\n")
         file.close()
 
+
 # ----------------------- Blender add-on registration -------------------------
 def menu_func_export(self, context):
     self.layout.operator(ExportMesh2HRTF.bl_idname, text="Mesh2HRTF")
+
 
 def register():
     bpy.utils.register_class(ExportMesh2HRTF)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
+
 def unregister():
     bpy.utils.unregister_class(ExportMesh2HRTF)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+
 
 def _calc_frequencies_from_input(
         frequencyVectorType, frequencyVectorValue, minFrequency, maxFrequency):
@@ -1302,7 +1306,7 @@ def _calc_frequencies_from_input(
         if frequencyVectorType == 'Nominal n-th octave':
             if int(frequencyVectorValue) == 1:
                 all_frequencies = [
-                    31.5, 63, 125, 250, 500, 1000, 
+                    31.5, 63, 125, 250, 500, 1000,
                     2000, 4000, 8000, 16000]
             elif int(frequencyVectorValue) == 3:
                 all_frequencies = [
@@ -1313,11 +1317,10 @@ def _calc_frequencies_from_input(
             else:
                 raise ValueError(
                     'Just 1st and 3rd ocatve are allowed in nominal, use exact'
-                    ' instead.')                    
+                    ' instead.')
         elif frequencyVectorType == 'Exact n-th octave':
             if frequencyVectorValue < 0:
-                raise ValueError(
-                    'order must be larger than 0.')   
+                raise ValueError('order must be larger than 0.')
             all_frequencies = 10**3 * np.power(
                 2, np.arange(-18., 20., 1.)/frequencyVectorValue)
         frequencies = []
