@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import utils
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 # define and check paths to your Blender versions (only use one blender)
 blender_path, addon_path, script_path = utils.blender_paths(2)[0]
@@ -21,10 +21,12 @@ install_script = os.path.join(base_dir, 'resources', 'install_addons.py')
 
 # addons to be installed
 addons = [
-    (os.path.join(base_dir, '..', 'mesh2hrtf', 'Mesh2Input', 'mesh2input.py'),
+    (os.path.join(
+        base_dir, '..', 'mesh2scattering', 'Mesh2Input', 'mesh2input.py'),
      'mesh2input')]
-scripts = [os.path.join(base_dir, '..', 'mesh2hrtf', 'Mesh2Input', 'Meshes',
-                        'AssignMaterials', 'AssignMaterials.py')]
+scripts = [os.path.join(
+    base_dir, '..', 'mesh2scattering', 'Mesh2Input', 'Meshes',
+    'AssignMaterials', 'AssignMaterials.py')]
 
 # generate script for installing addons
 utils.install_blender_addons_and_scripts(
@@ -35,7 +37,7 @@ tmp = tempfile.TemporaryDirectory()
 numcalc = os.path.join(tmp.name, "NumCalc", "bin", "NumCalc")
 
 shutil.copytree(
-    os.path.join(base_dir, "..", "mesh2hrtf", "NumCalc"),
+    os.path.join(base_dir, "..", "mesh2scattering", "NumCalc"),
     os.path.join(tmp.name, "NumCalc"))
 
 if os.path.isfile(numcalc):
@@ -54,7 +56,7 @@ def test_tutorials(tutorial):
 
     # read tutorial file
     tutorial_file = os.path.join(
-        base_dir, '..', 'mesh2hrtf', 'Mesh2Input', 'Tutorials', tutorial)
+        base_dir, '..', 'mesh2scattering', 'Mesh2Input', 'Tutorials', tutorial)
     with open(tutorial_file, 'r') as file:
         script = ''.join(file.readlines())
 
@@ -64,7 +66,7 @@ def test_tutorials(tutorial):
         os.path.join(tmp.name, tutorial[:-3]))
     script = script.replace(
         "path/to/your/Mesh2HRTF/mesh2hrtf",
-        os.path.join(base_dir, '..', 'mesh2hrtf'))
+        os.path.join(base_dir, '..', 'mesh2scattering'))
 
     # save tutorial to temp dir
     with open(os.path.join(tmp.name, tutorial), 'w') as file:
@@ -80,8 +82,8 @@ def test_tutorials(tutorial):
     if run_numcalc:
         # run manage_numcalc
         print("running NumCalc")
-        m2h.manage_numcalc(os.path.join(tmp.name, tutorial[:-3]), numcalc)
+        m2s.manage_numcalc(os.path.join(tmp.name, tutorial[:-3]), numcalc)
 
         # run manage_numcalc
         print("running output2hrtf")
-        m2h.output2hrtf(os.path.join(tmp.name, tutorial[:-3]))
+        m2s.output2hrtf(os.path.join(tmp.name, tutorial[:-3]))

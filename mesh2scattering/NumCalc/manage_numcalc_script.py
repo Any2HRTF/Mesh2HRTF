@@ -21,7 +21,7 @@ Tips:
 import os
 import psutil
 import argparse
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 # parse command line input ----------------------------------------------------
 parser = argparse.ArgumentParser(
@@ -103,7 +103,7 @@ args["max_instances"] = psutil.cpu_count() if args["max_instances"] == 0 \
 args["confirm_errors"] = True if args["confirm_errors"] == "True" else False
 
 # launch manage_numcalc ------------------------------------------------------
-m2h.manage_numcalc(
+m2s.manage_numcalc(
     args["project_path"],
     args["numcalc_path"],
     args["max_ram_load"],

@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 
 def process_multiple_outputs2hrtf(
@@ -110,7 +110,7 @@ def process_multiple_outputs2hrtf(
                    f"folder {ff+1}/{len(folders)})"))
 
             # run output2hrtf
-            m2h.output2hrtf(folder)
+            m2s.output2hrtf(folder)
 
             # track issues
             if os.path.isfile(os.path.join(
@@ -121,7 +121,7 @@ def process_multiple_outputs2hrtf(
     if merge:
         print("\nMerging SOFA files")
         print("------------------")
-        m2h.merge_sofa_files(paths, pattern)
+        m2s.merge_sofa_files(paths, pattern)
 
         # if SOFA files were merged, only the merged files are used in the
         # following (merged files saved under paths[0])
@@ -137,7 +137,7 @@ def process_multiple_outputs2hrtf(
         print("---------------------")
         for pp, path in enumerate(paths_inspect):
             print(f"{path} ({pp+1}/{len(paths_inspect)})")
-            m2h.inspect_sofa_files(path, pattern, plot, plane, atol)
+            m2s.inspect_sofa_files(path, pattern, plot, plane, atol)
 
     # return if data should be left in place ----------------------------------
     if savedir is None:

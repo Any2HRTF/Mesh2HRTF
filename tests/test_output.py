@@ -8,7 +8,7 @@ import glob
 import json
 import pyfar as pf
 import sofar as sf
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 
 cwd = os.path.dirname(__file__)
 data_shtf = os.path.join(cwd, 'resources', 'SHTF')
@@ -48,7 +48,7 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
             json.dump(params, f, indent=4)
 
     # run output2hrtf
-    m2h.output2hrtf(tmp_shtf)
+    m2s.output2hrtf(tmp_shtf)
 
     if num_sources == 1:
         return
@@ -120,7 +120,7 @@ def test_inspect_sofa_files_single_project(
         os.remove(file)
 
     # create plots
-    m2h.inspect_sofa_files(tmp_shtf, pattern, plot=plot)
+    m2s.inspect_sofa_files(tmp_shtf, pattern, plot=plot)
 
     grid = "FourPointHorPlane_r100cm"
 
@@ -140,7 +140,7 @@ def test_compute_hrir_custom_sampling_rate():
     """Test compute HRIR with custom sampling rate"""
 
     # test with default (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrirs(
+    sofa = m2s.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -150,7 +150,7 @@ def test_compute_hrir_custom_sampling_rate():
     npt.assert_almost_equal(np.abs(hrir.freq_raw), np.ones_like(hrir.freq_raw))
 
     # test with valid sampling rate (test file with constant spectrum of ones)
-    sofa = m2h.compute_hrirs(
+    sofa = m2s.compute_hrirs(
         os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44100)
     hrir = pf.Signal(sofa.Data_IR, sofa.Data_SamplingRate)
 
@@ -161,7 +161,7 @@ def test_compute_hrir_custom_sampling_rate():
 
     # test with invalid sampling rate
     with pytest.raises(ValueError, match="sampling rate is invalid"):
-        sofa = m2h.compute_hrirs(
+        sofa = m2s.compute_hrirs(
             os.path.join(data_sofa, "HRTF_test_max_freq_24k.sofa"), 40, 44110)
 
 
@@ -176,7 +176,7 @@ def test_compute_dtfs(smooth_fractions, phase, weights):
     """Test all possible parameter values independently"""
 
     # compute DTFs and invers DFTF
-    dtf, dftf_inverse = m2h.compute_dtfs(
+    dtf, dftf_inverse = m2s.compute_dtfs(
         os.path.join("tests", "resources", "SOFA_files", "HRIR_6_points.sofa"),
         smooth_fractions, phase, weights)
 
@@ -207,16 +207,16 @@ def test_compute_dtfs_assertions():
 
     # input SOFA file with wrong convention
     with pytest.raises(ValueError, match="Sofa object must have"):
-        m2h.compute_dtfs(sf.Sofa("GeneralTF"))
+        m2s.compute_dtfs(sf.Sofa("GeneralTF"))
 
     # wrong type for weights
     with pytest.raises(ValueError, match="weights must be"):
-        m2h.compute_dtfs(sf.Sofa("SimpleFreeFieldHRIR"), None, "minimum", None)
+        m2s.compute_dtfs(sf.Sofa("SimpleFreeFieldHRIR"), None, "minimum", None)
 
     # wrong value for phase
     with pytest.raises(ValueError, match="phase is 'smooth'"):
         with pytest.warns(UserWarning, match="Averaging one dimensional"):
-            m2h.compute_dtfs(sf.Sofa("SimpleFreeFieldHRIR"), None, "smooth")
+            m2s.compute_dtfs(sf.Sofa("SimpleFreeFieldHRIR"), None, "smooth")
 
 
 @pytest.mark.parametrize("pattern", (None, "HRIR", "HRTF"))
@@ -231,7 +231,7 @@ def test_merge_sofa_files(pattern):
     tmp = TemporaryDirectory()
 
     # merge two identical files
-    m2h.merge_sofa_files((data_shtf, data_shtf), pattern, tmp.name)
+    m2s.merge_sofa_files((data_shtf, data_shtf), pattern, tmp.name)
 
     # check merged files
     pattern = ["HRTF", "HRIR"] if not pattern else [pattern]
@@ -295,7 +295,7 @@ def test_project_report(folders, issue, errors, nots):
                         os.path.join(tmp.name, "NumCalc", f"source_{ff + 1}"))
 
     # run the project report
-    issues, report = m2h.write_output_report(tmp.name)
+    issues, report = m2s.write_output_report(tmp.name)
 
     # test the output
     assert issues is issue
@@ -344,7 +344,7 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
         points = pf.Coordinates(points[:, 0], points[:, 1], points[:, 2])
 
     # write grid
-    m2h.write_evaluation_grid(points, os.path.join(tmp.name, "test"),
+    m2s.write_evaluation_grid(points, os.path.join(tmp.name, "test"),
                               discard=discard, show=show)
 
     # check if the plot exists
@@ -365,7 +365,7 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
         assert test == ref
 
     # read the grid
-    coordinates = m2h.read_evaluation_grid(os.path.join(tmp.name, "test"))
+    coordinates = m2s.read_evaluation_grid(os.path.join(tmp.name, "test"))
 
     # check grid
     assert isinstance(coordinates, pf.Coordinates)
@@ -393,7 +393,7 @@ def test_output2vtk_mode(mode, object, dB, deg, unwrap, folder):
     shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
 
     # export to vtk
-    m2h.export_vtk(cwd, object, mode, dB=dB, deg=deg, unwrap=unwrap)
+    m2s.export_vtk(cwd, object, mode, dB=dB, deg=deg, unwrap=unwrap)
 
     # check results
     frequency_steps = [1, 60]
@@ -426,7 +426,7 @@ def test_output2vtk_frequency_steps():
     shutil.rmtree(os.path.join(cwd, "Output2HRTF", "vtk"))
 
     # export to vtk
-    m2h.export_vtk(cwd, frequency_steps=[1, 1])
+    m2s.export_vtk(cwd, frequency_steps=[1, 1])
 
     # check results
     folder = os.path.join(cwd, "Output2HRTF", "vtk", "Reference_pressure_db")
@@ -446,25 +446,25 @@ def test_output2vtk_assertions():
 
     # invalid folder
     with pytest.raises(ValueError, match="The folder"):
-        m2h.export_vtk()
+        m2s.export_vtk()
 
     # invalid object
     with pytest.raises(ValueError, match="object 'golden_ears'"):
-        m2h.export_vtk(cwd, 'golden_ears')
+        m2s.export_vtk(cwd, 'golden_ears')
 
     # invalid frequency steps
     # not enough values
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.export_vtk(cwd, frequency_steps=1)
+        m2s.export_vtk(cwd, frequency_steps=1)
     # too many values
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.export_vtk(cwd, frequency_steps=[1, 2, 3])
+        m2s.export_vtk(cwd, frequency_steps=[1, 2, 3])
     # value too small
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.export_vtk(cwd, frequency_steps=[0, 10])
+        m2s.export_vtk(cwd, frequency_steps=[0, 10])
     # value too large
     with pytest.raises(ValueError, match="frequency_steps must contain"):
-        m2h.export_vtk(cwd, frequency_steps=[1, 1000])
+        m2s.export_vtk(cwd, frequency_steps=[1, 1000])
 
 
 @pytest.mark.parametrize("load_from_disk", (False, True))
@@ -485,7 +485,7 @@ def test_resample_sofa_file(load_from_disk):
         sofa = tmp_name
 
     # resample
-    sofa_resample = m2h.resample_sofa_file(sofa, 48000)
+    sofa_resample = m2s.resample_sofa_file(sofa, 48000)
 
     # check original signal
     if not load_from_disk:
@@ -503,8 +503,8 @@ def test_resample_sofa_file_assertions():
 
     # wrong input for sofa file
     with pytest.raises(TypeError, match="sofa must be a sofar Sofa object"):
-        m2h.resample_sofa_file([1, 2, 3], 44100)
+        m2s.resample_sofa_file([1, 2, 3], 44100)
 
     # sofa file with wong DataType
     with pytest.raises(TypeError, match="The DataType of the sofa file"):
-        m2h.resample_sofa_file(sf.Sofa("GeneralTF"), 44100)
+        m2s.resample_sofa_file(sf.Sofa("GeneralTF"), 44100)

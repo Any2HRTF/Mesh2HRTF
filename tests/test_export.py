@@ -262,8 +262,8 @@ def test_blender_export(
     utils.write_blender_export_script(
         os.path.join(tmp.name, 'blender_script.py'),
         tmp.name,
-        os.path.join(base_dir, "..", "mesh2hrtf"),
-        os.path.join(base_dir, "..", "mesh2hrtf", "Mesh2Input",
+        os.path.join(base_dir, "..", "mesh2scattering"),
+        os.path.join(base_dir, "..", "mesh2scattering", "Mesh2Input",
                      "mesh2input.py"),
         os.path.join(blender_path, addon_path),
         params
@@ -377,8 +377,8 @@ def test_blender_export_frequencies(
     utils.write_blender_export_script(
         os.path.join(tmp.name, 'blender_script.py'),
         tmp.name,
-        os.path.join(base_dir, "..", "mesh2hrtf"),
-        os.path.join(base_dir, "..", "mesh2hrtf", "Mesh2Input",
+        os.path.join(base_dir, "..", "mesh2scattering"),
+        os.path.join(base_dir, "..", "mesh2scattering", "Mesh2Input",
                      "mesh2input.py"),
         os.path.join(blender_path, addon_path),
         params

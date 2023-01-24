@@ -1,5 +1,5 @@
 # %%
-import mesh2hrtf as m2h
+import mesh2scattering as m2s
 import pyfar as pf
 # import matplotlib.pyplot as plt
 import os
@@ -21,7 +21,7 @@ for smooth_fractions, phase, weights in parameters:
 
     print(name)
 
-    dtf, dftf_inverse = m2h.compute_dtfs(
+    dtf, dftf_inverse = m2s.compute_dtfs(
         os.path.join("..", "resources", "SOFA_files", "HRIR_6_points.sofa"),
         smooth_fractions, phase, weights)
 
