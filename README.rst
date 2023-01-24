@@ -1,13 +1,19 @@
-Mesh2HRTF
-=========
+Mesh2scattering
+==============
 
-Mesh2HRTF is an open-source project aiming at providing an easy-to-use software package for the numerical calculation of head-related transfer functions (HRTFs). It targets researchers in the field of binaural audio. In a nutshell, Mesh2HRTF consists of three parts:
+Mesh2scattering is based on Mesh2HRTF and is an open-source project aiming an easy-to-use software package for the numerical calculation of scattering pattern and scattering and diffusion coeffients of any surface. In a nutshell, Mesh2scattering consists of three parts:
 - Mesh2Input: prepares geometrical data and acoustic parameters,
 - NumCalc: based on the input from Mesh2Input, it calculates the corresponding sound field
-- Output2HRTFs: processes the output from NumCalc to HRTFs saved in the SOFA format.
+- Output2scattering: processes the output from NumCalc to scattering and/or diffusion coeffients.
+Please notice that this project does not support HRTF post processing, use Mesh2HRTF instead.
 
-Documentation
-=============
+Installation
+============
+tbc
+
+Further Documentation
+=====================
+For further Documentation please checkout the original project to calculate HRTFs.
 
 Documentation
     https://github.com/Any2HRTF/Mesh2HRTF/wiki
@@ -18,14 +24,6 @@ Installation
 General Tutorials
     https://github.com/Any2HRTF/Mesh2HRTF/wiki/Tutorials
 
-Releases and Development
-========================
-
-Releases are available at https://github.com/Any2HRTF/Mesh2HRTF/releases. 
-
-The ``master`` branch contains the latest stable code basis and is available for cloning, forking, or downloads. 
-
-The ``develop`` branch contains the latest stable developer version. Other branches track the more recent development, which might be unstable. If you would like to contribute to Mesh2HRTF please check `here <https://github.com/Any2HRTF/Mesh2HRTF/blob/develop/CONTRIBUTING.rst>`_.
 
 References
 ==========
