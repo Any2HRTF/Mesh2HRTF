@@ -643,8 +643,8 @@ void NC_WriteResultsEvaluationGrid
 			ndip = nuinnode[inp];
 			for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i];
 
-			z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
-			zprint[inp] += z1;
+			//z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
+			//zprint[inp] += z1;
 			for(j=0; j<NDIM; j++) zveint(inp, j) += Zvelopoi_3d[j];
 		}
 	}
@@ -663,8 +663,8 @@ void NC_WriteResultsEvaluationGrid
 			// contribution of the incident waves
 			if(numIncidentPlaneWaves_ || numPointSources_) 
 			{
-				z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
-				zprint[inp] += z1;
+				//z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
+				//zprint[inp] += z1;
 				for(j=0; j<NDIM; j++) zveint(inp, j) += Zvelopoi_3d[j];
 			}
 		} // end of loop INP
@@ -782,11 +782,11 @@ Complex NC_ContributionIncidentWaves
 // = 1: compute potential and velocity
 )
 {
-    int i, j, kref;
+  	int i, j, kref;
     double re1, reffac, wavruim = harmonicTimeFactor_*waveNumbers_;
     Complex zrc(0.0, 0.0), zg, zini, zv;
     Vector<double> vect1(NDIM), vect2(NDIM);
-    
+    /*
     if(ifcvelo) for(i=0; i<NDIM; i++) zvelinw[i].set(0.0, 0.0);
     
     // the incident plane wave must be reflected with respect to the symmetric planes
@@ -861,7 +861,7 @@ Complex NC_ContributionIncidentWaves
             }
         } // end of loop I
     }
-    
+    */
     return zrc;
 }
 
