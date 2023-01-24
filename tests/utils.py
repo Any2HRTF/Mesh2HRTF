@@ -32,6 +32,11 @@ def blender_paths(computer_id):
              os.path.join('3.1', 'scripts', 'addons'),
              os.path.join('3.1', 'scripts', 'startup'))]
     elif computer_id == 2:
+        blender_paths = [
+            ('/home/anne/Apps/blender-3.4.1-linux-x64',
+             '3.4/scripts/addons',
+             '3.4/scripts/startup')]
+    elif computer_id == 3:
         # bruel @ audio communication group
         blender_paths = [
             ('/home/bruel/Daten/Applications/blender-3.2.1-linux-x64/',
