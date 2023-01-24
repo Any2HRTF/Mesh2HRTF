@@ -23,7 +23,7 @@ source_distance = 10
 source_phi_deg = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
 source_theta_deg = [10, 20, 30, 40, 50, 60, 70, 80]
 
-# this defines the receiver points, you can find them in the 
+# this defines the receiver points, you can find them in the
 # EvaluationGrids/Data folder or create your own
 evaluation_grid = 'coords5_'
 
