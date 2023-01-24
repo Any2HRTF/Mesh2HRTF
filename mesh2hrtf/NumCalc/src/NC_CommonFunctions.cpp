@@ -1138,10 +1138,10 @@ BeginCGS:
 		dwk1 = 0;
 		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
 		{
-            zX_j[i] += zalph*zUQ_j[i];
-			zR_j[i] -= zalph*zAUQ_j[i];
-
-			dwk1 += zR_j[i].qnorm();
+		  zX_j[i] += zalph*zUQ_j[i];
+		  zR_j[i] -= zalph*zAUQ_j[i];
+		  
+		  dwk1 += zR_j[i].qnorm();
 		}
 
 		if(j == 0)

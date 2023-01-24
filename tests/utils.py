@@ -1,7 +1,6 @@
 """Utilities to be used in testing"""
 import os
 import shutil
-import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf
@@ -34,9 +33,18 @@ def blender_paths(computer_id):
     elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
-            ('/home/bruel/Daten/Applications/blender-3.2.1-linux-x64/',
-             '3.2/scripts/addons',
-             '3.2/scripts/startup')]
+            # earliest supported LTS version
+            ('/home/bruel/Daten/Applications/blender-2.83.20-linux-x64/',
+             '2.83/scripts/addons',
+             '2.83/scripts/startup'),
+            # latest LTS version
+            ('/home/bruel/Daten/Applications/blender-3.3.2-linux-x64/',
+             '3.3/scripts/addons',
+             '3.3/scripts/startup'),
+            # latest version
+            ('/home/bruel/Daten/Applications/blender-3.4.1-linux-x64/',
+             '3.4/scripts/addons',
+             '3.4/scripts/startup')]
     else:
         raise ValueError("Invalid computer id")
 
@@ -53,9 +61,11 @@ def blender_paths(computer_id):
 
 
 def install_blender_addons_and_scripts(
-        blender_path, addon_path, addons, script_path, scripts, save_path):
+        blender_path, addon_path, addons, script_path, scripts,
+        install_script):
     """
-    Install Blender addons and scripts
+    Install Blender scripts and generate Python script to install Blender
+    add-ons
 
     Parameters
     ----------
@@ -70,6 +80,20 @@ def install_blender_addons_and_scripts(
         optional. Passing
     script_path : str
         Full path for saving the script.
+    scripts : list
+        List containing the full path to scripts. Will be copied to script_path
+    install_script : str
+        Full path and file name under which the generated python script to
+        install addons will be saved.
+
+        The script can be used to install Blender Add-Ons
+        Option 1: run the script from within blender
+        Option 2: Run blender in the background
+        >>> subprocess.run(
+        >>>     [os.path.join(blender_path, 'blender'), '--background',
+        >>>      '--python', install_script,
+        >>>      '--python', any_other_script.py],
+        >>>     check=True, capture_output=True)
     """
 
     # generate script for installing the addons -------------------------------
@@ -88,14 +112,8 @@ def install_blender_addons_and_scripts(
             f"overwrite=True, filepath='{path}')\n"
             f"bpy.ops.preferences.addon_enable(module='{name}')\n")
 
-    with open(save_path, 'w') as file:
+    with open(install_script, 'w') as file:
         file.writelines(script)
-
-    # install addons using blender --------------------------------------------
-    subprocess.run(
-        [os.path.join(blender_path, 'blender'), '--background',
-         '--python', save_path],
-        check=True, capture_output=True)
 
     # copy scripts to startup folder ------------------------------------------
     for script in scripts:
