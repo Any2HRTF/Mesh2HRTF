@@ -34,9 +34,18 @@ def blender_paths(computer_id):
     elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
-            ('/home/bruel/Daten/Applications/blender-3.2.1-linux-x64/',
-             '3.2/scripts/addons',
-             '3.2/scripts/startup')]
+            # earliest supported LTS version
+            ('/home/bruel/Daten/Applications/blender-2.83.20-linux-x64/',
+             '2.83/scripts/addons',
+             '2.83/scripts/startup'),
+            # latest LTS version
+            ('/home/bruel/Daten/Applications/blender-3.3.2-linux-x64/',
+             '3.3/scripts/addons',
+             '3.3/scripts/startup'),
+            # latest version
+            ('/home/bruel/Daten/Applications/blender-3.4.1-linux-x64/',
+             '3.4/scripts/addons',
+             '3.4/scripts/startup')]
     else:
         raise ValueError("Invalid computer id")
 
