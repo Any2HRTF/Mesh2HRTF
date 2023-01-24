@@ -81,7 +81,8 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
             npt.assert_allclose(test.Data_IR, ref.Data_IR, rtol=1e-1)
 
         # test remaining entries
-        ignore = ["Data_Real", "Data_Imag", "Data_IR", "GLOBAL_APIVersion"]
+        ignore = ["Data_Real", "Data_Imag", "Data_IR", "GLOBAL_APIVersion",
+                  "GLOBAL_Version", "GLOBAL_SOFAConventionsVersion"]
         for key, value in test.__dict__.items():
             if key.startswith("_") or "Date" in key or key in ignore:
                 continue

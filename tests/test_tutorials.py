@@ -74,6 +74,7 @@ def test_tutorials(tutorial):
     print("exporting")
     subprocess.run(
         [os.path.join(blender_path, 'blender'), '--background',
+         '--python', install_script,
          '--python', os.path.join(tmp.name, tutorial)],
         cwd=tmp.name, check=True, capture_output=True)
 
