@@ -468,8 +468,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 def _get_source_position(sourceType, unitFactor):
     # check if 'Reference' object exists and select it
     sourceExist = False
+    allSourceTypes = list()
     for obj in bpy.context.scene.objects[:]:
-        if obj.type == 'LIGHT' and obj.name == sourceType:
+        if obj.type == 'LIGHT' and obj.name.startswith(sourceType):
+            allSourceTypes.append(obj.name)
             sourceExist = True
 
     if not sourceExist:
@@ -479,19 +481,31 @@ def _get_source_position(sourceType, unitFactor):
             f"Did not find the {sourceType.lower()}. It must be {light_type} "
             f"light object named '{sourceType}' (case sensitive)."))
 
-    sourceXPosition = bpy.data.objects[sourceType].location[0] * unitFactor
-    sourceYPosition = bpy.data.objects[sourceType].location[1] * unitFactor
-    sourceZPosition = bpy.data.objects[sourceType].location[2] * unitFactor
+    # check for multiple sources
+    sourceXPosition = []
+    sourceYPosition = []
+    sourceZPosition = []
+    # allSourceTypes = allSourceTypes.sort()
+    for source in allSourceTypes:
+        sourceXPosition.append(
+            bpy.data.objects[source].location[0] * unitFactor)
+        sourceYPosition.append(
+            bpy.data.objects[source].location[1] * unitFactor)
+        sourceZPosition.append(
+            bpy.data.objects[source].location[2] * unitFactor)
 
     if sourceType == "Plane wave":
-        abs_source_position = math.sqrt(
-            sourceXPosition**2 + sourceYPosition**2 + sourceZPosition**2)
+        for idx in range(len(sourceXPosition)):
+            abs_source_position = math.sqrt(
+                sourceXPosition[idx]**2 + sourceYPosition[idx]**2
+                + sourceZPosition[idx]**2)
 
-        sourceXPosition /= abs_source_position
-        sourceYPosition /= abs_source_position
-        sourceZPosition /= abs_source_position
+            sourceXPosition[idx] /= abs_source_position
+            sourceYPosition[idx] /= abs_source_position
+            sourceZPosition[idx] /= abs_source_position
 
     return sourceXPosition, sourceYPosition, sourceZPosition
+
 
 
 def _sort_faces_according_to_materials(obj):
@@ -791,7 +805,8 @@ def _write_parameters_json(
             sourceArea = [sourceArea[1]]
 
     else:
-        sourceCenter = [sourceXPosition, sourceYPosition, sourceZPosition]
+        sourceCenter = np.array([sourceXPosition, sourceYPosition, sourceZPosition])
+        sourceCenter = list(np.transpose(sourceCenter))
         sourceArea = [1]
 
     # write parameters to dict
@@ -1236,7 +1251,8 @@ def _write_nc_inp(filepath1, version, title,
             fw("PLANE WAVES\n")
         if sourceType in ["Point source", "Plane wave"]:
             fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (
-                sourceXPosition, sourceYPosition, sourceZPosition))
+                sourceXPosition[source], sourceYPosition[source], 
+                sourceZPosition[source]))
         fw("##\n")
 
         # curves defining boundary conditions of the mesh ---------------------

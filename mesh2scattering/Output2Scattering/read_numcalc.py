@@ -93,7 +93,4 @@ def read_numcalc(folder=None):
         receiver_coords[..., 0], receiver_coords[..., 1],
         receiver_coords[..., 2])
 
-    pressure = np.swapaxes(pressure, 0, 1)
-    data = pf.FrequencyData(pressure, params['frequencies'])
-
-    return data, receiver_coords, source_coords, params
+    return evaluationGrids, params
