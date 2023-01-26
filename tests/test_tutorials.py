@@ -65,7 +65,7 @@ def test_tutorials(tutorial):
         "path/to/your/project_folder",
         os.path.join(tmp.name, tutorial[:-3]))
     script = script.replace(
-        "path/to/your/Mesh2HRTF/mesh2hrtf",
+        "path/to/mesh2scattering/mesh2scattering",
         os.path.join(base_dir, '..', 'mesh2scattering'))
 
     # save tutorial to temp dir

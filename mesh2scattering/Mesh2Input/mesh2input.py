@@ -75,7 +75,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'NumCalc' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"/home/anne/git/mesh2hrtf/Mesh2HRTF/mesh2hrtf",
+        default=r"/path/to/mesh2scattering/mesh2scattering",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -354,6 +354,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if sourceType in ["Point source", "Plane wave"]:
             sourceXPosition, sourceYPosition, sourceZPosition = \
                 _get_source_position(sourceType, unitFactor)
+            numSources = len(sourceXPosition)
         else:
             sourceXPosition = None
             sourceYPosition = None
@@ -468,8 +469,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 def _get_source_position(sourceType, unitFactor):
     # check if 'Reference' object exists and select it
     sourceExist = False
+    allSourceTypes = list()
     for obj in bpy.context.scene.objects[:]:
-        if obj.type == 'LIGHT' and obj.name == sourceType:
+        if obj.type == 'LIGHT' and obj.name.startswith(sourceType):
+            allSourceTypes.append(obj.name)
             sourceExist = True
 
     if not sourceExist:
@@ -479,19 +482,31 @@ def _get_source_position(sourceType, unitFactor):
             f"Did not find the {sourceType.lower()}. It must be {light_type} "
             f"light object named '{sourceType}' (case sensitive)."))
 
-    sourceXPosition = bpy.data.objects[sourceType].location[0] * unitFactor
-    sourceYPosition = bpy.data.objects[sourceType].location[1] * unitFactor
-    sourceZPosition = bpy.data.objects[sourceType].location[2] * unitFactor
+    # check for multiple sources
+    sourceXPosition = []
+    sourceYPosition = []
+    sourceZPosition = []
+    # allSourceTypes = allSourceTypes.sort()
+    for source in allSourceTypes:
+        sourceXPosition.append(
+            bpy.data.objects[source].location[0] * unitFactor)
+        sourceYPosition.append(
+            bpy.data.objects[source].location[1] * unitFactor)
+        sourceZPosition.append(
+            bpy.data.objects[source].location[2] * unitFactor)
 
     if sourceType == "Plane wave":
-        abs_source_position = math.sqrt(
-            sourceXPosition**2 + sourceYPosition**2 + sourceZPosition**2)
+        for idx in range(len(sourceXPosition)):
+            abs_source_position = math.sqrt(
+                sourceXPosition[idx]**2 + sourceYPosition[idx]**2
+                + sourceZPosition[idx]**2)
 
-        sourceXPosition /= abs_source_position
-        sourceYPosition /= abs_source_position
-        sourceZPosition /= abs_source_position
+            sourceXPosition[idx] /= abs_source_position
+            sourceYPosition[idx] /= abs_source_position
+            sourceZPosition[idx] /= abs_source_position
 
     return sourceXPosition, sourceYPosition, sourceZPosition
+
 
 
 def _sort_faces_according_to_materials(obj):
@@ -791,7 +806,9 @@ def _write_parameters_json(
             sourceArea = [sourceArea[1]]
 
     else:
-        sourceCenter = [sourceXPosition, sourceYPosition, sourceZPosition]
+        sourceCenter = np.array([sourceXPosition, sourceYPosition, sourceZPosition])
+        sourceCenter = list(np.transpose(sourceCenter))
+        sourceCenter = [list(x) for x in sourceCenter]
         sourceArea = [1]
 
     # write parameters to dict
@@ -922,13 +939,13 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
     # estimate the center from min and max x,y,z-values
     earCenter = [
         [  # left ear center
-        (earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,
-        (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
-        (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
+         (earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,
+         (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
+         (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
         [  # right ear center
-        (earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,
-        (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
-        (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
+         (earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,
+         (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
+         (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
 
     return earCenter, earArea
 
@@ -1020,7 +1037,7 @@ def _render_pictures(filepath1, unitFactor):
     light = bpy.data.objects['Light']
     lightradius = 5 / unitFactor
     bpy.data.lights['Light'].use_custom_distance = False
-    bpy.data.lights['Light'].energy = 800 / unitFactor** 2
+    bpy.data.lights['Light'].energy = 800 / unitFactor ** 2
     bpy.data.lights['Light'].shadow_soft_size = .1 / unitFactor
     bpy.data.lights['Light'].cutoff_distance = 10 / unitFactor
     bpy.data.lights['Light'].shadow_buffer_clip_start = .05 / unitFactor
@@ -1199,11 +1216,11 @@ def _write_nc_inp(filepath1, version, title,
         # write velocity condition for the ears if using vibrating
         # elements as the sound source
         if "ear" in sourceType:
-            if source==0 and \
+            if source == 0 and \
                     sourceType in ['Both ears', 'Left ear']:
-                tmpEar='Left ear'
+                tmpEar = 'Left ear'
             else:
-                tmpEar='Right ear'
+                tmpEar = 'Right ear'
             fw(f"# {tmpEar} velocity source\n")
             fw("ELEM %i TO %i VELO 0.1 -1 0.0 -1\n" % (
                 materials[tmpEar]["index_start"],
@@ -1236,7 +1253,8 @@ def _write_nc_inp(filepath1, version, title,
             fw("PLANE WAVES\n")
         if sourceType in ["Point source", "Plane wave"]:
             fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (
-                sourceXPosition, sourceYPosition, sourceZPosition))
+                sourceXPosition[source], sourceYPosition[source], 
+                sourceZPosition[source]))
         fw("##\n")
 
         # curves defining boundary conditions of the mesh ---------------------
@@ -1271,17 +1289,21 @@ def _write_nc_inp(filepath1, version, title,
         fw("END\n")
         file.close()
 
+
 # ----------------------- Blender add-on registration -------------------------
 def menu_func_export(self, context):
     self.layout.operator(ExportMesh2HRTF.bl_idname, text="Mesh2HRTF")
+
 
 def register():
     bpy.utils.register_class(ExportMesh2HRTF)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
+
 def unregister():
     bpy.utils.unregister_class(ExportMesh2HRTF)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+
 
 def _calc_frequencies_from_input(
         frequencyVectorType, frequencyVectorValue, minFrequency, maxFrequency):
@@ -1302,22 +1324,24 @@ def _calc_frequencies_from_input(
         if frequencyVectorType == 'Nominal n-th octave':
             if int(frequencyVectorValue) == 1:
                 all_frequencies = [
-                    31.5, 63, 125, 250, 500, 1000, 
-                    2000, 4000, 8000, 16000]
+                    31.5, 63, 125, 250, 500, 1000,
+                    2000, 4000, 8000, 16000, 32000,
+                    64000, 128000]
             elif int(frequencyVectorValue) == 3:
                 all_frequencies = [
                     25, 31.5, 40, 50, 63, 80, 100, 125, 160,
                     200, 250, 315, 400, 500, 630, 800, 1000,
                     1250, 1600, 2000, 2500, 3150, 4000, 5000,
-                    6300, 8000, 10000, 12500, 16000, 20000]
+                    6300, 8000, 10000, 12500, 16000, 20000,
+                    25000, 31500, 40000, 50000, 63000, 80000,
+                    100000, 125000, 160000, 200000]
             else:
                 raise ValueError(
                     'Just 1st and 3rd ocatve are allowed in nominal, use exact'
-                    ' instead.')                    
+                    ' instead.')
         elif frequencyVectorType == 'Exact n-th octave':
             if frequencyVectorValue < 0:
-                raise ValueError(
-                    'order must be larger than 0.')   
+                raise ValueError('order must be larger than 0.')
             all_frequencies = 10**3 * np.power(
                 2, np.arange(-18., 20., 1.)/frequencyVectorValue)
         frequencies = []
