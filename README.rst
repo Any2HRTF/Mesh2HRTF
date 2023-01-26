@@ -9,7 +9,32 @@ Please notice that this project does not support HRTF post processing, use Mesh2
 
 Installation
 ============
-tbc
+
+Using mesh2scattering with Python
+
+The Python API needs to installed in the terminal, before it can be used.
+
+Environment It is recommended to create an environment for mesh2scattering. This can for example be done with conda or Anaconda in a terminal or the Anaconda Prompt. ``conda create --name mesh2scattering python``
+
+``conda activate mesh2scattering``
+
+Install mesh2scattering package To make mesh2HRTF available in Python, go to your mesh2HRTF directory (the one containing setup.py) by running cd your/path/to/mesh2hrtf-git
+
+Then install mesh2scattering using pip
+
+``pip install -e .``
+
+Note that the -e option will make changes in mesh2scattering immediately available. This is helpful if you adapt parts of the code to your needs. If you do not want this, omit this option.
+
+You can now use mesh2scattering by importing it in your Python code, e.g. ``import mesh2scattering as m2s``
+
+Testing If you want to develop or test mesh2scattering make sure to also install the requirements listed in setup.py under test_requirements, e.g. ``pip install -r requirements_python.txt``
+
+Don't forget to
+
+``pip install ipykernel``
+
+in case you want to interactively debug your changes.
 
 Further Documentation
 =====================
