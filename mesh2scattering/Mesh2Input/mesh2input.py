@@ -354,6 +354,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if sourceType in ["Point source", "Plane wave"]:
             sourceXPosition, sourceYPosition, sourceZPosition = \
                 _get_source_position(sourceType, unitFactor)
+            numSources = len(sourceXPosition)
         else:
             sourceXPosition = None
             sourceYPosition = None
@@ -807,6 +808,7 @@ def _write_parameters_json(
     else:
         sourceCenter = np.array([sourceXPosition, sourceYPosition, sourceZPosition])
         sourceCenter = list(np.transpose(sourceCenter))
+        sourceCenter = [list(x) for x in sourceCenter]
         sourceArea = [1]
 
     # write parameters to dict
@@ -1323,13 +1325,16 @@ def _calc_frequencies_from_input(
             if int(frequencyVectorValue) == 1:
                 all_frequencies = [
                     31.5, 63, 125, 250, 500, 1000,
-                    2000, 4000, 8000, 16000]
+                    2000, 4000, 8000, 16000, 32000,
+                    64000, 128000]
             elif int(frequencyVectorValue) == 3:
                 all_frequencies = [
                     25, 31.5, 40, 50, 63, 80, 100, 125, 160,
                     200, 250, 315, 400, 500, 630, 800, 1000,
                     1250, 1600, 2000, 2500, 3150, 4000, 5000,
-                    6300, 8000, 10000, 12500, 16000, 20000]
+                    6300, 8000, 10000, 12500, 16000, 20000,
+                    25000, 31500, 40000, 50000, 63000, 80000,
+                    100000, 125000, 160000, 200000]
             else:
                 raise ValueError(
                     'Just 1st and 3rd ocatve are allowed in nominal, use exact'

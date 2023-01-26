@@ -85,26 +85,4 @@ def check_project(folder=None):
     all_files, fundamentals, out, out_names = _utils._parse_nc_out_files(
         sources, num_sources, params["numFrequencies"])
 
-    # loop sources
-    for ss in range(out.shape[2]):
-
-        report = ", ".join(out_names) + "\n"
-
-        # loop frequencies
-        for ff in range(out.shape[0]):
-            f = out[ff, :, ss]
-            report += (
-                f"{int(f[0])}, "                # frequency step
-                f"{float(f[1])}, "              # frequency in Hz
-                f"{all_files[ss][int(f[2])]},"  # NC*.out file
-                f"{int(f[3])}, "                # input check
-                f"{int(f[4])}, "                # convergence
-                f"{int(f[5])}, "                # number of iterations
-                f"{float(f[6])}, "              # relative error
-                f"{int(f[7])}, "                # total computation time
-                f"{int(f[8])}, "                # assembling equations time
-                f"{int(f[9])}, "                # solving equations time
-                f"{int(f[10])}\n"               # post-processing time
-                )
-
     return all_files, fundamentals, out, out_names

@@ -10,7 +10,6 @@ cwd = os.path.dirname(__file__)
 data_shtf = join(cwd, 'resources', 'SHTF')
 
 
-
 @pytest.mark.parametrize("boundary,grid", [
     (True, True), (True, False), (False, True)])
 def test_purge_outputs_numcalc_data(boundary, grid):

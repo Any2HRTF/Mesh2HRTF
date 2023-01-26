@@ -8,13 +8,13 @@ import mesh2scattering as m2s
 
 # %%
 # create
-project_name_out = 'ita_200k'
+project_name_out = '01_kunsthaus_zuerich'
 numcalc_executable = 'NumCalc'
-program_path = '/home/anne/git/mesh2hrtf/Mesh2HRTF/mesh2hrtf'
+program_path = '/home/anne/git/Mesh2scattering/mesh2scattering'
 data_path = '/home/anne/sciebo/2021_DFG-Projekt/data'
 
 # %%
-file_path = os.path.join(data_path, 'mesh2hrtf_results', project_name_out)
+file_path = os.path.join(data_path, 'mesh2hrtf', project_name_out)
 
 sample_source = os.path.join(file_path, 'sample', 'NumCalc', 'source_2')
 ref_source = os.path.join(file_path, 'reference', 'NumCalc', 'source_2')
@@ -59,7 +59,7 @@ times = '00-03:00:00'
 path = f'$HOME/Dokumente/comsol_hpc/{project_name_out}'
 
 # read draft
-cwd = os.path.dirname(__file__)
+cwd = os.path.join(program_path, 'NumCalc')
 with open(os.path.join(cwd, 'rwth_hpc_draft.sh')) as f:
     lines = f.read()
 shell_scripte = []
@@ -108,3 +108,6 @@ for script in shell_scripte:
 print('')
 
 # %%
+
+# sftp ah664066@login18-x-1.hpc.itc.rwth-aachen.de
+

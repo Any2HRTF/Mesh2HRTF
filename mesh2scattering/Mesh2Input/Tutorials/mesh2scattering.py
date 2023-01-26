@@ -7,15 +7,15 @@ import bpy
 # user parameters -------------------------------------------------------------
 # this is the folder to which the project is exported
 data_path = '/home/anne/sciebo/2021_DFG-Projekt/data'
-project_name_out = 'sine_test'
-file_path = os.path.join(data_path, 'mesh2hrtf_results', project_name_out)
+project_name_out = '01_kunsthaus_zuerich'
+file_path = os.path.join(data_path, 'mesh2hrtf', project_name_out)
 
 # this is the folder mesh2scattering inside the mesh2scattering git repository
 program_path = '/home/anne/git/Mesh2scattering/mesh2scattering'
 
 # this is the folder where the meshes are located, one called sample.stl the
 # other called reference.stl
-project_name_in = 'sine_10k'
+project_name_in = '01_kunsthaus_zuerich'
 meshes_path = os.path.join(data_path, 'meshes')
 
 # this defines the source positions
@@ -25,15 +25,20 @@ source_theta_deg = [10, 20, 30, 40, 50, 60, 70, 80]
 
 # this defines the receiver points, you can find them in the
 # EvaluationGrids/Data folder or create your own
-evaluation_grid = 'coords5_'
+evaluation_grid = '5m_1deg'
+
+# set frequncy range in 3rd octave band
+minFrequency = 500
+maxFrequency = 10000
 
 # to create the project run the line below two times in the consol
-# blender --background --python Mesh2Input/Tutorials/mesh2scattering.py
+# blender --background --python mesh2scattering/Mesh2Input/Tutorials/mesh2scattering.py 
 
 
 # prepare the scene -----------------------------------------------------------
 def create_scene_with_stl(
-        stl_path, stl_name, source_distance, source_theta_deg, source_phi_deg):
+        stl_path, stl_name, source_distance, source_theta_deg, source_phi_deg,
+        minFrequency, maxFrequency):
     name = stl_name.lower()
     folder_out = os.path.join(file_path, name)
     if os.path.exists(folder_out):
@@ -79,10 +84,10 @@ def create_scene_with_stl(
         unit='m',
         speedOfSound='343.18',
         evaluationGrids=evaluation_grid,
-        frequencyVectorType='Step size',
-        minFrequency=1000,
-        maxFrequency=16000,
-        frequencyVectorValue=1000
+        frequencyVectorType='Nominal n-th octave',
+        minFrequency=minFrequency,
+        maxFrequency=maxFrequency,
+        frequencyVectorValue=3
     )
     bpy.ops.wm.quit_blender()
     return True
@@ -97,12 +102,14 @@ for itype in [0, 1]:
     if itype == 0:
         created = create_scene_with_stl(
             sample_path, 'Sample',
-            source_distance, source_theta_deg, source_phi_deg)
+            source_distance, source_theta_deg, source_phi_deg,
+            minFrequency, maxFrequency)
         if created:
             break
 
     if itype == 1:
         created = create_scene_with_stl(
-            ref_path, 'Reference', source_distance, source_theta_deg, [0])
+            ref_path, 'Reference', source_distance, source_theta_deg, [0],
+            minFrequency, maxFrequency)
         if created:
             break
