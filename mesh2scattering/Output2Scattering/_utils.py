@@ -17,8 +17,7 @@ def repository_root():
         String containing the root directory
     """
     environ = os.path.dirname(os.path.abspath(__file__))
-    root = os.path.abspath(
-        os.path.join(environ, os.pardir, os.pardir))
+    root = os.path.abspath(os.path.join(environ, os.pardir))
     return root
 
 

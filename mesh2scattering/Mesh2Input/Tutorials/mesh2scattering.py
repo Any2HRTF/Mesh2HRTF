@@ -1,22 +1,19 @@
-# Export the 'Scattering from a rigid sphere' tutorial
+# Export project for scattering pattern simulation
 
 import numpy as np
 import os
 import bpy
 
 # user parameters -------------------------------------------------------------
+# define the mesh path, in the meshfolder should contain a sample.stl and a reference .stl
+# this meshes will be imported into the simualtion project
+meshes_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/meshes/sine_10k'
+
 # this is the folder to which the project is exported
-data_path = r'D:\sciebo\2021_DFG-Projekt\data'
-project_name_out = '01_kunsthaus_zuerich_test'
-file_path = os.path.join(data_path, 'mesh2hrtf', project_name_out)
+project_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/mesh2scattering/sine_10k'
 
 # this is the folder mesh2scattering inside the mesh2scattering git repository
-program_path = r'D:\git\_pyfar\Mesh2scattering\mesh2scattering'
-
-# this is the folder where the meshes are located, one called sample.stl the
-# other called reference.stl
-project_name_in = '01_kunsthaus_zuerich'
-meshes_path = os.path.join(data_path, 'meshes')
+program_path = '/Users/anne/git/Mesh2scattering/mesh2scattering'
 
 # this defines the source positions
 source_distance = 10
@@ -39,7 +36,7 @@ maxFrequency = 10000
 def create_scene_with_stl(
         stl_path, stl_name, source_distance, source_theta_deg, source_phi_deg):
     name = stl_name.lower()
-    folder_out = os.path.join(file_path, name)
+    folder_out = os.path.join(project_path, name)
     if os.path.exists(folder_out):
         return False
     # prepare the scene -------------------------------------------------------
@@ -94,8 +91,8 @@ def create_scene_with_stl(
 
 sample_path = os.path.join(meshes_path, project_name_in, 'sample.stl')
 ref_path = os.path.join(meshes_path, project_name_in, 'reference.stl')
-if not os.path.exists(file_path):
-    os.mkdir(file_path)
+if not os.path.exists(project_path):
+    os.mkdir(project_path)
 
 for itype in [0, 1]:
     if itype == 0:

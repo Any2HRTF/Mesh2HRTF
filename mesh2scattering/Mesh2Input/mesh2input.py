@@ -75,7 +75,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'NumCalc' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"/path/to/mesh2scattering/mesh2scattering",
+        default=r"/Users/anne/git/Mesh2scattering/mesh2scattering",
         )
     pictures: BoolProperty(
         name="Pictures",
