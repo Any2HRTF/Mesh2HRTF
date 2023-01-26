@@ -6,10 +6,10 @@ import os
 from . import _utils
 
 
-def calc_coefficient(folder):
-    sofa = sf.read_sofa(os.path.join(folder, 'sample_coords.pattern.sofa'))
+def calc_coefficient(folder, grid):
+    sofa = sf.read_sofa(os.path.join(folder, f'sample_{grid}.pattern.sofa'))
     data, source_coordinates, receiver_coorinates = pf.io.read_sofa(
-        os.path.join(folder, 'sample_coords.pattern.sofa'))
+        os.path.join(folder, f'sample_{grid}.pattern.sofa'))
     data_ref, source_coords_ref, receiver_coords_ref = pf.io.read_sofa(
         os.path.join(folder, 'reference_coords.pattern.sofa'))
     data, _, _ = _reshape_data(

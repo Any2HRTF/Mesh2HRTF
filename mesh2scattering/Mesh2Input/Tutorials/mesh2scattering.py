@@ -6,12 +6,12 @@ import bpy
 
 # user parameters -------------------------------------------------------------
 # this is the folder to which the project is exported
-data_path = '/home/anne/sciebo/2021_DFG-Projekt/data'
-project_name_out = '01_kunsthaus_zuerich'
+data_path = r'D:\sciebo\2021_DFG-Projekt\data'
+project_name_out = '01_kunsthaus_zuerich_test'
 file_path = os.path.join(data_path, 'mesh2hrtf', project_name_out)
 
 # this is the folder mesh2scattering inside the mesh2scattering git repository
-program_path = '/home/anne/git/Mesh2scattering/mesh2scattering'
+program_path = r'D:\git\_pyfar\Mesh2scattering\mesh2scattering'
 
 # this is the folder where the meshes are located, one called sample.stl the
 # other called reference.stl
@@ -37,8 +37,7 @@ maxFrequency = 10000
 
 # prepare the scene -----------------------------------------------------------
 def create_scene_with_stl(
-        stl_path, stl_name, source_distance, source_theta_deg, source_phi_deg,
-        minFrequency, maxFrequency):
+        stl_path, stl_name, source_distance, source_theta_deg, source_phi_deg):
     name = stl_name.lower()
     folder_out = os.path.join(file_path, name)
     if os.path.exists(folder_out):
@@ -101,15 +100,13 @@ if not os.path.exists(file_path):
 for itype in [0, 1]:
     if itype == 0:
         created = create_scene_with_stl(
-            sample_path, 'Sample',
-            source_distance, source_theta_deg, source_phi_deg,
-            minFrequency, maxFrequency)
+            sample_path, 'sample',
+            source_distance, source_theta_deg, source_phi_deg)
         if created:
             break
 
     if itype == 1:
         created = create_scene_with_stl(
-            ref_path, 'Reference', source_distance, source_theta_deg, [0],
-            minFrequency, maxFrequency)
+            ref_path, 'reference', source_distance, source_theta_deg, [0])
         if created:
             break

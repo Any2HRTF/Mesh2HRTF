@@ -11,7 +11,7 @@ import pyfar as pf
 from . import _utils
 
 
-def output2scattering(folder):
+def output2scattering(folder, strutural_wavelength):
     """
     Process NumCalc output and write data to disk.
 
@@ -62,6 +62,9 @@ def output2scattering(folder):
             params["Mesh2HRTF_Version"],
             frequencies=params["frequencies"])
 
+        sofa.GLOBAL_Title = folder.split(os.sep)[-1]
+        sofa.GLOBAL_References = strutural_wavelength
+
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
             folder, f'sample_{grid}.pattern.sofa'), sofa)
@@ -98,6 +101,9 @@ def output2scattering(folder):
             receiver_position_ref,
             params["Mesh2HRTF_Version"],
             frequencies=params["frequencies"])
+
+        sofa.GLOBAL_Title = folder.split(os.sep)[-1]
+        sofa.GLOBAL_References = strutural_wavelength
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(

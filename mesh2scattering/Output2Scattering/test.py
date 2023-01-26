@@ -2,13 +2,13 @@
 import mesh2scattering as m2s
 import pyfar as pf
 import os
-path = '/home/anne/sciebo/2021_DFG-Projekt/data/mesh2hrtf_results/sine'
+path = r"D:\sciebo\2021_DFG-Projekt\data\mesh2hrtf\sine"
 
 # %%
-m2s.output2scattering(path)
+m2s.output2scattering(path, 0.177/2.5)
 
 # %%
-m2s.scattering.calc_coefficient(path)
+m2s.scattering.calc_coefficient(path, '5m_1deg')
 
 # %%
 #%matplotlib qt
