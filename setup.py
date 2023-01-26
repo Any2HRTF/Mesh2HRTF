@@ -22,7 +22,7 @@ requirements = [
     'pyfar>=0.5.0'
 ]
 
-setup_requirements = ['pytest-runner', ]
+setup_requirements = ['pytest-runner', 'pytest-blender']
 
 test_requirements = [
     'pytest',

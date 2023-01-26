@@ -10,5 +10,5 @@ autodocsumm
 insipid-sphinx-theme
 pyfar>=0.5.0
 sofar
-pip
-    - git+https://github.com/pyfar/imkar.git@scattering-freefield
+pytest-blender
+git+https://github.com/pyfar/imkar.git@scattering-freefield
