@@ -16,7 +16,8 @@ Before starting to use Mesh2HRTF we recommend the following background informati
 - [2]_ and [3]_ detail the required mesh quality.
 - [2]_ gives information about possible source/microphone models.
 - [4]_ and [5]_ introduce mesh grading strategies to reduce the RAM requirements and computation time of the numerical HRTF calculation.
-- [6]_ and [7]_
+- [6]_ gives background information on the wave based numerical solver NumCalc that is used to calculate the HRTFs.
+- [7]_ first introduces Mesh2HRTF as a whole.
 
 
 Documentation
@@ -47,7 +48,7 @@ The ``develop`` branch contains the latest stable developer version. Other branc
 References
 ==========
 
-.. [1] F\. Brinkmann, W. Kreuzer, J. Thomsen, S. Dombrovskis, K. Pollack, S. Weinzierl, and P. Majdak, ''Recent Advances in an Open Software for Numerical HRTF Calculation,'' J. Audio Eng. Soc. (submitted), 2023.
+.. [1] F\. Brinkmann, W. Kreuzer, J. Thomsen, S. Dombrovskis, K. Pollack, S. Weinzierl, and P. Majdak, ''Recent Advances in an Open Software for Numerical HRTF Calculation,'' J. Audio Eng. Soc. (in print), 2023.
 
 .. [2] H\. Ziegelwanger, P. Majdak, and W. Kreuzer, `''Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization,'' <https://doi.org/10.1121/1.4922518>`_ J. Acoust. Soc. Am., vol. 138, no. 1, pp. 208–222, Jul. 2015, doi: 10.1121/1.4922518.
 
