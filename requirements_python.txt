@@ -1,10 +1,6 @@
 pip
-numpy
 flake8
 Sphinx
 pytest
-psutil
 autodocsumm
 insipid-sphinx-theme
-pyfar>=0.5.0
-sofar
