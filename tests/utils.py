@@ -248,7 +248,8 @@ def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
             [p_num, p_ana, p_num / p_ana],          # pressure arrays
             ["Numerical solution",                  # titles
              "Analytical solution",
-             "Difference (max. deviation {:.2f} dB)".format(
+             "Difference: abs. mean (max) {:.2f} ({:.2f}) dB".format(
+                np.nanmean(np.abs(20*np.log10(np.abs(p_num / p_ana)))),
                 np.nanmax(np.abs(20*np.log10(np.abs(p_num / p_ana)))))],
             ["pressure", "pressure", "difference"],  # colorbar labels
             [range_a, range_a, range_b]              # range of colormap
