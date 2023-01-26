@@ -20,6 +20,8 @@ mesh2scattering/Mesh2Input/Materials/write_material.py
 mesh2scattering/NumCalc/__init__.py
 mesh2scattering/NumCalc/manage_numcalc.py
 mesh2scattering/NumCalc/manage_numcalc_script.py
+mesh2scattering/NumCalc/run_local.py
+mesh2scattering/NumCalc/run_rwth_hpc.py
 mesh2scattering/Output2HRTF/__init__.py
 mesh2scattering/Output2HRTF/compute_dtfs.py
 mesh2scattering/Output2HRTF/compute_hrirs.py
@@ -28,8 +30,5 @@ mesh2scattering/Output2HRTF/inspect_sofa_files.py
 mesh2scattering/Output2HRTF/merge_sofa_files.py
 mesh2scattering/Output2HRTF/output2hrtf.py
 mesh2scattering/Output2HRTF/process_multiple_outputs2hrtf.py
-mesh2scattering/Output2HRTF/read_ram_estimates.py
 mesh2scattering/Output2HRTF/reference_hrtfs.py
-mesh2scattering/Output2HRTF/remove_outputs.py
 mesh2scattering/Output2HRTF/resample_sofa_file.py
-mesh2scattering/Output2HRTF/write_output_report.py
