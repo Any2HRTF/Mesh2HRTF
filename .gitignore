@@ -5,7 +5,7 @@ mesh2hrtf/NumCalc/bin/NumCalc
 # Python cach and install files
 *__pycache__
 .eggs/*
-mesh2hrtf.egg-info/*
+*.egg-info/*
 
 # Other application specific files
 .vscode
