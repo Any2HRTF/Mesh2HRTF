@@ -7,11 +7,12 @@ from . import _utils
 
 
 def calc_coefficient(folder, grid):
+    project_name = os.path.split(folder)[-1]
     sofa = sf.read_sofa(os.path.join(folder, f'sample_{grid}.pattern.sofa'))
     data, source_coordinates, receiver_coorinates = pf.io.read_sofa(
         os.path.join(folder, f'sample_{grid}.pattern.sofa'))
     data_ref, source_coords_ref, receiver_coords_ref = pf.io.read_sofa(
-        os.path.join(folder, 'reference_coords.pattern.sofa'))
+        os.path.join(folder, f'reference_{grid}.pattern.sofa'))
     data, _, _ = _reshape_data(
         data, source_coordinates, receiver_coorinates)
     data_ref, source_coords_ref_, receiver_coords_ref_ = _reshape_data(
@@ -41,7 +42,7 @@ def calc_coefficient(folder, grid):
 
     # write HRTF data to SOFA file
     sf.write_sofa(os.path.join(
-        folder, 'sample_coords.scattering.sofa'), sofa)
+        folder, f'{project_name}_{grid}.scattering.sofa'), sofa)
 
     sofa = _utils._get_sofa_object(
         s_rand.freq.reshape(1, 1, len(s.frequencies)),
@@ -52,7 +53,7 @@ def calc_coefficient(folder, grid):
 
     # write HRTF data to SOFA file
     sf.write_sofa(os.path.join(
-        folder, 'sample_coords.scattering_rand.sofa'), sofa)
+        folder, f'{project_name}_{grid}.scattering_rand.sofa'), sofa)
 
 
 def _reshape_data(data, source_coordinates, receiver_coorinates):

@@ -63,7 +63,7 @@ def output2scattering(folder, strutural_wavelength):
             frequencies=params["frequencies"])
 
         sofa.GLOBAL_Title = folder.split(os.sep)[-1]
-        sofa.GLOBAL_References = strutural_wavelength
+        sofa.GLOBAL_References = f'{strutural_wavelength}'
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
@@ -103,7 +103,6 @@ def output2scattering(folder, strutural_wavelength):
             frequencies=params["frequencies"])
 
         sofa.GLOBAL_Title = folder.split(os.sep)[-1]
-        sofa.GLOBAL_References = strutural_wavelength
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(

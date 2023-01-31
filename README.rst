@@ -83,9 +83,10 @@ NumCalc - run the simualtion
 
 * now we can run the file and wait ... the script will automaticly parallize the task as much as possible
 
-## Output2scattering - read and export the data
+Output2scattering - read and export the data
+--------------------------------------------
 
-* open the 'mesh2scattering/Output2scattering/export_project.py'
+* open the 'mesh2scattering/Output2scattering/export_results.py'
 
 * change the variables on the top and run it.
 
