@@ -4,7 +4,7 @@ import subprocess
 import mesh2scattering as m2s
 
 # %% here you can make changes
-blender_executable = 'blender'
+blender_executable = '/Applications/Blender.app/Contents/MacOS/Blender'
 
 # %%
 script = 'mesh2scattering/Mesh2Input/Tutorials/mesh2scattering.py'
@@ -20,3 +20,5 @@ else:  # elif os.name == 'posix': Linux or Mac detected
     subprocess.run(
         [f"{blender_executable} --background --python {script}"],
         shell=True, stdout=subprocess.DEVNULL, cwd=path, check=True)
+
+# %%

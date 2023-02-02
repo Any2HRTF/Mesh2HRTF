@@ -48,7 +48,8 @@ def shift_data_coords(
     azimuth = np.remainder(sph[..., 0] + shift_azimuth, 360)
     coords_cp.set_sph(azimuth, sph[..., 1], sph[..., 2], unit='deg')
     xyz = coords_ref.get_cart()
-    data_mask, _ = coords_cp.find_nearest_k(xyz[..., 0], xyz[..., 1], xyz[..., 2])
+    data_mask, _ = coords_cp.find_nearest_k(
+        xyz[..., 0], xyz[..., 1], xyz[..., 2])
     data_mask = data_mask.flatten()
     freq = data.freq.copy()
     freq_new = freq[:, data_mask, ...]

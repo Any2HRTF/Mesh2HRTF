@@ -1,23 +1,18 @@
 # %%
-
 import os
 import subprocess
 import numpy as np
 import mesh2scattering as m2s
 
-
 # %%
 # create
-project_name_out = '01_kunsthaus_zuerich'
-numcalc_executable = 'NumCalc'
-program_path = '/home/anne/git/Mesh2scattering/mesh2scattering'
-data_path = '/home/anne/sciebo/2021_DFG-Projekt/data'
+numcalc_executable = '/Users/anne/git/Mesh2scattering/mesh2scattering/NumCalc/bin/NumCalc'
+program_path = '/Users/anne/git/Mesh2scattering/mesh2scattering'
+project_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/mesh2scattering/rect_no_edges_10k'
 
 # %%
-file_path = os.path.join(data_path, 'mesh2hrtf', project_name_out)
-
-sample_source = os.path.join(file_path, 'sample', 'NumCalc', 'source_2')
-ref_source = os.path.join(file_path, 'reference', 'NumCalc', 'source_2')
+sample_source = os.path.join(project_path, 'sample', 'NumCalc', 'source_2')
+ref_source = os.path.join(project_path, 'reference', 'NumCalc', 'source_2')
 paths = [sample_source, ref_source]
 for path in paths:
     if not os.path.isfile(os.path.join(path, "Memory.txt")):
@@ -47,6 +42,10 @@ ram = np.append(ram, cores.reshape((len(cores), 1)), axis=1)
 ram
 
 # %%
+hpc_path = os.path.join(project_path, 'hpc')
+if not os.path.exists(hpc_path):
+    os.mkdir(hpc_path)
+
 cores_str = '$$CORES$$'
 times_str = '$$TIME$$'
 name_str = '$$NAME$$'
@@ -56,6 +55,7 @@ folder_str = '$$TYPE$$'
 index_str = '$$INDEX$$'
 
 times = '00-03:00:00'
+project_name_out = hpc_path.split(os.sep)[-1]
 path = f'$HOME/Dokumente/comsol_hpc/{project_name_out}'
 
 # read draft
@@ -74,7 +74,7 @@ for idx in range(ram.shape[0]):
     index = int(ram[idx, 0])
 
     all_files, fundamentals, out, out_names = m2s.check_project(
-        os.path.join(file_path, folder))
+        os.path.join(project_path, folder))
 
     array_list = []
     is_error = False
@@ -97,7 +97,7 @@ for idx in range(ram.shape[0]):
     shell = shell.replace(folder_str, folder)
     shell = shell.replace(index_str, f'{index}')
 
-    file_out = os.path.join(file_path, f'{name}.sh')
+    file_out = os.path.join(hpc_path, f'{name}.sh')
     shell_scripte.append(f'{name}.sh')
     with open(file_out, "w") as f:
         f.write(shell)
@@ -108,6 +108,3 @@ for script in shell_scripte:
 print('')
 
 # %%
-
-# sftp ah664066@login18-x-1.hpc.itc.rwth-aachen.de
-

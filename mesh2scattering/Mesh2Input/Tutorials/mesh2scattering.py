@@ -5,12 +5,12 @@ import os
 import bpy
 
 # user parameters -------------------------------------------------------------
-# define the mesh path, in the meshfolder should contain a sample.stl and a reference .stl
-# this meshes will be imported into the simualtion project
-meshes_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/meshes/sine_10k'
+# define the mesh path, in the meshfolder should contain a sample.stl and 
+# a reference .stl this meshes will be imported into the simualtion project
+meshes_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/meshes/rect_no_edges_10k'
 
 # this is the folder to which the project is exported
-project_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/mesh2scattering/sine_10k'
+project_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/mesh2scattering/rect_edges_10k'
 
 # this is the folder mesh2scattering inside the mesh2scattering git repository
 program_path = '/Users/anne/git/Mesh2scattering/mesh2scattering'
@@ -89,8 +89,8 @@ def create_scene_with_stl(
     return True
 
 
-sample_path = os.path.join(meshes_path, project_name_in, 'sample.stl')
-ref_path = os.path.join(meshes_path, project_name_in, 'reference.stl')
+sample_path = os.path.join(meshes_path, 'sample.stl')
+ref_path = os.path.join(meshes_path, 'reference.stl')
 if not os.path.exists(project_path):
     os.mkdir(project_path)
 

@@ -42,5 +42,5 @@ export DISPLAY="localhost:0.0"
 
 ### start non-interactive batch job
 
-cd $$TYPE$$/NumCalc/source_${SLURM_ARRAY_TASK_ID}
+cd ../$$TYPE$$/NumCalc/source_${SLURM_ARRAY_TASK_ID}
 ../../../../NumCalc -istart $$INDEX$$ -iend $$INDEX$$ >NC$$INDEX$$-$$INDEX$$_log.txt

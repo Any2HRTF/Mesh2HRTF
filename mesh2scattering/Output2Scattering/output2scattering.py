@@ -69,7 +69,8 @@ def output2scattering(folder, strutural_wavelength):
         sf.write_sofa(os.path.join(
             folder, f'sample_{grid}.pattern.sofa'), sofa)
 
-    evaluationGrids, params = m2s.read_numcalc(os.path.join(folder, 'reference'))
+    evaluationGrids, params = m2s.read_numcalc(
+        os.path.join(folder, 'reference'))
 
     # process BEM data for writing HRTFs and HRIRs to SOFA files
     for grid in evaluationGrids:

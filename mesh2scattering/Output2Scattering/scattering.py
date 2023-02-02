@@ -25,7 +25,8 @@ def calc_coefficient(folder, grid):
         s, source_coords_ref_)
 
     xyz = source_coordinates.get_cart()
-    index, _ = source_coords_ref_.find_nearest_k(xyz[..., 0], xyz[..., 1], xyz[..., 2])
+    index, _ = source_coords_ref_.find_nearest_k(
+        xyz[..., 0], xyz[..., 1], xyz[..., 2])
     shape = np.array(list(s.freq.shape[1:]))
     shape[0] *= s.freq.shape[0]
     s.freq = s.freq.reshape(shape)
@@ -64,12 +65,14 @@ def _reshape_data(data, source_coordinates, receiver_coorinates):
         source_phi, source_theta, np.mean(sources_sph[:, 2]), unit='deg')
 
     receiver_sph = receiver_coorinates.get_sph(unit='deg')
-    receiver_phi = np.sort(np.array(list(set(np.round(receiver_sph[:, 0], 5)))))
+    receiver_phi = np.sort(
+        np.array(list(set(np.round(receiver_sph[:, 0], 5)))))
     receiver_phi = np.append(receiver_phi, 0)
-    receiver_theta = np.sort(np.array(list(set(np.round(receiver_sph[:, 1], 5)))))  
+    receiver_theta = np.sort(
+        np.array(list(set(np.round(receiver_sph[:, 1], 5)))))
     receiver = _angles2coords(
         receiver_phi, receiver_theta, np.mean(receiver_sph[:, 2]), unit='deg')
-    
+
     data = _reshape_to_az_by_el(data, source_coordinates, sources)
     data = _reshape_to_az_by_el(data, receiver_coorinates, receiver, 2)
 
