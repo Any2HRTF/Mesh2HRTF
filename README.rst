@@ -26,7 +26,7 @@ The Conda API needs to installed in the terminal, before it can be used.
 
 * ``pip install -e .`` install mesh2scattering in pip, ``-e`` option will make changes in mesh2scattering immediately available. This is helpful if you adapt parts of the code to your needs. If you do not want this, omit this option.
 
-* ``pip install -r requirements_python.txt`` install all packages for develop
+* ``pip install -r requirements_dev.txt`` install all packages for develop
 
 * ``pip install ipykernel`` if you want to use the interactive window
 
