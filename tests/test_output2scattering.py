@@ -98,8 +98,8 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
         points = pf.Coordinates(points[:, 0], points[:, 1], points[:, 2])
 
     # write grid
-    m2s.write_evaluation_grid(points, os.path.join(tmp.name, "test"),
-                              discard=discard, show=show)
+    m2s.input.write_evaluation_grid(
+        points, os.path.join(tmp.name, "test"), discard=discard, show=show)
 
     # check if the plot exists
     if show:
@@ -119,7 +119,8 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
         assert test == ref
 
     # read the grid
-    coordinates = m2s.read_evaluation_grid(os.path.join(tmp.name, "test"))
+    coordinates = m2s.input.read_evaluation_grid(
+        os.path.join(tmp.name, "test"))
 
     # check grid
     assert isinstance(coordinates, pf.Coordinates)

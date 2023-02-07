@@ -201,7 +201,6 @@ if os.name != 'nt':
 
         assert current == reference
 
-
     @pytest.mark.parametrize("boundary_condition", [("rigid")])
     @pytest.mark.parametrize("source,range_a", [
         ("leftear", (40, -40)),

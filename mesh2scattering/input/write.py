@@ -93,13 +93,7 @@ def write_project(
         evaluationPoints, sourcePositions,
         sourceType='Point source', method='ML-FMM BEM',
         materialSearchPaths=None, speedOfSound='346.18',
-        densityOfMedium='1.1839', unit='m', materials=None):
-
-    # check input and assign unitFactor
-    if unit not in ["mm", "m"]:
-        raise ValueError(
-            "`unit` must be 'mm', 'm' (case sensitive).")
-    unitFactor = 1 if unit == 'm' else .001
+        densityOfMedium='1.1839', materials=None):
 
     programPath = m2s.repository_root()
     defaultPath = os.path.join(
@@ -127,7 +121,7 @@ def write_project(
     _write_parameters_json(
         project_path, title, programPath, version, method,
         'grid', materialSearchPaths, materials,
-        speedOfSound, densityOfMedium, unit, unitFactor,
+        speedOfSound, densityOfMedium,
         reference, computeHRIRs, sourceType, sourcePositions,
         frequencies, frequencyStepSize, numFrequencySteps)
 
@@ -392,7 +386,7 @@ def _write_nc_inp(filepath1, version, title,
 def _write_parameters_json(
         filepath1, title, programPath, version, method,
         evaluationGrids, materialSearchPaths, materials,
-        speedOfSound, densityOfMedium, unit, unitFactor,
+        speedOfSound, densityOfMedium,
         reference, computeHRIRs, sourceType, sourcePositions,
         frequencies, frequencyStepSize, numFrequencySteps):
 
@@ -413,7 +407,7 @@ def _write_parameters_json(
         # Constants
         "speedOfSound": float(speedOfSound),
         "densityOfMedium": float(densityOfMedium),
-        "3D_SceneUnit": unit,
+        "3D_SceneUnit": 'm',
         # Grids and materials
         "evaluationGrids": evaluationGrids,
         "materialSearchPaths": materialSearchPaths,

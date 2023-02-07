@@ -13,7 +13,7 @@ def test_write_material():
     filename = os.path.join(tmp.name, "test_material.csv")
 
     # write data
-    m2s.write_material(
+    m2s.input.write_material(
         filename, "admittance", [100, 200], [1 + 0j, 1.5 + 0.5j])
 
     # read and check data
@@ -36,7 +36,7 @@ def test_write_material_kind(kind, check_kind):
     filename = os.path.join(tmp.name, "test_material.csv")
 
     # write data
-    m2s.write_material(
+    m2s.input.write_material(
         filename, kind, [100, 200], [1 + 0j, 1.5 + 0.5j])
 
     # read and check data
@@ -56,7 +56,7 @@ def test_write_material_comment():
     comment = "Weird, random data"
 
     # write data
-    m2s.write_material(
+    m2s.input.write_material(
         filename, "pressure", [100, 200], [1 + 0j, 1.5 + 0.5j], comment)
 
     # read and check data
