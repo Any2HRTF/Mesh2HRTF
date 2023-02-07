@@ -12,6 +12,7 @@ def _get_positions(phi_deg, theta_deg, radius):
     theta, phi = np.meshgrid(theta_rad, phi_rad)
     theta = theta.flatten()
     phi = phi.flatten()
+    # create coordinates
     coords = np.empty((len(phi), 3))
     coords[:, 0] = radius * np.sin(theta) * np.cos(phi)
     coords[:, 1] = radius * np.sin(theta) * np.sin(phi)
