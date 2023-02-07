@@ -18,6 +18,8 @@ from .Output2Scattering._utils import repository_root
 from .Output2Scattering.spatial import apply_symmetry_circular
 from .Output2Scattering import scattering
 
+from . import input
+
 __all__ = [
     'remove_outputs',
     'write_output_report',
@@ -32,4 +34,5 @@ __all__ = [
     'apply_symmetry_circular',
     'scattering',
     'check_project',
-    'repository_root']
+    'repository_root',
+    'input']
