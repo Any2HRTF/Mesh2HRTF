@@ -1253,7 +1253,7 @@ def _write_nc_inp(filepath1, version, title,
             fw("PLANE WAVES\n")
         if sourceType in ["Point source", "Plane wave"]:
             fw("0 %s %s %s 0.1 -1 0.0 -1\n" % (
-                sourceXPosition[source], sourceYPosition[source], 
+                sourceXPosition[source], sourceYPosition[source],
                 sourceZPosition[source]))
         fw("##\n")
 

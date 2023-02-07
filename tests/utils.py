@@ -1,7 +1,5 @@
 """Utilities to be used in testing"""
 import os
-import shutil
-import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf

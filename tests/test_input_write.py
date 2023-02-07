@@ -1,9 +1,8 @@
 import mesh2scattering as m2s
-import pytest
 import os
 import trimesh
 import filecmp
-import pathlib
+
 
 def test_write_mesh(tmpdir):
     path = os.path.join(
