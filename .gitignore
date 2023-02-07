@@ -1,6 +1,6 @@
 # NumCalc build files
-mesh2hrtf/NumCalc/src/*.o
-mesh2hrtf/NumCalc/bin/NumCalc
+mesh2scattering/NumCalc/src/*.o
+mesh2scattering/NumCalc/bin/NumCalc
 
 # Python cach and install files
 *__pycache__
@@ -18,3 +18,7 @@ docs/_build
 tests/resources/install_addons.py
 /.eggs/
 /.pytest_cache/
+mesh2scattering/NumCalc/bin/NumCalc
+
+# ignore Mac stuff
+*.DS_Store
