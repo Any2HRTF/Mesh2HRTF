@@ -45,6 +45,10 @@ jobs:
           # app-dir: ~/project/package-directory/  # If you're requirements.txt isn't in the root directory.
           pip-dependency-file: requirements_dev.txt
       - run:
+          name: install
+          command: |
+            pip install -e .
+      - run:
           name: Run tests
           command: pytest
 
@@ -66,7 +70,7 @@ jobs:
           pip-dependency-file: requirements_dev.txt
       - run:
           name: Flake8
-          command: flake8 pyfar
+          command: flake8 mesh2scattering
 
   test_examples:
     parameters:
