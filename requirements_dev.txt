@@ -1,7 +1,11 @@
 pip
+wheel
+watchdog
 numpy
 flake8
+tox
 Sphinx
+twine
 psutil
 coverage
 pytest

@@ -22,11 +22,18 @@ requirements = [
     'pyfar>=0.5.0'
 ]
 
-setup_requirements = ['pytest-runner', 'pytest-blender']
+setup_requirements = ['pytest-runner']
 
 test_requirements = [
     'pytest',
-    'flake8'
+    'bump2version',
+    'wheel',
+    'watchdog',
+    'flake8',
+    'tox',
+    'coverage',
+    'Sphinx',
+    'twine'
 ]
 
 setup(
