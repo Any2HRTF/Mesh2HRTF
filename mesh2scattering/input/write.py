@@ -83,6 +83,8 @@ def write_scattering_project(
         "sourceCenter": sourcePositions,
         "sourceArea": 0,
     }
+    with open(os.path.join(project_path, "parameters.json"), 'w') as file:
+        json.dump(parameters, file, indent=4)
 
 
 def write_project(
