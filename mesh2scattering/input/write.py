@@ -1,10 +1,9 @@
 import trimesh
 import numpy as np
 import os
-from scipy.spatial import Delaunay, ConvexHull
 
 
-def write_mesh(vertices, faces, name='Reference', start=200000, discard=None):
+def write_mesh(vertices, faces, path, start=200000, discard=None):
     if vertices.ndim != 2 or vertices.shape[0] < 3 \
             or vertices.shape[1] != 3:
         raise ValueError(
@@ -20,15 +19,9 @@ def write_mesh(vertices, faces, name='Reference', start=200000, discard=None):
     else:
         mask = (0, 1, 2)
 
-    # triangulate
-    if discard is None:
-        tri = ConvexHull(vertices[:, mask])
-    else:
-        tri = Delaunay(vertices[:, mask])
-
     # check output directory
-    if not os.path.isdir(name):
-        os.mkdir(name)
+    if not os.path.isdir(path):
+        os.mkdir(path)
 
     # write nodes
     N = int(vertices.shape[0])
@@ -41,7 +34,7 @@ def write_mesh(vertices, faces, name='Reference', start=200000, discard=None):
                   f"{vertices[nn, 1]} "
                   f"{vertices[nn, 2]}\n")
 
-    with open(os.path.join(name, "Nodes.txt"), "w") as f_id:
+    with open(os.path.join(path, "Nodes.txt"), "w") as f_id:
         f_id.write(nodes)
 
     # write elements
@@ -49,15 +42,16 @@ def write_mesh(vertices, faces, name='Reference', start=200000, discard=None):
     elems = f"{N}\n"
     for nn in range(N):
         elems += (f"{int(start + nn)} "
-                  f"{tri.simplices[nn, 0] + start} "
-                  f"{tri.simplices[nn, 1] + start} "
-                  f"{tri.simplices[nn, 2] + start} "
-                  "2 0 1\n")
+                  f"{faces[nn, 0] + start} "
+                  f"{faces[nn, 1] + start} "
+                  f"{faces[nn, 2] + start} "
+                  "0 0 0\n")
 
-    with open(os.path.join(name, "Elements.txt"), "w") as f_id:
+    with open(os.path.join(path, "Elements.txt"), "w") as f_id:
         f_id.write(elems)
 
 
 def write_stl(mesh_path, project_path):
-    mesh = trimesh.load(r'D:\sciebo\2021_DFG-Projekt\data\meshes\ita_50k\sample.stl')
-    write_mesh(mesh.vertices, mesh.faces)
+    mesh = trimesh.load(mesh_path)
+    path = os.path.join(project_path, 'ObjectMeshes', 'Reference')
+    write_mesh(mesh.vertices, mesh.faces, path, start=0)
