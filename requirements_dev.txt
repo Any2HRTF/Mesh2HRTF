@@ -2,9 +2,12 @@ pip
 numpy
 flake8
 Sphinx
-pytest
 psutil
+coverage
+pytest
+pytest-runner
 pytest-cov
+nbmake>=0.7.0
 scipy
 autodocsumm
 insipid-sphinx-theme
