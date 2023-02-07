@@ -2,7 +2,6 @@ import trimesh
 import numpy as np
 import os
 from scipy.spatial import Delaunay, ConvexHull
-import mesh2scattering as m2s
 
 
 def write_mesh(vertices, faces, name='Reference', start=200000, discard=None):
@@ -62,63 +61,3 @@ def write_mesh(vertices, faces, name='Reference', start=200000, discard=None):
 def write_stl(mesh_path, project_path):
     mesh = trimesh.load(r'D:\sciebo\2021_DFG-Projekt\data\meshes\ita_50k\sample.stl')
     write_mesh(mesh.vertices, mesh.faces)
-
-    
-def _write_object_data(obj, objects, unitFactor, context, filepath1):
-    """Write object information to Nodes.txt and Elements.txt.
-
-    Returns:
-    objects: list
-        Original list with name of the current object appended.
-
-    """
-    # apply transformations and activate
-    bpy.context.view_layer.objects.active = obj
-    bpy.ops.object.transform_apply(location=True)
-    bpy.ops.object.transform_apply(rotation=True)
-    bpy.ops.object.transform_apply(scale=True)
-    obj = context.active_object
-    obj.hide_render = False
-    obj_data = obj.data
-
-    # create target directory
-    dirObject = os.path.join(filepath1, "ObjectMeshes", obj.name)
-    if not os.path.exists(dirObject):
-        os.mkdir(dirObject)
-
-    # write object nodes
-    file = open(os.path.join(dirObject, "Nodes.txt"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-    # number of nodes
-    fw("%i\n" % len(obj_data.vertices[:]))
-    # coordinate of nodes (vertices)
-    for ii in range(len(obj_data.vertices[:])):
-        fw("%i " % ii)
-        fw("%.6f %.6f %.6f\n" %
-            (obj_data.vertices[ii].co[0] * unitFactor,
-             obj_data.vertices[ii].co[1] * unitFactor,
-             obj_data.vertices[ii].co[2] * unitFactor))
-    file.close
-
-    # write object elements
-    file = open(os.path.join(dirObject, "Elements.txt"), "w",
-                encoding="utf8", newline="\n")
-    fw = file.write
-    # number of faces (polygons)
-    fw("%i\n" % len(obj_data.polygons[:]))
-    # node (vertice) indicees
-    for ii in range(len(obj_data.polygons[:])):
-        fw("%i " % ii)
-        if len(obj_data.polygons[ii].vertices[:]) == 3:
-            fw("%d %d %d 0 0 0\n" %
-               tuple(obj_data.polygons[ii].vertices[:]))
-        else:
-            fw("%d %d %d %d 0 0 0\n" %
-               tuple(obj_data.polygons[ii].vertices[:]))
-    file.close
-
-    # add object to list
-    objects.append(obj.name)
-
-    return objects
