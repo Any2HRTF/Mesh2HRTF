@@ -70,7 +70,7 @@ def test_write_material_comment():
 
 def test_read_ram_estimates():
 
-    estimates = m2s.read_ram_estimates(os.path.join(
+    estimates = m2s.output.read_ram_estimates(os.path.join(
         os.path.dirname(__file__), "resources", "SHTF", "NumCalc", "source_1"))
 
     assert isinstance(estimates, np.ndarray)
@@ -83,4 +83,4 @@ def test_read_ram_estimates_assertions():
     """test assertions for read_ram_estimates"""
 
     with pytest.raises(ValueError, match="does not contain a Memory.txt"):
-        m2s.read_ram_estimates(os.getcwd())
+        m2s.output.read_ram_estimates(os.getcwd())

@@ -19,7 +19,7 @@ def test_purge_outputs_numcalc_data(boundary, grid):
     tmp = TemporaryDirectory()
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
 
-    m2s.remove_outputs(join(tmp.name, "*"), boundary, grid)
+    m2s.NumCalc.remove_outputs(join(tmp.name, "*"), boundary, grid)
 
     for source in glob(join(tmp.name, "SHTF", "NumCalc", "source_*")):
         if boundary and grid:
@@ -44,7 +44,7 @@ def test_purge_outputs_output_data(hrtf, vtk, reports):
     shutil.copytree(data_shtf, join(tmp.name, "SHTF"))
     folder = join(tmp.name, "SHTF", "Output2HRTF")
 
-    m2s.remove_outputs(
+    m2s.NumCalc.remove_outputs(
         join(tmp.name, "*"), hrtf=hrtf, vtk=vtk, reports=reports)
 
     assert os.path.isfile(join(folder, "HRTF_FourPointHorPlane_r100cm.sofa")) \

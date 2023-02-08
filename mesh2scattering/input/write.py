@@ -45,7 +45,7 @@ def write_scattering_project(
     title = 'scattering coefficient Reference'
     sourcePositions_ref = _get_positions(
         [0], source_theta_deg, source_distance)
-    programPath = m2s.repository_root()
+    programPath = m2s.utils.repository_root()
     write_project(
         project_path, title, frequencies, frequencyStepSize, reference_path,
         receiverPoints, sourcePositions_ref, sourceType='Point source',
@@ -95,7 +95,7 @@ def write_project(
         materialSearchPaths=None, speedOfSound='346.18',
         densityOfMedium='1.1839', materials=None):
 
-    programPath = m2s.repository_root()
+    programPath = m2s.utils.repository_root()
     defaultPath = os.path.join(
         programPath, 'Mesh2Input', 'Materials', 'Data')
     if materialSearchPaths is None:

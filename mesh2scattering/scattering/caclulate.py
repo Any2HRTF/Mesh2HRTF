@@ -3,10 +3,10 @@ import imkar as ik
 import numpy as np
 import sofar as sf
 import os
-from . import _utils
+import mesh2scattering as m2s
 
 
-def calc_coefficient(folder, grid):
+def calculate_scattering(folder, grid):
     project_name = os.path.split(folder)[-1]
     sofa = sf.read_sofa(os.path.join(folder, f'sample_{grid}.pattern.sofa'))
     data, source_coordinates, receiver_coorinates = pf.io.read_sofa(
@@ -34,7 +34,7 @@ def calc_coefficient(folder, grid):
     shape = np.insert(shape, 1, 1)
     s.freq = s.freq.reshape(shape)
 
-    sofa = _utils._get_sofa_object(
+    sofa = m2s.utils._get_sofa_object(
         s.freq,
         source_coordinates.get_cart(),
         np.array([0, 0, 0]),
@@ -45,7 +45,7 @@ def calc_coefficient(folder, grid):
     sf.write_sofa(os.path.join(
         folder, f'{project_name}_{grid}.scattering.sofa'), sofa)
 
-    sofa = _utils._get_sofa_object(
+    sofa = m2s.utils._get_sofa_object(
         s_rand.freq.reshape(1, 1, len(s.frequencies)),
         np.array([0, 0, 0]),
         np.array([0, 0, 0]),

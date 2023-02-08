@@ -8,10 +8,9 @@ import numpy as np
 import sofar as sf
 import mesh2scattering as m2s
 import pyfar as pf
-from . import _utils
 
 
-def output2scattering(folder, strutural_wavelength):
+def write_pattern(folder, strutural_wavelength):
     """
     Process NumCalc output and write data to disk.
 
@@ -42,7 +41,8 @@ def output2scattering(folder, strutural_wavelength):
             "Folder need to contain reference and sample folders.")
 
     # read sample data
-    evaluationGrids, params = m2s.read_numcalc(os.path.join(folder, 'sample'))
+    evaluationGrids, params = m2s.output.read_numcalc(
+        os.path.join(folder, 'sample'))
 
     # process BEM data for writing HRTFs and HRIRs to SOFA files
     for grid in evaluationGrids:
@@ -55,7 +55,7 @@ def output2scattering(folder, strutural_wavelength):
         receiver_position = np.array(evaluationGrids[grid]["nodes"][:, 1:4])
         if receiver_position.shape[1] != 3:
             receiver_position = np.transpose(receiver_position)
-        sofa = _utils._get_sofa_object(
+        sofa = m2s.utils._get_sofa_object(
             evaluationGrids[grid]["pressure"],
             source_position,
             receiver_position,
@@ -89,14 +89,14 @@ def output2scattering(folder, strutural_wavelength):
         # apply symmetry of reference sample
         data = evaluationGrids[grid]["pressure"]
         data = np.swapaxes(data, 0, 1)
-        data_out = m2s.apply_symmetry_circular(
+        data_out = m2s.output.apply_symmetry_circular(
             pf.FrequencyData(data, params["frequencies"]),
             _cart_coordiantes(receiver_position_ref),
             _cart_coordiantes(source_position_ref),
             _cart_coordiantes(source_position))
 
         # create sofa file
-        sofa = _utils._get_sofa_object(
+        sofa = m2s.utils._get_sofa_object(
             data_out.freq,
             source_position,
             receiver_position_ref,

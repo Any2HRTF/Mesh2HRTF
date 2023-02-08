@@ -2,7 +2,7 @@ Getting Started
 ===============
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    readme
 
@@ -11,9 +11,9 @@ Documentation
 =============
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   mesh2hrtf
+   modules
 
 
 Contributing

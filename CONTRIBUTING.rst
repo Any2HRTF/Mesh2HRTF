@@ -1,5 +1,5 @@
 .. highlight:: shell
-
+------------
 Contributing
 ------------
 

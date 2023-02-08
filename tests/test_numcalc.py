@@ -13,7 +13,7 @@ base_dir = os.path.dirname(__file__)
 # ignore tests for wondows since its difficult to build the exe
 if os.name == 'nt':
     numcalc = os.path.join(
-        m2s.repository_root(), "NumCalc", "bin", "NumCalc.exe")
+        m2s.utils.repository_root(), "NumCalc", "bin", "NumCalc.exe")
 else:
     # Build NumCalc locally to use for testing
     tmp = tempfile.TemporaryDirectory()

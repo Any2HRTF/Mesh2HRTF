@@ -512,7 +512,7 @@ def _check_project(project, numcalc_executable, log_file):
                     shell=True, stdout=subprocess.DEVNULL, cwd=ff, check=True)
 
         # get RAM estimates and prepend source number
-        estimates = m2s.read_ram_estimates(ff)
+        estimates = m2s.output.read_ram_estimates(ff)
         estimates = np.concatenate(
             ((source_id + 1) * np.ones((estimates.shape[0], 1)), estimates),
             axis=1)

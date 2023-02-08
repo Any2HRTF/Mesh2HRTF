@@ -2,7 +2,7 @@ import os
 import numpy as np
 import glob
 import json
-from . import _utils
+import mesh2scattering as m2s
 
 
 def write_output_report(folder=None):
@@ -82,14 +82,14 @@ def write_output_report(folder=None):
     sources = sources[np.argsort(nums)]
 
     # parse all NC*.out files for all sources
-    all_files, fundamentals, out, out_names = _utils._parse_nc_out_files(
+    all_files, fundamentals, out, out_names = m2s.utils._parse_nc_out_files(
         sources, num_sources, params["numFrequencies"])
 
     # write report as csv file
-    _utils._write_project_reports(folder, all_files, out, out_names)
+    m2s.utils._write_project_reports(folder, all_files, out, out_names)
 
     # look for errors
-    report = _utils._check_project_report(folder, fundamentals, out)
+    report = m2s.utils._check_project_report(folder, fundamentals, out)
 
     found_issues = True if report else False
 

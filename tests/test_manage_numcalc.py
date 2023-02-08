@@ -2,7 +2,6 @@
 Test manage_numcalc with default parameters. Testing parameter combinations is
 not done. Be careful when changing manage_numcalc()!
 """
-import pytest
 import subprocess
 from tempfile import TemporaryDirectory
 import shutil
@@ -17,7 +16,7 @@ data_shtf = os.path.join(cwd, 'resources', 'SHTF')
 # ignore tests for wondows since its difficult to build the exe
 if os.name == 'nt':
     numcalc = os.path.join(
-        m2s.repository_root(), "NumCalc", "bin", "NumCalc.exe")
+        m2s.utils.repository_root(), "NumCalc", "bin", "NumCalc.exe")
     warnings.warn(
         ('Under Windows the code is not compiling but an executable is '
          f'expected in {numcalc}.'), UserWarning)
@@ -37,8 +36,7 @@ else:
         ["make"], cwd=os.path.join(tmp.name, "NumCalc", "src"), check=True)
 
 
-@pytest.mark.parametrize("mode", ("function", "script"))
-def test_defaults(mode):
+def test_defaults():
     """
     Test numcalc manager with default parameters by
     - directly calling the functions
@@ -55,28 +53,9 @@ def test_defaults(mode):
     shutil.rmtree(os.path.join(temp.name, "SHTF", "NumCalc", "source_2"))
 
     numcalc_path = os.path.dirname(numcalc)
-    if mode == "function":
-        # run as function
-        m2s.manage_numcalc(temp.name, numcalc_path=numcalc, wait_time=0)
-    elif mode == "script":
-        # run as script
-        script_path = os.path.join(cwd, "..", "mesh2scattering", "NumCalc")
-        if os.name == 'nt':  # Windows detected
-            # run NumCalc and route all printouts to a log file
-            subprocess.run(
-                f'python manage_numcalc_script.py --project_path {temp.name}'
-                f' --numcalc_path {numcalc_path} --wait_time 0 '
-                '--confirm_errors False',
-                stdout=subprocess.DEVNULL, cwd=script_path, check=True)
-        else:  # elif os.name == 'posix': Linux or Mac detected
-            # run NumCalc and route all printouts to a log file
-            numcalc_path = os.path.join(numcalc, 'NumCalc')
-            subprocess.run(
-                [(f'python manage_numcalc_script.py --project_path {temp.name}'
-                  f' --numcalc_path {numcalc} --wait_time 0 '
-                  '--confirm_errors False')],
-                cwd=script_path, shell=True)
-
+    # run as function
+    m2s.NumCalc.manage_numcalc(
+        temp.name, numcalc_path=numcalc_path, wait_time=0)
     # check if files exist
     assert len(glob.glob(os.path.join(temp.name, "manage_numcalc_*txt")))
 
