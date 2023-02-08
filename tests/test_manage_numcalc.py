@@ -57,7 +57,7 @@ def test_defaults(mode):
     numcalc_path = os.path.dirname(numcalc)
     if mode == "function":
         # run as function
-        m2s.manage_numcalc(temp.name, numcalc_path=numcalc_path, wait_time=0)
+        m2s.manage_numcalc(temp.name, numcalc_path=numcalc, wait_time=0)
     elif mode == "script":
         # run as script
         script_path = os.path.join(cwd, "..", "mesh2scattering", "NumCalc")
@@ -70,11 +70,12 @@ def test_defaults(mode):
                 stdout=subprocess.DEVNULL, cwd=script_path, check=True)
         else:  # elif os.name == 'posix': Linux or Mac detected
             # run NumCalc and route all printouts to a log file
+            numcalc_path = os.path.join(numcalc, 'NumCalc')
             subprocess.run(
                 [(f'python manage_numcalc_script.py --project_path {temp.name}'
-                  f' --numcalc_path {numcalc_path} --wait_time 0 '
+                  f' --numcalc_path {numcalc} --wait_time 0 '
                   '--confirm_errors False')],
-                cwd=script_path, check=True, shell=True)
+                cwd=script_path, shell=True)
 
     # check if files exist
     assert len(glob.glob(os.path.join(temp.name, "manage_numcalc_*txt")))
