@@ -3,11 +3,26 @@ import pyfar as pf
 
 
 def angles2coords(
-        azimuth, colatitude,
-        radius: float = 1., unit='rad') -> pf.Coordinates:
-    """
-    ``data.cshape`` fits the cshape of ```coords``. Data get shifed throght
+        azimuth, colatitude, radius=1., unit='rad') -> pf.Coordinates:
+    """ ``data.cshape`` fits the cshape of ```coords``. Data get shifed throght
     the ``coords`` Object around azimuth by ``shift_azimuth``.
+
+
+    Parameters
+    ----------
+    azimuth : ndarray
+        1D array or list of azimuth angles
+    colatitude : ndarray
+        1D array or list of incident angles
+    radius : float, optional
+        radius of the coordinate object, by default 1.
+    unit : str, optional
+        defines the unit of azimuth and colatitude, by default 'rad'
+
+    Returns
+    -------
+    pf.Coordinates
+        coodinate object ob chape (#azimuth, #colatitude) with radius radius.
     """
     azimuth = np.array(azimuth)
     colatitude = np.array(colatitude)
@@ -22,11 +37,24 @@ def angles2coords(
 
 
 def shift_data_coords(
-        data: pf.FrequencyData, coords: pf.Coordinates, shift_azimuth: float
-        ) -> pf.FrequencyData:
-    """
-    ``data.cshape`` fits the cshape of ```coords``. Data get shifed throght
-    the ``coords`` Object around azimuth by ``shift_azimuth``.
+        data, coords, shift_azimuth) -> pf.FrequencyData:
+    """``data`` get shifed throght the ``coords`` Object around azimuth by
+    ``shift_azimuth``.
+
+    Parameters
+    ----------
+    data : pf.FrequencyData
+        data which need to be shifted. I has the cshape of (..., coords.cshape)
+    coords : pf.Coordinates
+        coordinates object of ``data```. It has the chape (#zimuth,
+        #colatitude)
+    shift_azimuth : float
+        data get shifed by this azimuth angle in degree.
+
+    Returns
+    -------
+    pf.FrequencyData
+        shifted data object
     """
     # test input
     if not isinstance(data, pf.FrequencyData):
