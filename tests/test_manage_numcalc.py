@@ -72,8 +72,8 @@ def test_defaults(mode):
             # run NumCalc and route all printouts to a log file
             subprocess.run(
                 [(f'python manage_numcalc_script.py --project_path {temp.name}'
-                  f' --numcalc_path {numcalc} --wait_time 0 --confirm_errors'
-                  ' False')],
+                  f' --numcalc_path {numcalc_path} --wait_time 0 '
+                  '--confirm_errors False')],
                 cwd=script_path, check=True, shell=True)
 
     # check if files exist
