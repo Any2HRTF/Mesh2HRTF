@@ -4,21 +4,21 @@ import pyfar as pf
 import numpy as np
 import os
 
-# %% 
+# %%
 # this is the project path which we want to simualte
 # it should contain a reference and a sample folder
 project_path = os.path.join(
     m2s.utils.repository_root(), '..', 'examples', 'project')
-frequencies = pf.dsp.filter.fractional_octave_frequencies(3, (500, 5000))[0]
+frequencies = np.array([1250, 2500, 5000])
 path = os.path.join(
-    m2s.utils.repository_root(), '..', 
+    m2s.utils.repository_root(), '..',
     'tests', 'resources', 'mesh', 'sine_5k')
 sample_path = os.path.join(path, 'sample.stl')
 reference_path = os.path.join(path, 'reference.stl')
-receiver_delta_deg = 1
+receiver_delta_deg = 5
 receiver_radius = 5
-source_azimuth_deg = np.arange(0, 95, 10)
-source_colatitude_deg = np.arange(10, 85, 10)
+source_azimuth_deg = np.arange(0, 95, 30)
+source_colatitude_deg = np.arange(10, 85, 30)
 source_radius = 10
 
 strcutal_wavelength = 0
@@ -27,15 +27,19 @@ modelScale = 2.5
 symmetry_azimuth = [90, 180]
 symmetry_rotational = False
 
-numcalc_path = os.path.join(
-    m2s.utils.repository_root(), 'NumCalc', 'bin', 'NumCalc')
+if os.name == "nt":
+    numcalc_path = os.path.join(
+        m2s.utils.repository_root(), 'NumCalc', 'bin')
+else:
+    numcalc_path = os.path.join(
+        m2s.utils.repository_root(), 'NumCalc', 'bin', 'NumCalc')
 
-# %% 
+# %%
 # create project
-receiverPoints = pf.samplings.sph_equal_angle(
+receiverCoords = pf.samplings.sph_equal_angle(
     receiver_delta_deg, receiver_radius)
-receiverPoints = receiverPoints[receiverPoints.get_sph()[..., 1]<np.pi/2]
-sourcePositions = m2s.input.create_source_positions(
+receiverCoords = receiverCoords[receiverCoords.get_sph()[..., 1] < np.pi/2]
+sourceCoords = m2s.input.create_source_positions(
     source_azimuth_deg, source_colatitude_deg, source_radius)
 
 m2s.input.write_scattering_project(
@@ -43,17 +47,17 @@ m2s.input.write_scattering_project(
     frequencies=frequencies,
     sample_path=sample_path,
     reference_path=reference_path,
-    receiverPoints=receiverPoints, 
-    sourcePositions=sourcePositions,
+    receiver_coords=receiverCoords,
+    source_coords=sourceCoords,
     structualWavelength=0,
-    modelScale=1, 
+    modelScale=1,
     sample_diameter=sample_diameter,
     symmetry_azimuth=symmetry_azimuth,
     symmetry_rotational=symmetry_rotational,
     )
 
 # %%
-# rund simulation
+# run simulation
 m2s.NumCalc.manage_numcalc(
     os.path.join(project_path, 'reference'),
     numcalc_path)
@@ -61,4 +65,5 @@ m2s.NumCalc.manage_numcalc(
 m2s.NumCalc.manage_numcalc(
     os.path.join(project_path, 'sample'),
     numcalc_path)
+
 # %%

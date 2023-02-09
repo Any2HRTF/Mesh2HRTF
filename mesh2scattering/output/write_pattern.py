@@ -10,7 +10,7 @@ import mesh2scattering as m2s
 import pyfar as pf
 
 
-def write_pattern(folder, strutural_wavelength):
+def write_pattern(folder):
     """
     Process NumCalc output and write data to disk.
 
@@ -42,7 +42,7 @@ def write_pattern(folder, strutural_wavelength):
 
     # read sample data
     evaluationGrids, params = m2s.output.read_numcalc(
-        os.path.join(folder, 'sample'))
+        os.path.join(folder, 'sample'), False)
 
     # process BEM data for writing HRTFs and HRIRs to SOFA files
     for grid in evaluationGrids:
@@ -63,14 +63,13 @@ def write_pattern(folder, strutural_wavelength):
             frequencies=params["frequencies"])
 
         sofa.GLOBAL_Title = folder.split(os.sep)[-1]
-        sofa.GLOBAL_References = f'{strutural_wavelength}'
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
-            folder, f'sample_{grid}.pattern.sofa'), sofa)
+            folder, 'sample.pattern.sofa'), sofa)
 
-    evaluationGrids, params = m2s.read_numcalc(
-        os.path.join(folder, 'reference'))
+    evaluationGrids, params = m2s.output.read_numcalc(
+        os.path.join(folder, 'reference'), True)
 
     # process BEM data for writing HRTFs and HRIRs to SOFA files
     for grid in evaluationGrids:
@@ -107,7 +106,7 @@ def write_pattern(folder, strutural_wavelength):
 
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
-            folder, f'reference_{grid}.pattern.sofa'), sofa)
+            folder, 'reference.pattern.sofa'), sofa)
 
     print('Done\n')
 

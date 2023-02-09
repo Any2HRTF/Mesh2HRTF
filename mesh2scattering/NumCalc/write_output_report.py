@@ -66,15 +66,16 @@ def write_output_report(folder=None):
         The report or an empty string if no issues were found
     """
 
-    if folder is None:
-        folder = os.getcwd()
-
     # get sources and number of sources and frequencies
     sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
     num_sources = len(sources)
 
-    with open(os.path.join(folder, "parameters.json"), "r") as file:
-        params = json.load(file)
+    if os.path.exists(os.path.join(folder, '..', "parameters.json")):
+        with open(os.path.join(folder, '..', "parameters.json"), "r") as file:
+            params = json.load(file)
+    else:
+        with open(os.path.join(folder, "parameters.json"), "r") as file:
+            params = json.load(file)
 
     # sort source files (not read in correct order in some cases)
     nums = [int(source.split("_")[-1]) for source in sources]

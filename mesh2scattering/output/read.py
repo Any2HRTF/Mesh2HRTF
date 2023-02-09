@@ -11,7 +11,7 @@ import mesh2scattering as m2s
 import pyfar as pf
 
 
-def read_numcalc(folder=None):
+def read_numcalc(folder=None, is_ref=False):
     """
     Process NumCalc output and write data to disk.
 
@@ -44,10 +44,10 @@ def read_numcalc(folder=None):
     # Mesh2HRTF_version, reference, computeHRIRs, speedOfSound, densityOfAir,
     # numSources, sourceType, sourceCenter, sourceArea,
     # numFrequencies, frequencies
-    params = os.path.join(folder, "parameters.json")
+    params = os.path.join(folder, '..', 'parameters.json')
     if not os.path.isfile(params):
         raise ValueError((
-            f"The folder {folder} is not a valid Mesh2HRTF project. "
+            f"The folder {folder} is not a valid Mesh2scattering project. "
             "It must contain the file 'parameters.json'"))
 
     with open(params, "r") as file:
@@ -74,9 +74,16 @@ def read_numcalc(folder=None):
         os.path.join(folder, 'EvaluationGrids'))
 
     # Load EvaluationGrid data
+    if is_ref:
+        xyz = np.array(params["sourceCenter"])
+        coords = pf.Coordinates(xyz[..., 0], xyz[..., 1], xyz[..., 2])
+        num_sources = np.sum(np.abs(coords.get_sph()[..., 0]) < 1e-12)
+    else:
+        num_sources = params["numSources"]
+
     if not len(evaluationGrids) == 0:
         pressure, _ = m2s.utils._read_numcalc_data(
-            params["numSources"], params["numFrequencies"],
+            num_sources, params["numFrequencies"],
             folder, 'pEvalGrid')
 
     # save to struct

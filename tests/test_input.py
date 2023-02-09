@@ -154,9 +154,9 @@ def test_create_source_positions():
 
     sourcePositions = m2s.input.create_source_positions(
         source_azimuth_deg, source_colatitude_deg, source_radius)
-    
+
     npt.assert_almost_equal(
-        np.max(sourcePositions.get_sph()[..., 0]), 
+        np.max(sourcePositions.get_sph()[..., 0]),
         np.max(source_azimuth_deg)/180*np.pi)
     npt.assert_almost_equal(
         np.min(sourcePositions.get_sph()[..., 0]),
@@ -175,7 +175,7 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
     frequencies = pf.dsp.filter.fractional_octave_frequencies(
         3, (500, 5000))[0]
     path = os.path.join(
-        m2s.utils.repository_root(), '..', 
+        m2s.utils.repository_root(), '..',
         'tests', 'resources', 'mesh', 'sine_5k')
     sample_path = os.path.join(path, 'sample.stl')
     reference_path = os.path.join(path, 'reference.stl')
@@ -190,7 +190,7 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
 
     receiverPoints = pf.samplings.sph_equal_angle(
         receiver_delta_deg, receiver_radius)
-    receiverPoints = receiverPoints[receiverPoints.get_sph()[..., 1]<np.pi/2]
+    receiverPoints = receiverPoints[receiverPoints.get_sph()[..., 1] < np.pi/2]
 
     # excute
     m2s.input.write_scattering_project(
@@ -198,10 +198,10 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
         frequencies=frequencies,
         sample_path=sample_path,
         reference_path=reference_path,
-        receiverPoints=receiverPoints, 
-        sourcePositions=source_coords_10deg,
-        structualWavelength=strcutal_wavelength, 
-        modelScale=modelScale, 
+        receiver_coords=receiverPoints,
+        source_coords=source_coords_10deg,
+        structualWavelength=strcutal_wavelength,
+        modelScale=modelScale,
         sample_diameter=sample_diameter,
         symmetry_azimuth=symmetry_azimuth,
         symmetry_rotational=symmetry_rotational,
@@ -209,7 +209,7 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
 
     # test parameters
     f = open(os.path.join(tmpdir, 'parameters.json'))
-    paras = json.load(f)    
+    paras = json.load(f)
     with open(os.path.join(
             m2s.utils.repository_root(), "..", "VERSION")) as read_version:
         version = read_version.readline()
@@ -238,8 +238,26 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
         "sourceType": 'Point source',
         "numSources": len(sourceList),
         "sourceCenter": sourceList,
-        "sourceArea": 0,
     }
     npt.assert_equal(paras, parameters)
+    # test folder structure
     assert os.path.isdir(os.path.join(tmpdir, 'sample'))
     assert os.path.isdir(os.path.join(tmpdir, 'reference'))
+    assert os.path.isdir(os.path.join(tmpdir, 'sample', 'EvaluationGrids'))
+    assert os.path.isdir(os.path.join(tmpdir, 'reference', 'EvaluationGrids'))
+    assert os.path.isdir(os.path.join(tmpdir, 'sample', 'NumCalc'))
+    assert os.path.isdir(os.path.join(tmpdir, 'reference', 'NumCalc'))
+    assert os.path.isdir(os.path.join(tmpdir, 'sample', 'ObjectMeshes'))
+    assert os.path.isdir(os.path.join(tmpdir, 'reference', 'ObjectMeshes'))
+
+    # test sources
+    for i in range(80):
+        assert os.path.isdir(
+            os.path.join(tmpdir, 'sample', 'NumCalc', f'source_{i+1}'))
+    assert not os.path.isdir(
+        os.path.join(tmpdir, 'sample', 'NumCalc', f'source_{81}'))
+    for i in range(8):
+        assert os.path.isdir(
+            os.path.join(tmpdir, 'reference', 'NumCalc', f'source_{i+1}'))
+    assert not os.path.isdir(
+        os.path.join(tmpdir, 'reference', 'NumCalc', f'source_{9}'))

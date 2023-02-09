@@ -137,7 +137,8 @@ def apply_symmetry_circular(
     """
     shape = [coords_inc_out.cshape[0], data.cshape[1], len(data.frequencies)]
     freq = np.empty(shape, dtype=complex)
-    thetas = coords_inc.get_sph(unit='deg')[..., 1]
+    thetas = np.sort(np.array(list(set(
+        np.round(coords_inc.get_sph(unit='deg')[..., 1], 5)))))
     for ii in range(coords_inc_out.cshape[0]):
         az = coords_inc_out[ii].get_sph(unit='deg')[0, 0]
         theta = coords_inc_out[ii].get_sph(unit='deg')[0, 1]

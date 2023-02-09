@@ -123,7 +123,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             text_color_red, log_file, confirm_errors)
 
     # Detect what the project_path or "getcwd()" is pointing to:
-    if os.path.isfile(os.path.join(project_path, 'parameters.json')):
+    if os.path.isdir(os.path.join(project_path, 'NumCalc')):
         # project_path is a Mesh2HRTF project folder
         all_projects = [project_path]
         log_file = os.path.join(project_path, log_file)
@@ -131,8 +131,8 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         # project_path contains multiple Mesh2HRTF project folders
         all_projects = []  # list of project folders to execute
         for subdir in os.listdir(project_path):
-            if os.path.isdir(os.path.join(project_path, subdir,
-                                          'ObjectMeshes', 'Reference')):
+            if os.path.isdir(os.path.join(
+                    project_path, subdir, 'ObjectMeshes', 'Reference')):
                 all_projects.append(os.path.join(project_path, subdir))
 
         log_file = os.path.join(project_path, log_file)
