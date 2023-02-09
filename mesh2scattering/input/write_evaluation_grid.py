@@ -5,7 +5,7 @@ import pyfar as pf
 
 
 def write_evaluation_grid(
-        points, name, start=200000, discard=None, show=False):
+        points, name, start=200000, discard=None):
     """
     Write evaluation grid for use in Mesh2HRTF.
 
@@ -33,9 +33,6 @@ def write_evaluation_grid(
         triangularization. E.g. if all points have a z-value of 0 (or any other
         constant), discarded must be "z". The default ``None`` does not discard
         any dimension.
-    show : bool, optional
-        If ``True`` the evaluation grid is plotted and the plot is saved to
-        the folder given by `name`
 
     Examples
     --------
@@ -107,9 +104,3 @@ def write_evaluation_grid(
 
     with open(os.path.join(name, "Elements.txt"), "w") as f_id:
         f_id.write(elems)
-
-    # plot the evaluation grid
-    if show:
-        points = pf.Coordinates(
-            points[:, 0], points[:, 1], points[:, 2]).show()
-        plt.savefig(os.path.join(name, "evaluation_grid.png"), dpi=300)

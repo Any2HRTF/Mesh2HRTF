@@ -3,7 +3,7 @@ import numpy as np
 import pyfar as pf
 
 
-def read_evaluation_grid(name, show=False):
+def read_evaluation_grid(name):
     """
     Read Mesh2HRTF evaluation grid.
 
@@ -43,9 +43,5 @@ def read_evaluation_grid(name, show=False):
 
     # make coordinates object
     coordinates = pf.Coordinates(points[:, 0], points[:, 1], points[:, 2])
-
-    # plot and return
-    if show:
-        coordinates.show()
 
     return coordinates

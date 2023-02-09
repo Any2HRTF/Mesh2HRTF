@@ -64,15 +64,7 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
 
     # write grid
     m2s.input.write_evaluation_grid(
-        points, os.path.join(tmp.name, "test"), discard=discard, show=show)
-
-    # check if the plot exists
-    if show:
-        assert os.path.isfile(
-            os.path.join(tmp.name, "test", "evaluation_grid.png"))
-    else:
-        assert not os.path.isfile(
-            os.path.join(tmp.name, "test", "evaluation_grid.png"))
+        points, os.path.join(tmp.name, "test"), discard=discard)
 
     # check the nodes and elements
     for file in ["Nodes.txt", "Elements.txt"]:
