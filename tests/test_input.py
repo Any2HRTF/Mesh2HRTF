@@ -7,6 +7,7 @@ import numpy as np
 import numpy.testing as npt
 from tempfile import TemporaryDirectory
 import pyfar as pf
+import json
 
 
 def test_import():
@@ -144,3 +145,101 @@ def test_write_material_comment():
     assert file[0] == "# " + comment + "\n"
     assert file[1] == "#\n"
     assert file[2] == "# Keyword to define the boundary condition:\n"
+
+
+def test_create_source_positions():
+    source_azimuth_deg = np.arange(0, 95, 10)
+    source_colatitude_deg = np.arange(10, 85, 10)
+    source_radius = 10
+
+    sourcePositions = m2s.input.create_source_positions(
+        source_azimuth_deg, source_colatitude_deg, source_radius)
+    
+    npt.assert_almost_equal(
+        np.max(sourcePositions.get_sph()[..., 0]), 
+        np.max(source_azimuth_deg)/180*np.pi)
+    npt.assert_almost_equal(
+        np.min(sourcePositions.get_sph()[..., 0]),
+        np.min(source_azimuth_deg)/180*np.pi)
+    npt.assert_almost_equal(
+        np.max(sourcePositions.get_sph()[..., 1]),
+        np.max(source_colatitude_deg)/180*np.pi)
+    npt.assert_almost_equal(
+        np.min(sourcePositions.get_sph()[..., 1]),
+        np.min(source_colatitude_deg)/180*np.pi)
+    npt.assert_almost_equal(
+        sourcePositions.get_sph()[..., 2], source_radius)
+
+
+def test_write_scattering_parameter(source_coords_10deg, tmpdir):
+    frequencies = pf.dsp.filter.fractional_octave_frequencies(
+        3, (500, 5000))[0]
+    path = os.path.join(
+        m2s.utils.repository_root(), '..', 
+        'tests', 'resources', 'mesh', 'sine_5k')
+    sample_path = os.path.join(path, 'sample.stl')
+    reference_path = os.path.join(path, 'reference.stl')
+    receiver_delta_deg = 1
+    receiver_radius = 5
+
+    strcutal_wavelength = 0
+    sample_diameter = 0.8
+    modelScale = 2.5
+    symmetry_azimuth = [90, 180]
+    symmetry_rotational = False
+
+    receiverPoints = pf.samplings.sph_equal_angle(
+        receiver_delta_deg, receiver_radius)
+    receiverPoints = receiverPoints[receiverPoints.get_sph()[..., 1]<np.pi/2]
+
+    # excute
+    m2s.input.write_scattering_project(
+        project_path=tmpdir,
+        frequencies=frequencies,
+        sample_path=sample_path,
+        reference_path=reference_path,
+        receiverPoints=receiverPoints, 
+        sourcePositions=source_coords_10deg,
+        structualWavelength=strcutal_wavelength, 
+        modelScale=modelScale, 
+        sample_diameter=sample_diameter,
+        symmetry_azimuth=symmetry_azimuth,
+        symmetry_rotational=symmetry_rotational,
+        )
+
+    # test parameters
+    f = open(os.path.join(tmpdir, 'parameters.json'))
+    paras = json.load(f)    
+    with open(os.path.join(
+            m2s.utils.repository_root(), "..", "VERSION")) as read_version:
+        version = read_version.readline()
+    sourceList = [list(i) for i in list(source_coords_10deg.get_cart())]
+    parameters = {
+        # project Info
+        "projectTitle": 'scattering pattern',
+        "Mesh2HRTF_Path": m2s.utils.repository_root(),
+        "Mesh2HRTF_Version": version,
+        "BEM_Type": 'ML-FMM BEM',
+        # Constants
+        "speedOfSound": float(346.18),
+        "densityOfMedium": float(1.1839),
+        # Sample Information, post processing
+        "structualWavelength": strcutal_wavelength,
+        "modelScale": modelScale,
+        "symmetry_azimuth": symmetry_azimuth,
+        "symmetry_rotational": symmetry_rotational,
+        "sample_diameter": sample_diameter,
+        # frequencies
+        "numFrequencies": len(frequencies),
+        "minFrequency": frequencies[0],
+        "maxFrequency": frequencies[-1],
+        "frequencies": list(frequencies),
+        # Source definition
+        "sourceType": 'Point source',
+        "numSources": len(sourceList),
+        "sourceCenter": sourceList,
+        "sourceArea": 0,
+    }
+    npt.assert_equal(paras, parameters)
+    assert os.path.isdir(os.path.join(tmpdir, 'sample'))
+    assert os.path.isdir(os.path.join(tmpdir, 'reference'))

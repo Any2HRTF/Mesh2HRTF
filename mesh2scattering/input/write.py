@@ -3,59 +3,62 @@ import numpy as np
 import os
 import json
 import mesh2scattering as m2s
+import pyfar as pf
 import datetime
 
 
-def _get_positions(phi_deg, theta_deg, radius):
+def create_source_positions(phi_deg, theta_deg, radius):
     theta_rad = theta_deg * np.pi / 180.
     phi_rad = phi_deg * np.pi / 180.
     theta, phi = np.meshgrid(theta_rad, phi_rad)
     theta = theta.flatten()
     phi = phi.flatten()
     # create coordinates
-    coords = np.empty((len(phi), 3))
-    coords[:, 0] = radius * np.sin(theta) * np.cos(phi)
-    coords[:, 1] = radius * np.sin(theta) * np.sin(phi)
-    coords[:, 2] = radius * np.cos(theta)
-    return coords
+    x = radius * np.sin(theta) * np.cos(phi)
+    y = radius * np.sin(theta) * np.sin(phi)
+    z = radius * np.cos(theta)
+    return pf.Coordinates(x, y, z)
 
 
 def write_scattering_project(
-        project_path, frequencies, sample_path, reference_path, receiverPoints,
-        source_distance=10,
-        source_phi_deg=[0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
-        source_theta_deg=[10, 20, 30, 40, 50, 60, 70, 80],
-        structualWavelength=0, modelScale=1, symmetry_axes=['x', 'y'],
+        project_path, frequencies, sample_path, reference_path, 
+        receiverPoints, sourcePositions,
+        structualWavelength=0, modelScale=1, symmetry_azimuth = [90, 180],
+        symmetry_rotational = False, sample_diameter=0.8,
         speedOfSound='346.18',
         densityOfMedium='1.1839'):
-
-    sourcePositions = _get_positions(
-        source_phi_deg, source_theta_deg, source_distance)
+    
+    if not os.path.isdir(project_path):
+        os.mkdir(project_path)
 
     frequencyStepSize = 0
     title = 'scattering coefficient Sample'
     method = 'ML-FMM BEM'
+    project_path_sample = os.path.join(project_path, 'sample')
     write_project(
-        project_path, title, frequencies, frequencyStepSize, sample_path,
+        project_path_sample, title, frequencies, frequencyStepSize, sample_path,
         receiverPoints, sourcePositions, sourceType='Point source',
-        method='ML-FMM BEM',  materialSearchPaths=None,
+        method='ML-FMM BEM', materialSearchPaths=None,
         speedOfSound=speedOfSound,
-        densityOfMedium=densityOfMedium, unit='m', materials=None)
+        densityOfMedium=densityOfMedium, materials=None)
 
     title = 'scattering coefficient Reference'
-    sourcePositions_ref = _get_positions(
-        [0], source_theta_deg, source_distance)
+    sourcePositions_ref = sourcePositions[
+        np.abs(sourcePositions.get_sph()[..., 0]) < 1e-14]
     programPath = m2s.utils.repository_root()
+    project_path_ref = os.path.join(project_path, 'reference')
     write_project(
-        project_path, title, frequencies, frequencyStepSize, reference_path,
+        project_path_ref, title, frequencies, frequencyStepSize, reference_path,
         receiverPoints, sourcePositions_ref, sourceType='Point source',
         method='ML-FMM BEM',  materialSearchPaths=None,
         speedOfSound=speedOfSound,
-        densityOfMedium=densityOfMedium, unit='m', materials=None)
+        densityOfMedium=densityOfMedium, materials=None)
 
     with open(os.path.join(programPath, "..", "VERSION")) as read_version:
         version = read_version.readline()
 
+    sourceList = [list(i) for i in list(sourcePositions.get_cart())]
+    title = 'scattering pattern'
     parameters = {
         # project Info
         "projectTitle": title,
@@ -65,23 +68,21 @@ def write_scattering_project(
         # Constants
         "speedOfSound": float(speedOfSound),
         "densityOfMedium": float(densityOfMedium),
-        # Sample Information
+        # Sample Information, post processing
         "structualWavelength": structualWavelength,
         "modelScale": modelScale,
-        "symmetry_axes": symmetry_axes,
-        # post processing
-        "reference": False,
-        "computeHRIRs": False,
+        "symmetry_azimuth": symmetry_azimuth,
+        "symmetry_rotational": symmetry_rotational,
+        "sample_diameter": sample_diameter,
         # frequencies
         "numFrequencies": len(frequencies),
-        "frequencyStepSize": frequencyStepSize,
         "minFrequency": frequencies[0],
         "maxFrequency": frequencies[-1],
-        "frequencies": frequencies,
+        "frequencies": list(frequencies),
         # Source definition
         "sourceType": 'Point source',
-        "numSources": len(sourcePositions),
-        "sourceCenter": sourcePositions,
+        "numSources": len(sourceList),
+        "sourceCenter": sourceList,
         "sourceArea": 0,
     }
     with open(os.path.join(project_path, "parameters.json"), 'w') as file:
@@ -107,28 +108,30 @@ def write_project(
     with open(os.path.join(programPath, "..", "VERSION")) as read_version:
         version = read_version.readline()
 
+    # create folders
+    if not os.path.isdir(project_path):
+        os.mkdir(project_path)
+    if not os.path.isdir(os.path.join(project_path, 'ObjectMeshes')):
+        os.mkdir(os.path.join(project_path, 'ObjectMeshes'))
+    if not os.path.isdir(os.path.join(project_path, 'NumCalc')):
+        os.mkdir(os.path.join(project_path, 'NumCalc'))
+    if not os.path.isdir(os.path.join(project_path, 'EvaluationGrids')):
+        os.mkdir(os.path.join(project_path, 'EvaluationGrids'))
+
     # write stl file
     mesh = trimesh.load(mesh_path)
     path = os.path.join(project_path, 'ObjectMeshes', 'Reference')
     write_mesh(mesh.vertices, mesh.faces, path, start=0)
 
     # write evaluation grid
-    m2s.write_evaluation_grid(evaluationPoints, 'grid')
-
-    # Write parameters.json (feedback for user, not used by NumCalc) ----------
-    reference = False
-    computeHRIRs = False
-    _write_parameters_json(
-        project_path, title, programPath, version, method,
-        'grid', materialSearchPaths, materials,
-        speedOfSound, densityOfMedium,
-        reference, computeHRIRs, sourceType, sourcePositions,
-        frequencies, frequencyStepSize, numFrequencySteps)
+    m2s.input.write_evaluation_grid(
+        evaluationPoints, 
+        os.path.join(project_path, 'EvaluationGrids', 'grid'))
 
     # Write NumCalc input files for all sources (NC.inp) ----------------------
     _write_nc_inp(
         project_path, version, title, speedOfSound, densityOfMedium,
-        frequencies, 'grid', materials, method, sourceType,
+        frequencies, ['grid'], materials, method, sourceType,
         sourcePositions, len(mesh.faces), len(mesh.vertices))
 
 
@@ -185,6 +188,9 @@ def _write_nc_inp(filepath1, version, title,
     The file format is documented at:
     https://github.com/Any2HRTF/Mesh2HRTF/wiki/Structure_of_NC.inp
     """
+    # 
+    if isinstance(sourcePositions, pf.Coordinates):
+        sourcePositions = sourcePositions.get_cart()
 
     # check the BEM method
     if method == 'BEM':
@@ -264,7 +270,10 @@ def _write_nc_inp(filepath1, version, title,
 
         # main parameters II --------------------------------------------------
         fw("## 2. Main Parameters II\n")
-        fw("0 ")
+        if "plane" in sourceType:
+            fw("1 ")
+        else:
+            fw("0 ")
         if "ear" in sourceType:
             fw("0 ")
         else:

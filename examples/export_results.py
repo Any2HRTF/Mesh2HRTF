@@ -5,7 +5,7 @@ import os
 
 # this is the project path which we want to simualte
 # it should contain a reference and a sample folder
-project_path = '/Users/anne/sciebo/2021_DFG-Projekt/data/mesh2hrtf/ita'
+project_path = 'data/ita'
 
 # this is the structural wavelength of the test sample, it its not clear use 0
 structural_wavelength = 1.
@@ -19,12 +19,12 @@ evaluation_grid = '5m_1deg'
 # sofa file since the reference sample is always rotational symmetric, the
 # data for the missing angles are rotated in this was sample and reference
 # data will have the same dimensions and coordinates
-m2s.output2scattering(project_path, structural_wavelength)
+m2s.output.write_pattern(project_path)
 
 # %%
 # calcualtes the scattering coeffient for each incident angle and the random
 # one from the scattering pattern
-m2s.process.calc_coefficient(project_path, evaluation_grid)
+m2s.process.calculate_scattering(project_path, evaluation_grid)
 
 # %%
 # example of plotting the random scattering coefficient
