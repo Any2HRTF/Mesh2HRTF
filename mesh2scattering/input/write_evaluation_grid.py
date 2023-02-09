@@ -1,6 +1,5 @@
 import os
 from scipy.spatial import Delaunay, ConvexHull
-import matplotlib.pyplot as plt
 import pyfar as pf
 
 
