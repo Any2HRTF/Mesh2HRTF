@@ -24,7 +24,7 @@ m2s.output2scattering(project_path, structural_wavelength)
 # %%
 # calcualtes the scattering coeffient for each incident angle and the random
 # one from the scattering pattern
-m2s.scattering.calc_coefficient(project_path, evaluation_grid)
+m2s.process.calc_coefficient(project_path, evaluation_grid)
 
 # %%
 # example of plotting the random scattering coefficient
