@@ -15,9 +15,8 @@ Please notice that this project does not support HRTF post processing, use `Mesh
 Getting Started
 ===============
 
-Check out the examples folder for a tour of the most important pyfar
-functionality and `read the docs`_ for the complete documentation. Packages
-related to pyfar are listed at `pyfar.org`_.
+Check out the examples folder for a tour of the most important mesh2scattering
+functionality and `read the docs`_ for the complete documentation. 
 
 Installation
 ============
@@ -35,10 +34,30 @@ Note that NumCalc need to be build on Linus an MacOS. For Windows it can be dowl
 for Linux:
 ~~~~~~~~~~
 
-* Install the C++ build essentials by running ``sudo apt-get install build-essential``
-* Go into the NumCalc directory by running ``cd path/to/your/Mesh2HRTF/mesh2hrtf/NumCalc/src``
+* Install the C++ build essentials by running 
+
+.. code-block:: console
+
+    $ sudo apt-get install build-essential
+
+* Go into the NumCalc directory by running
+
+.. code-block:: console
+
+    $ cd path/to/your/Mesh2HRTF/mesh2hrtf/NumCalc/src
+
 * Compile NumCalc by running make. It is now located in the folder ``mesh2hrtf/NumCalc/bin``
-* Copy NumCalc to a folder in your program path: in the same directory run ``sudo cp NumCalc /usr/local/bin/``
+
+.. code-block:: console
+
+    $ make
+
+* Copy NumCalc to a folder in your program path: in the same directory run
+
+.. code-block:: console
+
+    $ sudo cp NumCalc /usr/local/bin/
+
 * Now NumCalc can be used by running NumCalc (don't do this yet).
 
 for MacOS:
@@ -46,8 +65,23 @@ for MacOS:
 
 * Install the C++ build essentials by installing ``xcode``
 * Go into the NumCalc directory by running ``cd path/to/your/Mesh2HRTF/mesh2hrtf/NumCalc/src``
-* Compile NumCalc by running make. It is now located in the folder ``mesh2hrtf/NumCalc/bin``
-* Now NumCalc can be used by running ``path/to/mesh2hrtf/NumCalc/bin/NumCalc`` (don't do this yet).
+
+.. code-block:: console
+
+    $ cd path/to/your/Mesh2HRTF/mesh2hrtf/NumCalc/src
+
+* Compile NumCalc by running make. It is now located in the folder ``mesh2hrtf/NumCalc/bin``bin``
+
+.. code-block:: console
+
+    $ make
+
+* Now NumCalc can be used by running ``path/to/mesh2hrtf/NumCalc/bin/NumCalc`` (don't do this yet).bin``
+
+.. code-block:: console
+
+    $ path/to/mesh2hrtf/NumCalc/bin/NumCalc
+
 
 for Windows:
 ~~~~~~~~~~~~
