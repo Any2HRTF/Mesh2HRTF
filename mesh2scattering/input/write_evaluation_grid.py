@@ -41,12 +41,12 @@ def write_evaluation_grid(
 
     .. plot::
 
-        >>> import mesh2hrtf as m2h
+        >>> import mesh2scattering as m2s
         >>> import pyfar as pf
         >>>
         >>> points = pf.samplings.sph_lebedev(sh_order=10)
-        >>> m2h.write_evaluation_grid(
-        ...     points, "Lebedev_N10", discard=None, show=True)
+        >>> m2s.input.write_evaluation_grid(
+        ...     points, "Lebedev_N10", discard=None)
     """
 
     if isinstance(points, pf.Coordinates):
