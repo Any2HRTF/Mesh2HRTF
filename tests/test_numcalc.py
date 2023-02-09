@@ -15,6 +15,7 @@ base_dir = os.path.dirname(__file__)
 if os.name == 'nt':
     numcalc = os.path.join(
         m2s.utils.repository_root(), "NumCalc", "bin", "NumCalc.exe")
+    numcalc_path = os.path.dirname(numcalc)
     warnings.warn(
         ('Under Windows the code is not compiling but an executable is '
          f'expected in {numcalc}.'), UserWarning)
@@ -23,6 +24,7 @@ else:
     # Build NumCalc locally to use for testing
     numcalc = os.path.join(
         m2s.utils.repository_root(), "NumCalc", "bin", "NumCalc")
+    numcalc_path = numcalc
 
     if os.path.isfile(numcalc):
         os.remove(numcalc)
@@ -248,7 +250,6 @@ def test_defaults(tmpdir):
         os.path.join(tmpdir, "SHTF", "NumCalc", "source_1", "be.out"))
     shutil.rmtree(os.path.join(tmpdir, "SHTF", "NumCalc", "source_2"))
 
-    numcalc_path = os.path.dirname(numcalc)
     # run as function
     m2s.NumCalc.manage_numcalc(
         tmpdir, numcalc_path=numcalc_path, wait_time=0)
