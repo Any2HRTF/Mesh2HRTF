@@ -248,9 +248,10 @@ def test_defaults(tmpdir):
         os.path.join(tmpdir, "SHTF", "NumCalc", "source_1", "be.out"))
     shutil.rmtree(os.path.join(tmpdir, "SHTF", "NumCalc", "source_2"))
 
+    numcalc_path = os.path.dirname(numcalc)
     # run as function
     m2s.NumCalc.manage_numcalc(
-        tmpdir, numcalc_path=numcalc, wait_time=0)
+        tmpdir, numcalc_path=numcalc_path, wait_time=0)
     # check if files exist
     assert len(glob.glob(os.path.join(tmpdir, "manage_numcalc_*txt")))
 
