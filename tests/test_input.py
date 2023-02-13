@@ -244,7 +244,9 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
         "receivers_num": len(receiver_list),
         "receivers": receiver_list,
     }
-    npt.assert_almost_equal(paras, parameters)
+    npt.assert_array_almost_equal(paras['receivers'], parameters['receivers'])
+    paras['receivers'] = parameters['receivers']
+    npt.assert_equal(paras, parameters)
     # test folder structure
     assert os.path.isdir(os.path.join(tmpdir, 'sample'))
     assert os.path.isdir(os.path.join(tmpdir, 'reference'))
