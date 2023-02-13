@@ -193,8 +193,12 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         numcalc_path = "NumCalc" if numcalc_path is None else numcalc_path
 
     ram_info = psutil.virtual_memory()
-    max_ram_load = ram_info.total / 1073741824 \
-        if max_ram_load is None else max_ram_load
+    if max_ram_load is None:
+        max_ram_load = ram_info.total / 1073741824
+    elif max_ram_load > ram_info.total / 1073741824:
+        raise ValueError((
+            f"The maximum RAM load of {max_ram_load} GB must be smaller than "
+            f"the total RAM, which is {ram_info.total / 1073741824} GB."))
 
     # helping variables -------------------------------------------------------
 
@@ -365,13 +369,13 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         # check if available memory is enough for running the instance with the
         # highest memory consumption without ever exceeding 100% of RAM.
         ram_available, ram_used = _get_current_ram(ram_offset)
-        if ram_available < instances_to_run[-1, 3] * ram_safety_factor:
+        if max_ram_load < instances_to_run[-1, 3] * ram_safety_factor:
             # note: it IS possible to run simulations that use even more than
             # 100% of available system RAM - only the performance will be poor.
             _raise_error((
                 f"Stop - not sufficient free RAM for this simulation project: "
                 f"Available RAM is {round(ram_available, 2)} GB, but frequency"
-                f" step {int(instances_to_run[-1, 1])} of source "
+                f"Available RAM is {round(max_ram_load, 2)} GB, but frequency"
                 f"{int(instances_to_run[-1, 0])} requires "
                 f"{round(instances_to_run[-1, 3] * ram_safety_factor, 2)} "
                 "GB."), text_color_red, log_file, confirm_errors)

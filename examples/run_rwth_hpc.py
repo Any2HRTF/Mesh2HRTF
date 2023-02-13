@@ -8,12 +8,12 @@ import mesh2scattering as m2s
 # create
 numcalc_executable = 'NumCalc/bin/NumCalc'
 
-# this is the project path which we want to simualte
+# this is the project path which we want to simulate
 # it should contain a reference and a sample folder
 project_path = '/path/to/project'
 
 # %%
-program_path = m2s.utils.repository_root()
+program_path = m2s.utils.program_root()
 sample_source = os.path.join(project_path, 'sample', 'NumCalc', 'source_2')
 ref_source = os.path.join(project_path, 'reference', 'NumCalc', 'source_2')
 paths = [sample_source, ref_source]

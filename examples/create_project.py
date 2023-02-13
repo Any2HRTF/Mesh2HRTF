@@ -8,10 +8,10 @@ import os
 # this is the project path which we want to simulate
 # it should contain a reference and a sample folder
 project_path = os.path.join(
-    m2s.utils.repository_root(), '..', 'examples', 'project')
+    m2s.utils.repository_root(), 'examples', 'project')
 frequencies = np.array([1250, 2500, 5000])
 path = os.path.join(
-    m2s.utils.repository_root(), '..',
+    m2s.utils.repository_root(),
     'tests', 'resources', 'mesh', 'sine_5k')
 sample_path = os.path.join(path, 'sample.stl')
 reference_path = os.path.join(path, 'reference.stl')
@@ -23,16 +23,16 @@ source_radius = 10
 
 structural_wavelength = 0
 sample_diameter = 0.8
-modelScale = 2.5
+model_scale = 2.5
 symmetry_azimuth = [90, 180]
 symmetry_rotational = False
 
 if os.name == "nt":
     numcalc_path = os.path.join(
-        m2s.utils.repository_root(), 'NumCalc', 'bin')
+        m2s.utils.program_root(), 'NumCalc', 'bin')
 else:
     numcalc_path = os.path.join(
-        m2s.utils.repository_root(), 'NumCalc', 'bin', 'NumCalc')
+        m2s.utils.program_root(), 'NumCalc', 'bin', 'NumCalc')
 
 # %%
 # create project
@@ -49,8 +49,8 @@ m2s.input.write_scattering_project(
     reference_path=reference_path,
     receiver_coords=receiverCoords,
     source_coords=sourceCoords,
-    structuralWavelength=structural_wavelength,
-    modelScale=modelScale,
+    structural_wavelength=structural_wavelength,
+    model_scale=model_scale,
     sample_diameter=sample_diameter,
     symmetry_azimuth=symmetry_azimuth,
     symmetry_rotational=symmetry_rotational,
@@ -59,11 +59,6 @@ m2s.input.write_scattering_project(
 # %%
 # run simulation
 m2s.numcalc.manage_numcalc(
-    os.path.join(project_path, 'reference'),
-    numcalc_path)
-
-m2s.numcalc.manage_numcalc(
-    os.path.join(project_path, 'sample'),
-    numcalc_path)
+    project_path, numcalc_path)
 
 # %%

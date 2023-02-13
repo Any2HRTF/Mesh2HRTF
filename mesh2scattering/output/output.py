@@ -235,7 +235,7 @@ def write_pattern(folder):
         print(f'\nWrite sample data "{grid}" ...\n')
         # get pressure as SOFA object (all following steps are run on SOFA
         # objects. This way they are available to other users as well)
-        source_position = np.array(params["sourceCenter"])
+        source_position = np.array(params["sources"])
         if source_position.shape[1] != 3:
             source_position = np.transpose(source_position)
         receiver_position = np.array(evaluationGrids[grid]["nodes"][:, 1:4])
@@ -245,7 +245,7 @@ def write_pattern(folder):
             evaluationGrids[grid]["pressure"],
             source_position,
             receiver_position,
-            params["Mesh2HRTF_Version"],
+            params["mesh2scattering_version"],
             frequencies=params["frequencies"])
 
         sofa.GLOBAL_Title = folder.split(os.sep)[-1]
@@ -263,7 +263,7 @@ def write_pattern(folder):
         # get pressure as SOFA object (all following steps are run on SOFA
         # objects. This way they are available to other users as well)
         # read source and receiver positions
-        source_position_ref = np.array(params["sourceCenter"])
+        source_position_ref = np.array(params["sources"])
         if source_position_ref.shape[1] != 3:
             source_position_ref = np.transpose(source_position_ref)
         receiver_position_ref = np.array(
@@ -285,7 +285,7 @@ def write_pattern(folder):
             data_out.freq,
             source_position,
             receiver_position_ref,
-            params["Mesh2HRTF_Version"],
+            params["mesh2scattering_version"],
             frequencies=params["frequencies"])
 
         sofa.GLOBAL_Title = folder.split(os.sep)[-1]
@@ -439,7 +439,7 @@ def read_numcalc(folder=None, is_ref=False):
 
     # check and load parameters, required parameters are:
     # Mesh2HRTF_version, reference, computeHRIRs, speedOfSound, densityOfAir,
-    # numSources, sourceType, sourceCenter, sourceArea,
+    # numSources, sourceType, sources, sourceArea,
     # numFrequencies, frequencies
     params = os.path.join(folder, '..', 'parameters.json')
     if not os.path.isfile(params):
@@ -451,7 +451,7 @@ def read_numcalc(folder=None, is_ref=False):
         params = json.load(file)
 
     # get source positions
-    source_coords = np.transpose(np.array(params['sourceCenter']))
+    source_coords = np.transpose(np.array(params['sources']))
     source_coords = pf.Coordinates(
         source_coords[..., 0], source_coords[..., 1], source_coords[..., 2])
 
@@ -472,7 +472,7 @@ def read_numcalc(folder=None, is_ref=False):
 
     # Load EvaluationGrid data
     if is_ref:
-        xyz = np.array(params["sourceCenter"])
+        xyz = np.array(params["sources"])
         coords = pf.Coordinates(xyz[..., 0], xyz[..., 1], xyz[..., 2])
         num_sources = np.sum(np.abs(coords.get_sph()[..., 0]) < 1e-12)
     else:

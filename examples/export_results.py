@@ -22,7 +22,7 @@ evaluation_grid = '5m_1deg'
 m2s.output.write_pattern(project_path)
 
 # %%
-# calcualtes the scattering coeffient for each incident angle and the random
+# calculate the scattering coefficient for each incident angle and the random
 # one from the scattering pattern
 m2s.process.calculate_scattering(project_path, evaluation_grid)
 
