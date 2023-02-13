@@ -6,6 +6,7 @@ from .output import (
     apply_symmetry_circular,
     apply_symmetry_mirror,
     write_pattern,
+    write_output_report,
     )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     'apply_symmetry_circular',
     'apply_symmetry_mirror',
     'write_pattern',
+    'write_output_report',
     ]

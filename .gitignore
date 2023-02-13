@@ -30,3 +30,4 @@ tests/resources/project/*/Output2HRTF/*.csv
 tests/resources/project/*.pattern.sofa
 .coverage
 .gitignore
+cov.xml

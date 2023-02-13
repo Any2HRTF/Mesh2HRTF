@@ -298,7 +298,7 @@ def test_project_report(folders, issue, errors, nots, tmpdir):
                         os.path.join(tmpdir, "NumCalc", f"source_{ff + 1}"))
 
     # run the project report
-    issues, report = m2s.numcalc.write_output_report(tmpdir)
+    issues, report = m2s.output.write_output_report(tmpdir)
 
     # test the output
     assert issues is issue
