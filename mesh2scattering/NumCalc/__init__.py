@@ -1,4 +1,4 @@
-from .numcalcx import (
+from .numcalc import (
     manage_numcalc,
     remove_outputs,
     read_ram_estimates,
