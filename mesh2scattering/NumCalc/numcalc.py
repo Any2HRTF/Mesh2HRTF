@@ -5,6 +5,195 @@ import psutil
 import subprocess
 import numpy as np
 import mesh2scattering as m2s
+import shutil
+import json
+
+
+def write_output_report(folder=None):
+    r"""
+    Generate project report from NumCalc output files.
+
+    NumCalc (Mesh2HRTF's numerical core) writes information about the
+    simulations to the files `NC*.out` located under `NumCalc/source_*`. The
+    file `NC.out` exists if NumCalc was ran without the additional command line
+    parameters ``-istart`` and ``-iend``. If these parameters were used, there
+    is at least one `NC\*-\*.out`. If this is the case, information from
+    `NC\*-\*.out` overwrites information from NC.out in the project report.
+
+    .. note::
+
+        The project reports are written to the files
+        `Output2HRTF/report_source_*.csv`. If issues were detected, they are
+        listed in `Output2HRTF/report_issues.csv`.
+
+    The report contain the following information
+
+    Frequency step
+        The index of the frequency.
+    Frequency in Hz
+        The frequency in Hz.
+    NC input
+        Name of the input file from which the information was taken.
+    Input check passed
+        Contains a 1 if the check of the input data passed and a 0 otherwise.
+        If the check failed for one frequency, the following frequencies might
+        be affected as well.
+    Converged
+        Contains a 1 if the simulation converged and a 0 otherwise. If the
+        simulation did not converge, the relative error might be high.
+    Num. iterations
+        The number of iterations that were required to converge
+    relative error
+        The relative error of the final simulation
+    Comp. time total
+        The total computation time in seconds
+    Comp. time assembling
+        The computation time for assembling the matrices in seconds
+    Comp. time solving
+        The computation time for solving the matrices in seconds
+    Comp. time post-proc
+        The computation time for post-processing the results in seconds
+
+
+    Parameters
+    ----------
+    folder : str, optional
+        The path of the Mesh2HRTF project folder, i.e., the folder containing
+        the subfolders EvaluationsGrids, NumCalc, and ObjectMeshes. The
+        default, ``None`` uses the current working directory.
+
+    Returns
+    -------
+    found_issues : bool
+        ``True`` if issues were found, ``False`` otherwise
+    report : str
+        The report or an empty string if no issues were found
+    """
+
+    # get sources and number of sources and frequencies
+    sources = glob.glob(os.path.join(folder, "NumCalc", "source_*"))
+    num_sources = len(sources)
+
+    if os.path.exists(os.path.join(folder, '..', "parameters.json")):
+        with open(os.path.join(folder, '..', "parameters.json"), "r") as file:
+            params = json.load(file)
+    else:
+        with open(os.path.join(folder, "parameters.json"), "r") as file:
+            params = json.load(file)
+
+    # sort source files (not read in correct order in some cases)
+    nums = [int(source.split("_")[-1]) for source in sources]
+    sources = np.array(sources)
+    sources = sources[np.argsort(nums)]
+
+    # parse all NC*.out files for all sources
+    all_files, fundamentals, out, out_names = m2s.utils._parse_nc_out_files(
+        sources, num_sources, params["numFrequencies"])
+
+    # write report as csv file
+    m2s.utils._write_project_reports(folder, all_files, out, out_names)
+
+    # look for errors
+    report = m2s.utils._check_project_report(folder, fundamentals, out)
+
+    found_issues = True if report else False
+
+    return found_issues, report
+
+
+def remove_outputs(paths, boundary=False, grid=False,
+                   hrtf=False, vtk=False,
+                   reports=False):
+    """
+    Remove output data from Mesh2HRTF project folder.
+
+    Use this function to delete output that is no longer needed and is taking
+    too much disk space.
+
+    Parameters
+    ----------
+    paths : str, tuple of strings
+        Paths under which Mesh2HRTF project folers are searched. Can contain
+        `*` remove data from multiple project folders, e.g., `path/*left` will
+        remove data from all folders in `path` that end with `left`.
+    boundary : bool, optional
+        Remove raw pressure and velocity simulated on the boundary, i.e., the
+        mesh. This data is saved in
+        `project_folder/NumCalc/source_*/be.out/be.*/*Boundary`
+    grid : bool, optional
+        Remove raw pressure and velocity simulated on the evaluation grid.This
+        data is saved in
+        `project_folder/NumCalc/source_*/be.out/be.*/*EvalGrid`
+    hrtf : bool, optional
+        Remove HRTFs saved in SOFA files saved in
+        `project_folder/Output2HRTF/HRTF_*.sofa`.
+    vtk : bool, optional
+        Remove vtk exports generated with :py:func:`~mesh2hrtf.export_vtk`
+        and saved in `project_folder/Output2HRTF/vtk`.
+    reports : bool, optional
+        Remove project reports saved in `project_folder/Output2HRTF/report_*`.
+    """
+
+    # check input
+    if isinstance(paths, str):
+        paths = (paths, )
+    if not isinstance(paths, (tuple, list)):
+        raise ValueError(
+            "paths must be a string or a tuple of strings")
+
+    # loop paths and contained folders
+    for pp, path in enumerate(paths):
+
+        folders = glob.glob(path)
+
+        for ff, folder in enumerate(folders):
+
+            print(f"Purging path {pp+1}/{len(paths)} folder {ff+1}/{folders}")
+            print(os.path.basename(folder))
+
+            # check if the directories exist ----------------------------------
+            has_numcalc = os.path.isdir(os.path.join(folder, "NumCalc"))
+            if has_numcalc:
+                numcalc = glob.glob(os.path.join(
+                    folder, "NumCalc", "source_*"))
+
+            has_output = os.path.isdir(os.path.join(folder, "Output2HRTF"))
+            if has_output:
+                output = glob.glob(os.path.join(folder, "Output2HRTF", "*"))
+
+            # data in source*/be.out/be.* folders -----------------------------
+            # delete entire be.out folders
+            if boundary and grid and has_numcalc:
+                for nc in numcalc:
+                    shutil.rmtree(os.path.join(nc, "be.out"))
+            # delete only the boundary data
+            elif boundary and has_numcalc:
+                for nc in numcalc:
+                    for be in glob.glob(os.path.join(nc, "be.out", "be.*")):
+                        os.remove(os.path.join(be, "pBoundary"))
+                        os.remove(os.path.join(be, "vBoundary"))
+            # delete only the grid data
+            elif grid and has_numcalc:
+                for nc in numcalc:
+                    for be in glob.glob(os.path.join(nc, "be.out", "be.*")):
+                        os.remove(os.path.join(be, "pEvalGrid"))
+                        os.remove(os.path.join(be, "vEvalGrid"))
+
+            # data in Output2HRTF ---------------------------------------------
+            if has_output:
+                for oo in output:
+                    base = os.path.basename(oo)
+                    # remove compressed boundary data
+                    if base.startswith("HRTF_") and base.endswith(".sofa") \
+                            and hrtf:
+                        os.remove(oo)
+                    # remove compressed boundary data
+                    if base.endswith("vtk") and os.path.isdir(oo) \
+                            and vtk:
+                        shutil.rmtree(oo)
+                    # remove compressed boundary data
+                    if base.startswith("report_") and reports:
+                        os.remove(oo)
 
 
 def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,

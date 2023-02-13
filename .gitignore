@@ -23,3 +23,8 @@ tests/resources/install_addons.py
 
 # ignore Mac stuff
 *.DS_Store
+
+# ignore test files
+tests/resources/project/*.pattern.sofa
+tests/resources/project/*/Output2HRTF/*.csv
+tests/resources/project/*.pattern.sofa

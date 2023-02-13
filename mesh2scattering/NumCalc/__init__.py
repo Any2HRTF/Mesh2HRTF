@@ -1,9 +1,8 @@
-from .run import (
-    manage_numcalc,)
-from .remove_outputs import (
-    remove_outputs,)
-from .write_output_report import (
-    write_output_report,)
+from .numcalc import (
+    manage_numcalc,
+    remove_outputs,
+    write_output_report,
+    )
 
 
 __all__ = [
