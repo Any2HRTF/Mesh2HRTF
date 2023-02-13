@@ -17,7 +17,7 @@ def test_import():
 
 def test_write_mesh(tmpdir):
     path = os.path.join(
-        m2s.utils.repository_root(), '..', 'tests', 'references', 'Mesh')
+        m2s.utils.program_root(), '..', 'tests', 'references', 'Mesh')
     mesh_path = os.path.join(path, 'sample.stl')
     mesh = trimesh.load(mesh_path)
     m2s.input.write_mesh(mesh.vertices, mesh.faces, tmpdir, start=0)
@@ -175,7 +175,7 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
     frequencies = pf.dsp.filter.fractional_octave_frequencies(
         3, (500, 5000))[0]
     path = os.path.join(
-        m2s.utils.repository_root(), '..',
+        m2s.utils.program_root(), '..',
         'tests', 'resources', 'mesh', 'sine_5k')
     sample_path = os.path.join(path, 'sample.stl')
     reference_path = os.path.join(path, 'reference.stl')
@@ -211,14 +211,14 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
     f = open(os.path.join(tmpdir, 'parameters.json'))
     paras = json.load(f)
     with open(os.path.join(
-            m2s.utils.repository_root(), "..", "VERSION")) as read_version:
+            m2s.utils.program_root(), "..", "VERSION")) as read_version:
         version = read_version.readline()
     source_list = [list(i) for i in list(source_coords_10deg.get_cart())]
     receiver_list = [list(i) for i in list(receiverPoints.get_cart())]
     parameters = {
         # project Info
         "project_title": 'scattering pattern',
-        "mesh2scattering_path": m2s.utils.repository_root(),
+        "mesh2scattering_path": m2s.utils.program_root(),
         "mesh2scattering_version": version,
         "bem_version": 'ML-FMM BEM',
         # Constants
@@ -254,6 +254,10 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
     assert os.path.isdir(os.path.join(tmpdir, 'reference', 'NumCalc'))
     assert os.path.isdir(os.path.join(tmpdir, 'sample', 'ObjectMeshes'))
     assert os.path.isdir(os.path.join(tmpdir, 'reference', 'ObjectMeshes'))
+    assert os.path.isfile(os.path.join(
+        tmpdir, 'sample', 'ObjectMeshes', 'sample.stl'))
+    assert os.path.isfile(os.path.join(
+        tmpdir, 'reference', 'ObjectMeshes', 'reference.stl'))
 
     # test sources
     for i in range(80):

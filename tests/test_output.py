@@ -11,7 +11,7 @@ def test_import():
 
 def test_write_pattern():
     project_path = os.path.join(
-        os.path.dirname(__file__), "resources", "project")
+        m2s.utils.repository_root(), "examples", "project")
     m2s.output.write_pattern(project_path)
     reference, source_coords_ref, receiver_coords_ref = pf.io.read_sofa(
         os.path.join(project_path, 'reference.pattern.sofa'))

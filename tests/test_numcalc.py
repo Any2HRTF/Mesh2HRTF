@@ -14,7 +14,7 @@ base_dir = os.path.dirname(__file__)
 # ignore tests for windows since its difficult to build the exe
 if os.name == 'nt':
     numcalc = os.path.join(
-        m2s.utils.repository_root(), "numcalc", "bin", "NumCalc.exe")
+        m2s.utils.program_root(), "numcalc", "bin", "NumCalc.exe")
     numcalc_path = os.path.dirname(numcalc)
     warnings.warn(
         ('Under Windows the code is not compiling but an executable is '
@@ -23,7 +23,7 @@ if os.name == 'nt':
 else:
     # Build NumCalc locally to use for testing
     numcalc = os.path.join(
-        m2s.utils.repository_root(), "numcalc", "bin", "NumCalc")
+        m2s.utils.program_root(), "numcalc", "bin", "NumCalc")
     numcalc_path = numcalc
 
     if os.path.isfile(numcalc):
@@ -31,7 +31,7 @@ else:
 
     subprocess.run(
         ["make"], cwd=os.path.join(
-            m2s.utils.repository_root(), "numcalc", "src"), check=True)
+            m2s.utils.program_root(), "numcalc", "src"), check=True)
 
 
 def test_import():

@@ -6,6 +6,7 @@ import trimesh
 import json
 import datetime
 from mesh2scattering import utils
+import shutil
 
 
 def create_source_positions(phi_deg, theta_deg, radius):
@@ -47,7 +48,7 @@ def write_scattering_project(
     title = 'scattering coefficient Reference'
     sourcePositions_ref = source_coords[
         np.abs(source_coords.get_sph()[..., 0]) < 1e-14]
-    programPath = utils.repository_root()
+    programPath = utils.program_root()
     project_path_ref = os.path.join(project_path, 'reference')
     write_project(
         project_path_ref, title, frequencies, frequencyStepSize,
@@ -67,7 +68,7 @@ def write_scattering_project(
     parameters = {
         # project Info
         "project_title": 'scattering pattern',
-        "mesh2scattering_path": utils.repository_root(),
+        "mesh2scattering_path": utils.program_root(),
         "mesh2scattering_version": version,
         "bem_version": 'ML-FMM BEM',
         # Constants
@@ -105,7 +106,7 @@ def write_project(
         materialSearchPaths=None, speedOfSound='346.18',
         densityOfMedium='1.1839', materials=None):
 
-    programPath = utils.repository_root()
+    programPath = utils.program_root()
     defaultPath = os.path.join(
         programPath, 'Mesh2Input', 'Materials', 'Data')
     if materialSearchPaths is None:
@@ -130,6 +131,11 @@ def write_project(
     mesh = trimesh.load(mesh_path)
     path = os.path.join(project_path, 'ObjectMeshes', 'Reference')
     write_mesh(mesh.vertices, mesh.faces, path, start=0)
+
+    # copy stl file
+    mesh = trimesh.load(mesh_path)
+    path = shutil.copyfile(mesh_path, os.path.join(
+        project_path, 'ObjectMeshes', mesh_path.split(os.sep)[-1]))
 
     # write evaluation grid
     write_evaluation_grid(
