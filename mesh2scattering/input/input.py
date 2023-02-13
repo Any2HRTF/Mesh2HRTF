@@ -171,11 +171,12 @@ def write_mesh(vertices, faces, path, start=200000, discard=None):
     N = int(faces.shape[0])
     elements = f"{N}\n"
     for nn in range(N):
-        elements += (f"{int(start + nn)} "
-                  f"{faces[nn, 0] + start} "
-                  f"{faces[nn, 1] + start} "
-                  f"{faces[nn, 2] + start} "
-                  "0 0 0\n")
+        elements += (
+            f"{int(start + nn)} "
+            f"{faces[nn, 0] + start} "
+            f"{faces[nn, 1] + start} "
+            f"{faces[nn, 2] + start} "
+            "0 0 0\n")
 
     with open(os.path.join(path, "Elements.txt"), "w") as f_id:
         f_id.write(elements)

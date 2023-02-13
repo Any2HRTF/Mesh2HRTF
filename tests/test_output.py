@@ -1,6 +1,4 @@
-import pytest
 import os
-import numpy as np
 import mesh2scattering as m2s
 import numpy.testing as npt
 import pyfar as pf

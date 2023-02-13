@@ -384,4 +384,3 @@ def test_read_ram_estimates_assertions():
 
     with pytest.raises(ValueError, match="does not contain a Memory.txt"):
         m2s.numcalc.read_ram_estimates(os.getcwd())
-
