@@ -1,9 +1,10 @@
-import trimesh
-import numpy as np
 import os
+import numpy as np
+import pyfar as pf
+from scipy.spatial import Delaunay, ConvexHull
+import trimesh
 import json
 import mesh2scattering as m2s
-import pyfar as pf
 import datetime
 
 
@@ -507,3 +508,247 @@ def _read_material_data(materials):
         materials[material]['imag'] = imag
 
     return materials
+
+
+def write_material(filename, kind, frequencies, data, comment=None):
+    """
+    Write boundary condition to file.
+
+    Mesh2HRTF supports non-rigid boundary conditions in the form of text files.
+    Such files can be written with this function.
+
+    Parameters
+    ----------
+    filename : str
+        Name of the material file that is written to disk. Must end with ".csv"
+    kind : str
+        Defines the kind of boundary condition
+
+        ``"pressure"``
+            A pressure boundary condition can be used to force a certain
+            pressure on the boundary of the mesh. E.g., a pressure of 0 would
+            define a sound soft boundary.
+        ``"velocity"``
+            A velocity boundary condition can be used to force a certain
+            velocity on the boundary of the mesh. E.g., a velocity of 0 would
+            define a sound hard boundary.
+        ``admittance``
+            A normalized admittance boundary condition can be used to define
+            arbitrary boundaries. The admittance must be normalized, i.e.,
+            admittance/(rho*c) has to be provided, which rho being the density
+            of air in kg/m**3 and c the speed of sound in m/s.
+    frequencies : array like
+        The frequencies for which the boundary condition is given
+    data : array like
+        The values of the boundary condition at the frequencies given above.
+    comment : str, optional
+        A comment that is written to the beginning of the material file. The
+        default ``None`` does omit the comment.
+
+    Notes
+    -----
+    Mesh2HRTF performs an interpolation in case the boundary condition is
+    required at frequencies that are not specified. The interpolation is linear
+    between the lowest and highest provided frequency and uses the nearest
+    neighbor outside this range.
+    """
+
+    # check input
+    if not filename.endswith(".csv"):
+        raise ValueError("The filename must end with .csv")
+
+    if len(frequencies) != len(data):
+        raise ValueError("frequencies and data must have the same lengths")
+
+    # write the comment
+    file = ""
+    if comment is not None:
+        file += "# " + comment + "\n#\n"
+
+    # write the kind of boundary condition
+    file += ("# Keyword to define the boundary condition:\n"
+             "# ADMI: Normalized admittance boundary condition\n"
+             "# PRES: Pressure boundary condition\n"
+             "# VELO: Velocity boundary condition\n"
+             "# NOTE: Mesh2HRTF expects normalized admittances, i.e., "
+             "admittance/(rho*c).\n"
+             "#       rho is the density of air and c the speed of sound. "
+             "The normalization is\n"
+             "#       beneficial because a single material file can be used "
+             "for simulations\n"
+             "#       with differing speed of sound and density of air.\n")
+
+    if kind == "admittance":
+        file += "ADMI\n"
+    elif kind == "pressure":
+        file += "PRES\n"
+    elif kind == "velocity":
+        file += "VELO\n"
+    else:
+        raise ValueError("kind must be admittance, pressure, or velocity")
+
+    file += ("#\n"
+             "# Frequency curve:\n"
+             "# Mesh2HRTF performs an interpolation in case the boundary "
+             "condition is required\n"
+             "# at frequencies that are not specified. The interpolation is "
+             "linear between the\n"
+             "# lowest and highest provided frequency and uses the nearest "
+             "neighbor outside\n"
+             "# this range.\n"
+             "#\n"
+             "# Frequency in Hz, real value, imaginary value\n")
+
+    # write data
+    for f, d in zip(frequencies, data):
+        file += f"{f}, {np.real(d)}, {np.imag(d)}\n"
+
+    # write to file
+    with open(filename, "w") as f_id:
+        f_id.write(file)
+
+
+def write_evaluation_grid(
+        points, name, start=200000, discard=None):
+    """
+    Write evaluation grid for use in Mesh2HRTF.
+
+    Mesh2HRTF evaluation grids consist of the two text files Nodes.txt and
+    Elements.txt. Evaluations grids are always triangularized.
+
+    Parameters
+    ----------
+    points : pyfar Coordinates, numpy array
+        pyfar Coordinates object or 2D numpy array containing the cartesian
+        points of the evaluation grid in meter. The array must be of shape
+        (N, 3) with N > 2.
+    name : str
+        Name of the folder under which the evaluation grid is saved. If the
+        folder does not exist, it is created.
+    start : int, optional
+        The nodes and elements of the evaluation grid are numbered and the
+        first element will have the number `start`. In Mesh2HRTF, each Node
+        must have a unique number. The nodes/elements of the mesh for which the
+        HRTFs are simulated start at 1. Thus `start` must at least be greater
+        than the number of nodes/elements in the evaluation grid.
+    discard : "x", "y", "z", optional
+        In case all values of the evaluation grid are constant for one
+        dimension, this dimension has to be discarded during the
+        triangularization. E.g. if all points have a z-value of 0 (or any other
+        constant), discarded must be "z". The default ``None`` does not discard
+        any dimension.
+
+    Examples
+    --------
+
+    Generate a spherical sampling grid with pyfar and write it to the current
+    working directory
+
+    .. plot::
+
+        >>> import mesh2scattering as m2s
+        >>> import pyfar as pf
+        >>>
+        >>> points = pf.samplings.sph_lebedev(sh_order=10)
+        >>> m2s.input.write_evaluation_grid(
+        ...     points, "Lebedev_N10", discard=None)
+    """
+
+    if isinstance(points, pf.Coordinates):
+        points = points.get_cart()
+
+    if points.ndim != 2 or points.shape[0] < 3 \
+            or points.shape[1] != 3:
+        raise ValueError(
+            "points must be a 2D array of shape (N, 3) with N > 2")
+
+    # discard dimension
+    if discard == "x":
+        mask = (1, 2)
+    elif discard == "y":
+        mask = (0, 2)
+    elif discard == "z":
+        mask = (0, 1)
+    else:
+        mask = (0, 1, 2)
+
+    # triangulate
+    if discard is None:
+        tri = ConvexHull(points[:, mask])
+    else:
+        tri = Delaunay(points[:, mask])
+
+    # check output directory
+    if not os.path.isdir(name):
+        os.mkdir(name)
+
+    # write nodes
+    N = int(points.shape[0])
+    start = int(start)
+
+    nodes = f"{N}\n"
+    for nn in range(N):
+        nodes += (f"{int(start + nn)} "
+                  f"{points[nn, 0]} "
+                  f"{points[nn, 1]} "
+                  f"{points[nn, 2]}\n")
+
+    with open(os.path.join(name, "Nodes.txt"), "w") as f_id:
+        f_id.write(nodes)
+
+    # write elements
+    N = int(tri.simplices.shape[0])
+    elems = f"{N}\n"
+    for nn in range(N):
+        elems += (f"{int(start + nn)} "
+                  f"{tri.simplices[nn, 0] + start} "
+                  f"{tri.simplices[nn, 1] + start} "
+                  f"{tri.simplices[nn, 2] + start} "
+                  "2 0 1\n")
+
+    with open(os.path.join(name, "Elements.txt"), "w") as f_id:
+        f_id.write(elems)
+
+
+def read_evaluation_grid(name):
+    """
+    Read Mesh2HRTF evaluation grid.
+
+    Parameters
+    ----------
+    name : str
+        Name of the folder containing the nodes of the evaluation grid in
+        Nodes.txt
+    show : bool, optional
+        If ``True`` the points of the evaluation grid are plotted. The default
+        is ``False``.
+
+    Returns
+    -------
+    coordinates : pyfar Coordinates
+        The points of the evaluation grid as a pyfar Coordinates object
+    """
+
+    # check if the grid exists
+    if not os.path.isfile(os.path.join(name, "Nodes.txt")):
+        raise ValueError(f"{os.path.join(name, 'Nodes.txt')} does not exist")
+
+    # read the nodes
+    with open(os.path.join(name, "Nodes.txt"), "r") as f_id:
+        nodes = f_id.readlines()
+
+    # get number of nodes
+    N = int(nodes[0].strip())
+    points = np.zeros((N, 3))
+
+    # get points (first entry is node number)
+    for nn in range(N):
+        node = nodes[nn+1].strip().split(" ")
+        points[nn, 0] = float(node[1])
+        points[nn, 1] = float(node[2])
+        points[nn, 2] = float(node[3])
+
+    # make coordinates object
+    coordinates = pf.Coordinates(points[:, 0], points[:, 1], points[:, 2])
+
+    return coordinates
