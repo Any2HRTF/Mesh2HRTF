@@ -11,15 +11,13 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-with open('VERSION') as version_file:
-    version = version_file.read()
-
 requirements = [
     'numpy>=1.14.0',
     'scipy>=1.5.0',
     'psutil',
     'sofar',
-    'pyfar>=0.5.0'
+    'pyfar>=0.5.0',
+    'trimesh',
 ]
 
 setup_requirements = ['pytest-runner']
@@ -33,7 +31,7 @@ test_requirements = [
     'tox',
     'coverage',
     'Sphinx',
-    'twine'
+    'twine',
 ]
 
 setup(
@@ -60,7 +58,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/ahms5/mesh2scattering',
-    version=version,
+    version='0.0.1',
     zip_safe=False,
     python_requires='>=3.8'
 )

@@ -210,16 +210,13 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
     # test parameters
     f = open(os.path.join(tmpdir, 'parameters.json'))
     paras = json.load(f)
-    with open(os.path.join(
-            m2s.utils.program_root(), "..", "VERSION")) as read_version:
-        version = read_version.readline()
     source_list = [list(i) for i in list(source_coords_10deg.get_cart())]
     receiver_list = [list(i) for i in list(receiverPoints.get_cart())]
     parameters = {
         # project Info
         "project_title": 'scattering pattern',
         "mesh2scattering_path": m2s.utils.program_root(),
-        "mesh2scattering_version": version,
+        "mesh2scattering_version": m2s.__version__,
         "bem_version": 'ML-FMM BEM',
         # Constants
         "speed_of_sound": float(346.18),
