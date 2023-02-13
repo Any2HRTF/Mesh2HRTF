@@ -1,6 +1,18 @@
 History
 =======
 
+v0.0.1
+------
+* Fork from Mesh2HRTF
+* Remove blender and create projects from stl meshes in Python
+* change project structure
+* remove direct sound from NumCalc
+* read simulation results and export to Sofa
+* calculate scattering coefficients and save in 
+
+Mesh2HRTF
+=========
+
 v1.0.0
 -------
 * Project export from Blender (handled by the Blender plugin `Mesh2Input/mesh2input.py`)
@@ -95,6 +107,12 @@ v0.1.3 (1.6.2018)
 v1.0.2 (18.6.2016)
 ------------------
 * initial commit
+
+Mesh2scattering Developers
+====================
+
+Mesh2scattering is currently maintained and developed by
+Anne Heimes
 
 Mesh2HRTF Developers
 ====================
