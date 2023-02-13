@@ -58,11 +58,11 @@ m2s.input.write_scattering_project(
 
 # %%
 # run simulation
-m2s.NumCalc.manage_numcalc(
+m2s.numcalc.manage_numcalc(
     os.path.join(project_path, 'reference'),
     numcalc_path)
 
-m2s.NumCalc.manage_numcalc(
+m2s.numcalc.manage_numcalc(
     os.path.join(project_path, 'sample'),
     numcalc_path)
 

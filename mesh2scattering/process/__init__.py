@@ -1,4 +1,4 @@
-from .caclulate import (
+from .process import (
     calculate_scattering,)
 
 

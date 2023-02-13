@@ -28,3 +28,5 @@ tests/resources/install_addons.py
 tests/resources/project/*.pattern.sofa
 tests/resources/project/*/Output2HRTF/*.csv
 tests/resources/project/*.pattern.sofa
+.coverage
+.gitignore

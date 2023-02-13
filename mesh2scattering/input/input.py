@@ -169,28 +169,22 @@ def write_mesh(vertices, faces, path, start=200000, discard=None):
 
     # write elements
     N = int(faces.shape[0])
-    elems = f"{N}\n"
+    elements = f"{N}\n"
     for nn in range(N):
-        elems += (f"{int(start + nn)} "
+        elements += (f"{int(start + nn)} "
                   f"{faces[nn, 0] + start} "
                   f"{faces[nn, 1] + start} "
                   f"{faces[nn, 2] + start} "
                   "0 0 0\n")
 
     with open(os.path.join(path, "Elements.txt"), "w") as f_id:
-        f_id.write(elems)
+        f_id.write(elements)
 
 
-def write_stl(mesh_path, project_path):
-    mesh = trimesh.load(mesh_path)
-    path = os.path.join(project_path, 'ObjectMeshes', 'Reference')
-    write_mesh(mesh.vertices, mesh.faces, path, start=0)
-
-
-def _write_nc_inp(filepath1, version, title,
-                  speedOfSound, densityOfMedium, frequencies,
-                  evaluationGrids, materials, method, sourceType,
-                  sourcePositions, numElementsMesh, numNodesMesh):
+def _write_nc_inp(
+        filepath1, version, title, speedOfSound, densityOfMedium, frequencies,
+        evaluationGrids, materials, method, sourceType, sourcePositions,
+        numElementsMesh, numNodesMesh):
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
     The file format is documented at:
@@ -399,56 +393,7 @@ def _write_nc_inp(filepath1, version, title,
         file.close()
 
 
-def _write_parameters_json(
-        filepath1, title, programPath, version, method,
-        evaluationGrids, materialSearchPaths, materials,
-        speedOfSound, densityOfMedium,
-        reference, computeHRIRs, sourceType, sourcePositions,
-        frequencies, frequencyStepSize, numFrequencySteps):
-
-    # calculate missing parameters
-    sourceCenter = list(np.transpose(sourcePositions))
-    sourceCenter = [list(x) for x in sourceCenter]
-    sourceArea = [1]
-    numSources = len(sourceCenter)
-
-    # write parameters to dict
-    parameters = {
-        # project Info
-        "projectTitle": title,
-        "Mesh2HRTF_Path": programPath,
-        "Mesh2HRTF_Version": version,
-        "BEM_Type": method,
-        "exportPictures": False,
-        # Constants
-        "speedOfSound": float(speedOfSound),
-        "densityOfMedium": float(densityOfMedium),
-        "3D_SceneUnit": 'm',
-        # Grids and materials
-        "evaluationGrids": evaluationGrids,
-        "materialSearchPaths": materialSearchPaths,
-        "materials": materials,
-        # Source definition
-        "sourceType": sourceType,
-        "numSources": numSources,
-        "sourceCenter": sourceCenter,
-        "sourceArea": sourceArea,
-        # post processing
-        "reference": reference,
-        "computeHRIRs": computeHRIRs,
-        # frequencies
-        "numFrequencies": numFrequencySteps,
-        "frequencyStepSize": frequencyStepSize,
-        "minFrequency": frequencies[0],
-        "maxFrequency": frequencies[-1],
-        "frequencies": frequencies
-    }
-
-    with open(os.path.join(filepath1, "parameters.json"), 'w') as file:
-        json.dump(parameters, file, indent=4)
-
-
-def _read_material_data(materials):
+def read_material_data(materials):
 
     for material in materials:
         # current material file
@@ -457,7 +402,7 @@ def _read_material_data(materials):
         if file is None:
             continue
 
-        # initilize data
+        # initialize data
         boundary = None
         freqs = []
         real = []
@@ -495,7 +440,7 @@ def _read_material_data(materials):
             raise ValueError(
                 (f"No boundary definition found in {file}. "
                  "Must be 'ADMI', 'IMPE', 'VELO', or 'PRES'"))
-        # check if frequency vector is valud
+        # check if frequency vector is value
         for i in range(len(freqs)-1):
             if float(freqs[i+1]) <= float(freqs[i]):
                 raise ValueError((f'Frequencies in {file} '
@@ -614,7 +559,7 @@ def write_evaluation_grid(
     Write evaluation grid for use in Mesh2HRTF.
 
     Mesh2HRTF evaluation grids consist of the two text files Nodes.txt and
-    Elements.txt. Evaluations grids are always triangularized.
+    Elements.txt. Evaluations grids are always triangulated.
 
     Parameters
     ----------

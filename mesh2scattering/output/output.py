@@ -120,7 +120,7 @@ def reshape_to_az_by_el(
 def apply_symmetry_circular(
         data: pf.FrequencyData, coords_mic: pf.Coordinates,
         coords_inc: pf.Coordinates, coords_inc_out: pf.Coordinates):
-    """apply semmetry for cicular symmetrical surfaces.
+    """apply symmetry for circular symmetrical surfaces.
 
     Parameters
     ----------
@@ -275,9 +275,9 @@ def write_pattern(folder):
         data = np.swapaxes(data, 0, 1)
         data_out = m2s.output.apply_symmetry_circular(
             pf.FrequencyData(data, params["frequencies"]),
-            _cart_coordiantes(receiver_position_ref),
-            _cart_coordiantes(source_position_ref),
-            _cart_coordiantes(source_position))
+            _cart_coordinates(receiver_position_ref),
+            _cart_coordinates(source_position_ref),
+            _cart_coordinates(source_position))
 
         # create sofa file
         sofa = m2s.utils._get_sofa_object(
@@ -296,7 +296,7 @@ def write_pattern(folder):
     print('Done\n')
 
 
-def _cart_coordiantes(xyz):
+def _cart_coordinates(xyz):
     return pf.Coordinates(xyz[:, 0], xyz[:, 1], xyz[:, 2])
 
 
