@@ -50,8 +50,8 @@ def write_scattering_project(
     title = 'scattering coefficient Reference'
     sourcePositions_ref = source_coords[
         np.abs(source_coords.get_sph()[..., 0]) < 1e-14]
-    programPath = utils.program_root()
     project_path_ref = os.path.join(project_path, 'reference')
+
     write_project(
         project_path_ref, title, frequencies, frequencyStepSize,
         reference_path, receiver_coords, sourcePositions_ref,
@@ -140,8 +140,8 @@ def write_project(
 
     # Write NumCalc input files for all sources (NC.inp) ----------------------
     _write_nc_inp(
-        project_path, version.parse(m2s.__version__), title, speedOfSound, densityOfMedium,
-        frequencies, ['grid'], materials, method, sourceType,
+        project_path, version.parse(m2s.__version__), title, speedOfSound,
+        densityOfMedium, frequencies, ['grid'], materials, method, sourceType,
         sourcePositions, len(mesh.faces), len(mesh.vertices))
 
 
