@@ -61,9 +61,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Mesh2HRTF Python API'
-copyright = u"2022, the Mesh2HRTF developers"
-author = u"The Mesh2HRTF developers"
+project = u'Mesh2scattering'
+copyright = u"2023, the Mesh2HRTF and Mesh2scattering developers"
+author = u"The Mesh2HRTF and Mesh2scattering developers"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -149,9 +149,9 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass
 # [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'mesh2hrtf.tex',
-     u'Mesh2HRTF Python API Documentation',
-     u'The Mesh2HRTF developers', 'manual'),
+    (master_doc, 'mesh2scattering.tex',
+     u'Mesh2scattering Documentation',
+     author, 'manual'),
 ]
 
 
@@ -160,8 +160,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'mesh2hrtf',
-     u'Mesh2HRTF Python API Documentation',
+    (master_doc, 'mesh2scattering',
+     u'Mesh2scattering Documentation',
      [author], 1)
 ]
 
@@ -172,10 +172,10 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Mesh2HRTF',
-     u'Mesh2HRTF Python API Documentation',
+    (master_doc, 'Mesh2scattering',
+     u'Mesh2scattering Documentation',
      author,
-     'Mesh2HRTF',
-     'Numerical calculation of head-related-transfer functions.',
+     'Mesh2scattering',
+     'Numerical calculation of scattering pattern.',
      'Scientific and open software'),
 ]

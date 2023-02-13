@@ -1,0 +1,114 @@
+
+Start time: 13/2/2023 15:28:45
+
+
+>> G E N E R A L   P A R A M E T E R S <<
+
+
+3D analysis
+Mesh2HRTF 1.0.0-dev
+scattering coefficient Reference
+
+Number of frequency steps ................... = 3
+
+First step .................................. = 0
+Number of steps ............................. = 3
+Step increment .............................. = 1e-06
+Highest allowable frequency .................. = 7397.58
+
+
+
+>> B A S I C   P A R A M E T E R S   F O R   B E M <<
+
+Number of element groups .................... = 2
+Total number of elements .................... = 26114
+Number of boundary elements ................. = 23668
+Number of evaluation elements ............... = 2446
+Maximum edge length of boundary elements .... = 0.0159318
+Average edge length of boundary elements .... = 0.010427
+Minimum edge length of boundary elements .... = 0.00392957
+
+Total number of nodes ....................... = 13061
+Number of nodes of the boundary elements .... = 11836
+Number of nodes of the evaluation elements .. = 1225
+
+Number of symmetric planes .................. = 0
+
+Number of incident plane waves .............. = 0
+Number of incident spharic waves ............ = 1
+
+Sound speed ................................. = 346.18
+Density of the medium ....................... = 1.1839
+
+Diameter of the BE-mesh ..................... = 1.13208
+
+Minimum number of terms in the FMM expansion. = 8
+
+Exterior domain problem
+
+Harmonic time factor = EXP(-i*omega*t)
+
+methodSolver_  = 0: CGS iterative solver
+methodPreconditioner_ = 0: incomplete LU-decomposition preconditioner
+
+ No.   Freq.   Lambda/L_BE_Mesh  Lambda/L_Element
+  1    1250     0.244633           40.5186
+  2    2500     0.122317           20.2593
+  3    5000    0.0611583           10.1296
+
+
+
+
+>> S T E P   N U M B E R   A N D   F R E Q U E N C Y <<
+
+Step 1, Frequency = 1250 Hz
+
+Direct multilevel fast multipole BEM
+
+Number of equations = 23668
+
+Informations about clusters:
+   Level    Num. of clusters    Maximum radius   Minimum radius
+     0           77                0.0742363         0.0278628
+     1          284                0.0440669         0.0267134
+ resu. nets    1225                     0              0
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0           8               8              16           128
+     1           8               8              16           128
+
+Nonzeros of the near field matrix ..................... = 23325320
+Nonzeros of the T-matrix .............................. = 6059008
+    Nonzeros of T_lev_0 ............................... = 3029504
+    Nonzeros of T_lev_1 ............................... = 3029504
+Nonzeros of the D-matrices ............................ = 1393664
+    Nonzeros of D_lev_0 ............................... = 683520
+    Nonzeros of D_lev_1 ............................... = 710144
+Nonzeros of the S-matrix .............................. = 6059008
+    Nonzeros of S_lev_0 ............................... = 3029504
+    Nonzeros of S_lev_1 ............................... = 3029504
+Sum of nonzeros of the FMBEM matrices ................. = 36837000
+
+CGS solver: number of iterations = 24, relative error = 3.1807e-10
+
+Time Statistic For The Current Step (In Second)
+
+Assembling the equation system         : 67
+Solving the equation system            : 14
+Post processing                        : 2
+Total                                  : 83
+
+
+
+>> T I M E   S T A T I S T I C   (In   Second) <<
+
+Input                                  : 0
+Address computation                    : 0
+Assembling the equation system         : 67
+Solving the equation system            : 14
+Post processing                        : 2
+The whole job                          : 83
+
+End time: 13/2/2023 15:30:8

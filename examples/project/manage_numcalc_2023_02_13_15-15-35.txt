@@ -1,0 +1,211 @@
+
+Starting manage_numcalc with the following arguments [Feb 13 2023, 15:15:35]
+----------------------------------------------------------------------------
+project_path: /Users/anne/git/Mesh2scattering/examples/project
+numcalc_path: /Users/anne/git/Mesh2scattering/mesh2scattering/numcalc/bin/NumCalc
+max_ram_load: 16.0
+ram_safety_factor: 1.05
+max_cpu_load: 90
+max_instances: 8
+wait_time: 15
+starting_order: alternate
+confirm_errors: False
+
+NumCalc executable: /Users/anne/git/Mesh2scattering/mesh2scattering/numcalc/bin/NumCalc
+
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_1
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_2
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_3
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_4
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_5
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_6
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_7
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_8
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/sample/NumCalc/source_9
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/reference/NumCalc/source_1
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/reference/NumCalc/source_2
+Obtaining RAM estimates for /Users/anne/git/Mesh2scattering/examples/project/reference/NumCalc/source_3
+
+Per project summary of instances that will be run
+-------------------------------------------------
+Detected 2 Mesh2HRTF projects in
+/Users/anne/git/Mesh2scattering/examples/project
+
+27/27 frequency steps to run in sample
+9/9 frequency steps to run in reference
+
+
+Started sample (1/2, Feb 13 2023, 15:15:43)
+-------------------------------------------
+Running 27/27 unfinished frequency steps in the project
+
+1/27 starting instance from: sample (source 9, step 3, Feb 13 2023, 15:15:43)
+2/27 starting instance from: sample (source 1, step 1, Feb 13 2023, 15:15:59)
+3/27 starting instance from: sample (source 4, step 3, Feb 13 2023, 15:16:14)
+4/27 starting instance from: sample (source 9, step 1, Feb 13 2023, 15:16:29)
+5/27 starting instance from: sample (source 8, step 3, Feb 13 2023, 15:16:44)
+6/27 starting instance from: sample (source 2, step 1, Feb 13 2023, 15:16:59)
+7/27 starting instance from: sample (source 1, step 3, Feb 13 2023, 15:17:14)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:17:29):
+ 7 NumCalc instances running (100.0% CPU load)
+ 3.3 GB RAM available (1.72 GB RAM needed next)
+
+8/27 starting instance from: sample (source 8, step 1, Feb 13 2023, 15:17:33)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:17:48):
+ 8 NumCalc instances running (100.0% CPU load)
+ 4.07 GB RAM available (1.72 GB RAM needed next)
+
+9/27 starting instance from: sample (source 7, step 3, Feb 13 2023, 15:18:22)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:18:37):
+ 7 NumCalc instances running (98.7% CPU load)
+ 3.39 GB RAM available (1.72 GB RAM needed next)
+
+10/27 starting instance from: sample (source 3, step 1, Feb 13 2023, 15:18:43)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:18:58):
+ 8 NumCalc instances running (100.0% CPU load)
+ 2.99 GB RAM available (1.72 GB RAM needed next)
+
+11/27 starting instance from: sample (source 2, step 3, Feb 13 2023, 15:19:28)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:19:43):
+ 7 NumCalc instances running (97.6% CPU load)
+ 4.8 GB RAM available (1.72 GB RAM needed next)
+
+12/27 starting instance from: sample (source 7, step 1, Feb 13 2023, 15:19:47)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:20:02):
+ 8 NumCalc instances running (100.0% CPU load)
+ 3.06 GB RAM available (1.72 GB RAM needed next)
+
+13/27 starting instance from: sample (source 6, step 3, Feb 13 2023, 15:20:23)
+14/27 starting instance from: sample (source 4, step 1, Feb 13 2023, 15:20:38)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:20:54):
+ 7 NumCalc instances running (100.0% CPU load)
+ 5.98 GB RAM available (1.72 GB RAM needed next)
+
+15/27 starting instance from: sample (source 3, step 3, Feb 13 2023, 15:21:05)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:21:20):
+ 7 NumCalc instances running (100.0% CPU load)
+ 4.8 GB RAM available (1.72 GB RAM needed next)
+
+16/27 starting instance from: sample (source 6, step 1, Feb 13 2023, 15:21:50)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:22:06):
+ 8 NumCalc instances running (100.0% CPU load)
+ 4.87 GB RAM available (1.72 GB RAM needed next)
+
+17/27 starting instance from: sample (source 5, step 3, Feb 13 2023, 15:22:11)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:22:26):
+ 7 NumCalc instances running (98.8% CPU load)
+ 4.43 GB RAM available (1.72 GB RAM needed next)
+
+18/27 starting instance from: sample (source 5, step 1, Feb 13 2023, 15:22:42)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:22:57):
+ 8 NumCalc instances running (0.0% CPU load)
+ 3.99 GB RAM available (1.77 GB RAM needed next)
+
+19/27 starting instance from: sample (source 1, step 2, Feb 13 2023, 15:23:20)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:23:35):
+ 7 NumCalc instances running (100.0% CPU load)
+ 3.89 GB RAM available (1.77 GB RAM needed next)
+
+20/27 starting instance from: sample (source 8, step 2, Feb 13 2023, 15:23:53)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:24:08):
+ 8 NumCalc instances running (100.0% CPU load)
+ 3.74 GB RAM available (1.77 GB RAM needed next)
+
+21/27 starting instance from: sample (source 2, step 2, Feb 13 2023, 15:24:32)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:24:47):
+ 7 NumCalc instances running (100.0% CPU load)
+ 3.93 GB RAM available (1.77 GB RAM needed next)
+
+22/27 starting instance from: sample (source 7, step 2, Feb 13 2023, 15:24:50)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:25:06):
+ 8 NumCalc instances running (100.0% CPU load)
+ 3.77 GB RAM available (1.77 GB RAM needed next)
+
+23/27 starting instance from: sample (source 3, step 2, Feb 13 2023, 15:25:38)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:25:53):
+ 8 NumCalc instances running (100.0% CPU load)
+ 4.48 GB RAM available (1.77 GB RAM needed next)
+
+24/27 starting instance from: sample (source 6, step 2, Feb 13 2023, 15:26:27)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:26:42):
+ 7 NumCalc instances running (100.0% CPU load)
+ 5.01 GB RAM available (1.77 GB RAM needed next)
+
+25/27 starting instance from: sample (source 4, step 2, Feb 13 2023, 15:26:50)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:27:05):
+ 8 NumCalc instances running (0.0% CPU load)
+ 4.19 GB RAM available (1.77 GB RAM needed next)
+
+26/27 starting instance from: sample (source 9, step 2, Feb 13 2023, 15:27:15)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:27:31):
+ 7 NumCalc instances running (100.0% CPU load)
+ 4.29 GB RAM available (1.77 GB RAM needed next)
+
+27/27 starting instance from: sample (source 5, step 2, Feb 13 2023, 15:27:54)
+
+Started reference (2/2, Feb 13 2023, 15:28:09)
+----------------------------------------------
+Running 9/9 unfinished frequency steps in the project
+
+1/9 starting instance from: reference (source 3, step 3, Feb 13 2023, 15:28:16)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:28:31):
+ 7 NumCalc instances running (100.0% CPU load)
+ 4.4 GB RAM available (0.77 GB RAM needed next)
+
+2/9 starting instance from: reference (source 1, step 1, Feb 13 2023, 15:28:45)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:29:00):
+ 7 NumCalc instances running (100.0% CPU load)
+ 5.08 GB RAM available (0.77 GB RAM needed next)
+
+3/9 starting instance from: reference (source 2, step 3, Feb 13 2023, 15:29:11)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:29:26):
+ 8 NumCalc instances running (100.0% CPU load)
+ 3.99 GB RAM available (0.77 GB RAM needed next)
+
+4/9 starting instance from: reference (source 2, step 1, Feb 13 2023, 15:29:34)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:29:49):
+ 8 NumCalc instances running (0.0% CPU load)
+ 4.26 GB RAM available (0.77 GB RAM needed next)
+
+5/9 starting instance from: reference (source 1, step 3, Feb 13 2023, 15:30:13)
+6/9 starting instance from: reference (source 3, step 1, Feb 13 2023, 15:30:28)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:30:43):
+ 7 NumCalc instances running (98.7% CPU load)
+ 5.02 GB RAM available (0.81 GB RAM needed next)
+
+7/9 starting instance from: reference (source 3, step 2, Feb 13 2023, 15:30:47)
+
+... waiting for resources (checking every second, Feb 13 2023, 15:31:02):
+ 8 NumCalc instances running (0.0% CPU load)
+ 6.38 GB RAM available (0.81 GB RAM needed next)
+
+8/9 starting instance from: reference (source 1, step 2, Feb 13 2023, 15:31:07)
+9/9 starting instance from: reference (source 2, step 2, Feb 13 2023, 15:31:22)
+
+... waiting for the last NumCalc instances to finish (checking every second, Feb 13 2023, 15:31:38)
+
+All NumCalc projects finished at Feb 13 2023, 15:32:21

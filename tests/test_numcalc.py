@@ -1,68 +1,89 @@
-# %%
 import pytest
 import subprocess
-import tempfile
 import shutil
 import os
-import scipy.io
-import numpy
-import utils
 import mesh2scattering as m2s
+import glob
+import warnings
+import numpy.testing as npt
+import numpy as np
 
 # directory of this file
 base_dir = os.path.dirname(__file__)
 
-# Build NumCalc locally to use for testing
-tmp = tempfile.TemporaryDirectory()
-numcalc = os.path.join(tmp.name, "NumCalc", "bin", "NumCalc")
+# ignore tests for windows since its difficult to build the exe
+if os.name == 'nt':
+    numcalc = os.path.join(
+        m2s.utils.program_root(), "numcalc", "bin", "NumCalc.exe")
+    numcalc_path = os.path.dirname(numcalc)
+    warnings.warn(
+        ('Under Windows the code is not compiling but an executable is '
+         f'expected in {numcalc}.'), UserWarning)
 
-shutil.copytree(
-    os.path.join(base_dir, "..", "mesh2scattering", "NumCalc"),
-    os.path.join(tmp.name, "NumCalc"))
+else:
+    # Build NumCalc locally to use for testing
+    numcalc = os.path.join(
+        m2s.utils.program_root(), "numcalc", "bin", "NumCalc")
+    numcalc_path = numcalc
 
-if os.path.isfile(numcalc):
-    os.remove(numcalc)
+    if os.path.isfile(numcalc):
+        os.remove(numcalc)
 
-subprocess.run(
-    ["make"], cwd=os.path.join(tmp.name, "NumCalc", "src"), check=True)
+    subprocess.run(
+        ["make"], cwd=os.path.join(
+            m2s.utils.program_root(), "numcalc", "src"), check=True)
+
+
+def test_import():
+    from mesh2scattering import numcalc
+    assert numcalc
 
 
 def test_numcalc_invalid_parameter(capfd):
     """
-    Test if NumCalc throws an error in case of invalid command line parameter.
+    Test if NumCalc throws an error in case of invalid command line
+    parameter.
     """
 
     try:
-        subprocess.run([f'{numcalc} -invalid_parameter'],
-                       check=True, shell=True)
+        # run NumCalc with subprocess
+        if os.name == 'nt':  # Windows detected
+            # run NumCalc and route all printouts to a log file
+            subprocess.run(
+                f'{numcalc} -invalid_parameter',
+                stdout=subprocess.DEVNULL, check=True)
+        else:  # elif os.name == 'posix': Linux or Mac detected
+            # run NumCalc and route all printouts to a log file
+            subprocess.run(
+                [f'{numcalc} -invalid_parameter'],
+                shell=True, stdout=subprocess.DEVNULL, check=True)
     except subprocess.CalledProcessError:
         _, err = capfd.readouterr()
-        assert "NumCalc was called with an unknown parameter or flag." in err
+        assert "NumCalc was called with an unknown parameter or flag." \
+            in err
     else:
         ValueError("Num calc did not throw an error")
 
 
-@pytest.mark.parametrize("nitermax, use", [(0, True), (1, True), (2, True),
-                                           ([], False)])
-def test_numcalc_commandline_nitermax(nitermax, use):
+@pytest.mark.parametrize("nitermax, use", [
+    (0, True), (1, True), (2, True), ([], False)])
+def test_numcalc_commandline_nitermax(nitermax, use, tmpdir):
     """Test if command line parameter nitermax behaves as expected"""
     # Setup
 
-    # create temporary directory
-    tmp = tempfile.TemporaryDirectory()
-
     # copy test directory
     shutil.copytree(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'project_folder_pspw'),
-        os.path.join(tmp.name, 'project'))
+        os.path.join(
+            base_dir, 'resources', 'test_numcalc', 'project_folder_pspw'),
+        os.path.join(tmpdir, 'project'))
     # copy correct input file and rename it to NC.inp
-    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc'))
-    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc', 'source_1'))
+    os.mkdir(os.path.join(tmpdir, 'project', 'NumCalc'))
+    os.mkdir(os.path.join(tmpdir, 'project', 'NumCalc', 'source_1'))
     shutil.copyfile(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'ncinp_files', 'NC_commandline_parameters.inp'),
-        os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
+        os.path.join(
+            base_dir, 'resources', 'test_numcalc',
+            'ncinp_files', 'NC_commandline_parameters.inp'),
+        os.path.join(tmpdir, 'project', 'NumCalc', 'source_1', 'NC.inp'))
 
     if use:
         commandLineArgument = f' -nitermax {nitermax}'
@@ -72,13 +93,21 @@ def test_numcalc_commandline_nitermax(nitermax, use):
     # Exercise
 
     # run NumCalc with subprocess
-    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{numcalc}{commandLineArgument}'],
-                   cwd=tmp_path, check=True, shell=True)
+    tmp_path = os.path.join(tmpdir, "project", "NumCalc", "source_1")
+    if os.name == 'nt':  # Windows detected
+        # run NumCalc and route all printouts to a log file
+        subprocess.run(
+            f'{numcalc}{commandLineArgument}',
+            stdout=subprocess.DEVNULL, cwd=tmp_path, check=True)
+    else:  # elif os.name == 'posix': Linux or Mac detected
+        # run NumCalc and route all printouts to a log file
+        subprocess.run(
+            [f'{numcalc}{commandLineArgument}'],
+            shell=True, stdout=subprocess.DEVNULL, cwd=tmp_path, check=True)
 
     # Verify
     out_filename = 'NC.out'
-    out_filepath = os.path.join(tmp.name, "project", "NumCalc",
+    out_filepath = os.path.join(tmpdir, "project", "NumCalc",
                                 "source_1", out_filename)
 
     out_file = open(out_filepath)
@@ -86,33 +115,31 @@ def test_numcalc_commandline_nitermax(nitermax, use):
 
     if use:
         assert f'CGS solver: number of iterations = {nitermax}' in out_text
-        assert 'Warning: Maximum number of iterations is reached!' in out_text
+        assert 'Warning: Maximum number of iterations is reached!' \
+            in out_text
     else:
         assert 'Warning: Maximum number of iterations is reached!' \
             not in out_text
 
 
-@pytest.mark.parametrize("istart, iend", [(False, False), (3, False),
-                                          (False, 3), (2, 3)])
-def test_numcalc_commandline_istart_iend(istart, iend):
-    """Test if command line parameters istart and iend behave as expected"""
-    # Setup
-
-    # create temporary directory
-    tmp = tempfile.TemporaryDirectory()
-
+@pytest.mark.parametrize("istart, iend", [
+    (False, False), (3, False), (False, 3), (2, 3)])
+def test_numcalc_commandline_istart_iend(istart, iend, tmpdir):
+    """Test if command line parameters istart and iend behave as expected
+    """
     # copy test directory
     shutil.copytree(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'project_folder_pspw'),
-        os.path.join(tmp.name, 'project'))
+        os.path.join(
+            base_dir, 'resources', 'test_numcalc', 'project_folder_pspw'),
+        os.path.join(tmpdir, 'project'))
     # copy correct input file and rename it to NC.inp
-    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc'))
-    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc', 'source_1'))
+    os.mkdir(os.path.join(tmpdir, 'project', 'NumCalc'))
+    os.mkdir(os.path.join(tmpdir, 'project', 'NumCalc', 'source_1'))
     shutil.copyfile(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'ncinp_files', 'NC_commandline_parameters.inp'),
-        os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
+        os.path.join(
+            base_dir, 'resources', 'test_numcalc',
+            'ncinp_files', 'NC_commandline_parameters.inp'),
+        os.path.join(tmpdir, 'project', 'NumCalc', 'source_1', 'NC.inp'))
 
     commandLineArgument = ''
     if istart > 0:
@@ -121,11 +148,18 @@ def test_numcalc_commandline_istart_iend(istart, iend):
         commandLineArgument += f' -iend {iend}'
 
     # Exercise
-
     # run NumCalc with subprocess
-    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{numcalc}{commandLineArgument}'],
-                   cwd=tmp_path, check=True, shell=True)
+    tmp_path = os.path.join(tmpdir, "project", "NumCalc", "source_1")
+    if os.name == 'nt':  # Windows detected
+        # run NumCalc and route all printouts to a log file
+        subprocess.run(
+            f'{numcalc}{commandLineArgument}',
+            stdout=subprocess.DEVNULL, cwd=tmp_path, check=True)
+    else:  # elif os.name == 'posix': Linux or Mac detected
+        # run NumCalc and route all printouts to a log file
+        subprocess.run(
+            [f'{numcalc}{commandLineArgument}'],
+            shell=True, stdout=subprocess.DEVNULL, cwd=tmp_path, check=True)
 
     # Verify
     if (not istart and not iend):
@@ -139,7 +173,7 @@ def test_numcalc_commandline_istart_iend(istart, iend):
     else:
         raise Exception("Wrong istart and/or iend parameters chosen")
 
-    out_filepath = os.path.join(tmp.name, "project", "NumCalc",
+    out_filepath = os.path.join(tmpdir, "project", "NumCalc",
                                 "source_1", out_filename)
 
     with open(out_filepath) as out_file:
@@ -162,19 +196,25 @@ def test_numcalc_commandline_istart_iend(istart, iend):
         assert nStepsActual == nStepsExpected
 
 
-def test_numcalc_commandline_estimate_ram():
+def test_numcalc_commandline_estimate_ram(tmpdir):
     """Test NumCalc's RAM estimation using -estimate_ram"""
 
     # copy test data
-    cwd = tempfile.TemporaryDirectory()
-    data_cwd = os.path.join(cwd.name, 'SHTF', 'NumCalc', 'source_1')
-    data_shtf = os.path.join(os.path.dirname(__file__), 'resources', 'SHTF')
-    shutil.copytree(data_shtf, os.path.join(cwd.name, 'SHTF'))
+    data_cwd = os.path.join(tmpdir, 'SHTF', 'NumCalc', 'source_1')
+    data_shtf = os.path.join(
+        os.path.dirname(__file__), 'resources', 'SHTF')
+    shutil.copytree(data_shtf, os.path.join(tmpdir, 'SHTF'))
 
-    # run NumCalc ram estimation
-    subprocess.run([f'{numcalc} -estimate_ram'],
-                   cwd=data_cwd, check=True, shell=True,
-                   stdout=subprocess.DEVNULL)
+    if os.name == 'nt':  # Windows detected
+        # run NumCalc and route all printouts to a log file
+        subprocess.run(
+            f"{numcalc} -estimate_ram",
+            stdout=subprocess.DEVNULL, cwd=data_cwd, check=True)
+    else:  # elif os.name == 'posix': Linux or Mac detected
+        # run NumCalc and route all printouts to a log file
+        subprocess.run(
+            [f"{numcalc} -estimate_ram"],
+            shell=True, stdout=subprocess.DEVNULL, cwd=data_cwd, check=True)
 
     # check if Memory.txt exists
     assert os.path.isfile(os.path.join(data_cwd, 'Memory.txt'))
@@ -193,150 +233,154 @@ def test_numcalc_commandline_estimate_ram():
     assert current == reference
 
 
-@pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])
-@pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
-                                            ("point", (40, -45))])
-@pytest.mark.parametrize("bem_method", [("ml-fmm-bem"), ("fmm-bem"), ("bem")])
-def test_numcalc_boundary_conditions_sources_types_numerical_methods(
-        boundary_condition, source, bem_method, range_a, range_b=(-1, 1)):
+def test_defaults(tmpdir):
     """
-    Test if NumCalc and output2hrtf generate correct output by comparing to
-    analytical solutions. Tests different single source types, boundary
-    conditions and BEM methods.
+    Test numcalc manager with default parameters by
+    - directly calling the functions
+    - running the script that calls the function
     """
+    cwd = os.path.dirname(__file__)
+    data_shtf = os.path.join(cwd, 'resources', 'SHTF')
 
-    # --- Setup ---
-    # create temporary directory
-    tmp = tempfile.TemporaryDirectory()
+    # copy test data to temporary directory and remove test critical data
+    shutil.copytree(data_shtf, os.path.join(tmpdir, "SHTF"))
+    os.remove(os.path.join(
+        tmpdir, "SHTF", "NumCalc", "source_1", "Memory.txt"))
+    shutil.rmtree(
+        os.path.join(tmpdir, "SHTF", "NumCalc", "source_1", "be.out"))
+    shutil.rmtree(os.path.join(tmpdir, "SHTF", "NumCalc", "source_2"))
 
-    # copy test directory
-    shutil.copytree(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'project_folder_pspw'),
-        os.path.join(tmp.name, 'project'))
-    # copy correct input file and rename it to NC.inp
-    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc'))
-    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc', 'source_1'))
-    shutil.copyfile(
-        os.path.join(base_dir, 'resources', 'test_numcalc', 'ncinp_files',
-                     f'NC_{boundary_condition}_{source}_{bem_method}.inp'),
-        os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
-    shutil.copyfile(
-        os.path.join(base_dir, 'resources', 'test_numcalc', 'parameters',
-                     f'parameters_{source}.json'),
-        os.path.join(tmp.name, 'project', 'parameters.json'))
+    # run as function
+    m2s.numcalc.manage_numcalc(
+        tmpdir, numcalc_path=numcalc_path, wait_time=0)
+    # check if files exist
+    assert len(glob.glob(os.path.join(tmpdir, "manage_numcalc_*txt")))
 
-    # --- Exercise ---
-    # run NumCalc with subprocess
-    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{numcalc}'], cwd=tmp_path, check=True)
-    # run output2hrtf
-    tmp_path = os.path.join(tmp.name, "project")
-    m2s.output2hrtf(tmp_path)
-
-    # --- Verify ---
-    # load HRTF data from simulation
-    hrtf_sim = utils.hrtf_sofa_to_numpy(
-        os.path.join(tmp_path, "Output2HRTF", "HRTF_HorPlane.sofa"))
-    # normalize because only relative differences of interest
-    hrtf_sim = hrtf_sim[:, :, 0]/numpy.mean(
-                numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]))
-
-    # load HRTF data from analytical comparison
-    ana_path = os.path.join(
-        base_dir, 'resources', 'test_numcalc', 'analytical_references',
-        f'ref_{boundary_condition}_{source}.mat')
-    mat_ana = scipy.io.loadmat(ana_path)
-    hrtf_ana = mat_ana['p_total']
-    # normalize because only relative differences of interest
-    hrtf_ana = hrtf_ana/numpy.mean(
-                numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]))
-
-    # compare
-    numpy.testing.assert_allclose(
-        numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]),
-        numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
-
-    xyz = mat_ana["XYZ"]
-    utils.scatter_reference_vs_analytic(
-        hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
-        range_a, range_b, boundary_condition, source, bem_method)
+    base = os.path.join(tmpdir, "SHTF", "NumCalc", "source_1")
+    assert os.path.isfile(os.path.join(base, "Memory.txt"))
+    for step in range(1, 61):
+        assert os.path.isfile(os.path.join(base, f"NC{step}-{step}.out"))
 
 
-@pytest.mark.parametrize("boundary_condition", [("rigid")])
-@pytest.mark.parametrize("source,range_a", [
-    ("leftear", (40, -40)),
-    ("rightear", (40, -40)),
-    ("bothears", (40, -40))
-])
-@pytest.mark.parametrize("bem_method", [("ml-fmm-bem")])
-def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
-                                  range_a, range_b=(-1, 1)):
-    """
-    Test if NumCalc and output2hrtf generate correct output by comparing to
-    analytical solution. Tests the simulation of HRTF for left, right and both
-    ears.
-    """
+@pytest.mark.parametrize("folders,issue,errors,nots", (
+    # no issues single NC.out filejoin
+    [["case_0"], False, [], []],
+    # issues in NC.out that are corrected by second file NC1-1.out
+    [["case_4"], False, [], []],
+    # missing frequencies
+    [["case_1"], True,
+     ["Frequency steps that were not calculated:\n59, 60"], []],
+    # convergence issues
+    [["case_2"], True,
+     ["Frequency steps that did not converge:\n18, 42"], []],
+    # input/mesh issues
+    [["case_3"], True,
+     ["Frequency steps that were not calculated:\n59, 60",
+      "Frequency steps with bad input:\n58"], []],
+    # no isses in source 1 but issues in source 2
+    [["case_0", "case_1"], True,
+     ["Detected issues for source 2",
+      "Frequency steps that were not calculated:\n59, 60"],
+     ["Detected issues for source 1"]]
+))
+def test_project_report(folders, issue, errors, nots, tmpdir):
+    """Test issues found by the project report"""
 
-    # --- Setup ---
-    # create temporary directory
-    tmp = tempfile.TemporaryDirectory()
+    cwd = os.path.dirname(__file__)
+    data_nc = os.path.join(cwd, 'resources', 'nc.out')
+    # create fake project structure
+    os.mkdir(os.path.join(tmpdir, "NumCalc"))
+    os.mkdir(os.path.join(tmpdir, "Output2HRTF"))
+    shutil.copyfile(os.path.join(data_nc, "parameters.json"),
+                    os.path.join(tmpdir, "parameters.json"))
+    for ff, folder in enumerate(folders):
+        shutil.copytree(os.path.join(data_nc, folder),
+                        os.path.join(tmpdir, "NumCalc", f"source_{ff + 1}"))
 
-    # copy basic test directory
-    shutil.copytree(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'project_folder_ears', 'ears_basic_project'),
-        os.path.join(tmp.name, 'project'))
+    # run the project report
+    issues, report = m2s.output.write_output_report(tmpdir)
 
-    # copy correct input files for the source type
-    shutil.copyfile(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'parameters', f'parameters_{source}.json'),
-        os.path.join(tmp.name, 'project', 'parameters.json'))
-    shutil.copytree(
-        os.path.join(base_dir, 'resources', 'test_numcalc',
-                     'project_folder_ears', source, 'NumCalc'),
-        os.path.join(tmp.name, 'project', 'NumCalc'))
+    # test the output
+    assert issues is issue
+    for error in errors:
+        assert error in report
+    for no in nots:
+        assert no not in report
+    if issue:
+        assert os.path.isfile(os.path.join(
+            tmpdir, "Output2HRTF", "report_issues.txt"))
+        assert ("For more information check Output2HRTF/report_source_*.csv "
+                "and the NC*.out files located at NumCalc/source_*") in report
+    else:
+        assert not os.path.isfile(os.path.join(
+            tmpdir, "Output2HRTF", "report_issues.txt"))
 
-    # --- Exercise ---
-    # run NumCalc with subprocess
-    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
-    subprocess.run([f'{numcalc}'], cwd=tmp_path, check=True)
-    if source == "bothears":
-        tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_2")
-        subprocess.run(
-            [f'{numcalc}'], cwd=tmp_path, check=True)
-    # run Output2HRTF.py
-    tmp_path = os.path.join(tmp.name, "project")
-    m2s.output2hrtf(tmp_path)
 
-    # --- Verify ---
-    # load HRTF data from simulation as numpy
-    hrtf_sim = utils.hrtf_sofa_to_numpy(
-        os.path.join(tmp_path, "Output2HRTF", "HRTF_HorPlane.sofa"))
-    # normalize because only relative differences of interest
-    hrtf_sim = hrtf_sim[:, :, 0]/numpy.mean(
-                numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]))
+@pytest.mark.parametrize("boundary,grid", [
+    (True, True), (True, False), (False, True)])
+def test_purge_outputs_numcalc_data(boundary, grid, tmpdir):
+    """Test purging the raw NumCalc output"""
+    cwd = os.path.dirname(__file__)
+    data_shtf = os.path.join(cwd, 'resources', 'SHTF')
 
-    hrtf_sim = numpy.squeeze(hrtf_sim)
+    # copy required data to temporary directory
+    shutil.copytree(data_shtf, os.path.join(tmpdir, "SHTF"))
 
-    # load HRTF data from analytical comparison
-    ana_path = os.path.join(
-        base_dir, 'resources', 'test_numcalc', 'analytical_references',
-        f'ref_{boundary_condition}_{source}.mat')
-    mat_ana = scipy.io.loadmat(ana_path)
-    hrtf_ana = mat_ana['p_total_'+source]
-    hrtf_ana = numpy.squeeze(hrtf_ana)
-    # normalize because only relative differences of interest
-    hrtf_ana = hrtf_ana/numpy.mean(
-                numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]))
+    m2s.numcalc.remove_outputs(os.path.join(tmpdir, "*"), boundary, grid)
 
-    # compare
-    xyz = mat_ana['XYZ']
-    utils.scatter_reference_vs_analytic(
-        hrtf_sim, hrtf_ana, xyz[:, 0], xyz[:, 1],
-        range_a, range_b, boundary_condition, source, bem_method)
+    for source in glob.glob(
+            os.path.join(tmpdir, "SHTF", "NumCalc", "source_*")):
+        if boundary and grid:
+            assert not os.path.isdir(os.path.join(source, "be.out"))
+        elif boundary:
+            assert os.path.isdir(os.path.join(source, "be.out"))
+            for be in glob.glob(os.path.join(source, "be.out", "be.*")):
+                assert glob.glob(os.path.join(be, "*Boundary")) == []
+        elif grid:
+            assert os.path.isdir(os.path.join(source, "be.out"))
+            for be in glob.glob(os.path.join(source, "be.out", "be.*")):
+                assert glob.glob(os.path.join(be, "*EvalGrid")) == []
 
-    numpy.testing.assert_allclose(
-        numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]),
-        numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
+
+@pytest.mark.parametrize("hrtf,vtk,reports", [
+    (False, True, False), (True, False, True)])
+def test_purge_outputs_output_data(hrtf, vtk, reports, tmpdir):
+    """Test purging the processed data in Output2HRTF"""
+    cwd = os.path.dirname(__file__)
+    data_shtf = os.path.join(cwd, 'resources', 'SHTF')
+    shutil.copytree(data_shtf, os.path.join(tmpdir, "SHTF"))
+    folder = os.path.join(tmpdir, "SHTF", "Output2HRTF")
+
+    m2s.numcalc.remove_outputs(
+        os.path.join(tmpdir, "*"), hrtf=hrtf, vtk=vtk, reports=reports)
+
+    assert os.path.isfile(
+        os.path.join(folder, "HRTF_FourPointHorPlane_r100cm.sofa")) \
+        == (not hrtf)
+
+    assert os.path.isdir(os.path.join(folder, "vtk")) \
+        == (not vtk)
+
+    assert os.path.isfile(os.path.join(folder, "report_source_1.csv")) == \
+        (not reports)
+
+    assert os.path.isfile(os.path.join(folder, "report_source_2.csv")) == \
+        (not reports)
+
+
+def test_read_ram_estimates():
+
+    estimates = m2s.numcalc.read_ram_estimates(os.path.join(
+        os.path.dirname(__file__), "resources", "SHTF", "NumCalc", "source_1"))
+
+    assert isinstance(estimates, np.ndarray)
+    assert estimates.shape == (60, 3)
+    npt.assert_allclose([1.00000e+00, 1.00000e+02, 4.16414e-02], estimates[0])
+    npt.assert_allclose([6.00000e+01, 6.00000e+03, 7.22010e-02], estimates[-1])
+
+
+def test_read_ram_estimates_assertions():
+    """test assertions for read_ram_estimates"""
+
+    with pytest.raises(ValueError, match="does not contain a Memory.txt"):
+        m2s.numcalc.read_ram_estimates(os.getcwd())
