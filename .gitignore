@@ -31,3 +31,5 @@ tests/resources/project/*.pattern.sofa
 .coverage
 .gitignore
 cov.xml
+examples/project/*/Output2HRTF/*.csv
+examples/project/*.sofa

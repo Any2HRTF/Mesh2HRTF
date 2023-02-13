@@ -379,7 +379,7 @@ def check_project(folder=None):
 
     # parse all NC*.out files for all sources
     all_files, fundamentals, out, out_names = _parse_nc_out_files(
-        sources, num_sources, params["numFrequencies"])
+        sources, num_sources, params["num_frequencies"])
 
     return all_files, fundamentals, out, out_names
 
@@ -439,8 +439,8 @@ def read_numcalc(folder=None, is_ref=False):
 
     # check and load parameters, required parameters are:
     # Mesh2HRTF_version, reference, computeHRIRs, speedOfSound, densityOfAir,
-    # numSources, sourceType, sources, sourceArea,
-    # numFrequencies, frequencies
+    # sources_num, sourceType, sources, sourceArea,
+    # num_frequencies, frequencies
     params = os.path.join(folder, '..', 'parameters.json')
     if not os.path.isfile(params):
         raise ValueError((
@@ -476,11 +476,11 @@ def read_numcalc(folder=None, is_ref=False):
         coords = pf.Coordinates(xyz[..., 0], xyz[..., 1], xyz[..., 2])
         num_sources = np.sum(np.abs(coords.get_sph()[..., 0]) < 1e-12)
     else:
-        num_sources = params["numSources"]
+        num_sources = params["sources_num"]
 
     if not len(evaluationGrids) == 0:
         pressure, _ = _read_numcalc_data(
-            num_sources, params["numFrequencies"],
+            num_sources, params["num_frequencies"],
             folder, 'pEvalGrid')
 
     # save to struct
@@ -578,7 +578,7 @@ def write_output_report(folder=None):
 
     # parse all NC*.out files for all sources
     all_files, fundamentals, out, out_names = _parse_nc_out_files(
-        sources, num_sources, params["numFrequencies"])
+        sources, num_sources, params["num_frequencies"])
 
     # write report as csv file
     _write_project_reports(folder, all_files, out, out_names)
@@ -645,7 +645,7 @@ def _read_nodes_and_elements(folder, objects=None):
     return grids, gridsNumNodes
 
 
-def _read_numcalc_data(numSources, numFrequencies, folder, data):
+def _read_numcalc_data(sources_num, num_frequencies, folder, data):
     """Read the sound pressure on the object meshes or evaluation grid."""
     pressure = []
 
@@ -653,12 +653,12 @@ def _read_numcalc_data(numSources, numFrequencies, folder, data):
         raise ValueError(
             'data must be pBoundary, pEvalGrid, vBoundary, or vEvalGrid')
 
-    for source in range(numSources):
+    for source in range(sources_num):
 
         tmpFilename = os.path.join(
             folder, 'NumCalc', f'source_{source+1}', 'be.out')
         tmpPressure, indices = _load_results(
-            tmpFilename, data, numFrequencies)
+            tmpFilename, data, num_frequencies)
 
         pressure.append(tmpPressure)
 
@@ -667,7 +667,7 @@ def _read_numcalc_data(numSources, numFrequencies, folder, data):
     return pressure, indices
 
 
-def _load_results(foldername, filename, numFrequencies):
+def _load_results(foldername, filename, num_frequencies):
     """
     Load results of the BEM calculation.
 
@@ -687,13 +687,13 @@ def _load_results(foldername, filename, numFrequencies):
             The sound pressure on the evaluation grid
         vEvalGrid
             The sound velocity on the evaluation grid
-    numFrequencies : int
+    num_frequencies : int
         the number of simulated frequencies
 
     Returns
     -------
     data : numpy array
-        Pressure or abs velocity values of shape (numFrequencies, numEntries)
+        Pressure or abs velocity values of shape (num_frequencies, numEntries)
     """
 
     # ---------------------check number of header and data lines---------------
@@ -713,9 +713,9 @@ def _load_results(foldername, filename, numFrequencies):
 
     # ------------------------------load data----------------------------------
     dtype = complex if filename.startswith("p") else float
-    data = np.zeros((numFrequencies, numDatalines), dtype=dtype)
+    data = np.zeros((num_frequencies, numDatalines), dtype=dtype)
 
-    for ii in range(numFrequencies):
+    for ii in range(num_frequencies):
         tmpData = []
         current_file = os.path.join(foldername, 'be.%d' % (ii+1), filename)
         with open(current_file) as file:
