@@ -39,7 +39,7 @@ def write_scattering_project(
         project_path_sample, title, frequencies, frequencyStepSize,
         sample_path,
         receiver_coords, source_coords, sourceType='Point source',
-        method='ML-FMM BEM', materialSearchPaths=None,
+        method=method, materialSearchPaths=None,
         speedOfSound=speed_of_sound,
         densityOfMedium=density_of_medium, materials=None)
 
@@ -52,7 +52,7 @@ def write_scattering_project(
         project_path_ref, title, frequencies, frequencyStepSize,
         reference_path, receiver_coords, sourcePositions_ref,
         sourceType='Point source',
-        method='ML-FMM BEM',  materialSearchPaths=None,
+        method=method,  materialSearchPaths=None,
         speedOfSound=speed_of_sound,
         densityOfMedium=density_of_medium, materials=None)
 
