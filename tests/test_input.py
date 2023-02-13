@@ -182,9 +182,9 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
     receiver_delta_deg = 1
     receiver_radius = 5
 
-    strcutal_wavelength = 0
+    structural_wavelength = 0
     sample_diameter = 0.8
-    modelScale = 2.5
+    model_scale = 2.5
     symmetry_azimuth = [90, 180]
     symmetry_rotational = False
 
@@ -192,7 +192,7 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
         receiver_delta_deg, receiver_radius)
     receiverPoints = receiverPoints[receiverPoints.get_sph()[..., 1] < np.pi/2]
 
-    # excute
+    # execute
     m2s.input.write_scattering_project(
         project_path=tmpdir,
         frequencies=frequencies,
@@ -200,8 +200,8 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
         reference_path=reference_path,
         receiver_coords=receiverPoints,
         source_coords=source_coords_10deg,
-        structualWavelength=strcutal_wavelength,
-        modelScale=modelScale,
+        structural_wavelength=structural_wavelength,
+        model_scale=model_scale,
         sample_diameter=sample_diameter,
         symmetry_azimuth=symmetry_azimuth,
         symmetry_rotational=symmetry_rotational,
@@ -213,31 +213,36 @@ def test_write_scattering_parameter(source_coords_10deg, tmpdir):
     with open(os.path.join(
             m2s.utils.repository_root(), "..", "VERSION")) as read_version:
         version = read_version.readline()
-    sourceList = [list(i) for i in list(source_coords_10deg.get_cart())]
+    source_list = [list(i) for i in list(source_coords_10deg.get_cart())]
+    receiver_list = [list(i) for i in list(receiverPoints.get_cart())]
     parameters = {
         # project Info
-        "projectTitle": 'scattering pattern',
-        "Mesh2HRTF_Path": m2s.utils.repository_root(),
-        "Mesh2HRTF_Version": version,
-        "BEM_Type": 'ML-FMM BEM',
+        "project_title": 'scattering pattern',
+        "mesh2scattering_path": m2s.utils.repository_root(),
+        "mesh2scattering_version": version,
+        "bem_version": 'ML-FMM BEM',
         # Constants
-        "speedOfSound": float(346.18),
-        "densityOfMedium": float(1.1839),
+        "speed_of_sound": float(346.18),
+        "density_of_medium": float(1.1839),
         # Sample Information, post processing
-        "structualWavelength": strcutal_wavelength,
-        "modelScale": modelScale,
+        "structural_wavelength": structural_wavelength,
+        "model_scale": model_scale,
+        "sample_diameter": sample_diameter,
+        # symmetry information
         "symmetry_azimuth": symmetry_azimuth,
         "symmetry_rotational": symmetry_rotational,
-        "sample_diameter": sample_diameter,
         # frequencies
-        "numFrequencies": len(frequencies),
-        "minFrequency": frequencies[0],
-        "maxFrequency": frequencies[-1],
+        "num_frequencies": len(frequencies),
+        "min_frequency": frequencies[0],
+        "max_frequency": frequencies[-1],
         "frequencies": list(frequencies),
         # Source definition
-        "sourceType": 'Point source',
-        "numSources": len(sourceList),
-        "sourceCenter": sourceList,
+        "source_type": 'Point source',
+        "sources_num": len(source_list),
+        "sources": source_list,
+        # Receiver definition
+        "receivers_num": len(receiver_list),
+        "receivers": receiver_list,
     }
     npt.assert_equal(paras, parameters)
     # test folder structure

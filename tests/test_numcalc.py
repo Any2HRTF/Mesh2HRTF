@@ -35,8 +35,8 @@ else:
 
 
 def test_import():
-    from mesh2scattering import NumCalc
-    assert NumCalc
+    from mesh2scattering import numcalc
+    assert numcalc
 
 
 def test_numcalc_invalid_parameter(capfd):
@@ -251,7 +251,7 @@ def test_defaults(tmpdir):
     shutil.rmtree(os.path.join(tmpdir, "SHTF", "NumCalc", "source_2"))
 
     # run as function
-    m2s.NumCalc.manage_numcalc(
+    m2s.numcalc.manage_numcalc(
         tmpdir, numcalc_path=numcalc_path, wait_time=0)
     # check if files exist
     assert len(glob.glob(os.path.join(tmpdir, "manage_numcalc_*txt")))
@@ -298,7 +298,7 @@ def test_project_report(folders, issue, errors, nots, tmpdir):
                         os.path.join(tmpdir, "NumCalc", f"source_{ff + 1}"))
 
     # run the project report
-    issues, report = m2s.NumCalc.write_output_report(tmpdir)
+    issues, report = m2s.numcalc.write_output_report(tmpdir)
 
     # test the output
     assert issues is issue
@@ -326,7 +326,7 @@ def test_purge_outputs_numcalc_data(boundary, grid, tmpdir):
     # copy required data to temporary directory
     shutil.copytree(data_shtf, os.path.join(tmpdir, "SHTF"))
 
-    m2s.NumCalc.remove_outputs(os.path.join(tmpdir, "*"), boundary, grid)
+    m2s.numcalc.remove_outputs(os.path.join(tmpdir, "*"), boundary, grid)
 
     for source in glob.glob(
             os.path.join(tmpdir, "SHTF", "NumCalc", "source_*")):
@@ -351,7 +351,7 @@ def test_purge_outputs_output_data(hrtf, vtk, reports, tmpdir):
     shutil.copytree(data_shtf, os.path.join(tmpdir, "SHTF"))
     folder = os.path.join(tmpdir, "SHTF", "Output2HRTF")
 
-    m2s.NumCalc.remove_outputs(
+    m2s.numcalc.remove_outputs(
         os.path.join(tmpdir, "*"), hrtf=hrtf, vtk=vtk, reports=reports)
 
     assert os.path.isfile(

@@ -64,7 +64,7 @@ def read_numcalc(folder=None, is_ref=False):
 
     # write the project report and check for issues
     print('\n Writing the project report ...')
-    found_issues, report = m2s.NumCalc.write_output_report(folder)
+    found_issues, report = m2s.numcalc.write_output_report(folder)
 
     if found_issues:
         warnings.warn(report)

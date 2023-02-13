@@ -23,7 +23,7 @@ def create_source_positions(phi_deg, theta_deg, radius):
 def write_scattering_project(
         project_path, frequencies, sample_path, reference_path,
         receiver_coords, source_coords,
-        structualWavelength=0, modelScale=1, symmetry_azimuth=[90, 180],
+        structural_wavelength=0, model_scale=1, symmetry_azimuth=[90, 180],
         symmetry_rotational=False, sample_diameter=0.8,
         speed_of_sound='346.18',
         density_of_medium='1.1839'):
@@ -59,33 +59,39 @@ def write_scattering_project(
     with open(os.path.join(programPath, "..", "VERSION")) as read_version:
         version = read_version.readline()
 
-    sourceList = [list(i) for i in list(source_coords.get_cart())]
+    source_list = [list(i) for i in list(source_coords.get_cart())]
+    receiver_list = [list(i) for i in list(receiver_coords.get_cart())]
     title = 'scattering pattern'
     frequencies = np.array(frequencies, dtype=float)
     parameters = {
         # project Info
-        "projectTitle": title,
-        "Mesh2HRTF_Path": programPath,
-        "Mesh2HRTF_Version": version,
-        "BEM_Type": method,
+        "project_title": 'scattering pattern',
+        "mesh2scattering_path": m2s.utils.repository_root(),
+        "mesh2scattering_version": version,
+        "bem_version": 'ML-FMM BEM',
         # Constants
-        "speedOfSound": float(speed_of_sound),
-        "densityOfMedium": float(density_of_medium),
+        "speed_of_sound": float(346.18),
+        "density_of_medium": float(1.1839),
         # Sample Information, post processing
-        "structualWavelength": structualWavelength,
-        "modelScale": modelScale,
+        "structural_wavelength": structural_wavelength,
+        "model_scale": model_scale,
+        "sample_diameter": sample_diameter,
+        # symmetry information
         "symmetry_azimuth": symmetry_azimuth,
         "symmetry_rotational": symmetry_rotational,
-        "sample_diameter": sample_diameter,
         # frequencies
-        "numFrequencies": len(frequencies),
-        "minFrequency": frequencies[0],
-        "maxFrequency": frequencies[-1],
+        "num_frequencies": len(frequencies),
+        "min_frequency": frequencies[0],
+        "max_frequency": frequencies[-1],
         "frequencies": list(frequencies),
         # Source definition
-        "sourceType": 'Point source',
-        "numSources": len(sourceList),
-        "sourceCenter": sourceList,
+        "source_type": 'Point source',
+        "sources_num": len(source_list),
+        "sources": source_list,
+        # Receiver definition
+        "receivers_num": len(receiver_list),
+        "receivers": receiver_list,
+
     }
     with open(os.path.join(project_path, "parameters.json"), 'w') as file:
         json.dump(parameters, file, indent=4)

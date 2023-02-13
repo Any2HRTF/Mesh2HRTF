@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 # %%
-# this is the project path which we want to simualte
+# this is the project path which we want to simulate
 # it should contain a reference and a sample folder
 project_path = os.path.join(
     m2s.utils.repository_root(), '..', 'examples', 'project')
@@ -21,7 +21,7 @@ source_azimuth_deg = np.arange(0, 95, 30)
 source_colatitude_deg = np.arange(10, 85, 30)
 source_radius = 10
 
-strcutal_wavelength = 0
+structural_wavelength = 0
 sample_diameter = 0.8
 modelScale = 2.5
 symmetry_azimuth = [90, 180]
@@ -49,8 +49,8 @@ m2s.input.write_scattering_project(
     reference_path=reference_path,
     receiver_coords=receiverCoords,
     source_coords=sourceCoords,
-    structualWavelength=0,
-    modelScale=1,
+    structuralWavelength=structural_wavelength,
+    modelScale=modelScale,
     sample_diameter=sample_diameter,
     symmetry_azimuth=symmetry_azimuth,
     symmetry_rotational=symmetry_rotational,
