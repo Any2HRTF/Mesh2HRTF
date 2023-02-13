@@ -4,8 +4,8 @@ import pyfar as pf
 from scipy.spatial import Delaunay, ConvexHull
 import trimesh
 import json
-import mesh2scattering as m2s
 import datetime
+from mesh2scattering import utils
 
 
 def create_source_positions(phi_deg, theta_deg, radius):
@@ -47,7 +47,7 @@ def write_scattering_project(
     title = 'scattering coefficient Reference'
     sourcePositions_ref = source_coords[
         np.abs(source_coords.get_sph()[..., 0]) < 1e-14]
-    programPath = m2s.utils.repository_root()
+    programPath = utils.repository_root()
     project_path_ref = os.path.join(project_path, 'reference')
     write_project(
         project_path_ref, title, frequencies, frequencyStepSize,
@@ -67,7 +67,7 @@ def write_scattering_project(
     parameters = {
         # project Info
         "project_title": 'scattering pattern',
-        "mesh2scattering_path": m2s.utils.repository_root(),
+        "mesh2scattering_path": utils.repository_root(),
         "mesh2scattering_version": version,
         "bem_version": 'ML-FMM BEM',
         # Constants
@@ -105,7 +105,7 @@ def write_project(
         materialSearchPaths=None, speedOfSound='346.18',
         densityOfMedium='1.1839', materials=None):
 
-    programPath = m2s.utils.repository_root()
+    programPath = utils.repository_root()
     defaultPath = os.path.join(
         programPath, 'Mesh2Input', 'Materials', 'Data')
     if materialSearchPaths is None:

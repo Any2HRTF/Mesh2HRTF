@@ -1,7 +1,6 @@
 from .output import (
     check_project,
     read_numcalc, 
-    read_ram_estimates,
     angles2coords,
     apply_symmetry_circular,
     apply_symmetry_mirror,
@@ -13,7 +12,6 @@ __all__ = [
     'check_project',
     'merge_frequency_data',
     'read_numcalc',
-    'read_ram_estimates',
     'angles2coords',
     'apply_symmetry_circular',
     'apply_symmetry_mirror',

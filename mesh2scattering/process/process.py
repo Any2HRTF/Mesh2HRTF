@@ -3,7 +3,7 @@ import imkar as ik
 import numpy as np
 import sofar as sf
 import os
-import mesh2scattering as m2s
+from mesh2scattering import utils
 
 
 def calculate_scattering(folder, grid):
@@ -34,7 +34,7 @@ def calculate_scattering(folder, grid):
     shape = np.insert(shape, 1, 1)
     s.freq = s.freq.reshape(shape)
 
-    sofa = m2s.utils._get_sofa_object(
+    sofa = utils._get_sofa_object(
         s.freq,
         source_coordinates.get_cart(),
         np.array([0, 0, 0]),
@@ -45,7 +45,7 @@ def calculate_scattering(folder, grid):
     sf.write_sofa(os.path.join(
         folder, f'{project_name}_{grid}.scattering.sofa'), sofa)
 
-    sofa = m2s.utils._get_sofa_object(
+    sofa = utils._get_sofa_object(
         s_rand.freq.reshape(1, 1, len(s.frequencies)),
         np.array([0, 0, 0]),
         np.array([0, 0, 0]),

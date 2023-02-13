@@ -1,4 +1,3 @@
-# %%
 import pytest
 import subprocess
 import shutil
@@ -6,12 +5,13 @@ import os
 import mesh2scattering as m2s
 import glob
 import warnings
-
+import numpy.testing as npt
+import numpy as np
 
 # directory of this file
 base_dir = os.path.dirname(__file__)
 
-# ignore tests for wondows since its difficult to build the exe
+# ignore tests for windows since its difficult to build the exe
 if os.name == 'nt':
     numcalc = os.path.join(
         m2s.utils.repository_root(), "NumCalc", "bin", "NumCalc.exe")
@@ -366,3 +366,22 @@ def test_purge_outputs_output_data(hrtf, vtk, reports, tmpdir):
 
     assert os.path.isfile(os.path.join(folder, "report_source_2.csv")) == \
         (not reports)
+
+
+def test_read_ram_estimates():
+
+    estimates = m2s.numcalc.read_ram_estimates(os.path.join(
+        os.path.dirname(__file__), "resources", "SHTF", "NumCalc", "source_1"))
+
+    assert isinstance(estimates, np.ndarray)
+    assert estimates.shape == (60, 3)
+    npt.assert_allclose([1.00000e+00, 1.00000e+02, 4.16414e-02], estimates[0])
+    npt.assert_allclose([6.00000e+01, 6.00000e+03, 7.22010e-02], estimates[-1])
+
+
+def test_read_ram_estimates_assertions():
+    """test assertions for read_ram_estimates"""
+
+    with pytest.raises(ValueError, match="does not contain a Memory.txt"):
+        m2s.numcalc.read_ram_estimates(os.getcwd())
+
