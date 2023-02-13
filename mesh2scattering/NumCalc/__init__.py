@@ -1,8 +1,10 @@
 from .numcalc import (
-    read_ram_estimates,
+    manage_numcalc,
+    remove_outputs,
     )
 
 
 __all__ = [
-    'read_ram_estimates',
+    'manage_numcalc',
+    'remove_outputs',
     ]
