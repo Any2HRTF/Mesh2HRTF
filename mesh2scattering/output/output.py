@@ -226,7 +226,7 @@ def write_pattern(folder):
             "Folder need to contain reference and sample folders.")
 
     # read sample data
-    evaluationGrids, params = m2s.output.read_numcalc(
+    evaluationGrids, params = read_numcalc(
         os.path.join(folder, 'sample'), False)
 
     # process BEM data for writing HRTFs and HRIRs to SOFA files
@@ -253,7 +253,7 @@ def write_pattern(folder):
         sf.write_sofa(os.path.join(
             folder, 'sample.pattern.sofa'), sofa)
 
-    evaluationGrids, params = m2s.output.read_numcalc(
+    evaluationGrids, params = read_numcalc(
         os.path.join(folder, 'reference'), True)
 
     # process BEM data for writing HRTFs and HRIRs to SOFA files
@@ -273,7 +273,7 @@ def write_pattern(folder):
         # apply symmetry of reference sample
         data = evaluationGrids[grid]["pressure"]
         data = np.swapaxes(data, 0, 1)
-        data_out = m2s.output.apply_symmetry_circular(
+        data_out = apply_symmetry_circular(
             pf.FrequencyData(data, params["frequencies"]),
             _cart_coordinates(receiver_position_ref),
             _cart_coordinates(source_position_ref),
