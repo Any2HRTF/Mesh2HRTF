@@ -1,0 +1,55 @@
+istart= 3 iend = 3
+
+---------- NumCalc started: 13/2/2023 15:15:44 ----------
+
+Running on:         182-246.eduroam.rwth-aachen.de
+
+3D analysis
+Job title: scattering coefficient Sample
+
+Step 3, Frequency = 5000 Hz
+
+Direct multilevel fast multipole BEM
+
+Number of equations = 30902
+
+Informations about clusters:
+   Level    Num. of clusters    Maximum radius   Minimum radius
+     0           77                0.0770779         0.027602
+     1          284                0.0573493         0.027602
+ resu. nets    1225                     0              0
+
+
+Informations about the FMM expansion:
+   Level    N. expa. terms    N. p. theta    N. p. phi    N. p. sphere
+     0          16              16              32           512
+     1          12              12              24           288
+
+CGS: err_ori = 0.000130003
+10 0.0962745
+10 Abs Error:1.2516e-05
+20 0.00180929
+20 Abs Error:2.35213e-07
+30 4.57253e-06
+30 Abs Error:5.94444e-10
+40 4.51116e-06
+40 Abs Error:5.86466e-10
+50 2.00007e-09
+50 Abs Error:2.60015e-13
+56 9.49621e-10
+
+Assembling the equation system         : 96
+Solving the equation system            : 53
+Post processing                        : 16
+Total                                  : 165
+
+
+Time Statistic for the job (in second):
+Input ............................ 0
+Address computation .............. 0
+Assembling the equation system ... 96
+Solving the equation system ...... 53
+Post processing .................. 16
+The whole job .................... 165
+
+---------- NumCalc ended: 13/2/2023 15:18:29 ----------

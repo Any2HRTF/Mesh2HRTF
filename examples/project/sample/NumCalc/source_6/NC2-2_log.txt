@@ -1,6 +1,6 @@
 istart= 2 iend = 2
 
----------- NumCalc started: 13/2/2023 14:35:48 ----------
+---------- NumCalc started: 13/2/2023 15:26:27 ----------
 
 Running on:         182-246.eduroam.rwth-aachen.de
 
@@ -25,41 +25,37 @@ Informations about the FMM expansion:
      0           9               9              18           162
      1           8               8              16           128
 
-CGS: err_ori = 0.00012517
-10 0.634255
-10 Abs Error:7.93895e-05
-20 1.39152
-20 Abs Error:0.000174176
-30 0.176351
-30 Abs Error:2.20739e-05
-40 0.00450508
-40 Abs Error:5.639e-07
-50 3.40408
-50 Abs Error:0.000426087
-60 0.00105576
-60 Abs Error:1.32149e-07
-70 8.61795e-06
-70 Abs Error:1.07871e-09
-80 0.00025463
-80 Abs Error:3.1872e-08
-90 7.79381e-08
-90 Abs Error:9.75549e-12
-100 1.01448e-07
-100 Abs Error:1.26983e-11
-107 2.05499e-10
-
-Assembling the equation system         : 214
-Solving the equation system            : 68
-Post processing                        : 5
-Total                                  : 287
+CGS: err_ori = 0.000125425
+10 0.163602
+10 Abs Error:2.05199e-05
+20 0.0485814
+20 Abs Error:6.09334e-06
+30 0.0258993
+30 Abs Error:3.24843e-06
+40 0.00337387
+40 Abs Error:4.23169e-07
+50 5.14889e-05
+50 Abs Error:6.45802e-09
+60 4.91926e-05
+60 Abs Error:6.17001e-09
+70 9.23501e-07
+70 Abs Error:1.15831e-10
+80 1.22791e-06
+80 Abs Error:1.54011e-10
+90 6.16677e-10
+90 Abs Error:7.7347e-14
+Assembling the equation system         : 177
+Solving the equation system            : 52
+Post processing                        : 4
+Total                                  : 233
 
 
 Time Statistic for the job (in second):
 Input ............................ 1
 Address computation .............. 0
-Assembling the equation system ... 214
-Solving the equation system ...... 68
-Post processing .................. 5
-The whole job .................... 288
+Assembling the equation system ... 177
+Solving the equation system ...... 52
+Post processing .................. 4
+The whole job .................... 234
 
----------- NumCalc ended: 13/2/2023 14:40:36 ----------
+---------- NumCalc ended: 13/2/2023 15:30:22 ----------

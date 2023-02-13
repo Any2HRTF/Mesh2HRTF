@@ -1,5 +1,5 @@
 
-Start time: 13/2/2023 14:35:48
+Start time: 13/2/2023 15:26:27
 
 
 >> G E N E R A L   P A R A M E T E R S <<
@@ -91,14 +91,14 @@ Nonzeros of the S-matrix .............................. = 8961580
     Nonzeros of S_lev_1 ............................... = 3955456
 Sum of nonzeros of the FMBEM matrices ................. = 84038410
 
-CGS solver: number of iterations = 107, relative error = 2.05499e-10
+CGS solver: number of iterations = 90, relative error = 6.16677e-10
 
 Time Statistic For The Current Step (In Second)
 
-Assembling the equation system         : 214
-Solving the equation system            : 68
-Post processing                        : 5
-Total                                  : 287
+Assembling the equation system         : 177
+Solving the equation system            : 52
+Post processing                        : 4
+Total                                  : 233
 
 
 
@@ -106,9 +106,9 @@ Total                                  : 287
 
 Input                                  : 1
 Address computation                    : 0
-Assembling the equation system         : 214
-Solving the equation system            : 68
-Post processing                        : 5
-The whole job                          : 288
+Assembling the equation system         : 177
+Solving the equation system            : 52
+Post processing                        : 4
+The whole job                          : 234
 
-End time: 13/2/2023 14:40:36
+End time: 13/2/2023 15:30:22

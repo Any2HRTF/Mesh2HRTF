@@ -1,5 +1,5 @@
 
-Start time: 13/2/2023 14:33:2
+Start time: 13/2/2023 15:19:28
 
 
 >> G E N E R A L   P A R A M E T E R S <<
@@ -95,10 +95,10 @@ CGS solver: number of iterations = 58, relative error = 5.58193e-10
 
 Time Statistic For The Current Step (In Second)
 
-Assembling the equation system         : 215
-Solving the equation system            : 64
-Post processing                        : 22
-Total                                  : 301
+Assembling the equation system         : 168
+Solving the equation system            : 61
+Post processing                        : 17
+Total                                  : 246
 
 
 
@@ -106,9 +106,9 @@ Total                                  : 301
 
 Input                                  : 1
 Address computation                    : 0
-Assembling the equation system         : 215
-Solving the equation system            : 64
-Post processing                        : 22
-The whole job                          : 302
+Assembling the equation system         : 168
+Solving the equation system            : 61
+Post processing                        : 17
+The whole job                          : 247
 
-End time: 13/2/2023 14:38:4
+End time: 13/2/2023 15:23:35

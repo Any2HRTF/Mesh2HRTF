@@ -88,7 +88,7 @@ def shift_data_coords(
         xyz[..., 0], xyz[..., 1], xyz[..., 2])
     data_mask = data_mask.flatten()
     freq = data.freq.copy()
-    freq_new = freq[:, data_mask, ...]
+    freq_new = freq[..., data_mask, :]
     data_out = pf.FrequencyData(
         freq_new, data.frequencies)
     return data_out
@@ -150,50 +150,73 @@ def apply_symmetry_circular(
     for ii in range(coords_inc_out.cshape[0]):
         az = coords_inc_out[ii].get_sph(unit='deg')[0, 0]
         theta = coords_inc_out[ii].get_sph(unit='deg')[0, 1]
-        data_in = data[np.abs(thetas-theta) < 1e-5, :]
+        data_in = data[np.abs(thetas-theta) < 1e-3, :]
         freq[ii, ...] = shift_data_coords(
             data_in, coords_mic, float(az)).freq.copy()
     data_out = pf.FrequencyData(freq, data.frequencies)
     return data_out
 
 
-def apply_symmetry_mirror(data, coords_mic, incident_coords, mirror_axe=None):
+def apply_symmetry_mirror(
+        data_in, coords_mic, incident_coords, mirror_axe=None):
+    all_az = np.sort(np.array(list(set(
+        np.round(incident_coords.get_sph(unit='deg')[..., 0], 5)))))
+    all_el = np.sort(np.array(list(set(
+        np.round(incident_coords.get_sph(unit='deg')[..., 1], 5)))))
+    radius = np.median(incident_coords.get_sph()[..., 2])
+    source_coords_out = pf.Coordinates(
+        *np.meshgrid(all_az, all_el, indexing='ij'), radius, 'sph', unit='deg')
+    data = reshape_to_az_by_el(data_in, incident_coords, source_coords_out, 1)
+
     shape = list(data.cshape)
     shape.append(data.n_bins)
-    shape[mirror_axe] = 2*shape[mirror_axe]-1
-    index_min = int(shape[mirror_axe]/2)
-    index_max = int(shape[mirror_axe])
+    azimuths = np.sort(np.array(list(set(
+        np.round(incident_coords.get_sph()[..., 0], 5)))))
+    index_min = len(azimuths)-1
+    index_max = 2 * index_min + 1
+    shape[mirror_axe] = index_max
+
     freq = np.empty(shape, dtype=complex)
     freq[:] = np.nan
     freq = np.moveaxis(freq, mirror_axe, -1)
-    freq_in = np.moveaxis(data.freq, mirror_axe, -1)
-    azimuths = incident_coords.get_sph()[:, 1, 0]
+    freq_in = np.moveaxis(data.freq.copy(), mirror_axe, -1)
     max_aimuth = np.max(azimuths)
-    elevations = incident_coords.get_sph()[0, :, 1]
-    radius = np.median(incident_coords.get_sph()[:, :, 2])
+    radius = np.median(incident_coords.get_sph()[:, 2])
     azimuths_new = []
-    max_index = -1
     for iaz in range(index_max):
         if iaz > index_min:
             idx = index_max-iaz-1
             az = (max_aimuth-azimuths[idx]) * 2
             if azimuths[idx] + az > 2 * np.pi:
-                max_index = iaz
-                break
-            data_in = shift_data_coords(data, coords_mic, az/np.pi*180).freq
+                az = 2 * np.pi - azimuths[idx]
+            data_swap = pf.FrequencyData(
+                np.moveaxis(data.freq, 0, -2), data.frequencies)
+            data_in = shift_data_coords(
+                data_swap, coords_mic, az/np.pi*180).freq
+            data_in = np.moveaxis(data_in, -2, 0)
+
             azimuths_new.append(azimuths[idx] + az)
         else:
             data_in = data.freq
             idx = iaz
             azimuths_new.append(azimuths[iaz])
-        freq_in = np.moveaxis(data_in, mirror_axe, -1)
-        freq[..., iaz] = freq_in[..., idx]
-    if max_index > 0:
-        freq = freq[..., :max_index]
+        freq_in = np.moveaxis(data_in, mirror_axe, 0)
+        freq[..., iaz] = freq_in[idx, ...]
+    # if max_index > 0:
+    #     freq = freq[..., :max_index]
     freq = np.moveaxis(freq, -1, mirror_axe)
     data_out = pf.FrequencyData(freq, data.frequencies)
+    elevations = np.sort(np.array(list(set(
+        np.round(incident_coords.get_sph()[..., 1], 5)))))
     new_inc_coords = angles2coords(np.array(azimuths_new), elevations, radius)
-    return data_out, new_inc_coords
+    shape = data_out.cshape
+    data_out.freq = np.reshape(
+        data_out.freq, (shape[0], shape[1]*shape[2], data_out.n_bins))
+    xyz = new_inc_coords.get_cart().reshape((new_inc_coords.csize, 3))
+    new_inc_coords = pf.Coordinates(xyz[..., 0], xyz[..., 1], xyz[..., 2])
+    mask_not_double = new_inc_coords.get_sph()[..., 1] != 0
+    mask_not_double[np.argmax(~mask_not_double)] = True
+    return data_out[:, mask_not_double], new_inc_coords[mask_not_double]
 
 
 def write_pattern(folder):
@@ -241,23 +264,36 @@ def write_pattern(folder):
         receiver_position = np.array(evaluationGrids[grid]["nodes"][:, 1:4])
         if receiver_position.shape[1] != 3:
             receiver_position = np.transpose(receiver_position)
+
+        # apply symmetry of reference sample
+        data = pf.FrequencyData(
+            evaluationGrids[grid]["pressure"], params["frequencies"])
+        receiver_coords = _cart_coordinates(receiver_position)
+        source_coords = _cart_coordinates(source_position)
+        # data = np.swapaxes(data, 0, 1)
+        data_out, source_coords = apply_symmetry_mirror(
+            data, receiver_coords, source_coords, 1)
+        data_out, source_coords = apply_symmetry_mirror(
+            data_out, receiver_coords, source_coords, 1)
+
+        # write data
         sofa = utils._get_sofa_object(
-            evaluationGrids[grid]["pressure"],
-            source_position,
+            data_out.freq,
+            source_coords.get_cart(),
             receiver_position,
             params["mesh2scattering_version"],
             frequencies=params["frequencies"])
 
         sofa.GLOBAL_Title = folder.split(os.sep)[-1]
 
-        # write HRTF data to SOFA file
+        # write scattered sound pressure to SOFA file
         sf.write_sofa(os.path.join(
             folder, 'sample.pattern.sofa'), sofa)
 
     evaluationGrids, params = read_numcalc(
         os.path.join(folder, 'reference'), True)
 
-    # process BEM data for writing HRTFs and HRIRs to SOFA files
+    # process BEM data for writing scattered sound pressure to SOFA files
     for grid in evaluationGrids:
         print(f'\nWrite sample data "{grid}" ...\n')
         # get pressure as SOFA object (all following steps are run on SOFA
@@ -278,12 +314,12 @@ def write_pattern(folder):
             pf.FrequencyData(data, params["frequencies"]),
             _cart_coordinates(receiver_position_ref),
             _cart_coordinates(source_position_ref),
-            _cart_coordinates(source_position))
+            source_coords)
 
         # create sofa file
         sofa = utils._get_sofa_object(
             data_out.freq,
-            source_position,
+            source_coords.get_cart(),
             receiver_position_ref,
             params["mesh2scattering_version"],
             frequencies=params["frequencies"])

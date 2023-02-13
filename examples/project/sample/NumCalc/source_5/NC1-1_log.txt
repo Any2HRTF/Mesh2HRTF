@@ -1,6 +1,6 @@
 istart= 1 iend = 1
 
----------- NumCalc started: 13/2/2023 14:33:48 ----------
+---------- NumCalc started: 13/2/2023 15:22:42 ----------
 
 Running on:         182-246.eduroam.rwth-aachen.de
 
@@ -25,27 +25,27 @@ Informations about the FMM expansion:
      0           8               8              16           128
      1           8               8              16           128
 
-CGS: err_ori = 0.000572384
-10 0.075737
-10 Abs Error:4.33506e-05
-20 2.7473e-05
-20 Abs Error:1.57251e-08
-30 2.0494e-06
-30 Abs Error:1.17305e-09
-40 1.09002e-11
-40 Abs Error:6.23907e-15
-Assembling the equation system         : 207
-Solving the equation system            : 43
-Post processing                        : 4
-Total                                  : 254
+CGS: err_ori = 0.00014354
+10 0.0203689
+10 Abs Error:2.92377e-06
+20 8.68813e-05
+20 Abs Error:1.2471e-08
+30 8.89173e-09
+30 Abs Error:1.27632e-12
+37 1.96283e-10
+
+Assembling the equation system         : 187
+Solving the equation system            : 33
+Post processing                        : 3
+Total                                  : 223
 
 
 Time Statistic for the job (in second):
-Input ............................ 2
+Input ............................ 1
 Address computation .............. 0
-Assembling the equation system ... 207
-Solving the equation system ...... 43
-Post processing .................. 4
-The whole job .................... 256
+Assembling the equation system ... 187
+Solving the equation system ...... 33
+Post processing .................. 3
+The whole job .................... 224
 
----------- NumCalc ended: 13/2/2023 14:38:4 ----------
+---------- NumCalc ended: 13/2/2023 15:26:26 ----------

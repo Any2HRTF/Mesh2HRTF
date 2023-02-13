@@ -51,7 +51,7 @@
     ],
     "reference": true,
     "computeHRIRs": true,
-    "numFrequencies": 60,
+    "num_frequencies": 60,
     "frequencyStepSize": 100.0,
     "minFrequency": 100.0,
     "maxFrequency": 6000.0,

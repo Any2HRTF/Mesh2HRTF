@@ -1,5 +1,5 @@
 
-Start time: 13/2/2023 14:29:12
+Start time: 13/2/2023 15:15:59
 
 
 >> G E N E R A L   P A R A M E T E R S <<
@@ -97,8 +97,8 @@ Time Statistic For The Current Step (In Second)
 
 Assembling the equation system         : 106
 Solving the equation system            : 33
-Post processing                        : 3
-Total                                  : 142
+Post processing                        : 4
+Total                                  : 143
 
 
 
@@ -108,7 +108,7 @@ Input                                  : 0
 Address computation                    : 0
 Assembling the equation system         : 106
 Solving the equation system            : 33
-Post processing                        : 3
-The whole job                          : 142
+Post processing                        : 4
+The whole job                          : 143
 
-End time: 13/2/2023 14:31:34
+End time: 13/2/2023 15:18:22

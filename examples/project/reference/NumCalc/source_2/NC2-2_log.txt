@@ -1,6 +1,6 @@
 istart= 2 iend = 2
 
----------- NumCalc started: 13/2/2023 14:42:55 ----------
+---------- NumCalc started: 13/2/2023 15:31:23 ----------
 
 Running on:         182-246.eduroam.rwth-aachen.de
 
@@ -30,18 +30,18 @@ CGS: err_ori = 1.33201e-05
 10 Abs Error:1.15047e-08
 20 4.28509e-10
 20 Abs Error:5.70777e-15
-Assembling the equation system         : 57
-Solving the equation system            : 8
+Assembling the equation system         : 49
+Solving the equation system            : 7
 Post processing                        : 2
-Total                                  : 67
+Total                                  : 58
 
 
 Time Statistic for the job (in second):
-Input ............................ 1
+Input ............................ 0
 Address computation .............. 0
-Assembling the equation system ... 57
-Solving the equation system ...... 8
+Assembling the equation system ... 49
+Solving the equation system ...... 7
 Post processing .................. 2
-The whole job .................... 68
+The whole job .................... 58
 
----------- NumCalc ended: 13/2/2023 14:44:3 ----------
+---------- NumCalc ended: 13/2/2023 15:32:21 ----------
