@@ -132,7 +132,7 @@ def write_project(
     write_mesh(mesh.vertices, mesh.faces, path, start=0)
 
     # write evaluation grid
-    m2s.input.write_evaluation_grid(
+    write_evaluation_grid(
         evaluationPoints,
         os.path.join(project_path, 'EvaluationGrids', 'grid'))
 
