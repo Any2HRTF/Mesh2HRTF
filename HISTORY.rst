@@ -109,7 +109,7 @@ v1.0.2 (18.6.2016)
 * initial commit
 
 Mesh2scattering Developers
-====================
+==========================
 
 Mesh2scattering is currently maintained and developed by
 Anne Heimes
