@@ -96,6 +96,9 @@ jobs:
           command: |
             pip install astroid
             pip install -e .
+            cd mesh2scattering/numcalc/src
+            make
+            cd ../../../
             pytest --nbmake examples/*.ipynb
   test_documentation_build:
     parameters:
