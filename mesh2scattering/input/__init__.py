@@ -11,7 +11,6 @@ from .input import (
 
 __all__ = [
     'write_mesh',
-    'input',
     'write_evaluation_grid',
     'write_material',
     'write_scattering_project',
