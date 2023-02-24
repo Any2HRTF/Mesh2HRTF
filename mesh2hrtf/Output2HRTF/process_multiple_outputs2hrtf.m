@@ -1,44 +1,62 @@
-% process_multiple_outputs2hrtf(
-%    simulations_dir, overwrite,
-%    purge_object_mesh_data, purge_eval_grid_data, purge_frequencies
-%    purge_compressed_object_mesh_data, purge_hrft
-%    assume_yes)
+% process_multiple_outputs2hrtf( simulations_dir, overwrite,
+%    purge_object_mesh_data, purge_eval_grid_data, purge_frequencies,
+%    purge_compressed_object_mesh_data, purge_hrft, assume_yes)
 %
-% Batch run output2hrtf.m in all subfolders in `simulations_dir`
-% and delete temporary data if desired.
+% Batch run of `output2hrtf.m` in all subfolders of `simulations_dir`
+% and optionally delete temporary data.
 %
-% output2hrtf.m reads simulation results and saves them as SOFA and mat
-% files.
+% Input parameters:
 %
-% Input:
-% simulation_dir: str
-%   The directory containing Msh2HRTF projects. The default is the current
+% simulation_dir: Directory containing the Meh2HRTF project. Default: current
 %   working directory.
-% overwrite: boolean
-%   Run output2hrtf.m even if data already exists. The default is false
-% purge_object_mesh_data: boolen
-%   Delete the uncompressed output from NumCalc after running output2hrtf
-%   (simulations_dir/*/NumCalc/CPU_*_Core_*/be.out/be.*/*_Boundary).
-%   output2hrtf stores information contained in these files in
-%   simulations_dir/*/output2hrtf/ObjectMesh_*.mat. The default is false.
-% purge_eval_grid_data: boolen
-%   Delete the uncompressed output from NumCalc after running output2hrtf
-%   (simulations_dir/*/NumCalc/CPU_*_Core_*/be.out/be.*/*_Eval).
-%   output2hrtf stores information contained in these files in
-%   simulations_dir/*/output2hrtf/HRTF*.sofa. The default is false.
-% purge_frequencies: boolean
-%   Delete the frequencies written to the text files inside the fe.out
-%   folder. This information is redundant and not required for anything.
-%   The default is false.
-% purge_compressed_object_mesh_data: boolen
-%   Delete simulations_dir/*/output2hrtf/ObjectMesh_*.mat. This file might
-%   not always be required but can be large. The default is false.
-% purge_hrtf : boolean
-%   Delete the HRTF SOFA file. This file might not be needed if the HRIRs
-%   were calculated as well. The default is false.
-% assume_yes: boolen
-%   Ask the user if data should be purged if assume_yes=false. The default
-%   is false.
+%
+% overwrite: If true, output2hrtf will be executed even if data already exists. 
+%   Default: false
+%
+% purge_object_mesh_data: If true, the uncompressed object mesh data from 
+%   NumCalc will be deleted after running output2hrtf. The deleted files are 
+%   usually files named simulations_dir/*/NumCalc/CPU_*_Core_*/be.out/be.*/*_Boundary.
+%   Note that output2hrtf stores this information in
+%   simulations_dir/*/output2hrtf/ObjectMesh_*.mat. Default: false
+%
+% purge_eval_grid_data: If true, uncompressed evaluation-grid data from 
+%   NumCalc will be deleted after running output2hrtf. The deleted files
+%   are usually named simulations_dir/*/NumCalc/CPU_*_Core_*/be.out/be.*/*_Eval.
+%   Note that output2hrtf stores this information in
+%   simulations_dir/*/output2hrtf/HRTF*.sofa. Default: false
+%
+% purge_frequencies: If true, frequencies written to the text files inside the 
+%   fe.out folder will be deleted. This information is redundant and not 
+%   required for anything. Default: false
+%
+% purge_compressed_object_mesh_data: if true, the compressed object mesh data
+%   will be deleted after running output2hrtf. The deleted files are
+%   simulations_dir/*/output2hrtf/ObjectMesh_*.mat. These files are not always
+%   required but can be large. Default: false
+%
+% purge_hrtf: If true, the HRTF SOFA file will be deleted. This file might be 
+%   not required if the HRIR SOFA files was calculated as well. Default: false.
+%
+% assume_yes: If false, the user will be asked to purge the data. Default: false
+
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+%
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Harald Ziegelwanger (ARI, ÖAW): 2015, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2020, integration in Mesh2HRTF 1.x
+% #Author: Fabian Brinkmann (TU-Berlin): 2022, various improvements
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
+
 
 function process_multiple_outputs2hrtf(...
     simulations_dir, overwrite_data, ...

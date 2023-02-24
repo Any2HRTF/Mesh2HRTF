@@ -1,36 +1,49 @@
 function write_material(filename, kind, frequencies, data, comment)
 % write_material(filename, kind, frequencies, data, comment)
 %
-% Write boundary condition to file.
-% Mesh2HRTF supports non-rigid boundary conditions in the form of text
-% files. Such files can be written with this function.
+% Mesh2HRTF supports non-rigid boundary conditions. The function write_material 
+% writes the boundary conditions to a file used later by NumCalc.
 %
-% INPUT:
+% Input parameters:
 %
-% filename ... Name of the material file that is written to disk. Must end with ".csv"
-% kind ....... Defines the kind of boundary condition
-%         pressure
-%             A pressure boundary condition can be used to force a certain
-%             pressure on the boundary of the mesh. E.g., a pressure of 0 would
-%             define a sound soft boundary.
-%         velocity
-%             A velocity boundary condition can be used to force a certain
-%             velocity on the boundary of the mesh. E.g., a velocity of 0 would
-%             define a sound hard boundary.
-%         admittance
-%             A normalized admittance boundary condition can be used to define
-%             arbitrary boundaries. The admittance must be normalized, i.e.,
-%             admittance/(rho*c) has to be provided, which rho being the density
-%             of air in kg/m**3 and c the speed of sound in m/s.
-% frequencies ... The frequencies for which the boundary condition is given
-% data .......... The values of the boundary condition at the frequencies given above.
-% comment ....... A comment that is written to the beginning of the material file.
-%                 The default ``None`` does omit the comment.
+%   filename:   Name of the material file to be written to disk. Must end with ".csv"
+%   kind:       Defines the type of the boundary condition: 
+%               `pressure`: The pressure condition can be used to force to a certain
+%                  pressure on the boundary of the mesh, e.g., a pressure of 0 defines
+%                  a sound soft boundary.
+%               `velocity`: The velocity condition can be used to force to a certain
+%                 velocity on the boundary of the mesh, e.g., a velocity of 0 defines
+%                 a sound hard boundary.
+%               `admittance`: A normalized admittance condition can be used to define
+%                 arbitrary boundaries. The admittance must be normalized, i.e.,
+%                 admittance/(rho*c), with rho being the air density (kg/m^3) and 
+%                 c being the speed of sound (m/s).
+%   frequencies: The frequencies for which the boundary conditions are given.
+%   data:        Vector with the boundary condition for each frequency.
+%   comment:     Optional comment to be written to the beginning of the material file.
 %
-% Mesh2HRTF performs an interpolation in case the boundary condition is
+% Note that Mesh2HRTF performs an interpolation in case the boundary condition is
 % required at frequencies that are not specified. The interpolation is linear
 % between the lowest and highest provided frequency and uses the nearest
 % neighbor outside this range.
+
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+%
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Katharina Pollack (ARI, ÖAW): 2022, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2022, integration in Mesh2HRTF 1.x
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
+
 
 % check input
 if isempty(filename)

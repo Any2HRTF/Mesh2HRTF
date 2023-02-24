@@ -1,29 +1,42 @@
-%                                Mesh2HRTF
-%                Copyright (C) 2015 by Harald Ziegelwanger,
-%        Acoustics Research Institute, Austrian Academy of Sciences
-%                        mesh2hrtf.sourceforge.net
-%
-% If you use Mesh2HRTF:
-% - Provide credits:
-%   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
-% - In your publication, cite both articles:
-%   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
-%   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
-%
 function [nodes, numNodes, elems, numElems] = read_evaluation_grid(path, doPlot)
-% function [nodes, numNodes, elems, numElems] = read_evaluation_grid(path, doPlot)
+% [nodes, numNodes, elems, numElems] = read_evaluation_grid(path, doPlot)
 %
-% reads the mesh2HRTF evaluation grid from the location specified by path.
-% doPlot (true, false) specifies weather or not to plot the grid.
+% read_evaluation_grid reads the evaluation grid from the file Nodes.txt
+% located in a specific path and outputs its nodes and elements.
 %
-% OUTPUT:
-% nodes    - nodes specified by numberm and x, y, z coordinates
-% numNodes - number of nodes given by size(nodes, 1)
-% elems    - triangular element specified by number and indices of nodes
-% numElems - number of elements given by size(elems, 1)
+% Input parameters: 
 %
-% Author: fabian.brinkmann@tu-berlin.de
-% Audio Communication Group @ TU Berlin
+%   path:   Path of the file Nodes.txt
+%
+%   doPlot: If true, the grid will be plotted for inspection. 
+%
+% Output parameters:
+%
+%   nodes:    Nodes of the grid specified by a node index and x, y, z coordinates
+%
+%   numNodes: total node number
+%
+%   elems:    triangular element specified by a number and 3 node indicies
+%
+%   numElems: total element number
+
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+%
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Fabian Brinkmann (TU-Berlin): 2018, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2022, integration in Mesh2HRTF 1.x
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
+
 
 % get nodes and number of nodes
 nodesID = fopen(fullfile(path, 'Nodes.txt'), 'r');

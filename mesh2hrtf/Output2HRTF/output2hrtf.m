@@ -8,6 +8,24 @@ function output2hrtf(folder)
 %       folder ... The Mesh2HRTF project folder [string, the default is
 %                  the current working directory]
 
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+%
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Harald Ziegelwanger (ARI, ÖAW): 2015, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2020, integration in Mesh2HRTF 1.x
+% #Author: Katharina Pollack (ARI, ÖAW): 2022, various improvements
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
+
 %% ----------------------------load meta data------------------------------
 
 if ~exist('folder', 'var')
