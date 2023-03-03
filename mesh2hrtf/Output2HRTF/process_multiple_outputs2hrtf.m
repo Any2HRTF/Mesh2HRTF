@@ -51,8 +51,7 @@
 % distributed under the license is distributed on an "AS IS" basis,
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
-% #Author: Harald Ziegelwanger (ARI, ÖAW): 2015, original implementation
-% #Author: Fabian Brinkmann (TU-Berlin): 2020, integration in Mesh2HRTF 1.x
+% #Author: Fabian Brinkmann (TU-Berlin): 2020, original implementation
 % #Author: Fabian Brinkmann (TU-Berlin): 2022, various improvements
 % #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
 

@@ -39,7 +39,8 @@ function write_material(filename, kind, frequencies, data, comment)
 % distributed under the license is distributed on an "AS IS" basis,
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
-% #Author: Katharina Pollack (ARI, ÖAW): 2022, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2020, original implementation
+% #Author: Katharina Pollack (ARI, ÖAW): 2022, various improvements
 % #Author: Fabian Brinkmann (TU-Berlin): 2022, integration in Mesh2HRTF 1.x
 % #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
 
