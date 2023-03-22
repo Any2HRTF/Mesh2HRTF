@@ -6,7 +6,7 @@ Audio Communication Group, Technical University of Berlin, Germany
 """
 
 import bpy
-from bpy.props import BoolProperty
+from bpy.props import BoolProperty, IntProperty
 import bmesh
 import numpy as np
 
@@ -54,6 +54,13 @@ class CenterHead(bpy.types.Operator):
         description = "Output debugging information. False by default.",
         default = False,
         )
+    precision: IntProperty(
+        name = "precision",
+        description = ("Precison for checking if the alignment worked."
+                       "Given by the number of decimals. The default is 4, which"
+                       "equals 0.1 mmif the mesh unit is m"),
+        default = 4,
+        )
 
     def execute(self, context):
         keywords = self.as_keywords(ignore=("check_existing", "filter_glob"))
@@ -61,32 +68,10 @@ class CenterHead(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def center_head(verbose):
+def center_head(verbose, precision):
 
-    # Set Blender into Edit Mode
-    bpy.ops.object.mode_set(mode='EDIT')
-    # Get mesh data
-    obj = bpy.context.active_object
-    bm = bmesh.from_edit_mesh(obj.data)
-    # Get selected verts
-    if any(v.select for v in bm.verts):
-        verts = [v for v in bm.verts if v.select]
-    else:
-        raise RuntimeError("No vertex is selected.")
-    if len(verts) in (2, 3):
-        # Get index of left and right ear in verts
-        point_idx = np.argsort([v.co.y for v in verts])
-    else:
-        raise RuntimeError(f"In total {len(verts)} points are selected. "
-                           "Please select 2 or 3.")
-    left = obj.matrix_world @ verts[point_idx[-1]].co
-    right = obj.matrix_world @ verts[point_idx[0]].co
-    if len(verts) == 3:
-        center = obj.matrix_world @ verts[point_idx[1]].co
-    else:
-        center = None
-
-    bpy.ops.object.mode_set(mode='OBJECT')
+    # get current positions of selected vertices
+    left, right, center = get_vertices()
 
     # Distance between ear channles
     left_right_distance = np.sqrt((right[0] - left[0])**2
@@ -134,6 +119,57 @@ def center_head(verbose):
                "Rotated around x/y/z-axis by\n"
                f"{alpha/np.pi*180:.2f}, {beta/np.pi*180:.2f}, "
                f"{gamma/np.pi*180:.2f} degrees"))
+
+    # check success
+    left, right, center = get_vertices()
+
+    atol = 10**(-precision)
+    err = ""
+    if np.abs(left[0]) > atol or np.abs(left[2]) > atol:
+        err += ("Left ear channel x or z coordinate are not zero\n"
+                f"position is {left[0]:.6f}, {left[1]:.6f}, {left[2]:.6f}\n")
+    if np.abs(right[0]) > atol or np.abs(right[2]) > atol:
+        err += ("Left ear channel x or z coordinate are not zero:\n"
+                f"position is {right[0]:.6f}, {right[1]:.6f}, {right[2]:.6f}\n")
+    if np.abs(left[1] + right[1]) > atol:
+        err += ("y coordinate of left and right ear is not identical\n"
+                f"positions are {left[1]:.6f}, {right[1]:.6f}\n")
+    if center is not None and np.abs(center[2]) > atol:
+        err += ("Natural head orientation not established.\n"
+                f"z-coordinate of reference point is {center[2]:.6f}\n")
+    if err:
+        raise ValueError(err)
+
+
+def get_vertices():
+    """ get curent positions of selected vertices"""
+    # Set Blender into Edit Mode
+    bpy.ops.object.mode_set(mode='EDIT')
+    # Get mesh data
+    obj = bpy.context.active_object
+    bm = bmesh.from_edit_mesh(obj.data)
+    # Get selected verts
+    if any(v.select for v in bm.verts):
+        verts = [v for v in bm.verts if v.select]
+    else:
+        raise RuntimeError("No vertex is selected.")
+    if len(verts) in (2, 3):
+        # Get index of left and right ear in verts
+        point_idx = np.argsort([v.co.y for v in verts])
+    else:
+        raise RuntimeError(f"In total {len(verts)} points are selected. "
+                           "Please select 2 or 3.")
+    left = obj.matrix_world @ verts[point_idx[-1]].co
+    right = obj.matrix_world @ verts[point_idx[0]].co
+    if len(verts) == 3:
+        center = obj.matrix_world @ verts[point_idx[1]].co
+    else:
+        center = None
+
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    return left, right, center
+
 
 
 def register():
