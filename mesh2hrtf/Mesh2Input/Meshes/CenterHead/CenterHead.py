@@ -13,12 +13,18 @@ import numpy as np
 
 class CenterHead(bpy.types.Operator):
     """
-    Center the head as required for numerical HRTF simulations using Mesh2HRTF.
+    Center a head or head and torso mesh as required for numerical HRTF
+    simulations using Mesh2HRTF.
 
     Parameters
     ----------
     verbose : bool
         Output information to console if True. The default is False.
+    precision : int
+        Precision in decimals that is used to check the position of the
+        selected vertices after the alignment. A precision of 0.1 mm is
+        recommended, wich refers to ``precision=4`` if the mesh is in meters
+        and ``precision=1`` if the mesh is in mm.
 
     Usage
     ------
@@ -70,42 +76,31 @@ class CenterHead(bpy.types.Operator):
 
 def center_head(verbose, precision):
 
-    # get current positions of selected vertices
+    # Rotate around x-axis to bring ears to same height
     left, right, center = get_vertices()
-
-    # Distance between ear channles
-    left_right_distance = np.sqrt((right[0] - left[0])**2
-                                    + (right[1] - left[1])**2
-                                    + (right[2] - left[2])**2)
-
-    # Rotate around x-axis:
-    # calculating rotation in degree
-    delta_z = left[2] - right[2]
-    alpha = np.arcsin(delta_z/left_right_distance)
-
-    # rotate around the left ear
     bpy.context.scene.cursor.location = left
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+    alpha = np.arctan2(left[2]-right[2], left[1]-right[1])
     bpy.ops.transform.rotate(value=alpha, orient_axis='X')
 
-    # rotate around z-axis
-    # calculating rotation degree
-    delta_x = right[0]-left[0]
-    gamma = np.arcsin(delta_x/left_right_distance)
-
-    # rotate around the left ear
+    # rotate around z-axis to bring ears to same azimuth angle
+    left, right, center = get_vertices()
     bpy.context.scene.cursor.location = left
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+    gamma = -np.arctan2(left[0]-right[0], left[1]-right[1])
     bpy.ops.transform.rotate(value=gamma, orient_axis='Z')
 
-    # correcting x/y/z-offset
-    translate = (-left[0], -left[1]+left_right_distance/2, -left[2])
-
+    # align interaural axis and center
+    left, right, center = get_vertices()
+    translate = (-(left[0] + right[0]) / 2,
+                 -(left[1] + right[1]) / 2,
+                 -(left[2] + right[2]) / 2)
     bpy.ops.transform.translate(value=translate)
 
     # rotate around y-axis
     if center is not None:
-        beta = np.arctan((center[2]+translate[2])/(center[0]+translate[0]))
+        left, right, center = get_vertices()
+        beta = np.arctan2(center[2], center[0])
         bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
         bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
         bpy.ops.transform.rotate(value=-beta, orient_axis='Y')
@@ -118,7 +113,7 @@ def center_head(verbose, precision):
                f"{translate[0]:.2f}, {translate[1]:.2f}, {translate[2]:.2f} units\n"
                "Rotated around x/y/z-axis by\n"
                f"{alpha/np.pi*180:.2f}, {beta/np.pi*180:.2f}, "
-               f"{gamma/np.pi*180:.2f} degrees"))
+               f"{gamma/np.pi*180:.2f} degrees\n"))
 
     # check success
     left, right, center = get_vertices()
