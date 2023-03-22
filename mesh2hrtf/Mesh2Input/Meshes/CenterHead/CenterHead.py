@@ -12,31 +12,31 @@ import numpy as np
 
 class CenterHead(bpy.types.Operator):
     """
-    Center the head using two or three user selected Points to align the
-    interaural center with the center of coordinates, align the interaural axis
-    with the y-axis, and rotates the head mesh above the y-axis (up/down) into
-    a natural hearing position.
-
-    NOTE: The third point on the nose will be used for rotating above the
-    y-axis, after the interaural axis is aligned with the y-axis. The mesh
-    will be rotated, so that the point is on the same height then the x-axis
-    (z-value = 0). The rotation doesn't effect the y-value of the point.
-    Selection the third point is optional. Aligning the interaural axis with
-    the y-axis will also work if just two points in the ear channels are
-    selected.
+    Center the head as required for numerical HRTF simulations using Mesh2HRTF.
 
     Usage
     ------
 
     1. Load the script into blender, e.g., by copying it to scripts/startup
-       (https://docs.blender.org/api/current/info_overview.html).
-    2. Pre-rotate the head until it is in generally in the right position
-       (looking in x-direction and z-axis points upwards)
-    3. Select vertex to mark the center of the left and right ear channel,
-       as well as a point on the nose (Use shift to mark multiple points).
-       Selecting the point on the nose is optional.
-    4. Run head centering by typing `bpy.ops.object.centerhead()`
-       in Blenders python terminal or use the debuggin code at the end
+       (https://docs.blender.org/api/current/info_overview.html) or run this
+       file inside Blender.
+    2. Roughly bring the head into the correct position. The center of the head
+       should be close to the origin of coordinates. The nose should be
+       pointing in positive x-direction, and the top of the head in positive
+       z-direction.
+    3. In edit mode, select two vertices to mark the center of the left and
+       right ear channel entrances. These vertices define the interaural axis
+       and their midpoint the interaural center. Based on this, the head is
+       translated to make sure that the interaural center is at the origin of
+       coordinates and rotated to make sure that the interaural axis coincides
+       with the y-axis.
+    4. An optional third point can be selected to establish a natural hearing
+       position. If this is the case the mesh is rotated around the interaural
+       axis (y-axis) to make sure the third selected vertex has a z-coordinate
+       of 0, i.e., the vertex is on the x-y plane. We found a points on the
+       nose to work good for establishing the natural hearing position.
+    5. Run head centering by typing `bpy.ops.object.centerhead()`
+       in Blenders python terminal or use the debugging code at the end
        of the script.
 
     """
@@ -71,9 +71,9 @@ def center_head():
         center = obj.matrix_world @ verts[point_idx[1]].co
     else:
         center = None
-    
+
     bpy.ops.object.mode_set(mode='OBJECT')
-    
+
     # Distance between ear channles
     left_right_distance = np.sqrt((right[0] - left[0])**2
                                     + (right[1] - left[1])**2
@@ -106,7 +106,7 @@ def center_head():
     translate = (-left[0], -left[1]+left_right_distance/2, -left[2])
     #print("head offset in x/y/z-direction: ", translate)
     bpy.ops.transform.translate(value=translate)
-    
+
     # rotate around y-axis
     if center is not None:
         beta = np.arctan((center[2]+translate[2])/(center[0]+translate[0]))
