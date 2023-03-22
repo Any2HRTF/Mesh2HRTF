@@ -6,6 +6,7 @@ Audio Communication Group, Technical University of Berlin, Germany
 """
 
 import bpy
+from bpy.props import BoolProperty
 import bmesh
 import numpy as np
 
@@ -13,6 +14,11 @@ import numpy as np
 class CenterHead(bpy.types.Operator):
     """
     Center the head as required for numerical HRTF simulations using Mesh2HRTF.
+
+    Parameters
+    ----------
+    verbose : bool
+        Output information to console if True. The default is False.
 
     Usage
     ------
@@ -43,12 +49,20 @@ class CenterHead(bpy.types.Operator):
     bl_idname = "object.centerhead"
     bl_label = "CenteringHead"
 
+    verbose: BoolProperty(
+        name = "verbose",
+        description = "Output debugging information. False by default.",
+        default = False,
+        )
+
     def execute(self, context):
-        center_head()
+        keywords = self.as_keywords(ignore=("check_existing", "filter_glob"))
+        center_head(**keywords)
         return {'FINISHED'}
 
 
-def center_head():
+def center_head(verbose):
+
     # Set Blender into Edit Mode
     bpy.ops.object.mode_set(mode='EDIT')
     # Get mesh data
@@ -78,12 +92,10 @@ def center_head():
     left_right_distance = np.sqrt((right[0] - left[0])**2
                                     + (right[1] - left[1])**2
                                     + (right[2] - left[2])**2)
-    #print("distance between ears: ", left_right_distance)
 
     # Rotate around x-axis:
     # calculating rotation in degree
     delta_z = left[2] - right[2]
-    #print("height difference between ear channels: ", delta_z)
     alpha = np.arcsin(delta_z/left_right_distance)
 
     # rotate around the left ear
@@ -94,7 +106,6 @@ def center_head():
     # rotate around z-axis
     # calculating rotation degree
     delta_x = right[0]-left[0]
-    #print("Front/back difference between ear channels: ", delta_x)
     gamma = np.arcsin(delta_x/left_right_distance)
 
     # rotate around the left ear
@@ -104,7 +115,7 @@ def center_head():
 
     # correcting x/y/z-offset
     translate = (-left[0], -left[1]+left_right_distance/2, -left[2])
-    #print("head offset in x/y/z-direction: ", translate)
+
     bpy.ops.transform.translate(value=translate)
 
     # rotate around y-axis
@@ -113,7 +124,16 @@ def center_head():
         bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
         bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
         bpy.ops.transform.rotate(value=-beta, orient_axis='Y')
-        #print("head rotation around y-axis in deg:", np.rad2deg(-beta))
+    else:
+        beta = 0
+
+    # output to console
+    if verbose:
+        print(("Moved in x/y/z-direction by\n"
+               f"{translate[0]:.2f}, {translate[1]:.2f}, {translate[2]:.2f} units\n"
+               "Rotated around x/y/z-axis by\n"
+               f"{alpha/np.pi*180:.2f}, {beta/np.pi*180:.2f}, "
+               f"{gamma/np.pi*180:.2f} degrees"))
 
 
 def register():
