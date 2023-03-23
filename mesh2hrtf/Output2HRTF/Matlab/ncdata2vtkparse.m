@@ -1,59 +1,63 @@
 function ncdata2vtkparse(name,datatype,fstep,rootdir,datadir, filename)
-% exports data from NumCalc results to vtk files for display with paraview
+% ncdata2vtkparse(name,datatype,fstep,rootdir,datadir, filename)
+%  
+% ncdata2vtkparse exports the NumCalc results as VTK file(s) for displaying
+% with Paraview.
 % 
-%% input: 
-%   name: string: Name of the vtk file(s) to be produced
-%            the outputfiles will be in ascii format and named
-%                      <name>_boundary_<frequencystep>.vtk
-%                      <name>_eval_<frequencystep>.vtk 
-%   datatype: integer: type of data to be presented
+% Input parameters: 
+%   name: prefix of the VTK file(s) to be produced. The file names will
+%            be: <name>_boundary_<frequencystep>.vtk 
+%                <name>_eval_<frequencystep>.vtk 
+%
+%   datatype: type of data to be presented
 %       0    pressure boundary
-%       1    part. velocity boundary
+%       1    partial velocity boundary
 %       2    pressure evalgrid
-%       3    part. velocity evalgrid (not implemented yet)
+%       3    partial velocity evalgrid (not implemented yet)
 %       4    pressure everywhere (default)
-%       5    part. velocity everywhere (not implemented yet)
+%       5    partial velocity everywhere (not implemented yet)
 %       6    display all (not implemented yet)
-%   fstep:   integer vector: numbers of the frequencysteps of interest,
-%            default all steps in datadir: fstep = 0
-%   rootdir: string. name of the root directory containing the be.out file,
-%        default the current directory
-%   datadir: string. name of the directory containing the data: default
-%            be.out
-%   inpfile: strin. name of the input file, containing the mesh data: default
-%            NC.inp
-% the data will be stored in the vtk file as Amplitude and Phase values
 %
-% written by kreiza, if you have any questions, suggestions 
-%   send me an email, depending on my workload I will try to reply
-%   in time: wolfgang.kreuzer@oeaw.ac.at
+%   fstep:   a vector with the frequency steps of interest.
+%            Use fstep = 0 for all steps found in datadir.
+%            Default: 0.
 %
+%   rootdir: name of the root directory containing the be.out file.
+%        	 Default: Current directory.
 %
-%  The script should work with Octave as well as Matlab, however
-%  Matlab is a pain in the ass, because
-%    a) drmwrite is not encouraged by mathworks
-%    b) their alternative writematrix does not know how to append to a
-%    file in the 2019 version of matlab
-%    c) fprintf was also relatively slow
+%   datadir: name of the directory containing the data. 
+%            Default: `be.out`.
 %
-%   FYI: We stil use the drmwrite option
-%    
+%   inpfile: Name of the input file containing the mesh data. 
+%  			 Default: `NC.inp`
 %
-%   This script is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of            
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% 
+% The data in the vtk files will be stored as amplitudes and phases. 
 %
-% Licensed under the EUPL, Version 1.2 or – as soon they will be
-%   approved by the European Commission – subsequent versions of the
-%   EUPL (the "Licence"); you may not use this work except in
-%   compliance   with the Licence. You may obtain a copy of the
-%   Licence at:   http://joinup.ec.europa.eu/software/page/eupl
+% ncdata2vtk works in Octave and Matlab, however, ncdata2vtk uses dlmwrite, 
+% which is deprecated in Matlab. The alternative approach via fprintf was 
+% very slow. The other alternative via writematrix was not able to append 
+% to a file (as of Matlab 2019a).
+
+
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
 %
-% Unless required by applicable law or agreed to in writing,
-%   software distributed under the licence is distributed on an "AS IS"
-%   basis, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-%   express or implied. See the Licence for the specific language
-%   governing permissions and limitations under the Licence.
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Wolfgang Kreuzer (ARI, ÖAW): 2015, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2020, integration in Mesh2HRTF 1.x
+% #Author: Wolfgang Kreuzer (ARI, ÖAW): 2022, various improvements
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
+
 
   if(nargin < 6)
     filename = "NC.inp";
