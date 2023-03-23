@@ -45,7 +45,7 @@ class CenterHead(bpy.types.Operator):
     4. An optional third point can be selected to establish a natural hearing
        position. If this is the case the mesh is rotated around the interaural
        axis (y-axis) to make sure the third selected vertex has a z-coordinate
-       of 0, i.e., the vertex is on the x-y plane. We found a points on the
+       of 0, i.e., the vertex is on the x-y plane. We found a point on the
        nose to work good for establishing the natural hearing position.
     5. Run head centering by typing `bpy.ops.object.centerhead()`
        in Blenders python terminal or use the debugging code at the end
