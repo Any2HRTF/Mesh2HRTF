@@ -24,7 +24,7 @@ class CenterHead(bpy.types.Operator):
         Precision in decimals that is used to check the position of the
         selected vertices after the alignment. A precision of 0.1 mm is
         recommended, wich refers to ``precision=4`` if the mesh is in meters
-        and ``precision=1`` if the mesh is in mm.
+        and ``precision=1`` if the mesh is in mm. The default is 4.
 
     Usage
     ------
