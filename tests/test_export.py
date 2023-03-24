@@ -12,6 +12,7 @@ blender_paths = utils.blender_paths(2)
 # directory of this file and test data
 base_dir = os.path.dirname(__file__)
 data_dir = os.path.join(base_dir, 'resources', 'test_blender_export')
+grid_dir = os.path.join(base_dir, 'resources', 'evaluation_grids')
 
 
 @pytest.mark.parametrize(
@@ -295,3 +296,42 @@ def test_blender_export(
             for az in [0, 45, 90, 135, 180, 225, 270, 315]:
                 assert not os.path.exists(os.path.join(
                     tmp.name, "Pictures", f'{az}_deg_azimuth.png'))
+
+
+@pytest.mark.parametrize('grids,error_message', [
+    (["3D", "3D"], "unique IDs")
+    (["3D_duplicate_node"], "unique IDs")
+    (["3D_isolated_node"], "is isolated")
+    (["3D_overlapping_node"], "must not overlap")])
+def test_assertions_evaluation_grids(grids, error_message):
+
+    grids = [os.path.join(grid_dir, grid) for grid in grids]
+
+    #  copy evaluation grids to temporary directory
+    with tempfile.TemporaryDirectory() as project_dir:
+
+        pd = project_dir.name
+
+        # script to create and export Mesh2HRTF project in Blender
+        export_script = (
+            "import bpy\n\n"
+            # export command
+            "bpy.ops.mesh2input.inp(\n"
+            f"    filepath={project_dir.name},\n"
+            f"    programPath={os.path.join(base_dir, '..', 'mesh2hrtf')},\n"
+            "    sourceType='Point source',\n"
+            "    pictures=False,\n"
+            f"    evaluationGrids={';'.join(grids)})\n")
+
+        # write export script to temporary folder
+        with open(os.path.join(pd, "export_script.py", "w")) as ps:
+            ps.writelines(export_script)
+
+        # run export script in Blender using test_export.blend
+        result = subprocess.run(
+          [os.path.join(blender_paths[0][0], 'blender'), '--background',
+           os.path.join(data_dir, 'test_export.blend'),
+           '--python', os.path.join(pd, "export_script.py")],
+           cwd=pd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+
+        assert error_message in result.stdout
