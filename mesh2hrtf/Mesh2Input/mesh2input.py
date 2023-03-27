@@ -401,7 +401,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # check for isolated nodes and nodes with duplicate IDs -----------------------
 
         _check_evaluation_grids(
-            filepath1, evaluationGrids, len(obj.data.vertices))
+            filepath1, evaluationGrids,
+            len(bpy.context.scene.objects["Reference"].data.vertices))
 
 
 # Read material data ----------------------------------------------------------
