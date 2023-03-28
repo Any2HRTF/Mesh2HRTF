@@ -7,6 +7,7 @@ import os
 import scipy.io
 import numpy
 import utils
+import matplotlib.pyplot as plt
 import mesh2hrtf as m2h
 
 # directory of this file
@@ -193,6 +194,7 @@ def test_numcalc_commandline_estimate_ram():
     assert current == reference
 
 
+@pytest.mark.filterwarnings("ignore:invalid value encountered in divide")
 @pytest.mark.parametrize("boundary_condition", [("rigid"), ("soft")])
 @pytest.mark.parametrize("source,range_a", [("plane", (10, -20)),
                                             ("point", (40, -45))])
@@ -233,6 +235,7 @@ def test_numcalc_boundary_conditions_sources_types_numerical_methods(
     # run output2hrtf
     tmp_path = os.path.join(tmp.name, "project")
     m2h.output2hrtf(tmp_path)
+    plt.close("all")
 
     # --- Verify ---
     # load HRTF data from simulation
@@ -309,6 +312,7 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
     # run Output2HRTF.py
     tmp_path = os.path.join(tmp.name, "project")
     m2h.output2hrtf(tmp_path)
+    plt.close("all")
 
     # --- Verify ---
     # load HRTF data from simulation as numpy

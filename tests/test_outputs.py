@@ -10,6 +10,8 @@ cwd = os.path.dirname(__file__)
 data_shtf = join(cwd, 'resources', 'SHTF')
 
 
+# ignore warning that is generated on purpose if generate_error=True
+@pytest.mark.filterwarnings("ignore:Detected issues for source 1")
 @pytest.mark.parametrize("savedir, generate_error", (
     [False, False], [False, True], [True, True]))
 def test_outputs_to_hrtfs_minimum(savedir, generate_error):
