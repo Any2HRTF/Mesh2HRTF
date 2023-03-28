@@ -81,7 +81,8 @@ def install_blender_addons_and_scripts(
     script_path : str
         Full path for saving the script.
     scripts : list
-        List containing the full path to scripts. Will be copied to script_path
+        List containing the full path to scripts. Will be copied to
+        script_path. Path an empty list to install any scripts.
     install_script : str
         Full path and file name under which the generated python script to
         install addons will be saved.
@@ -189,7 +190,7 @@ def write_blender_export_script(
         f"    programPath='{programPath}',\n")
 
     if len(export_args):
-        script += export_args[4:-2]
+        script += export_args[:-2]
 
     script += ")\n"
 
