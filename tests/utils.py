@@ -228,7 +228,6 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
     boundary_condition, source: strings
         specifiying simulation test case
     """
-    plt.figure(figsize=(30/2.54, 8/2.54))
 
     # Plot simulated and analytical data data
     if source == 'bothears':
@@ -239,11 +238,11 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
         plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                     source, bem_method)
 
-    plt.close()
-
 
 def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                 source, bem_method, iEar=0):
+
+    _, axes = plt.subplots(1, 3, figsize=(30/2.54, 8/2.54))
 
     for n, (p, title, clabel, crange) in enumerate(zip(
             [p_num, p_ana, p_num / p_ana],          # pressure arrays
@@ -255,12 +254,12 @@ def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
             ["pressure", "pressure", "difference"],  # colorbar labels
             [range_a, range_a, range_b]              # range of colormap
             )):
-        ax = plt.subplot(1, 3, n+1)
-        sc = plt.scatter(x, y, c=20*np.log10(np.abs(p)),
-                         edgecolors=None, s=1, vmax=crange[0],
-                         vmin=crange[1], cmap="RdBu_r")
+        ax = axes[n]
+        sc = ax.scatter(x, y, c=20*np.log10(np.abs(p)),
+                        edgecolors=None, s=1, vmax=crange[0],
+                        vmin=crange[1], cmap="RdBu_r")
         cb = plt.colorbar(sc)
-        plt.axis("off")
+        ax.axis("off")
         cb.set_label(clabel + ' in dB')
         ax.set_aspect("equal")
         ax.set_title(title)
@@ -276,3 +275,5 @@ def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                     "/resources/test_numcalc/analytical_references/" +
                     "comparisonplot_"+boundary_condition+"_"+source+"_" +
                     bem_method+".jpg")
+
+    plt.close()
