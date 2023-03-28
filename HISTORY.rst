@@ -19,6 +19,7 @@ v1.0.0
 		* Removed undocumented and unfinished options fro near-field calculation and frequency dependent meshes
 	* Boundary conditions can now be frequency dependent
 	* Files containing custom evaluation grids and material data can be located outside the Mesh2HRTF repository
+	* Improved detecting and raising errors in the user input.
 * NumCalc (contained in NumCalc/Source)
 	* Added NumCalc manager for automatic parallelization of frequency steps
 	* Bugfix: when NC.inp does not contain an "END" of file, NumCalc now throws one error and aborts programme execution (was infinite loop resulting in large output files)
