@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import numpy.testing as npt
+import matplotlib.pyplot as plt
 from tempfile import TemporaryDirectory
 import shutil
 import os
@@ -49,6 +50,7 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
 
     # run output2hrtf
     m2h.output2hrtf(tmp_shtf)
+    plt.close("all")
 
     if num_sources == 1:
         return

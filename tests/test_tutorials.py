@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import utils
+import matplotlib.pyplot as plt
 import mesh2hrtf as m2h
 
 # define and check paths to your Blender versions (only use one blender)
@@ -86,3 +87,4 @@ def test_tutorials(tutorial):
         # run manage_numcalc
         print("running output2hrtf")
         m2h.output2hrtf(os.path.join(tmp.name, tutorial[:-3]))
+        plt.close("all")
