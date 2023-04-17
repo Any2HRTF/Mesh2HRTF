@@ -8,7 +8,7 @@ University of Berlin, Germany
 import bpy
 import bmesh
 import math
-from bpy.props import FloatProperty
+from bpy.props import FloatProperty, StringProperty
 
 
 class AssignMaterials(bpy.types.Operator):
@@ -43,7 +43,9 @@ class AssignMaterials(bpy.types.Operator):
     tolerance : FloatProperty
         maximum distance from y-axis in mesh units ('mm' or 'm'). The default
         is 2.
-
+    ear : StringProperty
+        The ear canals to assign the materials to. Can be ``'both'``, ``'left'``
+        or ``'right'``. The default is 'both'.
 
     '''
     bl_idname = "object.assignmaterials"
@@ -54,6 +56,12 @@ class AssignMaterials(bpy.types.Operator):
         description = "maximum distance from y-axis in mesh units \
                        ('mm' or 'm'). The default is 2.",
         default = 2,
+        )
+    ear: StringProperty(
+        name = "ear",
+        description = "The ear canals to assign the materials to. \
+                       The default is 'both'.",
+        default = "both",
         )
 
     def execute(self, context):
@@ -88,7 +96,7 @@ def setup_materials(obj):
         bpy.context.object.active_material.name = name
 
 
-def get_ear_indices(bm, obj, tolerance):
+def get_ear_indices(bm, obj, tolerance, ear):
     '''Return indicees of faces at the entrance to the ear channels'''
 
     bm.verts.ensure_lookup_table()
@@ -132,25 +140,27 @@ def get_ear_indices(bm, obj, tolerance):
 
     # find left ear element and try to exclude faces at the tragus
     left_index = None
-    min_xy_dist = 1000
-    for n in range(len(left_indices)):
-        if left_y[n] < min_y[0] + tolerance and left_xy_distance[n] < \
-                min_xy_dist:
-            min_xy_dist = left_xy_distance[n]
-            left_index = left_indices[n]
+    if ear in ("both", "left"):
+        min_xy_dist = 1000
+        for n in range(len(left_indices)):
+            if left_y[n] < min_y[0] + tolerance and left_xy_distance[n] < \
+                    min_xy_dist:
+                min_xy_dist = left_xy_distance[n]
+                left_index = left_indices[n]
     # find left ear element and try to exclude faces at the tragus
     right_index = None
-    min_xy_dist = 1000
-    for n in range(len(right_indices)):
-        if right_y[n] < min_y[1] + tolerance and right_xy_distance[n] < \
-                min_xy_dist:
-            min_xy_dist = right_xy_distance[n]
-            right_index = right_indices[n]
+    if ear in ("both", "right"):
+        min_xy_dist = 1000
+        for n in range(len(right_indices)):
+            if right_y[n] < min_y[1] + tolerance and right_xy_distance[n] < \
+                    min_xy_dist:
+                min_xy_dist = right_xy_distance[n]
+                right_index = right_indices[n]
 
     return left_index, right_index
 
 
-def assign_material(obj, tolerance):
+def assign_material(obj, tolerance, ear):
 
     # Switch to object mode to avoid export errors
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -164,18 +174,21 @@ def assign_material(obj, tolerance):
 
     # get indicees
     print(f"Search tolerance: {tolerance} blender units")
-    left_index, right_index = get_ear_indices(bm, obj, tolerance)
+    left_index, right_index = get_ear_indices(bm, obj, tolerance, ear)
 
     # assign indicees
-    if left_index is not None:
-        bm.faces[left_index].material_index = 1
-        print(f"Left ear index: {left_index}")
-    if right_index is not None:
-        bm.faces[right_index].material_index = 2
-        print(f"Right ear index {right_index}")
-    if left_index is None or right_index is None:
-        print("One or more ears not found. Consider increasing the tolerance \
-            or simulating only one ear.")
+    if ear in ("both", "left"):
+        if left_index is not None:
+            bm.faces[left_index].material_index = 1
+            print(f"Left ear index: {left_index}")
+        else:
+            print("Left ear not found. Consider increasing the tolerance.")
+    if ear in ("both", "right"):
+        if right_index is not None:
+            bm.faces[right_index].material_index = 2
+            print(f"Right ear index {right_index}")
+        else:
+            print("Right ear not found. Consider increasing the tolerance.")
 
     bm.to_mesh(obj.data)
     bm.free()
