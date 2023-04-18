@@ -44,8 +44,8 @@ class AssignMaterials(bpy.types.Operator):
         maximum distance from y-axis in mesh units ('mm' or 'm'). The default
         is 2.
     ear : StringProperty
-        The ear canals to assign the materials to. Can be ``'both'``, ``'left'``
-        or ``'right'``. The default is 'both'.
+        The ear canals to assign the materials to. Can be ``'Both ears'``,
+        ``'Left ear'`` or ``'Right ear'``. The default is 'Both ears'.
 
     '''
     bl_idname = "object.assignmaterials"
@@ -60,8 +60,8 @@ class AssignMaterials(bpy.types.Operator):
     ear: StringProperty(
         name = "ear",
         description = "The ear canals to assign the materials to. \
-                       The default is 'both'.",
-        default = "both",
+                       The default is 'Both ears'.",
+        default = "Both ears",
         )
 
     def execute(self, context):
@@ -140,7 +140,7 @@ def get_ear_indices(bm, obj, tolerance, ear):
 
     # find left ear element and try to exclude faces at the tragus
     left_index = None
-    if ear in ("both", "left"):
+    if ear in ("Both ears", "Left ear"):
         min_xy_dist = 1000
         for n in range(len(left_indices)):
             if left_y[n] < min_y[0] + tolerance and left_xy_distance[n] < \
@@ -149,7 +149,7 @@ def get_ear_indices(bm, obj, tolerance, ear):
                 left_index = left_indices[n]
     # find left ear element and try to exclude faces at the tragus
     right_index = None
-    if ear in ("both", "right"):
+    if ear in ("Both ears", "Right ear"):
         min_xy_dist = 1000
         for n in range(len(right_indices)):
             if right_y[n] < min_y[1] + tolerance and right_xy_distance[n] < \
@@ -177,13 +177,13 @@ def assign_material(obj, tolerance, ear):
     left_index, right_index = get_ear_indices(bm, obj, tolerance, ear)
 
     # assign indicees
-    if ear in ("both", "left"):
+    if ear in ("Both ears", "Left ear"):
         if left_index is not None:
             bm.faces[left_index].material_index = 1
             print(f"Left ear index: {left_index}")
         else:
             print("Left ear not found. Consider increasing the tolerance.")
-    if ear in ("both", "right"):
+    if ear in ("Both ears", "Right ear"):
         if right_index is not None:
             bm.faces[right_index].material_index = 2
             print(f"Right ear index {right_index}")
