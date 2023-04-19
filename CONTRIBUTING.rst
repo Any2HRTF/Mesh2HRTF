@@ -3,7 +3,7 @@
 Contributing
 ------------
 
-Contributions are welcome, and they are greatly appreciated! Every little bit
+Contributions are welcome and greatly appreciated! Every little bit
 helps, and credit will always be given.
 
 You can contribute in many ways:
@@ -11,10 +11,10 @@ You can contribute in many ways:
 Types of Contributions
 ----------------------
 
-Report Bugs and Submit Feedback
+Report Bugs or Submit Feedback
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The best way to report bugs of send feedback is to open an issue at https://github.com/Any2HRTF/mesh2hrtf/issues.
+To report bugs or send feedback, open an issue at https://github.com/Any2HRTF/mesh2hrtf/issues.
 
 If you are reporting a bug, please include:
 
