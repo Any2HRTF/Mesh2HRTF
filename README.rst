@@ -4,26 +4,24 @@ Mesh2HRTF
 .. image:: docs/figures/graphical_abstract-01.png
    :width: 800
 
-Mesh2HRTF is an open-source project aiming at providing an easy-to-use software package for the numerical calculation of head-related transfer functions (HRTFs). It targets researchers in the field of binaural audio. In a nutshell, Mesh2HRTF consists of three parts:
+`Mesh2HRTF <https://mesh2hrtf.org>`_ is an open-source software package for the numerical calculation of the head-related transfer functions (HRTFs). It targets researchers in the field of binaural audio. In a nutshell, Mesh2HRTF consists of three parts:
 
-- Mesh2Input: prepare the 3D head (and torso) mesh and the acoustic parameters (source position, acoustic materials),
-- NumCalc: calculates the sound pressure on the 3D mesh and at user specified position around it
-- Output2HRTFs: processes the output from NumCalc to HRTFs saved in the SOFA format.
+- Mesh2Input: preparation of the 3D head mesh and the acoustic parameters (source position, acoustic materials).
+- NumCalc: wave-based numerical solver to calculate the sound pressure on the mesh and to project to the specified positions in the free field.
+- Output2HRTFs: processing of the output from NumCalc to obtain HRTFs saved as SOFA files.
 
-Before starting to use Mesh2HRTF we recommend the following background information to obtain the best possible results
+Mesh2HRTF is not an application - it is a toolbox aiming at researchers in the field of acoustics. Thus, before starting to use Mesh2HRTF, we assume the knowledge of the following background information:
 
-- [1]_ gives a general introduction into Mesh2HRTF as a whole.
-- [2]_ and [3]_ detail the required mesh quality.
-- [2]_ gives information about possible source/microphone models.
-- [4]_ and [5]_ introduce mesh grading strategies to reduce the RAM requirements and computation time of the numerical HRTF calculation.
-- [6]_ gives background information on the wave based numerical solver NumCalc that is used to calculate the HRTFs.
-- [7]_ first introduces Mesh2HRTF as a whole.
-
+- [1]_ and [7]_: General introductions to Mesh2HRTF as a whole.
+- [2]_ and [3]_: Requirements on the mesh quality.
+- [2]_: Information about the potential source and microphone models.
+- [4]_ and [5]_: Introduction to mesh-grading strategies to reduce the RAM consumption and computation time.
+- [6]_: Further background information on the wave-based numerical solver NumCalc used to calculate the HRTFs.
 
 Documentation
 =============
 
-We recommend to go through the installation steps and Tutorials below to get familiar with Mesh2HRTF before using it for your own projects. This will help you to understand the workflow and verify your first results.
+We recommend to go through the installation steps and the tutorials to get familiar with Mesh2HRTF before using it for your own projects. This will help you to understand the workflow and verify your first results.
 
 Installation
     https://github.com/Any2HRTF/Mesh2HRTF/wiki/Installation
