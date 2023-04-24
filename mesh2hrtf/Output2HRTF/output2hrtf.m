@@ -95,6 +95,10 @@ for ii = 1:params.numSources
     computationTime{ii} = [];
     boundaryElements = dir([folder, filesep, 'NumCalc', filesep, 'source_', num2str(ii), filesep, 'NC*.out']);
 
+    if isempty(boundaryElements)
+        error(['Unable to read from ', folder, filesep, 'NumCalc', filesep, 'source_1', num2str(ii), filesep, 'NC*.out', ' as there are no output files.']);
+    end
+    
     NC_all_flag = 0; NC_all_idx = []; NC_all_date = [];
     NC_single_flag = 0; NC_single_idx = []; NC_single_date = [];
 
