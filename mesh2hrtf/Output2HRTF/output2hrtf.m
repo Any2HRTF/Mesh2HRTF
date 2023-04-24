@@ -177,6 +177,14 @@ for ii = 1:params.numSources
     % sort computation time after frequency steps
     [~, sort_idx] = sort(computationTime{ii}(:,1));
     computationTime{ii} = computationTime{ii}(sort_idx,:);
+
+    % check whether calculations for all frequencies exist
+    missing_freqsteps = find(~ismember(1:numel(frequencies), computationTime{ii}(:,1)));
+    missing_freqsteps_str = sprintf('%.0f, ', missing_freqsteps);
+    missing_freqsteps_str = missing_freqsteps_str(1:end-2); % strip final comma and space
+    missing_freqs_str = sprintf('%.1f, ', frequencies(missing_freqsteps));
+    missing_freqs_str = missing_freqs_str(1:end-2); % strip final comma and space
+    error(['Calculation results missing for frequency step(s) ', missing_freqsteps_str, ', i.e., ', missing_freqs_str, ' Hz (frequency values have been rounded for readability).']);
 end
 
 fprintf('Write computation time to .mat file ...\n');
