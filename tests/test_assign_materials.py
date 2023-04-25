@@ -50,4 +50,5 @@ def test_assign_materials(ear):
             with open(os.path.join(ref_dir, savename + file_type)) as file:
                 reference = file.readlines()
 
+            # skip first to lines with blender version specific data
             assert test[2:] == reference[2:]
