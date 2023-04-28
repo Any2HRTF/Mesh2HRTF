@@ -1,0 +1,6 @@
+pip
+flake8
+Sphinx
+pytest
+autodocsumm
+insipid-sphinx-theme

@@ -1,0 +1,21 @@
+{
+    "Mesh2HRTF_Version": "1.0.0",
+    "speedOfSound": 343.0,
+    "densityOfMedium": 1.1839,
+    "sourceType": "Plane wave",
+    "numSources": 1,
+    "sourceCenter": [
+    	0.0,
+    	-1.0,
+    	0.0
+    ],
+    "sourceArea": [
+	1
+    ],
+    "reference": false,
+    "computeHRIRs": false,
+    "numFrequencies": 1,
+    "frequencies": [
+        4000.0
+    ]
+}

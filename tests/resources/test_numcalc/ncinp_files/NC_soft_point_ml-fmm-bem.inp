@@ -1,0 +1,59 @@
+##-------------------------------------------
+## This file was created by mesh2input
+## Date: 2022-01-13
+##-------------------------------------------
+Mesh2HRTF 1.0.0
+##
+Head-Related Transfer Functions
+##
+## Controlparameter I
+0 0 0 0 7 0
+##
+## Controlparameter II
+1 1 0.000001 0.00e+00 1 0 0
+##
+## Load Frequency Curve
+0 2
+0.000000 0.000000e+00 0.0
+0.000001 0.400000e+04 0.0
+##
+## 1. Main Parameters I
+2 17350 8768 0 0 2 1 4 0
+##
+## 2. Main Parameters II
+0 1 0 0.0000e+00 0 0 0
+##
+## 3. Main Parameters III
+0 0 0 0
+##
+## 4. Main Parameters IV
+343 1.1839e+00 1.0 0.0e+00 0.0 e+00 0.0e+00 0.0e+00
+##
+NODES
+../../ObjectMeshes/Reference/Nodes.txt
+../../EvaluationGrids/HorPlane/Nodes.txt
+##
+ELEMENTS
+../../ObjectMeshes/Reference/Elements.txt
+../../EvaluationGrids/HorPlane/Elements.txt
+##
+# SYMMETRY
+# 0 0 0
+# 0.0000e+00 0.0000e+00 0.0000e+00
+##
+BOUNDARY
+ELEM 0 TO 2411 PRES 0.0 -1 0.0 -1
+RETU
+##
+# PLANE WAVES
+# 1 0.0000e+00 -1.0000e+00 0.0000e+00 1.0000e+00 -1 0.0000e+00 -1
+##
+POINT SOURCES
+0 0.2 0.0 0.0 0.1 -1 0.0 -1
+##
+# CURVES
+# Frequency Factor 0.0
+##
+POST PROCESS
+##
+END
