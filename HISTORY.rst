@@ -117,6 +117,7 @@ Contributors
 
 The following persons contributed to Mesh2HRTF (in reverse chronological order):
 
+* Tim Wennemann (2023): Update for CenterHead and AssignMaterial scripts
 * Jeffrey Thomsen (2022): Testing and documentation
 * Sergejs Dombrovskis (2022): Initial NumCalc manager version, documentation and tutorials
 * Johan Pauwels (2022): various
