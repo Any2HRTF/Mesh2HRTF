@@ -1,7 +1,7 @@
 History
 =======
 
-v1.0.0 (June 2023)
+v1.0.0 (28 April 2023)
 ------------------
 * Mesh2Input (Project export from Blender handled by the Blender plugin `Mesh2Input/mesh2input.py`):
 	* Upgraded to support Blender versions >= 2.80.0
