@@ -4,3 +4,4 @@ Sphinx
 pytest
 autodocsumm
 insipid-sphinx-theme
+psutil
