@@ -109,6 +109,7 @@ To release a new Mesh2HRTF version do the following
 - merge develop into main
 - check if the tests pass
 - check if the documentation is building
+- check if installing the python package works via ``pip install -e .``
 - add a tag with the version number ``git tag <tagname>``, e.g. ``git tag v1.0.0``
 - push the tag using ``git push origin --follow-tags``
 - add a release on github
