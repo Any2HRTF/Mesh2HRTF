@@ -103,7 +103,7 @@ Releasing
 
 To release a new Mesh2HRTF version do the following
 
-- Write the new version to the file VERSION
+- Write the new version to the file VERSION and mesh2input.py
 - Update HISTORY.rst (also include new contributors)
 - Commit all changes to develop
 - merge develop into main
