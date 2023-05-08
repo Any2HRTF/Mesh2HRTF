@@ -46,7 +46,7 @@ The ``develop`` branch contains the latest stable developer version. Other branc
 References
 ==========
 
-.. [1] F.\ Brinkmann, W. Kreuzer, J. Thomsen, S. Dombrovskis, K. PollackS. Weinzier, and P. Majdak, `''Recent Advances in an Open Software for Numerical HRTF Calculation,'' <https://projects.ari.oeaw.ac.at/research/Publications/Articles/2023/Brinkmann_et_al_2023_Mesh2HRTF.pdf>`_ (In print),” J. Audio Eng. Soc., 2023.
+.. [1] F.\ Brinkmann, W. Kreuzer, J. Thomsen, S. Dombrovskis, K. PollackS. Weinzier, and P. Majdak, `''Recent Advances in an Open Software for Numerical HRTF Calculation,'' <https://projects.ari.oeaw.ac.at/research/Publications/Articles/2023/Brinkmann_et_al_2023_Mesh2HRTF.pdf>`_ (In print), J. Audio Eng. Soc., 2023.
 
 .. [2] H\. Ziegelwanger, W. Kreuzer, and P. Majdak, `''Mesh2HRTF: An open-source software package for the numerical calculation of head-related transfer functions,'' <https://www.researchgate.net/publication/280007918_MESH2HRTF_AN_OPEN-SOURCE_SOFTWARE_PACKAGE_FOR_THE_NUMERICAL_CALCULATION_OF_HEAD-RELATED_TRANFER_FUNCTIONS>`_ Florence, Italy, Jul. 2015.
 

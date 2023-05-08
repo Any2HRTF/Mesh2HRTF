@@ -1,8 +1,12 @@
 History
 =======
 
+v1.0.1 (7 Mai 2023)
+-------------------
+* Fixed a bug in installing the Mesh2HRTF Python API
+
 v1.0.0 (28 April 2023)
-------------------
+----------------------
 * Mesh2Input (Project export from Blender handled by the Blender plugin `Mesh2Input/mesh2input.py`):
 	* Upgraded to support Blender versions >= 2.80.0
 	* Improved organization and modularization of the Blender plugin
