@@ -32,26 +32,32 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y cmake \
                    libxi-dev \
                    libgl1-mesa-dev \
                    libglu1-mesa-dev \
-                   libeigen3-dev
+                   libeigen3-dev \
+                   python3 \
+                   python3-pip
 
-# copy NumCalc from Mesh2HRTF git repo to docker container
-COPY NumCalc /home/NumCalc
+# copy Mesh2HRTF git repo to docker container
+COPY . /home/Mesh2HRTF
+
+# install Mesh2HRTF Python API
+RUN pip install -e /home/Mesh2HRTF
+
+# add symbolic link for manage_numcalc_script for convenience
+RUN ln -s /home/Mesh2HRTF/mesh2hrtf/NumCalc/manage_numcalc_script.py /home/
 
 # build NumCalc
-RUN cd /home/NumCalc/src && make
+RUN cd /home/Mesh2HRTF/mesh2hrtf/NumCalc/src && make
 
 # add symbolic linc for NumCalc
-RUN ln -s /home/NumCalc/bin/NumCalc /usr/local/bin
-
-# copy pmp-library from Mesh2HRTF git repo to docker container
-COPY Mesh2Input/Meshes/GradingHybrid/pmp-library /home/pmp-library
+RUN ln -s /home/Mesh2HRTF/mesh2hrtf/NumCalc/bin/NumCalc /usr/local/bin
 
 # build the pmp-library
-RUN cd /home/pmp-library && mkdir build && cd build && cmake .. && make && make install
+RUN cd /home/Mesh2HRTF/mesh2hrtf/Mesh2Input/Meshes/GradingHybrid/pmp-library \
+    && mkdir build && cd build && cmake .. && make && make install
 
 # add libpmp to the search path
 RUN echo /usr/local/lib > /etc/ld.so.conf.d/local.conf
 RUN ldconfig
 
 # add symbolic link for hrtf-mesh-grading
-RUN ln -s /home/pmp-library/build/hrtf_mesh_grading /usr/local/bin
+RUN ln -s /home/Mesh2HRTF/mesh2hrtf/Mesh2Input/Meshes/GradingHybrid/pmp-library/build/hrtf_mesh_grading /usr/local/bin
