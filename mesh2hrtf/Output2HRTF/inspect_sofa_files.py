@@ -204,7 +204,7 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
 
             if not np.any(mask):
                 warnings.warn((
-                    "Did not find and sources on the horizontal plane for "
+                    f"Did not find and sources on the {plane} plane for "
                     f"within +/-{atol} deg. for {file}"))
                 return
 
@@ -218,7 +218,8 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
                 # plot time data
                 if mode == "hrir":
                     _, qm, _ = pf.plot.time_2d(
-                        signal[mask, cc], indices=angles, dB=dB_time,
+                        signal[mask, cc][np.argsort(angles)],
+                        indices=np.sort(angles), dB=dB_time,
                         ax=ax_time[cc], cmap="coolwarm")
                     ax_time[cc].set_title(name)
 
@@ -230,7 +231,8 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
 
                 # plot frequency data
                 _, qm, _ = pf.plot.freq_2d(
-                    signal[mask, cc], ax=ax_freq[cc], indices=angles,
+                    signal[mask, cc][np.argsort(angles)],
+                    indices=np.sort(angles), ax=ax_freq[cc],
                     dB=dB_freq, freq_scale=freq_scale, cmap="Reds")
                 if mode == "hrir":
                     ax_freq[cc].set_xlabel(f"{angle} in degree")
@@ -245,5 +247,6 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
 
             # save
             plt.tight_layout()
-            plt.savefig(os.path.join(savedir, tail[:-5] + "_3D.jpeg"),
-                        dpi=300, bbox_inches="tight")
+            plt.savefig(
+                os.path.join(savedir, f"{tail[:-5]}_3D_{plane}_plane.jpeg"),
+                dpi=300, bbox_inches="tight")
