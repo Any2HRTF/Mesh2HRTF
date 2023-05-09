@@ -42,9 +42,6 @@ COPY . /home/Mesh2HRTF
 # install Mesh2HRTF Python API
 RUN pip install -e /home/Mesh2HRTF
 
-# add symbolic link for manage_numcalc_script for convenience
-RUN ln -s /home/Mesh2HRTF/mesh2hrtf/NumCalc/manage_numcalc_script.py /home/
-
 # build NumCalc
 RUN cd /home/Mesh2HRTF/mesh2hrtf/NumCalc/src && make
 
