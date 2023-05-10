@@ -1,14 +1,21 @@
-# Here is some help for using the Dockerfile. For more information refer to
-# docker.com
+# This Dockerfile can be used to run Mesh2HRTF inside a Docker container.
+# Some information on how the container can be generated are given below. For
+# more information refer to docker.com
 #
-# Build the container:
-# docker build --tag ubuntu:mesh2hrtf .
+# Inside the container you can
+# - Run the `hrtf_mesh_grading`
+# - Run numerical simualtions with the `NumCalc` command
+# - Access the Mesh2HRTF Python API, e.g. by running `python3` and then
+#   `import mesh2hrtf`
 #
-# Start the container with out an external volume:
-# docker run -dit --name mesh2hrtf ubuntu:mesh2hrtf /bin/bash
+# You can build the container in the command line by executing
+# `docker build --tag ubuntu:mesh2hrtf .` (without the ` signs)
+#
+# Start the container with out an external volume with:
+# `docker run -dit --name mesh2hrtf ubuntu:mesh2hrtf /bin/bash`
 #
 # Start the container with an external volume mounted at /home/data:
-# docker run -dit --name mesh2hrtf -v '/local/folder:/home/data' ubuntu:mesh2hrtf /bin/bash
+# `docker run -dit --name mesh2hrtf -v '/local/folder:/home/data' ubuntu:mesh2hrtf /bin/bash`
 
 FROM ubuntu:22.04
 
