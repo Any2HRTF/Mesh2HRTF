@@ -1,37 +1,42 @@
-%                                Mesh2HRTF
-%                Copyright (C) 2015 by Harald Ziegelwanger,
-%        Acoustics Research Institute, Austrian Academy of Sciences
-%                        mesh2hrtf.sourceforge.net
-%
-% If you use Mesh2HRTF:
-% - Provide credits:
-%   "Mesh2HRTF, H. Ziegelwanger, ARI, OEAW (mesh2hrtf.sourceforge.net)"
-% - In your publication, cite both articles:
-%   [1] Ziegelwanger, H., Kreuzer, W., and Majdak, P. (2015). "Mesh2HRTF: Open-source software package for the numerical calculation of head-related transfer functions," in Proceedings of the 22nd ICSV, Florence, IT.
-%   [2] Ziegelwanger, H., Majdak, P., and Kreuzer, W. (2015). "Numerical calculation of listener-specific head-related transfer functions and sound localization: Microphone model and mesh discretization," The Journal of the Acoustical Society of America, 138, 208-222.
 function write_evaluation_grid(nodes, path, doPlot, startCount)
 % write_evaluation_grid(nodes, path, doPlot, startCount)
 %
-% writes evaluation grid in the format required by mesh2HRTF in the
-% location specified by path.
+% write_evaluation_grid writes the evaluation grid to the file Nodes.txt
+% which can be then used to calculate HRTFs for sources specified at that grid. 
+% Each node is represented by an integer ID, with startCount specifying the
+% ID of the first node.
 %
-% nodes      - a [Q x 3] matrix that specifies the x/y/z coordinates of the
-%              evaluation grid in meter. Q is the number of sampling points
-% path       - string that specifies the path where the data are saved.
-% doPlot     - boolean that specifies weather or not to plot the sampling
-%              grid (default = true)
-% startCount - Mesh2HRTF saves the sampling nodes in Nodes.txt. This file
-%              assigns an integer ID to each node. startCount specifies the
-%              ID of the first node. The second note will hav the ID
-%              startCount+1, etc (default = 200000).
+% Input parameters:
+%   nodes:      Q-by-3 matrix specifying the x, y, and z coordinates (in meter)
+%               of the evaluation grid, with Q being the number of nodes
+%               in the evaluation grid.
+%                
+%   path        Path to save the data to be saved.
 %
-%              IMPORTANT: If you use more than one evaluation grid in a
-%              single simulation, each node in each grid must have a unique
-%              ID. For example use a startCount of 200000 for the first
-%              grid and a startCount of 300000 for the second.
+%   doPlot      If true, the evaluation grid will be plotted for inspection. 
+%               Default: true.
 %
-% Author: fabian.brinkmann@tu-berlin.de
-% Audio Communication Group @ TU Berlin
+%   startCount: ID of the first node. Default: 200000.
+%
+% IMPORTANT: If multiple evaluation grids are used in a single simulation, 
+% each node ID must be unique within the joint evaluation grid. 
+
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+%
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Fabian Brinkmann (TU-Berlin): 2018, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2022, integration in Mesh2HRTF 1.x
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
 
 if ~exist('doPlot', 'var')
     doPlot = true;

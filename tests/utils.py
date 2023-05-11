@@ -1,7 +1,6 @@
 """Utilities to be used in testing"""
 import os
 import shutil
-import subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf
@@ -34,9 +33,18 @@ def blender_paths(computer_id):
     elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
-            ('/home/bruel/Daten/Applications/blender-3.2.1-linux-x64/',
-             '3.2/scripts/addons',
-             '3.2/scripts/startup')]
+            # earliest supported LTS version
+            ('/home/bruel/Daten/Applications/blender-2.83.20-linux-x64/',
+             '2.83/scripts/addons',
+             '2.83/scripts/startup'),
+            # latest LTS version
+            ('/home/bruel/Daten/Applications/blender-3.3.2-linux-x64/',
+             '3.3/scripts/addons',
+             '3.3/scripts/startup'),
+            # latest version
+            ('/home/bruel/Daten/Applications/blender-3.4.1-linux-x64/',
+             '3.4/scripts/addons',
+             '3.4/scripts/startup')]
     else:
         raise ValueError("Invalid computer id")
 
@@ -53,9 +61,11 @@ def blender_paths(computer_id):
 
 
 def install_blender_addons_and_scripts(
-        blender_path, addon_path, addons, script_path, scripts, save_path):
+        blender_path, addon_path, addons, script_path, scripts,
+        install_script):
     """
-    Install Blender addons and scripts
+    Install Blender scripts and generate Python script to install Blender
+    add-ons
 
     Parameters
     ----------
@@ -70,6 +80,21 @@ def install_blender_addons_and_scripts(
         optional. Passing
     script_path : str
         Full path for saving the script.
+    scripts : list
+        List containing the full path to scripts. Will be copied to
+        script_path. Path an empty list to install any scripts.
+    install_script : str
+        Full path and file name under which the generated python script to
+        install addons will be saved.
+
+        The script can be used to install Blender Add-Ons
+        Option 1: run the script from within blender
+        Option 2: Run blender in the background
+        >>> subprocess.run(
+        >>>     [os.path.join(blender_path, 'blender'), '--background',
+        >>>      '--python', install_script,
+        >>>      '--python', any_other_script.py],
+        >>>     check=True, capture_output=True)
     """
 
     # generate script for installing the addons -------------------------------
@@ -88,14 +113,8 @@ def install_blender_addons_and_scripts(
             f"overwrite=True, filepath='{path}')\n"
             f"bpy.ops.preferences.addon_enable(module='{name}')\n")
 
-    with open(save_path, 'w') as file:
+    with open(install_script, 'w') as file:
         file.writelines(script)
-
-    # install addons using blender --------------------------------------------
-    subprocess.run(
-        [os.path.join(blender_path, 'blender'), '--background',
-         '--python', save_path],
-        check=True, capture_output=True)
 
     # copy scripts to startup folder ------------------------------------------
     for script in scripts:
@@ -171,7 +190,7 @@ def write_blender_export_script(
         f"    programPath='{programPath}',\n")
 
     if len(export_args):
-        script += export_args[4:-2]
+        script += export_args[:-2]
 
     script += ")\n"
 
@@ -209,7 +228,6 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
     boundary_condition, source: strings
         specifiying simulation test case
     """
-    plt.figure(figsize=(30/2.54, 8/2.54))
 
     # Plot simulated and analytical data data
     if source == 'bothears':
@@ -220,27 +238,28 @@ def scatter_reference_vs_analytic(p_num, p_ana, x, y, range_a, range_b,
         plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                     source, bem_method)
 
-    plt.close()
-
 
 def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                 source, bem_method, iEar=0):
+
+    _, axes = plt.subplots(1, 3, figsize=(30/2.54, 8/2.54))
 
     for n, (p, title, clabel, crange) in enumerate(zip(
             [p_num, p_ana, p_num / p_ana],          # pressure arrays
             ["Numerical solution",                  # titles
              "Analytical solution",
-             "Difference (max. deviation {:.2f} dB)".format(
+             "Difference: abs. mean (max) {:.2f} ({:.2f}) dB".format(
+                np.nanmean(np.abs(20*np.log10(np.abs(p_num / p_ana)))),
                 np.nanmax(np.abs(20*np.log10(np.abs(p_num / p_ana)))))],
             ["pressure", "pressure", "difference"],  # colorbar labels
             [range_a, range_a, range_b]              # range of colormap
             )):
-        ax = plt.subplot(1, 3, n+1)
-        sc = plt.scatter(x, y, c=20*np.log10(np.abs(p)),
-                         edgecolors=None, s=1, vmax=crange[0],
-                         vmin=crange[1], cmap="RdBu_r")
+        ax = axes[n]
+        sc = ax.scatter(x, y, c=20*np.log10(np.abs(p)),
+                        edgecolors=None, s=1, vmax=crange[0],
+                        vmin=crange[1], cmap="RdBu_r")
         cb = plt.colorbar(sc)
-        plt.axis("off")
+        ax.axis("off")
         cb.set_label(clabel + ' in dB')
         ax.set_aspect("equal")
         ax.set_title(title)
@@ -256,3 +275,5 @@ def plot_subfun(p_num, p_ana, range_a, range_b, x, y, boundary_condition,
                     "/resources/test_numcalc/analytical_references/" +
                     "comparisonplot_"+boundary_condition+"_"+source+"_" +
                     bem_method+".jpg")
+
+    plt.close()

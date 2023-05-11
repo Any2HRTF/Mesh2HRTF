@@ -5,11 +5,16 @@ from os.path import join
 from glob import glob
 from tempfile import TemporaryDirectory
 import mesh2hrtf as m2h
+import matplotlib as mpl
+
+mpl.use("Agg")
 
 cwd = os.path.dirname(__file__)
 data_shtf = join(cwd, 'resources', 'SHTF')
 
 
+# ignore warning that is generated on purpose if generate_error=True
+@pytest.mark.filterwarnings("ignore:Detected issues for source 1")
 @pytest.mark.parametrize("savedir, generate_error", (
     [False, False], [False, True], [True, True]))
 def test_outputs_to_hrtfs_minimum(savedir, generate_error):
@@ -107,10 +112,10 @@ def test_outputs_to_hrtfs_full():
     output = [os.path.basename(o) for o in output]
     files = ["HRTF_HRIR_FourPointHorPlane_r100cm.sofa",
              "HRTF_HRIR_FourPointHorPlane_r100cm_2D.pdf",
-             "HRTF_HRIR_FourPointHorPlane_r100cm_3D.jpeg",
+             "HRTF_HRIR_FourPointHorPlane_r100cm_3D_horizontal_plane.jpeg",
              "SHTF_HRIR_FourPointHorPlane_r100cm.sofa",
              "SHTF_HRIR_FourPointHorPlane_r100cm_2D.pdf",
-             "SHTF_HRIR_FourPointHorPlane_r100cm_3D.jpeg"]
+             "SHTF_HRIR_FourPointHorPlane_r100cm_3D_horizontal_plane.jpeg"]
     assert len(output) == len(files)
     for file in files:
         assert file in output

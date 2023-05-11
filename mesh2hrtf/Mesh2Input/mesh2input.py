@@ -7,6 +7,7 @@ import math
 import shutil
 from math import pi
 import json
+import numpy as np
 from bpy.props import StringProperty, BoolProperty, EnumProperty, \
     IntProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper
@@ -14,7 +15,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Mesh2HRTF export add-on",
     "author": "The Mesh2HRTF developers",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (2, 80, 0),
     "location": "File > Export",
     "description": "Export Blender scene as Mesh2HRTF project",
@@ -301,7 +302,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         # get Mesh2HRTF version
         with open(os.path.join(programPath, "..", "VERSION")) as read_version:
-            version = read_version.readline()
+            version = read_version.readline().strip()
 
         # Export path and export directory handling
         if not filepath.endswith(os.path.sep):
@@ -395,6 +396,14 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                             os.path.join(savepath, "Nodes.txt"))
             shutil.copyfile(os.path.join(evalGridPaths[n], "Elements.txt"),
                             os.path.join(savepath, "Elements.txt"))
+
+
+# check for isolated nodes and nodes with duplicate IDs -----------------------
+
+        _check_evaluation_grids(
+            filepath1, evaluationGrids,
+            len(bpy.context.scene.objects["Reference"].data.vertices))
+
 
 # Read material data ----------------------------------------------------------
 
@@ -632,6 +641,96 @@ def _check_evaluation_grid_exists(evaluationGrids, evalGridPaths):
                 f"Evalution grid folder {evalGridPaths[n]} does not exist "
                 "or one of the files 'Nodes.txt' and 'Elements.txt' is "
                 "missing.")
+
+
+def _check_evaluation_grids(filepath1, evaluationGrids, N_vertices):
+    """
+    Check the evaluation grids for isolated nodes, duplicated node IDs, and
+    overlapping node IDs with the Reference mesh
+    """
+
+    node_ids = np.array([])
+
+    for evaluationGrid in evaluationGrids:
+        savepath = os.path.join(
+            filepath1, "EvaluationGrids", evaluationGrid)
+        ids = _check_evaluation_grid(savepath)
+        node_ids = np.append(node_ids, ids)
+
+    if len(node_ids) != len(np.unique(node_ids)):
+        raise ValueError((
+            "The nodes in the evaluation grids must have unique IDs "
+            "(the numbers in the first column of Nodes.txt). But at "
+            "least one duplicate ID was found."))
+
+    if N_vertices >= np.min(node_ids):
+        raise ValueError((
+            "Node IDs of the Reference mesh and evaluation grids must "
+            "not overlap (the numbers in the first column of Nodes.txt) "
+            f"The Reference mesh has {N_vertices} and the "
+            f"lowest vertex in an evaluation grid is {np.min(node_ids)}."))
+
+
+def _check_evaluation_grid(name):
+    """
+    Check if an evaluation grid contains an isolated node, i.e., a node that
+    is not contained in any element. Mesh2HRTF can not handle this.
+
+    Parameters
+    ----------
+    name : str
+        Name of the folder containing the nodes and elements of the evaluation
+        grid in Nodes.txt and Elements.txt
+
+    Returns
+    -------
+    isolated_node : bool
+        ``True`` if an isolated node was detected, ``False`` otherwise.
+    """
+
+    # check if the grid exists
+    if not os.path.isfile(os.path.join(name, "Nodes.txt")):
+        raise ValueError(f"{os.path.join(name, 'Nodes.txt')} does not exist")
+
+    # read the nodes ----------------------------------------------------------
+    with open(os.path.join(name, "Nodes.txt"), "r") as f_id:
+        nodes = f_id.readlines()
+
+    # get number of nodes
+    N_nodes = int(nodes[0].strip())
+    node_ids = np.zeros(N_nodes, dtype=int)
+
+    # get node ids
+    for nn in range(N_nodes):
+        node = nodes[nn+1].strip().split(" ")
+        node_ids[nn] = int(node[0])
+
+    # get elements ------------------------------------------------------------
+    with open(os.path.join(name, "Elements.txt"), "r") as f_id:
+        elements = f_id.readlines()
+
+    # get number of elements and element vertices
+    N_elements = int(elements[0].strip())
+    M_vertices = len(elements[1].strip().split(" ")) - 4
+    element_array = np.zeros((N_elements, M_vertices), dtype=int)
+
+    # get node ids
+    for nn in range(N_elements):
+        element = elements[nn+1].strip().split(" ")
+        for mm in range(M_vertices):
+            element_array[nn, mm] = int(element[mm+1])
+
+    # check for isolated node -------------------------------------------------
+    # (node that is not contained in any element)
+    element_array = np.unique(element_array.flatten())
+
+    for node_id in node_ids:
+        if node_id not in element_array:
+            raise ValueError((
+                f"Node {node_id} in evaluation grid {name} is isolated, "
+                "i.e., not contained in any element."))
+
+    return node_ids
 
 
 def _get_materials(obj):

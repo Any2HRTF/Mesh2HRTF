@@ -223,12 +223,20 @@ for ii = 1:2
             for jj = 1:numel(sofa_files_tmp)
                 sofa_files_L{jj} = fullfile(sofa_files_tmp(jj).folder, sofa_files_tmp(jj).name);
             end
+            comptime_inp = load(fullfile(folder_names{ii}, 'Output2HRTF', 'computationTime.mat'));
+            compTime_tmp.computationTime{1,1} = cell2mat(comptime_inp.computationTime);
+            compTime_tmp.description = comptime_inp.description;
+            clear comptime_inp
         case 'Right ear'
             sofa_file_R = folder_names{ii};
             sofa_files_tmp = dir(fullfile(folder_names{ii}, 'Output2HRTF', '*.sofa'));
             for jj = 1:numel(sofa_files_tmp)
                 sofa_files_R{jj} = fullfile(sofa_files_tmp(jj).folder, sofa_files_tmp(jj).name);
             end
+            comptime_inp = load(fullfile(folder_names{ii}, 'Output2HRTF', 'computationTime.mat'));
+            compTime_tmp.computationTime{1,2} = cell2mat(comptime_inp.computationTime);
+            compTime_tmp.description = comptime_inp.description;
+            clear comptime_inp
         otherwise
             error('This function only works for sourceTypes Left ear and Right ear')
     end
@@ -327,6 +335,11 @@ for ii = numel(sofa_files_L):-1:1  % loop for every SOFA file in one of the proj
         mkdir(targetdir)
     end
     cd(targetdir);
+    
+    % save merged computationTime.mat
+    computationTime = compTime_tmp.computationTime;
+    description = compTime_tmp.description;
+    save('computationTime_merged.mat', 'computationTime', 'description');
 
     % save as SOFA file
     Obj=SOFAupdateDimensions(Obj);

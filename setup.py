@@ -12,14 +12,14 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 with open('VERSION') as version_file:
-    version = version_file.read()
+    version = version_file.read().strip()
 
 requirements = [
     'numpy>=1.14.0',
     'scipy>=1.5.0',
     'psutil',
-    'sofar',
-    'pyfar>=0.5.0'
+    'sofar>=1.0.0',
+    'pyfar>=0.5.3'
 ]
 
 setup_requirements = ['pytest-runner', ]

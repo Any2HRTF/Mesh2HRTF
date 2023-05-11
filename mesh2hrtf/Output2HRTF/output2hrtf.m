@@ -8,6 +8,24 @@ function output2hrtf(folder)
 %       folder ... The Mesh2HRTF project folder [string, the default is
 %                  the current working directory]
 
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+%
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Harald Ziegelwanger (ARI, ÖAW): 2015, original implementation
+% #Author: Fabian Brinkmann (TU-Berlin): 2020, integration in Mesh2HRTF 1.x
+% #Author: Katharina Pollack (ARI, ÖAW): 2022, various improvements
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
+
 %% ----------------------------load meta data------------------------------
 
 if ~exist('folder', 'var')
@@ -77,6 +95,10 @@ for ii = 1:params.numSources
     computationTime{ii} = [];
     boundaryElements = dir([folder, filesep, 'NumCalc', filesep, 'source_', num2str(ii), filesep, 'NC*.out']);
 
+    if isempty(boundaryElements)
+        error(['Unable to read from ', folder, filesep, 'NumCalc', filesep, 'source_1', num2str(ii), filesep, 'NC*.out', ' as there are no output files.']);
+    end
+    
     NC_all_flag = 0; NC_all_idx = []; NC_all_date = [];
     NC_single_flag = 0; NC_single_idx = []; NC_single_date = [];
 
@@ -155,6 +177,16 @@ for ii = 1:params.numSources
     % sort computation time after frequency steps
     [~, sort_idx] = sort(computationTime{ii}(:,1));
     computationTime{ii} = computationTime{ii}(sort_idx,:);
+
+    % check whether calculations for all frequencies exist
+    missing_freqsteps = find(~ismember(1:numel(frequencies), computationTime{ii}(:,1)));
+    if ~isempty(missing_freqsteps)
+        missing_freqsteps_str = sprintf('%.0f, ', missing_freqsteps);
+        missing_freqsteps_str = missing_freqsteps_str(1:end-2); % strip final comma and space
+        missing_freqs_str = sprintf('%.1f, ', frequencies(missing_freqsteps));
+        missing_freqs_str = missing_freqs_str(1:end-2); % strip final comma and space
+        error(['Calculation results missing for frequency step(s) ', missing_freqsteps_str, ', i.e., ', missing_freqs_str, ' Hz (frequency values have been rounded for readability).']);
+    end
 end
 
 fprintf('Write computation time to .mat file ...\n');

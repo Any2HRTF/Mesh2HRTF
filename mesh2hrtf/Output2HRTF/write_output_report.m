@@ -1,16 +1,34 @@
 function data = write_output_report(filename)
-%   [] = Output2HRTF_ReadBEMPerformance(filename)
+%   data = write_output_report(filename)
 %
 %   Reads computation time data from NC.out file.
 %
 %   Input:
-%       filename ... read computation time from NC.out (output file from NumCalc)
+%       filename ... path and name of the output file from NumCalc 
+%                    (usually some NC.out file)
 %
 %   Output:
 %       data ....... computation time in seconds, with columns:
 %                    'Frequency index', 'Frequency', 'Building', 'Solving',
 %                    'Postprocessing', 'Total', 'relative error', 'iterations',
 %                    'maximum number of iterations reached' (1 = yes, 0 = no)
+
+% This file is part of the Mesh2HRTF software package developed by the
+% Mesh2HRTF Developer Team (https://mesh2hrtf.org) and licensed under the 
+% EUPL, Version 1.2, or, as soon as approved by the European Commission, 
+% subsequent versions of the EUPL. Details on the license can be found 
+% in the file "license.txt" provided with Mesh2HRTF package
+% or at https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+%
+% You may not use this work except in compliance with the license.
+% Unless required by applicable law or agreed to in writing, software 
+% distributed under the license is distributed on an "AS IS" basis,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
+% #Author: Fabian Brinkmann (TU-Berlin): 2022, original implementation
+% #Author: Katharina Pollack (ARI, ÖAW): 2022, various improvements
+% #Author: Piotr Majdak (ARI, ÖAW): 2023, help text, license boiler plate
+
 
 fid=fopen(filename);
 count=0;

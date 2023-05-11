@@ -3724,7 +3724,8 @@ const double GauGenLagAbscWei_15[15][2] =
 };
 
 
-// Gauss points in triangles
+// Gauss points in triangles, some of the rules you will find at burkhard
+// and the strang nodes, warning: some of these rules have negative weights
 const double GAUCORWEI_TR1[][3] = /* order 1, Argyris p 420 */
 {
 	{
@@ -3769,8 +3770,14 @@ const double GAUCORWEI_TR6[][3] = /* order 4 */
 	{
 		0.5*(1.0 - 0.8168475729804585), 0.8168475729804585, 0.1099517436553219/2.0
 	},
+	/* used to be a slight error, but it was never called
 	{
 		0.8168475729804585, 0.8168475729804585, 0.1099517436553219/2.0
+	},
+	*/
+	// now its correct
+	{
+	  0.5*(1.0 - 0.8168475729804585), 0.5*(1.0 - 0.8168475729804585),0.1099517436553219/2.0
 	},
 	{
 		0.1081030181680702, 0.5*(1.0 - 0.1081030181680702), 

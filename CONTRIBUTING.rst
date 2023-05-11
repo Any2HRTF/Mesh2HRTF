@@ -3,7 +3,7 @@
 Contributing
 ------------
 
-Contributions are welcome, and they are greatly appreciated! Every little bit
+Contributions are welcome and greatly appreciated! Every little bit
 helps, and credit will always be given.
 
 You can contribute in many ways:
@@ -11,10 +11,10 @@ You can contribute in many ways:
 Types of Contributions
 ----------------------
 
-Report Bugs and Submit Feedback
+Report Bugs or Submit Feedback
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The best way to report bugs of send feedback is to open an issue at https://github.com/Any2HRTF/mesh2hrtf/issues.
+To report bugs or send feedback, open an issue at https://github.com/Any2HRTF/mesh2hrtf/issues.
 
 If you are reporting a bug, please include:
 
@@ -103,9 +103,13 @@ Releasing
 
 To release a new Mesh2HRTF version do the following
 
-- Write the new version to the file VERSION
+- Write the new version to the file VERSION and mesh2input.py
 - Update HISTORY.rst (also include new contributors)
 - Commit all changes to develop
+- merge develop into main
+- check if the tests pass
+- check if the documentation is building
+- check if installing the python package works via ``pip install -e .``
 - add a tag with the version number ``git tag <tagname>``, e.g. ``git tag v1.0.0``
 - push the tag using ``git push origin --follow-tags``
-- merge develop into main
+- add a release on github

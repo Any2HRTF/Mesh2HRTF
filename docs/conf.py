@@ -71,7 +71,7 @@ author = u"The Mesh2HRTF developers"
 #
 # The short X.Y version.
 with open(os.path.join('..', 'VERSION')) as version_file:
-    version = version_file.read()
+    version = version_file.read().strip()
 # The full version, including alpha/beta/rc tags.
 release = version
 
