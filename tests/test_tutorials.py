@@ -80,11 +80,10 @@ def test_tutorials(tutorial):
         cwd=tmp.name, check=True, capture_output=True)
 
     if run_numcalc:
-        # run manage_numcalc
+        # run manage_numcalc and process output
         print("running NumCalc")
         m2h.manage_numcalc(os.path.join(tmp.name, tutorial[:-3]), numcalc)
 
-        # run manage_numcalc
         print("running output2hrtf")
         m2h.output2hrtf(os.path.join(tmp.name, tutorial[:-3]))
         plt.close("all")

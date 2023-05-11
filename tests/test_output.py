@@ -1,7 +1,8 @@
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import pytest
 import numpy as np
 import numpy.testing as npt
-import matplotlib.pyplot as plt
 from tempfile import TemporaryDirectory
 import shutil
 import os
@@ -10,6 +11,8 @@ import json
 import pyfar as pf
 import sofar as sf
 import mesh2hrtf as m2h
+
+mpl.use('Agg')
 
 cwd = os.path.dirname(__file__)
 data_shtf = os.path.join(cwd, 'resources', 'SHTF')
@@ -104,8 +107,9 @@ def test_output_two_hrtf_and_Output2HRTF(num_sources):
     ["HRIR", "2D", ["HRIR_*_2D"], ["HRIR_*_3D", "HRTF_*_2D", "HRTF_*_3D"]],
     ["HRIR", "3D", ["HRIR_*_3D"], ["HRIR_*_2D", "HRTF_*_2D", "HRTF_*_3D"]]
 ))
+@pytest.mark.parametrize("plane", ('horizontal', 'median', 'frontal'))
 def test_inspect_sofa_files_single_project(
-        pattern, plot, created, not_created):
+        pattern, plot, created, not_created, plane):
     """
     Test if inspect_sofa_files creates the correct plots for a single project.
     Note: Not all options for reading from and saving to different directories
@@ -123,20 +127,28 @@ def test_inspect_sofa_files_single_project(
         os.remove(file)
 
     # create plots
-    m2h.inspect_sofa_files(tmp_shtf, pattern, plot=plot)
+    m2h.inspect_sofa_files(tmp_shtf, pattern, plot=plot, plane=plane)
 
     grid = "FourPointHorPlane_r100cm"
 
     # check if the correct files exist and are missing
     for file in created:
         file = os.path.join(tmp_shtf, "Output2HRTF", file.replace("*", grid))
-        extension = ".pdf" if "2D" in file else ".jpeg"
-        assert os.path.isfile(file + extension)
+        if "2D" in file:
+            file_name = f"{file}.pdf"
+        else:
+            file_name = f"{file}_{plane}_plane.jpeg"
+        assert os.path.isfile(file_name)
 
     for file in not_created:
         file = os.path.join(tmp_shtf, "Output2HRTF", file.replace("*", grid))
-        extension = ".pdf" if "2D" in file else ".jpeg"
-        assert not os.path.isfile(file + extension)
+        if "2D" in file:
+            file_name = f"{file}.pdf"
+        else:
+            file_name = f"{file}_{plane}_plane.jpeg"
+        assert not os.path.isfile(file_name)
+
+    plt.close('all')
 
 
 def test_compute_hrir_custom_sampling_rate():
