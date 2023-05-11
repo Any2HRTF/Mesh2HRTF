@@ -1,9 +1,12 @@
 History
 =======
 
-v1.0.1 (7 Mai 2023)
+v1.1.0 (11 Mai 2023)
 -------------------
+* Add dockerfile running the Mesh2HRTF Python API, `NumCalc`, and `hrtf_mesh_grading`
 * Fixed a bug in installing the Mesh2HRTF Python API
+* Fixed a bug in `manage_numcalc` if running multiple Mesh2HRTF projects
+* Fix order of HRIRs/HRTFs plotted by `inspect_sofa_files` when choosing the median or frontal plane
 
 v1.0.0 (28 April 2023)
 ----------------------

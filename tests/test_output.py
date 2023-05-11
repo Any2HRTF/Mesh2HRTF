@@ -148,6 +148,8 @@ def test_inspect_sofa_files_single_project(
             file_name = f"{file}_{plane}_plane.jpeg"
         assert not os.path.isfile(file_name)
 
+    plt.close('all')
+
 
 def test_compute_hrir_custom_sampling_rate():
     """Test compute HRIR with custom sampling rate"""
