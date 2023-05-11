@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 with open('VERSION') as version_file:
-    version = version_file.read()
+    version = version_file.read().strip()
 
 requirements = [
     'numpy>=1.14.0',

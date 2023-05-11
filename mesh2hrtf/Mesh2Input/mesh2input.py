@@ -302,7 +302,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 
         # get Mesh2HRTF version
         with open(os.path.join(programPath, "..", "VERSION")) as read_version:
-            version = read_version.readline()
+            version = read_version.readline().strip()
 
         # Export path and export directory handling
         if not filepath.endswith(os.path.sep):
