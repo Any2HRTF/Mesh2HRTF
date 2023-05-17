@@ -41,8 +41,8 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         `project_path` is searched for this folder)
     max_ram_load : number, optional
         The RAM that can maximally be used in GB. New NumCalc instances are
-        only started if enough RAM is available. The default ``None`` uses all
-        available RAM will be used.
+        only started if currently used RAM is below. The default ``None`` uses 
+        all available RAM.
     ram_safety_factor : number, optional
         A safety factor that is applied to the estimated RAM consumption. The
         estimate is obtained using NumCalc -estimate_ram. The default of
@@ -107,7 +107,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     # helping variables -------------------------------------------------------
 
     # RAM that should not be used
-    ram_offset = max([0, ram_info.total / 1073741824 - max_ram_load])
+    ram_blocked = max([0, ram_info.total / 1073741824 - max_ram_load])
 
     # trick to get colored print-outs   https://stackoverflow.com/a/54955094
     text_color_red = '\033[31m'
@@ -162,6 +162,14 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         f"wait_time: {wait_time}\n"
         f"starting_order: {starting_order}\n"
         f"confirm_errors: {confirm_errors}\n")
+
+    message += (
+        f"===== Available resources =====\n"
+        f"RAM: total: {ram_info.total / (2**30)}, \
+            available: {ram_info.available / (2**30)}, \
+            blocked : {ram_blocked}\n"
+        f"CPU: {psutil.cpu_count()}\n"
+        )
 
     _print_message(message, text_color_reset, log_file)
 
@@ -297,7 +305,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             # current time and resources
             current_time = time.strftime(
                 "%b %d %Y, %H:%M:%S", time.localtime())
-            ram_available, ram_used = _get_current_ram(ram_offset)
+            ram_available, ram_used = _get_current_ram()
             cpu_load = psutil.cpu_percent(.1)
             running_instances = _numcalc_instances()
 
@@ -307,8 +315,8 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             # - not enough RAM available
             if cpu_load > max_cpu_load \
                     or running_instances >= max_instances \
-                    or ram_available < ram_required:
-
+                    or ram_available < ram_required \
+                    or ram_available < ram_blocked:
                 # print message (only done once between launching instances)
                 if started_instance:
                     _print_message(
@@ -442,10 +450,10 @@ def _print_message(message, text_color, log_file):
         f.write(message + "\n")
 
 
-def _get_current_ram(ram_offset):
-    """Get the available RAM = free RAM - ram_offset"""
+def _get_current_ram():
+    """Get the available RAM = free RAM"""
     ram_info = psutil.virtual_memory()
-    ram_available = max([0, ram_info.available / 1073741824 - ram_offset])
+    ram_available = max([0, ram_info.available / 1073741824])
     ram_used = ram_info.used / 1073741824
     return ram_available, ram_used
 
