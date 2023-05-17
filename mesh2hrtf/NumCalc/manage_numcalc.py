@@ -7,9 +7,9 @@ import numpy as np
 import mesh2hrtf as m2h
 
 
-def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
+def manage_numcalc(project_path=None, numcalc_path=None,
                    max_ram_load=None, ram_safety_factor=1.05, max_cpu_load=90,
-                   max_instances=psutil.cpu_count(), wait_time=15,
+                   max_instances=None, wait_time=15,
                    starting_order='alternate', confirm_errors=False):
     """
     Run NumCalc on one or multiple Mesh2HRTF project folders.
@@ -32,7 +32,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         The directory to simulate: It can be path to either
         1- directory that contains multiple Mesh2HRTF project folders or
         2- one Mesh2HRTF project folder (folder containing "parameters.json").
-        The default is os.getcwd()
+        The default ``None`` uses ``os.getcwd()``
     numcalc_path : str, optional
         On Unix, this is the path to the NumCalc binary (by default 'NumCalc'
         is used). On Windows, this is the path to the folder
@@ -42,7 +42,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     max_ram_load : number, optional
         The RAM that can maximally be used in GB. New NumCalc instances are
         only started if enough RAM is available. The default ``None`` uses all
-        available RAM will be used.
+        available RAM.
     ram_safety_factor : number, optional
         A safety factor that is applied to the estimated RAM consumption. The
         estimate is obtained using NumCalc -estimate_ram. The default of
@@ -52,9 +52,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         Maximum allowed CPU load in percent. New instances are only launched if
         the current CPU load is below this value. The default is 90 percent.
     max_instances : int, optional
-        The maximum numbers of parallel NumCalc instances. By default a new
-        instance is launched until the number of available CPU cores given by
-        ``psutil.cpu_count()`` is reached.
+        The maximum numbers of parallel NumCalc instances. If max_instances is
+        ``None``, by default a new instance is launched until the number of
+        available CPU cores given by ``psutil.cpu_count()`` is reached.
     wait_time : int, optional
         Delay in seconds for waiting until the RAM and CPU usage is checked
         after launching a NumCalc instance. This has to be sufficiently large
@@ -81,6 +81,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     """
 
     # log_file initialization -------------------------------------------------
+    if project_path is None:
+        project_path = os.getcwd()
+
     current_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
     log_file = os.path.join(
         project_path, f"manage_numcalc_{current_time}.txt")
@@ -120,7 +123,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     wait_time_busy = 1
 
     # check input -------------------------------------------------------------
-    if max_instances > psutil.cpu_count():
+    if max_instances is None:
+        max_instances = psutil.cpu_count()
+    elif max_instances > psutil.cpu_count():
         _raise_error(
             (f"max_instances is {max_instances} but can not be larger than "
              f"{psutil.cpu_count()} (The number of logical CPUs)"),
