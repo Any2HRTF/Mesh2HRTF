@@ -158,11 +158,12 @@ def manage_numcalc(project_path=None, numcalc_path=None,
     message += (
         f"project_path: {project_path}\n"
         f"numcalc_path: {numcalc_path}\n"
-        f"max_ram_load: {max_ram_load}\n"
+        f"max_ram_load: {max_ram_load:.2f} GB ({total_ram:.2f} GB detected)\n"
         f"ram_safety_factor: {ram_safety_factor}\n"
-        f"max_cpu_load: {max_cpu_load}\n"
-        f"max_instances: {max_instances}\n"
-        f"wait_time: {wait_time}\n"
+        f"max_cpu_load: {max_cpu_load} %\n"
+        f"max_instances: {max_instances} "
+        f"({psutil.cpu_count()} cores detected)\n"
+        f"wait_time: {wait_time} seconds\n"
         f"starting_order: {starting_order}\n"
         f"confirm_errors: {confirm_errors}\n")
 
@@ -237,9 +238,9 @@ def manage_numcalc(project_path=None, numcalc_path=None,
             projects_to_run.append(project)
             message += (
                 f"{len(instances_to_run)}/{len(all_instances)} frequency "
-                f"steps to run in {os.path.basename(project)}\n")
+                f"steps to run in '{os.path.basename(project)}'\n")
         else:
-            message += f"{os.path.basename(project)} is already complete\n"
+            message += f"'{os.path.basename(project)}' is already complete\n"
 
     _print_message(message, text_color_reset, log_file)
 
@@ -255,7 +256,7 @@ def manage_numcalc(project_path=None, numcalc_path=None,
         total_nr_to_run = instances_to_run.shape[0]
 
         # Status printouts:
-        message = (f"Started {os.path.basename(project)} "
+        message = (f"Started '{os.path.basename(project)}' project "
                    f"({pp + 1}/{len(projects_to_run)}, {current_time})")
         message = "\n" + message + "\n" + "-" * len(message) + "\n"
         if total_nr_to_run:
@@ -300,7 +301,7 @@ def manage_numcalc(project_path=None, numcalc_path=None,
             # current time and resources
             current_time = time.strftime(
                 "%b %d %Y, %H:%M:%S", time.localtime())
-            ram_available = _get_current_ram(max_ram_load)
+            ram_available, ram_used = _get_current_ram(total_ram, max_ram_load)
             cpu_load = psutil.cpu_percent(.1)
             running_instances = _numcalc_instances()
 
@@ -315,12 +316,13 @@ def manage_numcalc(project_path=None, numcalc_path=None,
                 # print message (only done once between launching instances)
                 if started_instance:
                     _print_message(
-                        (f"\n... waiting for resources (checking every "
-                         f"second, {current_time}):\n"
-                         f" {running_instances} NumCalc instances running ("
-                         f"{cpu_load}% CPU load)\n"
-                         f" {round(ram_available, 2)} GB RAM available ("
-                         f"{round(ram_required, 2)} GB RAM needed next)\n"),
+                        (f"\n... waiting for resources and checking every "
+                         f"second ({current_time})\n"
+                         f"{running_instances} NumCalc instances running, "
+                         f"{round(ram_available, 2)} GB RAM available "
+                         f"({ram_used:.2f} GB used), "
+                         f"{round(ram_required, 2)} GB required, "
+                         f"{cpu_load:.2f}% CPU load)\n"),
                         text_color_reset, log_file)
                     started_instance = False
 
@@ -336,11 +338,15 @@ def manage_numcalc(project_path=None, numcalc_path=None,
             # start new NumCalc instance
             source = int(instances_to_run[idx, 0])
             step = int(instances_to_run[idx, 1])
+            frequency = float(instances_to_run[idx, 2])
+            ram = float(instances_to_run[idx, 3])
             progress = total_nr_to_run - instances_to_run.shape[0] + 1
             message = (
-                f"{progress}/{total_nr_to_run} starting instance from: "
-                f"{os.path.basename(project)} (source {source}, step {step}, "
-                f"{current_time})")
+                f"{progress}/{total_nr_to_run} starting instance from "
+                f"'{os.path.basename(project)}' ({current_time})\n"
+                f"source {source}, step {step} ({frequency} Hz)\n"
+                f"estimated {ram:.2f} GB RAM of available {ram_available:.2f} "
+                "GB required\n")
             _print_message(message, text_color_reset, log_file)
 
             # new working directory
@@ -397,7 +403,7 @@ def manage_numcalc(project_path=None, numcalc_path=None,
             continue
 
         if instances_to_run.shape[0] > 0:
-            message += f"{os.path.basename(project)}: "
+            message += f"'{os.path.basename(project)}': "
             unfinished = [f"source {int(p[0])} step {int(p[1])}"
                           for p in instances_to_run]
             message += "; ".join(unfinished) + "\n"
@@ -454,7 +460,7 @@ def _get_current_ram(total_ram, max_ram_load):
     ram_free = ram_info.available / 1073741824
     ram_used = total_ram - ram_free
     ram_available = max([0, max_ram_load - ram_used])
-    return ram_available
+    return ram_available, ram_used
 
 
 def _numcalc_instances():
