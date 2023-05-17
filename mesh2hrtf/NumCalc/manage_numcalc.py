@@ -316,7 +316,7 @@ def manage_numcalc(project_path=None, numcalc_path=None,
                 # print message (only done once between launching instances)
                 if started_instance:
                     _print_message(
-                        (f"\n... waiting for resources and checking every "
+                        (f"... waiting for resources and checking every "
                          f"second ({current_time})\n"
                          f"{running_instances} NumCalc instances running at "
                          f"{cpu_load:.2f}% CPU load\n"
