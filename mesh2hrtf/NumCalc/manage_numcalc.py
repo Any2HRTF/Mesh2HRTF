@@ -318,11 +318,11 @@ def manage_numcalc(project_path=None, numcalc_path=None,
                     _print_message(
                         (f"\n... waiting for resources and checking every "
                          f"second ({current_time})\n"
-                         f"{running_instances} NumCalc instances running, "
+                         f"{running_instances} NumCalc instances running at "
+                         f"{cpu_load:.2f}% CPU load\n"
                          f"{round(ram_available, 2)} GB RAM available "
                          f"({ram_used:.2f} GB used), "
-                         f"{round(ram_required, 2)} GB required, "
-                         f"{cpu_load:.2f}% CPU load)\n"),
+                         f"{round(ram_required, 2)} GB required\n"),
                         text_color_reset, log_file)
                     started_instance = False
 
@@ -344,7 +344,7 @@ def manage_numcalc(project_path=None, numcalc_path=None,
             message = (
                 f"{progress}/{total_nr_to_run} starting instance from "
                 f"'{os.path.basename(project)}' ({current_time})\n"
-                f"source {source}, step {step} ({frequency} Hz)\n"
+                f"source {source}, step {step}, {frequency} Hz\n"
                 f"estimated {ram:.2f} GB RAM of available {ram_available:.2f} "
                 "GB required\n")
             _print_message(message, text_color_reset, log_file)
