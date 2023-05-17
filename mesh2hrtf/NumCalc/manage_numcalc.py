@@ -100,17 +100,15 @@ def manage_numcalc(project_path=None, numcalc_path=None,
         numcalc_path = "NumCalc" if numcalc_path is None else numcalc_path
 
     ram_info = psutil.virtual_memory()
+    total_ram = ram_info.total / 1073741824
     if max_ram_load is None:
-        max_ram_load = ram_info.total / 1073741824
-    elif max_ram_load > ram_info.total / 1073741824:
+        max_ram_load = total_ram
+    elif max_ram_load > total_ram:
         raise ValueError((
             f"The maximum RAM load of {max_ram_load} GB must be smaller than "
-            f"the total RAM, which is {ram_info.total / 1073741824} GB."))
+            f"the total RAM, which is {total_ram} GB."))
 
     # helping variables -------------------------------------------------------
-
-    # RAM that should not be used
-    ram_offset = max([0, ram_info.total / 1073741824 - max_ram_load])
 
     # trick to get colored print-outs   https://stackoverflow.com/a/54955094
     text_color_red = '\033[31m'
@@ -302,7 +300,7 @@ def manage_numcalc(project_path=None, numcalc_path=None,
             # current time and resources
             current_time = time.strftime(
                 "%b %d %Y, %H:%M:%S", time.localtime())
-            ram_available, ram_used = _get_current_ram(ram_offset)
+            ram_available = _get_current_ram(max_ram_load)
             cpu_load = psutil.cpu_percent(.1)
             running_instances = _numcalc_instances()
 
@@ -447,12 +445,16 @@ def _print_message(message, text_color, log_file):
         f.write(message + "\n")
 
 
-def _get_current_ram(ram_offset):
-    """Get the available RAM = free RAM - ram_offset"""
+def _get_current_ram(total_ram, max_ram_load):
+    """
+    Get the available based on currently available RAM, total RAM, and allowed
+    RAM load
+    """
     ram_info = psutil.virtual_memory()
-    ram_available = max([0, ram_info.available / 1073741824 - ram_offset])
-    ram_used = ram_info.used / 1073741824
-    return ram_available, ram_used
+    ram_free = ram_info.available / 1073741824
+    ram_used = total_ram - ram_free
+    ram_available = max([0, max_ram_load - ram_used])
+    return ram_available
 
 
 def _numcalc_instances():
