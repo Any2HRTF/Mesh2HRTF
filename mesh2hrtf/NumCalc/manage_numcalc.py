@@ -158,7 +158,8 @@ def manage_numcalc(project_path=None, numcalc_path=None,
     message += (
         f"project_path: {project_path}\n"
         f"numcalc_path: {numcalc_path}\n"
-        f"max_ram_load: {max_ram_load:.2f} GB ({total_ram:.2f} GB detected)\n"
+        f"max_ram_load: {max_ram_load:.2f} GB ({total_ram:.2f} GB detected, "
+        f"{ram_info.available / 1073741824:.2f} GB available)\n"
         f"ram_safety_factor: {ram_safety_factor}\n"
         f"max_cpu_load: {max_cpu_load} %\n"
         f"max_instances: {max_instances} "
