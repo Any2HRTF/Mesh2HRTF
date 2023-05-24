@@ -229,7 +229,13 @@ def manage_numcalc(project_path=None, numcalc_path=None,
                "-------------------------------------------------\n")
 
     message += f"Detected {len(all_projects)} Mesh2HRTF projects in\n"
-    message += f"{os.path.dirname(log_file)}\n\n"
+    message += f"{os.path.dirname(log_file)}\n"
+
+    # print already here because _check_project might produce output that
+    # should come after this
+    _print_message(message, text_color_reset, log_file)
+
+    message = "\n"
 
     for project in all_projects:
         all_instances, instances_to_run, *_ = _check_project(
