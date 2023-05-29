@@ -62,12 +62,16 @@ parser.add_argument(
           " by ``psutil.cpu_count()`` is reached."))
 parser.add_argument(
     "--wait_time", default=15, type=int,
-    help=("Delay in seconds for waiting until the RAM and CPU usage is checked"
-          " after launching a NumCalc instance. This has to be sufficiently "
-          "arge for the RAM and CPU to be fully used by the started NumCalc "
-          "instance. The default is 15. After this initial wait time, the "
-          "resources are checked every second. And the next instance is "
-          "started, once enough resources are available."))
+    help=(
+        "Delay in seconds for waiting until the RAM and CPU usage is checked "
+        "after launching a NumCalc instance. This has to be sufficiently "
+        "large for the RAM and CPU to be fully used by the started NumCalc "
+        "instance. The default is 15 s but values of 60 s or even more might "
+        "be required depending on the machine. The RAM values that "
+        "`manage_numcalc` outputs are usually a good indicator to check if "
+        "`wait_time` is sufficiently high. After this initial wait time, the "
+        "resources are checked every second. And the next instance is started,"
+        " once enough resources are available."))
 parser.add_argument(
     "--starting_order", default='alternate',
     choices=('alternate', 'high', 'low'), type=str,

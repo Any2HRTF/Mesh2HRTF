@@ -59,7 +59,10 @@ def manage_numcalc(project_path=None, numcalc_path=None,
         Delay in seconds for waiting until the RAM and CPU usage is checked
         after launching a NumCalc instance. This has to be sufficiently large
         for the RAM and CPU to be fully used by the started NumCalc instance.
-        The default is 15. After this initial wait time, the resources are
+        The default is 15 s but values of 60 s or even more might be required
+        depending on the machine. The RAM values that ``manage_numcalc``
+        outputs are usually a good indicator to check if `wait_time` is
+        sufficiently high. After this initial wait time, the resources are
         checked every second. And the next instance is started, once enough
         resources are available.
     starting_order : str, optional
