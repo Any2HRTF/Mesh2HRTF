@@ -139,9 +139,6 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
     out = -np.ones((num_frequencies, 11, num_sources))
     # values for steps
     out[:, 0] = np.arange(1, num_frequencies + 1)[..., np.newaxis]
-    # values indicating failed input check and non-convergence
-    out[:, 3] = 0
-    out[:, 4] = 0
 
     # regular expression for finding a number that can be int or float
     re_number = r"(\d+(?:\.\d+)?)"
@@ -198,10 +195,14 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
                 # check if the input data was ok
                 if "Too many integral points in the theta" not in line:
                     out[step-1, 3, ss] = 1
+                else:
+                    out[step-1, 4, ss] = 0
 
                 # check and write convergence
                 if 'Maximum number of iterations is reached!' not in line:
                     out[step-1, 4, ss] = 1
+                else:
+                    out[step-1, 4, ss] = 0
 
                 # check iterations
                 idx = re.search(r'number of iterations = \d+,', line)
