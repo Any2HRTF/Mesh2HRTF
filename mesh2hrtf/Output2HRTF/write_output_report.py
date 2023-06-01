@@ -196,7 +196,7 @@ def _parse_nc_out_files(sources, num_sources, num_frequencies):
                 if "Too many integral points in the theta" not in line:
                     out[step-1, 3, ss] = 1
                 else:
-                    out[step-1, 4, ss] = 0
+                    out[step-1, 3, ss] = 0
 
                 # check and write convergence
                 if 'Maximum number of iterations is reached!' not in line:
