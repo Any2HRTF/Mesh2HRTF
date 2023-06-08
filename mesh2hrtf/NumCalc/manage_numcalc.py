@@ -7,9 +7,9 @@ import numpy as np
 import mesh2hrtf as m2h
 
 
-def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
+def manage_numcalc(project_path=None, numcalc_path=None,
                    max_ram_load=None, ram_safety_factor=1.05, max_cpu_load=90,
-                   max_instances=psutil.cpu_count(), wait_time=15,
+                   max_instances=None, wait_time=15,
                    starting_order='alternate', confirm_errors=False):
     """
     Run NumCalc on one or multiple Mesh2HRTF project folders.
@@ -32,7 +32,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         The directory to simulate: It can be path to either
         1- directory that contains multiple Mesh2HRTF project folders or
         2- one Mesh2HRTF project folder (folder containing "parameters.json").
-        The default is os.getcwd()
+        The default ``None`` uses ``os.getcwd()``
     numcalc_path : str, optional
         On Unix, this is the path to the NumCalc binary (by default 'NumCalc'
         is used). On Windows, this is the path to the folder
@@ -42,7 +42,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     max_ram_load : number, optional
         The RAM that can maximally be used in GB. New NumCalc instances are
         only started if enough RAM is available. The default ``None`` uses all
-        available RAM will be used.
+        available RAM.
     ram_safety_factor : number, optional
         A safety factor that is applied to the estimated RAM consumption. The
         estimate is obtained using NumCalc -estimate_ram. The default of
@@ -52,14 +52,17 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         Maximum allowed CPU load in percent. New instances are only launched if
         the current CPU load is below this value. The default is 90 percent.
     max_instances : int, optional
-        The maximum numbers of parallel NumCalc instances. By default a new
-        instance is launched until the number of available CPU cores given by
-        ``psutil.cpu_count()`` is reached.
+        The maximum numbers of parallel NumCalc instances. If max_instances is
+        ``None``, by default a new instance is launched until the number of
+        available CPU cores given by ``psutil.cpu_count()`` is reached.
     wait_time : int, optional
         Delay in seconds for waiting until the RAM and CPU usage is checked
         after launching a NumCalc instance. This has to be sufficiently large
         for the RAM and CPU to be fully used by the started NumCalc instance.
-        The default is 15. After this initial wait time, the resources are
+        The default is 15 s but values of 60 s or even more might be required
+        depending on the machine. The RAM values that ``manage_numcalc``
+        outputs are usually a good indicator to check if `wait_time` is
+        sufficiently high. After this initial wait time, the resources are
         checked every second. And the next instance is started, once enough
         resources are available.
     starting_order : str, optional
@@ -81,6 +84,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     """
 
     # log_file initialization -------------------------------------------------
+    if project_path is None:
+        project_path = os.getcwd()
+
     current_time = time.strftime("%Y_%m_%d_%H-%M-%S", time.localtime())
     log_file = os.path.join(
         project_path, f"manage_numcalc_{current_time}.txt")
@@ -97,17 +103,15 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         numcalc_path = "NumCalc" if numcalc_path is None else numcalc_path
 
     ram_info = psutil.virtual_memory()
+    total_ram = ram_info.total / 1073741824
     if max_ram_load is None:
-        max_ram_load = ram_info.total / 1073741824
-    elif max_ram_load > ram_info.total / 1073741824:
+        max_ram_load = total_ram
+    elif max_ram_load > total_ram:
         raise ValueError((
             f"The maximum RAM load of {max_ram_load} GB must be smaller than "
-            f"the total RAM, which is {ram_info.total / 1073741824} GB."))
+            f"the total RAM, which is {total_ram} GB."))
 
     # helping variables -------------------------------------------------------
-
-    # RAM that should not be used
-    ram_offset = max([0, ram_info.total / 1073741824 - max_ram_load])
 
     # trick to get colored print-outs   https://stackoverflow.com/a/54955094
     text_color_red = '\033[31m'
@@ -120,7 +124,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     wait_time_busy = 1
 
     # check input -------------------------------------------------------------
-    if max_instances > psutil.cpu_count():
+    if max_instances is None:
+        max_instances = psutil.cpu_count()
+    elif max_instances > psutil.cpu_count():
         _raise_error(
             (f"max_instances is {max_instances} but can not be larger than "
              f"{psutil.cpu_count()} (The number of logical CPUs)"),
@@ -155,11 +161,13 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
     message += (
         f"project_path: {project_path}\n"
         f"numcalc_path: {numcalc_path}\n"
-        f"max_ram_load: {max_ram_load}\n"
+        f"max_ram_load: {max_ram_load:.2f} GB ({total_ram:.2f} GB detected, "
+        f"{ram_info.available / 1073741824:.2f} GB available)\n"
         f"ram_safety_factor: {ram_safety_factor}\n"
-        f"max_cpu_load: {max_cpu_load}\n"
-        f"max_instances: {max_instances}\n"
-        f"wait_time: {wait_time}\n"
+        f"max_cpu_load: {max_cpu_load} %\n"
+        f"max_instances: {max_instances} "
+        f"({psutil.cpu_count()} cores detected)\n"
+        f"wait_time: {wait_time} seconds\n"
         f"starting_order: {starting_order}\n"
         f"confirm_errors: {confirm_errors}\n")
 
@@ -224,7 +232,13 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                "-------------------------------------------------\n")
 
     message += f"Detected {len(all_projects)} Mesh2HRTF projects in\n"
-    message += f"{os.path.dirname(log_file)}\n\n"
+    message += f"{os.path.dirname(log_file)}\n"
+
+    # print already here because _check_project might produce output that
+    # should come after this
+    _print_message(message, text_color_reset, log_file)
+
+    message = "\n"
 
     for project in all_projects:
         all_instances, instances_to_run, *_ = _check_project(
@@ -234,9 +248,9 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             projects_to_run.append(project)
             message += (
                 f"{len(instances_to_run)}/{len(all_instances)} frequency "
-                f"steps to run in {os.path.basename(project)}\n")
+                f"steps to run in '{os.path.basename(project)}'\n")
         else:
-            message += f"{os.path.basename(project)} is already complete\n"
+            message += f"'{os.path.basename(project)}' is already complete\n"
 
     _print_message(message, text_color_reset, log_file)
 
@@ -252,7 +266,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
         total_nr_to_run = instances_to_run.shape[0]
 
         # Status printouts:
-        message = (f"Started {os.path.basename(project)} "
+        message = (f"Started '{os.path.basename(project)}' project "
                    f"({pp + 1}/{len(projects_to_run)}, {current_time})")
         message = "\n" + message + "\n" + "-" * len(message) + "\n"
         if total_nr_to_run:
@@ -297,7 +311,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             # current time and resources
             current_time = time.strftime(
                 "%b %d %Y, %H:%M:%S", time.localtime())
-            ram_available, ram_used = _get_current_ram(ram_offset)
+            ram_available, ram_used = _get_current_ram(total_ram, max_ram_load)
             cpu_load = psutil.cpu_percent(.1)
             running_instances = _numcalc_instances()
 
@@ -312,12 +326,13 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
                 # print message (only done once between launching instances)
                 if started_instance:
                     _print_message(
-                        (f"\n... waiting for resources (checking every "
-                         f"second, {current_time}):\n"
-                         f" {running_instances} NumCalc instances running ("
-                         f"{cpu_load}% CPU load)\n"
-                         f" {round(ram_available, 2)} GB RAM available ("
-                         f"{round(ram_required, 2)} GB RAM needed next)\n"),
+                        (f"... waiting for resources and checking every "
+                         f"second ({current_time})\n"
+                         f"{running_instances} NumCalc instances running at "
+                         f"{cpu_load:.2f}% CPU load\n"
+                         f"{round(ram_available, 2)} GB RAM available "
+                         f"({ram_used:.2f} GB used), "
+                         f"{round(ram_required, 2)} GB required\n"),
                         text_color_reset, log_file)
                     started_instance = False
 
@@ -333,11 +348,15 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             # start new NumCalc instance
             source = int(instances_to_run[idx, 0])
             step = int(instances_to_run[idx, 1])
+            frequency = float(instances_to_run[idx, 2])
+            ram = float(instances_to_run[idx, 3])
             progress = total_nr_to_run - instances_to_run.shape[0] + 1
             message = (
-                f"{progress}/{total_nr_to_run} starting instance from: "
-                f"{os.path.basename(project)} (source {source}, step {step}, "
-                f"{current_time})")
+                f"{progress}/{total_nr_to_run} starting instance from "
+                f"'{os.path.basename(project)}' ({current_time})\n"
+                f"source {source}, step {step}, {frequency} Hz\n"
+                f"estimated {ram:.2f} GB RAM of available {ram_available:.2f} "
+                "GB required\n")
             _print_message(message, text_color_reset, log_file)
 
             # new working directory
@@ -394,7 +413,7 @@ def manage_numcalc(project_path=os.getcwd(), numcalc_path=None,
             continue
 
         if instances_to_run.shape[0] > 0:
-            message += f"{os.path.basename(project)}: "
+            message += f"'{os.path.basename(project)}': "
             unfinished = [f"source {int(p[0])} step {int(p[1])}"
                           for p in instances_to_run]
             message += "; ".join(unfinished) + "\n"
@@ -442,11 +461,15 @@ def _print_message(message, text_color, log_file):
         f.write(message + "\n")
 
 
-def _get_current_ram(ram_offset):
-    """Get the available RAM = free RAM - ram_offset"""
+def _get_current_ram(total_ram, max_ram_load):
+    """
+    Get the available based on currently available RAM, total RAM, and allowed
+    RAM load
+    """
     ram_info = psutil.virtual_memory()
-    ram_available = max([0, ram_info.available / 1073741824 - ram_offset])
-    ram_used = ram_info.used / 1073741824
+    ram_free = ram_info.available / 1073741824
+    ram_used = total_ram - ram_free
+    ram_available = max([0, max_ram_load - ram_used])
     return ram_available, ram_used
 
 
