@@ -1,8 +1,15 @@
 History
 =======
 
+v1.1.1 (09 June 2023)
+---------------------
+* When creating a Mesh2HRTF project from Blender, the Blender project is now saved to the project folder as a compressed copy. Previously it was not compressed and saved directly. The latter came with the danger of making changes to Blender project after creating the Mesh2HRTF project without noting. In this case the Blender file might not reflect the settings of the rest of the project folder (PR #105).
+* Fix a bug in detecting issues in NumCalc simulations during post-processing using `ouput2hrtf` from the Python API. Errors were not reported in case `NumCalc -estimate_ram` was called before using `manage_numcalc` from the Python API.
+* Improve the output of `manage_numcalc` from the Python API.
+* Fix a bug in detecting the free RAM in `manage_numcalc` from the Python API.
+
 v1.1.0 (11 Mai 2023)
--------------------
+--------------------
 * Add dockerfile running the Mesh2HRTF Python API, `NumCalc`, and `hrtf_mesh_grading`
 * Fixed a bug in installing the Mesh2HRTF Python API
 * Fixed a bug in `manage_numcalc` if running multiple Mesh2HRTF projects
@@ -81,7 +88,7 @@ v0.3.0
 * Small bugfixes in the scripts
 
 v0.2.0 (2018)
-------
+-------------
 * Mesh2Input:
 	* MaterialAssignment.py: A Python script that can be loaded into Blender to center the head mesh in the coordinate system
 	* MeshCentering.py: A Python script that can be loaded into Blender to automatically assign the materials 'Skin', 'Left ear', and 'Right ear'

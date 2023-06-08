@@ -15,7 +15,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Mesh2HRTF export add-on",
     "author": "The Mesh2HRTF developers",
-    "version": (1, 0, 1),
+    "version": (1, 1, 1),
     "blender": (2, 80, 0),
     "location": "File > Export",
     "description": "Export Blender scene as Mesh2HRTF project",
