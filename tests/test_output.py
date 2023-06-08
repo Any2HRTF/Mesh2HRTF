@@ -290,7 +290,7 @@ def test_merge_sofa_files(pattern):
     [["case_3"], True,
      ["Frequency steps that were not calculated:\n59, 60",
       "Frequency steps with bad input:\n58"], []],
-    # no isses in source 1 but issues in source 2
+    # no issues in source 1 but issues in source 2
     [["case_0", "case_1"], True,
      ["Detected issues for source 2",
       "Frequency steps that were not calculated:\n59, 60"],
