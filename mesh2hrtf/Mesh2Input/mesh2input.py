@@ -371,7 +371,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             filter_movie=False, filter_python=False, filter_font=False,
             filter_sound=False, filter_text=False, filter_btx=False,
             filter_collada=False, filter_folder=True, filemode=8,
-            compress=False, relative_remap=True, copy=False)
+            compress=True, relative_remap=True, copy=True)
 
 
 # Write evaluation grid data --------------------------------------------------
