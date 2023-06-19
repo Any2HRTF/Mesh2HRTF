@@ -1252,7 +1252,7 @@ def _write_nc_inp(filepath1, version, title,
 
         # main parameters II --------------------------------------------------
         fw("## 2. Main Parameters II\n")
-        # write numper of plane waves and point sources
+        # write number of plane waves and point sources
         if "ear" in sourceType:
             fw("0 0 ")
         elif "Plane" in sourceType:
