@@ -15,7 +15,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Mesh2HRTF export add-on",
     "author": "The Mesh2HRTF developers",
-    "version": (1, 1, 1),
+    "version": (1, 2, 0),
     "blender": (2, 80, 0),
     "location": "File > Export",
     "description": "Export Blender scene as Mesh2HRTF project",
@@ -75,7 +75,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         name="Mesh2HRTF-path",
         description=("Path to folder containing 'NumCalc' and other folders"
                      "(used to copy files to project folder during export)"),
-        default=r"/path/to/mesh2hrtf",
+        # default=r"/path/to/mesh2hrtf",
+        default=r"/Users/mauricio_costa/Documents/Git_Repositories/Mesh2HRTF_Fork/Mesh2HRTF_lin_log_sampling/mesh2hrtf",
         )
     pictures: BoolProperty(
         name="Pictures",
@@ -169,7 +170,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         min=0,
         max=24000,
         )
-    bins_per_oct_decim: FloatProperty(
+    bins_per_oct_decim: IntProperty(
         name="Bins/octave",
         description=("Value for distributing the frequencies in log scale," 
                      "in bins/octave."),
@@ -182,7 +183,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description=("Number of higher octaves in which the frequencies will" 
                      "be distributed in log scale."),
         default=2,
-        min=1,
+        min=0,
         max=6,
         )
 
@@ -247,6 +248,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "frequencyVectorType")
         row = layout.row()
         row.prop(self, "frequencyVectorValue")
+        row = layout.row()
         row.prop(self, "bins_per_oct_decim")
         row = layout.row()
         row.prop(self, "num_octaves_decim")
@@ -1120,7 +1122,7 @@ def _distribute_frequencies_octaves(minFrequency, maxFrequency,
     else:
         frequencyStepSize = frequencies[1] - frequencies[0]
 
-    if bins_per_oct_decim > 0:
+    if bins_per_oct_decim > 0 and num_octaves_decim > 0:
 
         freqs_log = frequencies[-1]*np.power(2,-(1/bins_per_oct_decim)*(np.linspace( 
                                                 bins_per_oct_decim*num_octaves_decim, 0, 
