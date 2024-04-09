@@ -1260,6 +1260,7 @@ void NC_ComputeEntriesNforFMM
     switch(Ibvi03)
     {
         case 0:
+	  /* that is slightly unnecessary if Admia3 is zero */
             zcoefl[j1] += (Admia3*zBta3 - Gama3)*0.5;
             break;
         case 1:
