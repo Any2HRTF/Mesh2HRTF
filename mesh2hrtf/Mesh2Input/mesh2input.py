@@ -63,11 +63,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     ("Mesh elements with user assigned material 'Right ear' "
                      "act as the source")),
                ('Point source', 'Point source',
-                    ("Analytical point source. Coordinates taken from user "
-                     "placed point light named 'Point source'")),
+                    ("Analytical point source. Source position taken from "
+                     "the location of a user placed point light named 'Point "
+                     "source'")),
                ('Plane wave', 'Plane wave',
-                    ("Analytical plane wave. Coordinates taken from the "
-                    "location (not rotation) of the user placed "
+                    ("Analytical plane wave. Direction of incidence is taken "
+                    "from the location (not rotation) of a user placed "
                      "area light named 'Plane wave'"))],
         default='Both ears',
         )
