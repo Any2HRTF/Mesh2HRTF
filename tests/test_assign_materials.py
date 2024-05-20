@@ -41,7 +41,7 @@ def test_assign_materials(ear):
             [os.path.join(blender_path, 'blender'), '--background',
              '--python', assign_script,
              '--python', os.path.join(tmp_dir, savename + '.py')],
-             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
         # compare to generated data to reference
         for file_type in ['.obj', '.mtl']:
