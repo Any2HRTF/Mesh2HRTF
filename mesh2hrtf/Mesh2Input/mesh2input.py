@@ -101,7 +101,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
     # constants ---------------------------------------------------------------
     unit: EnumProperty(
         name="Unit",
-        description="Unit of the 3D scene.",
+        description=("Unit of the Reference mesh. If the y-coordinate of the "
+                     "left ear channel entrance is at approx. 65 the unit is "
+                     "mm. If it is at approx. 0.066 the unit is m"),
         items=[('m', 'm', 'Meter'), ('mm', 'mm', 'Millimeter')],
         default='mm',
         )
