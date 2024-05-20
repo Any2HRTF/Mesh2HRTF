@@ -5,8 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf
 
+# set to correctly obtain paths from `blender_paths()` below:
+computer_id = 3
 
-def blender_paths(computer_id):
+
+def blender_paths():
     """
     Define Blender paths for different computers for easier switching of
     test environments. First entry of tuple contains the path under which the
@@ -45,6 +48,14 @@ def blender_paths(computer_id):
             ('/home/bruel/Daten/Applications/blender-3.4.1-linux-x64/',
              '3.4/scripts/addons',
              '3.4/scripts/startup')]
+    elif computer_id == 3:
+        # panik macbook
+        blender_paths = [
+            # blender 4.1
+            ('/Applications/Blender.app/Contents/MacOS',
+             '../Resources/4.1/scripts/addons',
+             '../Resources/4.1/scripts/startup')
+        ]
     else:
         raise ValueError("Invalid computer id")
 

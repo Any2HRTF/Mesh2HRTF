@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import mesh2hrtf as m2h
 
 # define and check paths to your Blender versions (only use one blender)
-blender_path, addon_path, script_path = utils.blender_paths(2)[0]
+blender_path, addon_path, script_path = utils.blender_paths()[0]
 
 # set test parameters
 tutorials = ['rigid_sphere_scattering.py',
