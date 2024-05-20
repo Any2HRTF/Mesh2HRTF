@@ -63,11 +63,12 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                     ("Mesh elements with user assigned material 'Right ear' "
                      "act as the source")),
                ('Point source', 'Point source',
-                    ("Analytical point source. Coordinates taken from user "
-                     "placed point light named 'Point source'")),
+                    ("Analytical point source. Source position taken from "
+                     "the location of a user placed point light named 'Point "
+                     "source'")),
                ('Plane wave', 'Plane wave',
-                    ("Analytical plane wave. Coordinates taken from the "
-                    "location (not rotation) of the user placed "
+                    ("Analytical plane wave. Direction of incidence is taken "
+                    "from the location (not rotation) of a user placed "
                      "area light named 'Plane wave'"))],
         default='Both ears',
         )
@@ -1254,11 +1255,13 @@ def _write_nc_inp(filepath1, version, title,
 
         # main parameters II --------------------------------------------------
         fw("## 2. Main Parameters II\n")
-        fw("0 ")
+        # write number of plane waves and point sources
         if "ear" in sourceType:
-            fw("0 ")
-        else:
-            fw("1 ")
+            fw("0 0 ")
+        elif "Plane" in sourceType:
+            fw("1 0 ")
+        elif "Point" in sourceType:
+            fw("0 1 ")
         fw("0 0.0000e+00 0 0 0\n")
         fw("##\n")
 
