@@ -7,7 +7,7 @@ import utils
 import json
 
 # define and check paths to your Blender versions
-blender_paths = utils.blender_paths(2)
+blender_paths = utils.blender_paths()
 
 # directory of this file and test data
 base_dir = os.path.dirname(__file__)

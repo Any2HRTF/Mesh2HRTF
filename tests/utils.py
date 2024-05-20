@@ -5,8 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf
 
+# set to correctly obtain paths from `blender_paths()` below:
+computer_id = 3
 
-def blender_paths(computer_id):
+
+def blender_paths():
     """
     Define Blender paths for different computers for easier switching of
     test environments. First entry of tuple contains the path under which the
@@ -45,6 +48,14 @@ def blender_paths(computer_id):
             ('/home/bruel/Daten/Applications/blender-3.4.1-linux-x64/',
              '3.4/scripts/addons',
              '3.4/scripts/startup')]
+    elif computer_id == 3:
+        # panik macbook
+        blender_paths = [
+            # blender 4.1
+            ('/Applications/Blender.app/Contents/MacOS/',
+             '../Resources/4.1/scripts/addons',
+             '../Resources/4.1/scripts/startup')
+        ]
     else:
         raise ValueError("Invalid computer id")
 
@@ -179,7 +190,9 @@ def write_blender_export_script(
         f"addonFile = '{addonFile}'\n"
         f"addonPath = '{addonPath}'\n\n"
         "# re-install export addon\n"
-        "bpy.context.preferences.filepaths.script_directory = addonPath\n"
+        '# Explicitly setting the addon dir worked in older Blender versions\n'
+        '# But since the default addon dir is used, we dont really need this\n'
+        "# bpy.context.preferences.filepaths.script_directory = addonPath\n"
         "bpy.utils.refresh_script_paths()\n"
         "bpy.ops.preferences.addon_install("
         "overwrite=True, filepath=addonFile)\n"
