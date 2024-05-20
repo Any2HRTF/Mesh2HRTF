@@ -54,7 +54,7 @@ def write_evaluation_grid(
     """
 
     if isinstance(points, pf.Coordinates):
-        points = points.get_cart()
+        points = points.cartesian
 
     if points.ndim != 2 or points.shape[0] < 3 \
             or points.shape[1] != 3:

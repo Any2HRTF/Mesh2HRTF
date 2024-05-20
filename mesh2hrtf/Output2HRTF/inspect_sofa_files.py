@@ -133,13 +133,14 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
                     ["front", "back", "left", "right"])):
 
                 # find current source
-                idx, _ = sources.find_nearest_k(
-                    az, 0, 1, 1, 'sph', 'top_elev', 'deg')
+                find = pf.Coordinates.from_spherical_elevation(
+                    az / 180 * np.pi, 0, np.mean(sources.radius))
+                idx, _ = sources.find_nearest(find)
 
                 # exact position for plotting
-                source = sources.get_sph('top_elev', 'deg')[idx]
-                name += (f" (az. {np.round(source[0])}, "
-                         f"el. {np.round(source[1])} deg.)")
+                source = sources.spherical_elevation[idx]
+                name += (f" (az. {np.round(source[0] / np.pi * 180)}, "
+                         f"el. {np.round(source[1] / np.pi * 180)} deg.)")
 
                 # plot
                 if mode == "hrir":
@@ -165,7 +166,6 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
                     [f"ch. {cc+1}" for cc in range(signal.cshape[-1])], loc=3)
 
             # save
-            plt.tight_layout()
             plt.savefig(os.path.join(savedir, tail[:-5] + "_2D.pdf"),
                         bbox_inches="tight")
 
@@ -190,23 +190,28 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
 
             # find sources on the desired plane
             if plane == "horizontal":
-                _, mask = sources.find_slice("elevation", "deg", 0, atol)
-                angles = sources.get_sph('top_elev', 'deg')[mask, 0]
+                idx = np.where(np.abs(sources.elevation) <= atol / 180 * np.pi)
+                angles = np.round(sources.azimuth[idx] / np.pi * 180, 10)
                 angle = "azimuth"
             elif plane == "median":
-                _, mask = sources.find_slice("lateral", "deg", 0, atol)
-                angles = sources.get_sph('side', 'deg')[mask, 1]
+                idx = np.where(np.abs(sources.lateral) <= atol / 180 * np.pi)
+                angles = np.round(sources.polar[idx] / np.pi * 180, 10)
                 angle = "polar angle"
             else:
-                _, mask = sources.find_slice("theta", "deg", 90, atol)
-                angles = sources.get_sph('front', 'deg')[mask, 0]
-                angle = "theta"
+                idx = np.where(
+                    np.abs(sources.upper - np.pi / 2) <= atol / 180 * np.pi)
+                angles = np.round(sources.frontal[idx] / np.pi * 180, 10)
+                angle = "frontal angle"
 
-            if not np.any(mask):
+            if not len(idx):
                 warnings.warn((
                     f"Did not find and sources on the {plane} plane for "
                     f"within +/-{atol} deg. for {file}"))
                 return
+
+            # sort angles source positions
+            idx = idx[0][np.argsort(angles)]
+            angles = np.sort(angles)
 
             # plot titles
             names = ["left ear", "right ear"] if signal.cshape[-1] == 2 \
@@ -218,8 +223,7 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
                 # plot time data
                 if mode == "hrir":
                     _, qm, _ = pf.plot.time_2d(
-                        signal[mask, cc][np.argsort(angles)],
-                        indices=np.sort(angles), dB=dB_time,
+                        signal[idx, cc], indices=angles, dB=dB_time,
                         ax=ax_time[cc], cmap="coolwarm")
                     ax_time[cc].set_title(name)
 
@@ -231,8 +235,7 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
 
                 # plot frequency data
                 _, qm, _ = pf.plot.freq_2d(
-                    signal[mask, cc][np.argsort(angles)],
-                    indices=np.sort(angles), ax=ax_freq[cc],
+                    signal[idx, cc], indices=angles, ax=ax_freq[cc],
                     dB=dB_freq, freq_scale=freq_scale, cmap="Reds")
                 if mode == "hrir":
                     ax_freq[cc].set_xlabel(f"{angle} in degree")
@@ -246,7 +249,6 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
                 qm.set_clim(c_lim - 60, c_lim)
 
             # save
-            plt.tight_layout()
             plt.savefig(
                 os.path.join(savedir, f"{tail[:-5]}_3D_{plane}_plane.jpeg"),
                 dpi=300, bbox_inches="tight")

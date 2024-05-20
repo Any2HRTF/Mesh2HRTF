@@ -384,7 +384,7 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
 
     # check grid
     assert isinstance(coordinates, pf.Coordinates)
-    npt.assert_equal(coordinates.get_cart(), points)
+    npt.assert_equal(coordinates.cartesian, points)
 
 
 @pytest.mark.parametrize("mode,object,dB,deg,unwrap,folder", (

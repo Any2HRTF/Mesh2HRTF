@@ -5,7 +5,7 @@ import subprocess
 import utils
 
 # blender path (uses only the latest)
-blender_path = utils.blender_paths(2)[-1][0]
+blender_path = utils.blender_paths()[-1][0]
 # location of assign materials script and reference data
 base_dir = os.path.dirname(__file__)
 assign_script = os.path.join(
@@ -41,7 +41,7 @@ def test_assign_materials(ear):
             [os.path.join(blender_path, 'blender'), '--background',
              '--python', assign_script,
              '--python', os.path.join(tmp_dir, savename + '.py')],
-             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
         # compare to generated data to reference
         for file_type in ['.obj', '.mtl']:
