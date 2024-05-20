@@ -52,7 +52,7 @@ def blender_paths():
         # panik macbook
         blender_paths = [
             # blender 4.1
-            ('/Applications/Blender.app/Contents/MacOS',
+            ('/Applications/Blender.app/Contents/MacOS/',
              '../Resources/4.1/scripts/addons',
              '../Resources/4.1/scripts/startup')
         ]
@@ -190,7 +190,9 @@ def write_blender_export_script(
         f"addonFile = '{addonFile}'\n"
         f"addonPath = '{addonPath}'\n\n"
         "# re-install export addon\n"
-        "bpy.context.preferences.filepaths.script_directory = addonPath\n"
+        '# Explicitly setting the addon dir worked in older Blender versions\n'
+        '# But since the default addon dir is used, we dont really need this\n'
+        "# bpy.context.preferences.filepaths.script_directory = addonPath\n"
         "bpy.utils.refresh_script_paths()\n"
         "bpy.ops.preferences.addon_install("
         "overwrite=True, filepath=addonFile)\n"
