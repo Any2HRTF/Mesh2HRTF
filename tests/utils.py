@@ -113,7 +113,9 @@ def install_blender_addons_and_scripts(
     script = (
         "import bpy\n\n"
         "# set addon directory\n"
-        "bpy.context.preferences.filepaths.script_directory = "
+        '# Explicitly setting the addon dir worked in older Blender versions\n'
+        '# But since the default addon dir is used, we dont really need this\n'
+        "# bpy.context.preferences.filepaths.script_directory = "
         f"'{os.path.join(blender_path, addon_path)}'\n"
         "bpy.utils.refresh_script_paths()\n")
     # add code for installing addons
