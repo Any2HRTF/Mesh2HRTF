@@ -5,7 +5,7 @@ import subprocess
 import utils
 
 # blender path (uses only the latest)
-blender_path = utils.blender_paths(2)[-1][0]
+blender_path = utils.blender_paths()[-1][0]
 # location of assign materials script and reference data
 base_dir = os.path.dirname(__file__)
 assign_script = os.path.join(

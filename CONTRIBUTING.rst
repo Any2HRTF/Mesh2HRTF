@@ -73,7 +73,8 @@ Testing
 -------
 
 Mesh2HRTF uses py ``pytest`` for testing. For all tests to work, you must
-configure your blender path in `test_export` (variable ``blender_paths``).
+configure your blender path in `test/utils.py` (variable ``computer_id`` and
+function ``blender_paths``).
 
 - All tests are ran by
 
