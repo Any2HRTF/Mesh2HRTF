@@ -111,5 +111,5 @@ To release a new Mesh2HRTF version do the following
 - check if the tests pass
 - check if the documentation is building
 - merge develop into main
-- add a tagg and release on github
+- add a tag and release on github
 - merge main into develop
