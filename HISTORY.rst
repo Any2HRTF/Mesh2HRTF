@@ -1,6 +1,14 @@
 History
 =======
 
+v1.1.2 (21 May 2024)
+--------------------
+* Fixed a bug when exporting a Mesh2HRTF Project from Blender that uses a plane wave as sound source (PR #108)
+* Update testing to work with all supported Blender versions (PR #189, #129)
+* Update `inspect_sofa_files` from the Python API to work with the latest pyfar version (PR #125)
+* Improve tooltip help in Mesh2HRTF Export GUI in Blender (PR #124)
+* Add `__version__` attribute to Python API (PR #111)
+
 v1.1.1 (09 June 2023)
 ---------------------
 * When creating a Mesh2HRTF project from Blender, the Blender project is now saved to the project folder as a compressed copy. Previously it was not compressed and saved directly. The latter came with the danger of making changes to Blender project after creating the Mesh2HRTF project without noting. In this case the Blender file might not reflect the settings of the rest of the project folder (PR #105).
