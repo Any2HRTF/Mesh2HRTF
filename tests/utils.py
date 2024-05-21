@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sofar as sf
 
 # set to correctly obtain paths from `blender_paths()` below:
-computer_id = 3
+computer_id = 1
 
 
 def blender_paths():
@@ -18,22 +18,6 @@ def blender_paths():
     """
 
     if computer_id == 1:
-        # matheson @ audio communication group
-        base_dir = os.path.join(os.sep, 'home', 'matheson', 'Apps')
-        blender_paths = [
-            (os.path.join(base_dir, 'blender-2.83.10'),
-             os.path.join('2.83', 'scripts', 'addons'),
-             os.path.join('2.83', 'scripts', 'startup')),
-            (os.path.join(base_dir, 'blender-2.91.0'),
-             os.path.join('2.91', 'scripts', 'addons'),
-             os.path.join('2.91', 'scripts', 'startup')),
-            (os.path.join(base_dir, 'blender-2.93.8'),
-             os.path.join('2.93', 'scripts', 'addons'),
-             os.path.join('2.93', 'scripts', 'startup')),
-            (os.path.join(base_dir, 'blender-3.1.2'),
-             os.path.join('3.1', 'scripts', 'addons'),
-             os.path.join('3.1', 'scripts', 'startup'))]
-    elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
             # earliest supported LTS version
@@ -41,14 +25,14 @@ def blender_paths():
              '2.83/scripts/addons',
              '2.83/scripts/startup'),
             # latest LTS version
-            ('/home/bruel/Daten/Applications/blender-3.3.2-linux-x64/',
-             '3.3/scripts/addons',
-             '3.3/scripts/startup'),
+            ('/home/bruel/Daten/Applications/blender-3.6.12-linux-x64/',
+             '3.6/scripts/addons',
+             '3.6/scripts/startup'),
             # latest version
-            ('/home/bruel/Daten/Applications/blender-3.4.1-linux-x64/',
-             '3.4/scripts/addons',
-             '3.4/scripts/startup')]
-    elif computer_id == 3:
+            ('/home/bruel/Daten/Applications/blender-4.1.1-linux-x64/',
+             '4.1/scripts/addons',
+             '4.1/scripts/startup'),]
+    elif computer_id == 2:
         # panik macbook
         blender_paths = [
             # blender 4.1
