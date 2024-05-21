@@ -23,7 +23,15 @@ bpy.ops.object.delete()
 # load head mesh
 mesh_file = os.path.join(program_path, 'Mesh2Input', 'Meshes', 'Data',
                          'example_head_max_f_16_kHz.ply')
-bpy.ops.import_mesh.ply(filepath=mesh_file)
+try:
+    # deprecated in Blender 4.0
+    bpy.ops.import_mesh.ply(filepath=mesh_file)
+except AttributeError:
+    # introduced in Blender 3.6
+    bpy.ops.wm.ply_import(filepath=mesh_file)
+
+# force single user to avoid export error
+bpy.ops.object.make_single_user(object=True, obdata=True)
 
 # assign materials Skin, Left ear, and Right ear
 bpy.ops.object.assignmaterials()

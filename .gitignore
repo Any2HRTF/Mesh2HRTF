@@ -16,3 +16,6 @@ docs/_build
 
 # temporary test files
 tests/resources/install_addons.py
+
+# Mac files
+*.DS_Store

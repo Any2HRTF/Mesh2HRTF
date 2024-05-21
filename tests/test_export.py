@@ -7,7 +7,7 @@ import utils
 import json
 
 # define and check paths to your Blender versions
-blender_paths = utils.blender_paths(2)
+blender_paths = utils.blender_paths()
 
 # directory of this file and test data
 base_dir = os.path.dirname(__file__)
@@ -216,11 +216,19 @@ grid_dir = os.path.join(base_dir, 'resources', 'evaluation_grids')
     (os.path.join(data_dir, 'test_export.blend'),
      {"pictures": True},
      [],
-     {"exportPictures": True})
+     {"exportPictures": True}),
+
+    # test plane wave as source
+    (os.path.join(data_dir, 'test_export.blend'),
+     {"sourceType": "Plane wave",
+      "pictures": False},
+     [["PLANE WAVES\n0 -1.0 0.0 0.0 0.1 -1 0.0 -1\n"]],
+     {"sourceType": "Plane wave",
+      "sourceCenter": [-1.0, 0.0, 0.0]}),
 ])
 def test_blender_export(
-        blender_path, addon_path, script_path, blender_file_name, params,
-        match_nc, match_params):
+        blender_path, addon_path, script_path, blender_file_name,
+        params, match_nc, match_params):
     """
     Test the mesh2input Blender plugin
 

@@ -5,8 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sofar as sf
 
+# set to correctly obtain paths from `blender_paths()` below:
+computer_id = 1
 
-def blender_paths(computer_id):
+
+def blender_paths():
     """
     Define Blender paths for different computers for easier switching of
     test environments. First entry of tuple contains the path under which the
@@ -15,22 +18,6 @@ def blender_paths(computer_id):
     """
 
     if computer_id == 1:
-        # matheson @ audio communication group
-        base_dir = os.path.join(os.sep, 'home', 'matheson', 'Apps')
-        blender_paths = [
-            (os.path.join(base_dir, 'blender-2.83.10'),
-             os.path.join('2.83', 'scripts', 'addons'),
-             os.path.join('2.83', 'scripts', 'startup')),
-            (os.path.join(base_dir, 'blender-2.91.0'),
-             os.path.join('2.91', 'scripts', 'addons'),
-             os.path.join('2.91', 'scripts', 'startup')),
-            (os.path.join(base_dir, 'blender-2.93.8'),
-             os.path.join('2.93', 'scripts', 'addons'),
-             os.path.join('2.93', 'scripts', 'startup')),
-            (os.path.join(base_dir, 'blender-3.1.2'),
-             os.path.join('3.1', 'scripts', 'addons'),
-             os.path.join('3.1', 'scripts', 'startup'))]
-    elif computer_id == 2:
         # bruel @ audio communication group
         blender_paths = [
             # earliest supported LTS version
@@ -38,13 +25,21 @@ def blender_paths(computer_id):
              '2.83/scripts/addons',
              '2.83/scripts/startup'),
             # latest LTS version
-            ('/home/bruel/Daten/Applications/blender-3.3.2-linux-x64/',
-             '3.3/scripts/addons',
-             '3.3/scripts/startup'),
+            ('/home/bruel/Daten/Applications/blender-3.6.12-linux-x64/',
+             '3.6/scripts/addons',
+             '3.6/scripts/startup'),
             # latest version
-            ('/home/bruel/Daten/Applications/blender-3.4.1-linux-x64/',
-             '3.4/scripts/addons',
-             '3.4/scripts/startup')]
+            ('/home/bruel/Daten/Applications/blender-4.1.1-linux-x64/',
+             '4.1/scripts/addons',
+             '4.1/scripts/startup'),]
+    elif computer_id == 2:
+        # panik macbook
+        blender_paths = [
+            # blender 4.1
+            ('/Applications/Blender.app/Contents/MacOS/',
+             '../Resources/4.1/scripts/addons',
+             '../Resources/4.1/scripts/startup')
+        ]
     else:
         raise ValueError("Invalid computer id")
 
@@ -102,7 +97,9 @@ def install_blender_addons_and_scripts(
     script = (
         "import bpy\n\n"
         "# set addon directory\n"
-        "bpy.context.preferences.filepaths.script_directory = "
+        '# Explicitly setting the addon dir worked in older Blender versions\n'
+        '# But since the default addon dir is used, we dont really need this\n'
+        "# bpy.context.preferences.filepaths.script_directory = "
         f"'{os.path.join(blender_path, addon_path)}'\n"
         "bpy.utils.refresh_script_paths()\n")
     # add code for installing addons
@@ -179,7 +176,9 @@ def write_blender_export_script(
         f"addonFile = '{addonFile}'\n"
         f"addonPath = '{addonPath}'\n\n"
         "# re-install export addon\n"
-        "bpy.context.preferences.filepaths.script_directory = addonPath\n"
+        '# Explicitly setting the addon dir worked in older Blender versions\n'
+        '# But since the default addon dir is used, we dont really need this\n'
+        "# bpy.context.preferences.filepaths.script_directory = addonPath\n"
         "bpy.utils.refresh_script_paths()\n"
         "bpy.ops.preferences.addon_install("
         "overwrite=True, filepath=addonFile)\n"
