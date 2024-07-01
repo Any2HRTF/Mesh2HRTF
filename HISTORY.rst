@@ -1,6 +1,11 @@
 History
 =======
 
+v1.2.0 (1 July 2024)
+--------------------
+* `hrtf_mesh_grading` from the folder mesh2hrtf/Mesh2Input/Meshes/GradingHybrid can now also do purely distance based mesh grading
+* improve documentation
+
 v1.1.2 (21 May 2024)
 --------------------
 * Fixed a bug when exporting a Mesh2HRTF Project from Blender that uses a plane wave as sound source (PR #108)
