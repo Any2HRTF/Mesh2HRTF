@@ -13,8 +13,13 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
     """
     Inspect SOFA files through plots.
 
-    Generate and save plots for horizontal plane HRIRs (time domain) and HRTFs
-    (frequency domain) for one or multiple SOFA files.
+    Generate and save plots from the sofa-files that are contained in the
+    Mesh2HRTF export subfolder `Output2HRTF` and contain the HRIRs and HRTFs at
+    the evaluation grid.
+
+    Note: If the sofa-files do not exist in your Project folder you have to
+    run ``NumCalc`` and :py:func:`~output2hrtf`. See the online
+    documentation for more information.
 
     Parameters
     ----------
@@ -32,10 +37,11 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
         ``"2D"``
             generate line plots of four sources on the horizontal plane
             (front, back, left, right). The closest sources to the ideal
-            positoins are used for plotting.
+            positions are used for plotting.
         ``"3D"``
-            generate color coded plots of all sources on the horizontal
-            plane. See also parameter `atol` below.
+            generate color coded plots of all sources on the horizontal,
+            median, or frontal plane. See also parameter `plane` and `atol`
+            below.
 
         The default ``None`` generate both plots.
     plane : str, optional
