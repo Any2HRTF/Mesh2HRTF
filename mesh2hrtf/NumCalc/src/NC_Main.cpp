@@ -38,20 +38,20 @@ typedef unsigned int uint;                                                      
 
 
 
-void NC_ControlProgram(ofstream&,int,bool);
+void NC_ControlProgram(ofstream&,int,bool,bool);
 void NC_FrequencyInformations(ostream&, ofstream&);
 
 
 
 extern void NC_Read(ofstream&,FILE *,char*,string[],double*);
 extern void NC_ReadBasicParametersA(ofstream&,FILE* inputFile_,char*, string[]);
-extern int NC_DeclareArrays(ofstream&,double*,bool);
+extern int NC_DeclareArrays(ofstream&,double*,bool,bool);
 extern void NC_AllocateSDTmtxsSLFMM(ofstream&);
 void NC_AllocateSDTmtxsMLFMM(ofstream&);
 extern void NC_DeleteArrays(const int&,const int&,const int&);
 extern void NC_SetupEquationSystem(ofstream&);
 extern void NC_UpdateFreqCurves(ofstream&,double*);
-extern void NC_PostProcessing(ofstream&);
+extern void NC_PostProcessing(ofstream&,bool);
 
 // 17.11.22  Let's include LAPACK
 #ifdef USE_LAPACK
@@ -133,6 +133,7 @@ ElCluster *ClustArray;
 
 
 
+
 // the main program for NumCalc
 int main(int argc, char **argv)
 {
@@ -141,6 +142,7 @@ int main(int argc, char **argv)
   int iend = 0;   //* last freq step
   char filename[200];  //* filename for the outputfile
   bool estimate_ram = false; //* parameter for ram estimation
+  bool evalonly = false; // reuse already computed values for a new eval grid
 
   istart_ = 0;    //* first freq step
 
@@ -153,6 +155,7 @@ int main(int argc, char **argv)
       printf("-iend     int : end index of iteration\n");
       printf("-nitermax int : max number of CGS iterations\n");
       printf("-estimate_ram : estimation the RAM consumption of ML-FMM-BEM and write estimate to Memory.txt. Estimate is obtained from the number of non-zeros in the FMM matrices.\n");
+      printf("-evalonly : restart the evaluation of a new evalgrid but use already computed values at the surface\n");
       printf("-h            : this message\n");
       exit(0);
     }
@@ -175,10 +178,13 @@ int main(int argc, char **argv)
     else if(!strcmp(argv[i],"-estimate_ram")) {
       estimate_ram = true;
     }
-	else {
-		cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help.\n";
-    	exit(-1);
-	}
+    else if(!strcmp(argv[i],"-evalonly")) {
+      evalonly = true;
+    }
+    else {
+      cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help.\n";
+      exit(-1);
+    }
     i++;
   }
 
@@ -242,14 +248,14 @@ int main(int argc, char **argv)
       // and the data in it
 #ifdef isWindows
       int ifmkd;
-      if( (istart_ == 0 && iend == 0) && (!estimate_ram)) { // no steps are given, remove the old directory
+      if( (istart_ == 0 && iend == 0) && (!estimate_ram) && (!evalonly)) { // no steps are given, remove the old directory
 	if(system("rmdir /s /q be.out")==-1) cout << "\nCannot create directory be.out";
 	//	if(system("rmdir /s /q fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
       ifmkd = _mkdir("be.out"); // WINDOWS
       //   ifmkd = _mkdir("fe.out");
 #else
-      if(istart_ == 0 && iend == 0 && !estimate_ram) {
+      if(istart_ == 0 && iend == 0 && !estimate_ram && (!evalonly)) {
 	if(system("rm -f -r be.out")==-1) cout << "\nCannot create directory be.out";
 	//	if(system("rm -f -r fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
@@ -258,7 +264,7 @@ int main(int argc, char **argv)
 #endif
 
 	// call the control program
-      NC_ControlProgram(NCout,iend,estimate_ram);
+      NC_ControlProgram(NCout,iend,estimate_ram, evalonly);
 
 	// compute the end time
 	lot = time(NULL);
@@ -277,7 +283,7 @@ int main(int argc, char **argv)
 }
 
 // control program
-void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
+void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool evalonly)
 {
   double *Freqs = nullptr;
 
@@ -385,28 +391,27 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
 	  << endl;
 
     // address computation
-    ifdiff = NC_DeclareArrays(NCout, Freqs, estimate_ram);
+    ifdiff = NC_DeclareArrays(NCout, Freqs, estimate_ram, evalonly);
 
     // write the analysis type and cluster informations
     if(ifdiff) NC_FrequencyInformations(cout, NCout);
 
     // Asign some arrays on the finest level to the corresponding actual arrays
-    if(methodFMM_ >= 2 && currentFrequency_ > istart_)
-      {
-	ClustArray = clulevarry[nlevtop_].ClastArLv;
-
-	numOriginalClusters_ = clulevarry[nlevtop_].nClustOLv;
-	numOriginalReflectedClusters_ = clulevarry[nlevtop_].nClustSLv;
-
-	numExpansionTerms_ = clulevarry[nlevtop_].nExpaTermLv;
-	numIntegrationPointsUnitSphere_ = clulevarry[nlevtop_].nPoinSpheLv;
-	maxClusterRadiusBE_ = clulevarry[nlevtop_].RadiMaxLv;
-	avgClusterRadiusBE_ = clulevarry[nlevtop_].RadiAveLv;
-	minClusterRadiusBE_ = clulevarry[nlevtop_].RadiMinLv;
-
-	weisphe = clulevarry[nlevtop_].weisphe;
-	uvcsphe = clulevarry[nlevtop_].uvcsphe;
-      }
+    if(methodFMM_ >= 2 && currentFrequency_ > istart_) {
+      ClustArray = clulevarry[nlevtop_].ClastArLv;
+      
+      numOriginalClusters_ = clulevarry[nlevtop_].nClustOLv;
+      numOriginalReflectedClusters_ = clulevarry[nlevtop_].nClustSLv;
+      
+      numExpansionTerms_ = clulevarry[nlevtop_].nExpaTermLv;
+      numIntegrationPointsUnitSphere_ = clulevarry[nlevtop_].nPoinSpheLv;
+      maxClusterRadiusBE_ = clulevarry[nlevtop_].RadiMaxLv;
+      avgClusterRadiusBE_ = clulevarry[nlevtop_].RadiAveLv;
+      minClusterRadiusBE_ = clulevarry[nlevtop_].RadiMinLv;
+      
+      weisphe = clulevarry[nlevtop_].weisphe;
+      uvcsphe = clulevarry[nlevtop_].uvcsphe;
+    }
 
     // read the velocity boundary conditions from the output files of the structural analysis
 
@@ -735,208 +740,259 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
      * now we again are in the part without the ram estimation
      *
      ******************************************************* */
-
+    if(!evalonly) {
 	// initialize the right hand side vector
-    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-      {
-	zrhs[i].set(0.0, 0.0);
-      }
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+	{
+	  zrhs[i].set(0.0, 0.0);
+	}
+      
+      // generate and initialize the coefficient matrices
+      switch(methodFMM_)
+	{
+	case 0: // TBEM
+	  // create and initialize the coefficient matrices
+	  zcoefl = new Complex[numComponentsOfCoefficientMatrix_];
+	  for(i=0; i<numComponentsOfCoefficientMatrix_; i++) zcoefl[i].set(0.0, 0.0);
+	  break;
+	case 1: // SLFMBEM
+	  // compute the auxiliary arrays used for storing the sparse far field matrices
+	  NC_AllocateSDTmtxsSLFMM(NCout);
+	  
+	  // coordinates and weights of the integration points on the unit sphere
+	  uvcsphe = new double*[numIntegrationPointsUnitSphere_];
+	  for(i=0; i<numIntegrationPointsUnitSphere_; i++)
+	    {
+	      uvcsphe[i] = new double[NDIM];
+	    }
+	  weisphe = new double[numIntegrationPointsUnitSphere_];
+	  
+	  // generate the "T-vector" ( = [T] * {x})
+	  if(boolComputeTVector_) ztvct = new Complex[numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_];
+	  
+	  // generate and initialize the near field matrix
+	  zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
+	  for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
+	  
+	  // generate the "T-matrix" ([T])
+	  ztmtx = new Complex[irowtmtx[numOriginalReflectedClusters_*numIntegrationPointsUnitSphere_]];
+	  
+	  // generate the "D-matrix" ([D])
+	  dmtxlev[0].zDmxLv = new Complex[dmtxlev[0].nEntriesD];
+	  
+	  // generate he "S-matrix" ([S])
+	  zsmtx = new Complex[irowsmtx[numRowsOfCoefficientMatrix_]];
+	  
+	  break;
+	case 3: // DMLFMBEM
+	  // compute the auxiliary arrays used for storing the sparse far field matrices
+	  NC_AllocateSDTmtxsMLFMM(NCout);
+	  
+	  // create and initialize the near field matrix
+	  zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
+	  for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
+	  
+	  // loop over levels
+	  for(j=0; j<numClusterLevels_; j++)
+	    {
+	      // number of the integration points on the unit sphere
+	      int nthej = clulevarry[j].nPoinThetLv;
+	      int npsh = clulevarry[j].nPoinSpheLv;
+	      
+	      // create the working arrays for the T- and S-matrices
+	      clulevarry[j].zwkT = new Complex[clulevarry[j].nClustSLv*npsh];
+	      clulevarry[j].zwkS = new Complex[clulevarry[j].nClustOLv*npsh];
+	      
+	      // create the arrays of coordinates and weights of the integral points on the unit sphere
+	      clulevarry[j].uvcsphe = new double*[npsh];
+	      for(i=0; i<npsh; i++) clulevarry[j].uvcsphe[i] = new double[NDIM];
+	      clulevarry[j].weisphe = new double[npsh];
+	      
+	      // create the arrays of the coorninates and weights of the Gauss points in the theta-direction
+	      clulevarry[j].CrdGauLv = new double[nthej];
+	      clulevarry[j].WeiGauLv = new double[nthej];
+	      
+	      // create the T-matrix and the T-vector, the D- and S-matrices
+	      tmtxlev[j].zTmxLv = new Complex[tmtxlev[j].nEntriesT];
+	      if(boolComputeTVector_) tmtxlev[j].zTvcLv = new Complex[clulevarry[j].nClustSLv*npsh];
+	      dmtxlev[j].zDmxLv = new Complex[dmtxlev[j].nEntriesD];
+	      smtxlev[j].zSmxLv = new Complex[smtxlev[j].nEntriesS];
+	    }
+	  
+	  break;
+	} // end of SWITCH
+      
+    // set up the equation system
+      NC_SetupEquationSystem(NCout);
+      
+      time(&ltim[4]);
+      lti_est = ltim[4] - ltim[3];
+      lti_eqa += lti_est;
+      
+      // solve the equation system
+      switch(methodSolver_)
+	{
+	case 0: // CGS method
+	  NC_IterativeSolverCGS(NCout);
+	  break;
+	case 4: // direct method, usable only to the TBEM factorize the coefficient matrix
+#ifdef USE_LAPACK
+	  int info = 0;
+	  int* ipiv;
+	  cout << "Using LAPACK\n";
+	  ipiv = new int[numRowsOfCoefficientMatrix_];
+	  
+	  info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR,numRowsOfCoefficientMatrix_, numRowsOfCoefficientMatrix_, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv);
+	  if(info != 0) {
+	    cerr << "Problem with factorization of the stiffness matrix.\n";
+	    cerr << "Info = " << info << "\n";
+	    exit(-1);
+	  }
+	  info = LAPACKE_zgetrs(LAPACK_ROW_MAJOR, 'N', numRowsOfCoefficientMatrix_, 1, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv,  (lapack_complex_double*)zrhs, 1);
+	  if(info != 0) {
+	    cerr << "Problem with the solution of the system (LAPACKE).\n";
+	    cerr << "Info = "<< info << "\n";
+	    exit(-1);
+	  }
+	  delete[] ipiv;
+#else
+	  
+	  Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
+	  
+	  // forward substitution and backward eliminations
+	  Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
+#endif
+	  break;
+	}
+      
+      // destroy the coefficient matrices
+      delete [] zcoefl;
+      
+      switch(methodFMM_)
+	{
+	case 1:
+	  delete [] jcoltmtx;
+	  delete [] irowtmtx;
+	  
+	  delete [] jcolsmtx;
+	  delete [] irowsmtx;
+	  
+	  delete [] zsmtx;
+	  delete [] ztmtx;
+	  if(boolComputeTVector_) delete [] ztvct;
+	  break;
+	case 3:
+	  if(boolComputeTVector_)
+	    {
+	      for(j=0; j<numClusterLevels_; j++) delete [] tmtxlev[j].zTvcLv;
+	  }
+	  for(j=0; j<numClusterLevels_; j++)
+	    {
+	      delete [] tmtxlev[j].jcolTmxLv;
+	      delete [] tmtxlev[j].irowTmxLv;
+	      delete [] tmtxlev[j].zTmxLv;
+	      
+	      delete [] smtxlev[j].jcolSmxLv;
+	    delete [] smtxlev[j].irowSmxLv;
+	    delete [] smtxlev[j].zSmxLv;
+	    }
+	  break;
+	}
+      
+      time(&ltim[5]);
+      lti_sst = ltim[5] - ltim[4];
+      lti_sol += lti_sst;
+    } // end if (evalonly)
+    else {
+      // just keep the time for evalonly
+      time(&ltim[4]);
+      lti_est = ltim[4] - ltim[3];
+      lti_eqa += lti_est;
 
-        // generate and initialize the coefficient matrices
-    switch(methodFMM_)
-      {
-      case 0: // TBEM
-	// create and initialize the coefficient matrices
-	zcoefl = new Complex[numComponentsOfCoefficientMatrix_];
-	for(i=0; i<numComponentsOfCoefficientMatrix_; i++) zcoefl[i].set(0.0, 0.0);
-	break;
-      case 1: // SLFMBEM
-	// compute the auxiliary arrays used for storing the sparse far field matrices
-	NC_AllocateSDTmtxsSLFMM(NCout);
+      time(&ltim[5]);
+      lti_sst = ltim[5] - ltim[4];
+      lti_sol += lti_sst;
+      // we need the uvcsphere in case of FMM
 
-	// coordinates and weights of the integration points on the unit sphere
+      if( methodFMM_ == 1) {
 	uvcsphe = new double*[numIntegrationPointsUnitSphere_];
 	for(i=0; i<numIntegrationPointsUnitSphere_; i++)
 	  {
 	    uvcsphe[i] = new double[NDIM];
 	  }
 	weisphe = new double[numIntegrationPointsUnitSphere_];
-
-	// generate the "T-vector" ( = [T] * {x})
-	if(boolComputeTVector_) ztvct = new Complex[numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_];
-
-	// generate and initialize the near field matrix
-	zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
-	for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
-
-	// generate the "T-matrix" ([T])
-	ztmtx = new Complex[irowtmtx[numOriginalReflectedClusters_*numIntegrationPointsUnitSphere_]];
-
-	// generate the "D-matrix" ([D])
-	dmtxlev[0].zDmxLv = new Complex[dmtxlev[0].nEntriesD];
-
-	// generate he "S-matrix" ([S])
-	zsmtx = new Complex[irowsmtx[numRowsOfCoefficientMatrix_]];
-
-	break;
-      case 3: // DMLFMBEM
-	// compute the auxiliary arrays used for storing the sparse far field matrices
-	NC_AllocateSDTmtxsMLFMM(NCout);
-
-	// create and initialize the near field matrix
-	zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
-	for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
-
-	// loop over levels
-	for(j=0; j<numClusterLevels_; j++)
-	  {
-	    // number of the integration points on the unit sphere
-	    int nthej = clulevarry[j].nPoinThetLv;
-	    int npsh = clulevarry[j].nPoinSpheLv;
-
-	    // create the working arrays for the T- and S-matrices
-	    clulevarry[j].zwkT = new Complex[clulevarry[j].nClustSLv*npsh];
-	    clulevarry[j].zwkS = new Complex[clulevarry[j].nClustOLv*npsh];
-
-	    // create the arrays of coordinates and weights of the integral points on the unit sphere
-	    clulevarry[j].uvcsphe = new double*[npsh];
-	    for(i=0; i<npsh; i++) clulevarry[j].uvcsphe[i] = new double[NDIM];
-	    clulevarry[j].weisphe = new double[npsh];
-
-	    // create the arrays of the coorninates and weights of the Gauss points in the theta-direction
-	    clulevarry[j].CrdGauLv = new double[nthej];
-	    clulevarry[j].WeiGauLv = new double[nthej];
-
-	    // create the T-matrix and the T-vector, the D- and S-matrices
-	    tmtxlev[j].zTmxLv = new Complex[tmtxlev[j].nEntriesT];
-	    if(boolComputeTVector_) tmtxlev[j].zTvcLv = new Complex[clulevarry[j].nClustSLv*npsh];
-	    dmtxlev[j].zDmxLv = new Complex[dmtxlev[j].nEntriesD];
-	    smtxlev[j].zSmxLv = new Complex[smtxlev[j].nEntriesS];
-	  }
-
-	break;
-      } // end of SWITCH
-
-    // set up the equation system
-    NC_SetupEquationSystem(NCout);
-
-    time(&ltim[4]);
-    lti_est = ltim[4] - ltim[3];
-    lti_eqa += lti_est;
-
-    // solve the equation system
-    switch(methodSolver_)
-      {
-      case 0: // CGS method
-	NC_IterativeSolverCGS(NCout);
-	break;
-      case 4: // direct method, usable only to the TBEM factorize the coefficient matrix
-#ifdef USE_LAPACK
-	int info = 0;
-	int* ipiv;
-	cout << "Using LAPACK\n";
-	ipiv = new int[numRowsOfCoefficientMatrix_];
-
-	info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR,numRowsOfCoefficientMatrix_, numRowsOfCoefficientMatrix_, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv);
-	if(info != 0) {
-	  cerr << "Problem with factorization of the stiffness matrix.\n";
-	  cerr << "Info = " << info << "\n";
-	  exit(-1);
-	}
-	info = LAPACKE_zgetrs(LAPACK_ROW_MAJOR, 'N', numRowsOfCoefficientMatrix_, 1, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv,  (lapack_complex_double*)zrhs, 1);
-	if(info != 0) {
-	  cerr << "Problem with the solution of the system (LAPACKE).\n";
-	  cerr << "Info = "<< info << "\n";
-	  exit(-1);
-	}
-	delete[] ipiv;
-#else
-	
-	Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
-
-	// forward substitution and backward eliminations
-	Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
-#endif
-	break;
+	NC_ComputeUnitVectorOnUnitSphere(NCout, numIntegrationPointsThetaDirection_, numIntegrationPointsPhiDirection_, weisphe, uvcsphe);
       }
+      //
+      if( methodFMM_ > 1) {
+	int npsh = clulevarry[0].nPoinSpheLv;
+	int nthej = clulevarry[0].nPoinThetLv;
 
-    // destroy the coefficient matrices
-    delete [] zcoefl;
+	clulevarry[0].zwkT = new Complex[clulevarry[0].nClustSLv*npsh];
+	clulevarry[0].uvcsphe = new double*[npsh];
+	for(i=0; i<npsh; i++)
+	  clulevarry[0].uvcsphe[i] = new double[NDIM];
+	clulevarry[0].weisphe = new double[npsh];
+	NC_ComputeUnitVectorOnUnitSphere(NCout, clulevarry[0].nPoinThetLv, clulevarry[0].nPoinPhiLv, clulevarry[0].weisphe, clulevarry[0].uvcsphe);
 
-    switch(methodFMM_)
-      {
-      case 1:
-	delete [] jcoltmtx;
-	delete [] irowtmtx;
 
-	delete [] jcolsmtx;
-	delete [] irowsmtx;
-
-	delete [] zsmtx;
-	delete [] ztmtx;
-	if(boolComputeTVector_) delete [] ztvct;
-	break;
-      case 3:
-	if(boolComputeTVector_)
-	  {
-	    for(j=0; j<numClusterLevels_; j++) delete [] tmtxlev[j].zTvcLv;
-	  }
-	for(j=0; j<numClusterLevels_; j++)
-	  {
-	    delete [] tmtxlev[j].jcolTmxLv;
-	    delete [] tmtxlev[j].irowTmxLv;
-	    delete [] tmtxlev[j].zTmxLv;
-
-	    delete [] smtxlev[j].jcolSmxLv;
-	    delete [] smtxlev[j].irowSmxLv;
-	    delete [] smtxlev[j].zSmxLv;
-	  }
-	break;
       }
+      
+    }
+      // post process: compute and output the results
+    /* ************************************************
+    **             call postprocessing
+    *********************************************** */
+   
+    NC_PostProcessing(NCout,evalonly);
 
-    time(&ltim[5]);
-    lti_sst = ltim[5] - ltim[4];
-    lti_sol += lti_sst;
-    
-    // post process: compute and output the results
-    NC_PostProcessing(NCout);
 
-    switch(methodFMM_)
-      {
-      case 1: // SLFMBEM
-	for(i=0; i<numIntegrationPointsUnitSphere_; i++) delete [] uvcsphe[i];
+    // delete arrays
+    if ( !evalonly ) {
+      switch(methodFMM_)
+	{
+	case 1: // SLFMBEM
+	  for(i=0; i<numIntegrationPointsUnitSphere_; i++) delete [] uvcsphe[i];
+	  delete [] uvcsphe;
+	  delete [] weisphe;
+	  
+	  delete [] dmtxlev[0].jcolDmxLv;
+	  delete [] dmtxlev[0].irowDmxLv;
+	  delete [] dmtxlev[0].zDmxLv;
+	  break;
+	case 3: // DMLFMBEM
+	  for(j=0; j<numClusterLevels_; j++)
+	    {
+	      delete [] clulevarry[j].CrdGauLv;
+	      delete [] clulevarry[j].WeiGauLv;
+	      
+	      for(i=0; i<clulevarry[j].nPoinSpheLv; i++) delete [] clulevarry[j].uvcsphe[i];
+	      delete [] clulevarry[j].uvcsphe;
+	      delete [] clulevarry[j].weisphe;
+	      
+	      delete [] clulevarry[j].zwkT;
+	      delete [] clulevarry[j].zwkS;
+	      
+	      
+	      delete [] dmtxlev[j].jcolDmxLv;
+	      delete [] dmtxlev[j].irowDmxLv;
+	      delete [] dmtxlev[j].zDmxLv;
+	    }
+	  break;
+	}
+    }// if !evalonly
+    else {  // we still need some FMM for the evaluation
+      if( methodFMM_ ) {
+	for(i=0; i<numIntegrationPointsUnitSphere_; i++)
+	  delete [] uvcsphe[i];
 	delete [] uvcsphe;
 	delete [] weisphe;
-
-	delete [] dmtxlev[0].jcolDmxLv;
-	delete [] dmtxlev[0].irowDmxLv;
-	delete [] dmtxlev[0].zDmxLv;
-	break;
-      case 3: // DMLFMBEM
-	for(j=0; j<numClusterLevels_; j++)
-	  {
-	    delete [] clulevarry[j].CrdGauLv;
-	    delete [] clulevarry[j].WeiGauLv;
-
-	    for(i=0; i<clulevarry[j].nPoinSpheLv; i++) delete [] clulevarry[j].uvcsphe[i];
-	    delete [] clulevarry[j].uvcsphe;
-	    delete [] clulevarry[j].weisphe;
-
-	    delete [] clulevarry[j].zwkT;
-	    delete [] clulevarry[j].zwkS;
-
-
-	    delete [] dmtxlev[j].jcolDmxLv;
-	    delete [] dmtxlev[j].irowDmxLv;
-	    delete [] dmtxlev[j].zDmxLv;
-	  }
-	break;
       }
-
+    }
     time(&ltim[6]);
     lti_pst = ltim[6] - ltim[5];
     lti_pos += lti_pst;
-
+    
     // time statistic for the current frequency
     NCout << "\nTime Statistic For The Current Step (In Second)\n" << endl;
     NCout << "Assembling the equation system         : " << lti_est << endl;
@@ -944,7 +1000,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
     NCout << "Post processing                        : " << lti_pst << endl;
     NCout << "Total                                  : " <<
       lti_est + lti_sst + lti_pst << endl;
-
+    
     cout << "Assembling the equation system         : " << lti_est << endl;
     cout << "Solving the equation system            : " << lti_sst << endl;
     cout << "Post processing                        : " << lti_pst << endl;
@@ -953,7 +1009,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
     cout << endl;
 
     // delete arrays generated by 3-d address computations
-    if(currentFrequency_ == iend - 1)  NC_DeleteArrays(methodFMM_, numClusterLevels_, 1);
+    if(currentFrequency_ == iend - 1 && !evalonly)  NC_DeleteArrays(methodFMM_, numClusterLevels_, 1);
 
   } // end of loop I_FREQ (Loop over Frequencies)
 
@@ -975,7 +1031,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
     cout << "The whole job .................... " << ltim[6] - ltim[0] << endl;
   }
 
-  // delete
+  // delete element and node data
   delete [] extNumbersOfNodes;
   delete [] isNodeMeshOrEvalNode;
   delete [] extNumbersOfElements;
