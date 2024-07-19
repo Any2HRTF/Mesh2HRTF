@@ -38,12 +38,12 @@ typedef unsigned int uint;                                                      
 
 
 
-void NC_ControlProgram(ofstream&,int,bool);
+void NC_ControlProgram(ofstream&,int,bool,bool);
 void NC_FrequencyInformations(ostream&, ofstream&);
 
 
 
-extern void NC_Read(ofstream&,FILE *,char*,string[],double*);
+extern void NC_Read(ofstream&,FILE *,char*,string[],double*,bool);
 extern void NC_ReadBasicParametersA(ofstream&,FILE* inputFile_,char*, string[]);
 extern int NC_DeclareArrays(ofstream&,double*,bool);
 extern void NC_AllocateSDTmtxsSLFMM(ofstream&);
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
   int iend = 0;   //* last freq step
   char filename[200];  //* filename for the outputfile
   bool estimate_ram = false; //* parameter for ram estimation
-
+  bool check_normals = false; //* checkflag for normalvector direction
   istart_ = 0;    //* first freq step
 
 
@@ -153,6 +153,7 @@ int main(int argc, char **argv)
       printf("-iend     int : end index of iteration\n");
       printf("-nitermax int : max number of CGS iterations\n");
       printf("-estimate_ram : estimation the RAM consumption of ML-FMM-BEM and write estimate to Memory.txt. Estimate is obtained from the number of non-zeros in the FMM matrices.\n");
+      printf("-check_normals : check if all normals point to the same domain\n");
       printf("-h            : this message\n");
       exit(0);
     }
@@ -175,10 +176,13 @@ int main(int argc, char **argv)
     else if(!strcmp(argv[i],"-estimate_ram")) {
       estimate_ram = true;
     }
-	else {
-		cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help.\n";
-    	exit(-1);
-	}
+    else if(!strcmp(argv[i],"-check_normals")) {
+      check_normals = true;
+    }
+    else {
+      cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help.\n";
+      exit(-1);
+    }
     i++;
   }
 
@@ -258,7 +262,7 @@ int main(int argc, char **argv)
 #endif
 
 	// call the control program
-      NC_ControlProgram(NCout,iend,estimate_ram);
+      NC_ControlProgram(NCout,iend,estimate_ram,check_normals);
 
 	// compute the end time
 	lot = time(NULL);
@@ -277,7 +281,7 @@ int main(int argc, char **argv)
 }
 
 // control program
-void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
+void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_normals)
 {
   double *Freqs = nullptr;
 
@@ -325,7 +329,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram)
       Freqs = new double[numFrequencies_];
 
       // read the input file
-      NC_Read(NCout, inputFile_, chinpline, chterms, Freqs);
+      NC_Read(NCout, inputFile_, chinpline, chterms, Freqs, check_normals);
     }
   else // If input file does not exist
     {
