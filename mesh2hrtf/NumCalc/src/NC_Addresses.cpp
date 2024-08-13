@@ -28,15 +28,15 @@ using namespace std;                                                            
 
 
 // local functions
-int NC_GenerateClustersSLFMM(ofstream& NCout);
+int NC_GenerateClustersSLFMM(ofstream& NCout, int);
 void NC_AllocateNmtx(ofstream&);
 void NC_ComputeClusterArraysSLFMM(ofstream&, Vector<int>&, Vector<int>&,int&);
 int NC_GenerateClustersEvalGrid(ofstream&);
-void NC_GenerateClustersFMM(ofstream&, int&, Vector<int>&,Vector<int>&, int&, Vector<int>&,Vector<int>&, const int&, Vector<int>&);
+void NC_GenerateClustersFMM(ofstream&, int&, Vector<int>&,Vector<int>&, int&, Vector<int>&,Vector<int>&, const int&, Vector<int>&, int);
 void NC_ClusterReflectionsSLFMM(ofstream&);
-int NC_EstimateNumLevelsMLFMM(ofstream&);
-void NC_GenerateClusterTreeMLFMM(ofstream&);
-int NC_GenerateClustersAtLevelMLFMM(ofstream&, const int&);
+int NC_EstimateNumLevelsMLFMM(ofstream&,bool);
+void NC_GenerateClusterTreeMLFMM(ofstream&,int);
+int NC_GenerateClustersAtLevelMLFMM(ofstream&, const int&, int);
 void NC_GenerateClusterArrayAtLevelMLFMM(ofstream&, Vector<int>&, Vector<int>&,int&, const int&, Vector<int>&);
 void NC_ClusterReflectionsAtLevelMLFMM(ofstream&, const int&);
 void NC_AllocateDmtxMLFMM(ofstream&);
@@ -44,7 +44,7 @@ void NC_AllocateTmtxMLFMM(ofstream&);
 void NC_AllocateSmtxMLFMM(ofstream&);
 void NC_CheckClusters(ofstream&,	const int&,	const int&,	ElCluster*);
 void NC_DeleteArrays(const int&, const int&, const int&);
-void NC_CancelSmallClusters(Vector<int>&, Vector<int>&,  int&,  int&);
+double NC_CancelSmallClusters(Vector<int>&, Vector<int>&,  int&,  int&);
 
 
 
@@ -57,170 +57,180 @@ int n_Pair_NeaF[10], // number of cluster pairs located in the frequncy near fie
 // the main program for addressing computations
 int NC_DeclareArrays
 (
-	ofstream& NCout,
-	double* Freqs,
-	bool estimate_ram
-)
+ ofstream& NCout,
+ double* Freqs,
+ bool estimate_ram,
+ int maxfmmlength
+ )
 {
-	double dLamdBeL = waveLength_/diameterBE_, d_ratio[10],
-		thresholrat = 0.75,  // threshold for ratio n_Pair_NeaF[i]/n_Pair_FarD[i]
-	                        // (i = 0, 1, ..., numClusterLevels_-1) _PARAMETER_
-		thresholBEM = 80.0, // threshold of (wave length / diameter of BE mesh) for TBEM
-
-		thresholFMM1 = 1.0; // threshold of (wave length / diameter of BE mesh) for SLFMBEM
-	int Max_Dofs_TBEM = 20000, // maximum number of unknowns for traditional BEM
-		Max_Dofs_FMM1 = 50000; // maximum number of unknowns for single level FMM
-	int idifcomtyp = 1, i, npair_ne_sum = 1;
-	static int imultipori, nlevmlfmori;
-
-	// initialize the parameters to be computed
-	numClusterLevels_ = 1;
-
-	// determine the computation type for the current frequency
-	if(methodBEM_ == 0) // for a TRBEM job
-	{
-		methodFMM_ = 0; // TRBEM is used
-	}
-	else // for a FMBEM job
-	{
-		if(dLamdBeL > thresholBEM)
-		{
-			methodFMM_ = 0; // TRBEM is used
-		}
-		else
-		{
-			if(methodBEM_ == 1) // for a SLFMBEM job
-			{
-				methodFMM_ = 1; // SLFMBEM is used
-			}
-			else if(methodBEM_ > 1) // for a MLFMBEM job
-			{
-				if(dLamdBeL > thresholFMM1)
-				{
-					methodFMM_ = 1; // SLFMBEM is used
-				}
-				else
-				{
-					numClusterLevels_ = NC_EstimateNumLevelsMLFMM(NCout);
-					if(numClusterLevels_ == 1)
-					{
-						methodFMM_ = 1;
-					} else {
-						if(methodBEM_ == 4) {methodFMM_ = 3;}
-					}
-					if(numClusterLevels_ > 10) NC_Error_Exit_1(NCout, "numClusterLevels_ must <= 10!",
-						"numClusterLevels_ = ", numClusterLevels_);
-				}
-			}
-		}
-	}
-
-	// initialize
-	if(currentFrequency_ == istart_) for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
-
-Labsettradibem:
-	nlevtop_ = numClusterLevels_ - 1;
-
-	if(currentFrequency_ > istart_) {
-		// see if the computation type and number of levels is changed
-		if(methodFMM_ == imultipori && numClusterLevels_ == nlevmlfmori) idifcomtyp = 0;
-
-		// compute sum of cluster pairs which is located in the frequency near field
-		npair_ne_sum = 0;
-		for(i=0; i<nlevmlfmori; i++) npair_ne_sum += n_Pair_NeaF[i];
-
-		// if the computation type is not changed and number cluster pairs in the
-		// frequncy near field is zero RETURN
-		if(idifcomtyp == 0 && npair_ne_sum == 0) return(0);
-
-		// delete the old arrays generated in the following loop
-		NC_DeleteArrays(imultipori, nlevmlfmori, 0);
-	}
-
-	// generate clusters or cluster tree
-	for(i=0; i<numClusterLevels_; i++) n_Pair_FarD[i] = n_Pair_NeaF[i] = 0;
-	numOriginalReflectedClusters_ = numOriginalClusters_ = 0;
-	if(methodFMM_ == 1) // SLFMBEM
-	{
-		// generate clusters for SLFMBEM
-		numOriginalClusters_ = NC_GenerateClustersSLFMM(NCout);
-
-		if(numOriginalClusters_ > 0) {
-			NC_CheckClusters(NCout, 0, numOriginalClusters_, clustarry);
-
-			// reflection of the clusters
-			if(numReflectionsOfElements_ > 1) NC_ClusterReflectionsSLFMM(NCout);
-		} else {
-			NC_Error_Exit_1(NCout, "Number of clusters must > 0!", "Number of clusters = ",
-				numOriginalClusters_);
-		}
-	}
-	else if(methodFMM_ >= 2) // MLFMBEM
-	{
-		// generate the cluster tree
-		NC_GenerateClusterTreeMLFMM(NCout);
-
-		numOriginalClusters_ = clulevarry[nlevtop_].nClustOLv;
-		numOriginalReflectedClusters_ = clulevarry[nlevtop_].nClustSLv;
-	}
-
-	// set the cluster working array
-	switch(methodFMM_)
-	{
-	case 1: // SLFMBEM
-		ClustArray = clustarry;
-		break;
-	case 3: // DMLFMBEM
-		ClustArray = clulevarry[nlevtop_].ClastArLv;
-		break;
-	}
-
-    // compute the array JELIST (addresses of unknowns of each element in the global system)
-    numRowsOfCoefficientMatrix_ = 0;  // number of rows of the equation system
-    for(i=0; i<numElements_; i++)
-    {
-        if(listElementProperty[i] == 2) continue;
-        jelist[i][0] = numRowsOfCoefficientMatrix_++;
-    }
-
-    // number of components of the coefficient matrix for the traditional BEM
-    numComponentsOfCoefficientMatrix_ = numRowsOfCoefficientMatrix_*numRowsOfCoefficientMatrix_;
+  double dLamdBeL = waveLength_/diameterBE_, d_ratio[10],
+    thresholrat = 0.75,  // threshold for ratio n_Pair_NeaF[i]/n_Pair_FarD[i]
+    // (i = 0, 1, ..., numClusterLevels_-1) _PARAMETER_
+    thresholBEM = 80.0, // threshold of (wave length / diameter of BE mesh) for TBEM
     
-    // compute the near field coefficient matrix and
-    // generate the clusters of internal points
-    numInternalPointsClusters_ = 0;
-    if(methodFMM_) // FMBEM is used
-      {
-	// compute the number of nonzeros of the near field coefficient matrix
-	// kreiza: This is expensive an not really needed for the estimation
-	//         of the entries. Trouble is that we have to estimate or
-	//         determine the number of nonzero-entries later explicitely
-	if( !estimate_ram )
-	  NC_AllocateNmtx(NCout);
-	
-	// generate the clusters of the internal points
-	if(numNodesOfEvaluationMesh_ > 0) numInternalPointsClusters_ = NC_GenerateClustersEvalGrid(NCout);
-      }
-    if ( !estimate_ram ) {
-      // generate the arrays
-      switch(methodFMM_)
-	{
-	case 1:
-	  dmtxlev = new D_mtx_lev[1];
-	  break;
-	case 3:
-	  dmtxlev = new D_mtx_lev[numClusterLevels_];
-	  tmtxlev = new T_mtx_lev[numClusterLevels_];
-	  smtxlev = new S_mtx_lev[numClusterLevels_];
-	  break;
-	}
-      
-      // create the right hand side vector
-      zrhs = new Complex[numRowsOfCoefficientMatrix_];
+    thresholFMM1 = 1.0; // threshold of (wave length / diameter of BE mesh) for SLFMBEM
+  int Max_Dofs_TBEM = 20000, // maximum number of unknowns for traditional BEM
+    Max_Dofs_FMM1 = 50000; // maximum number of unknowns for single level FMM
+  int idifcomtyp = 1, i, npair_ne_sum = 1;
+  static int imultipori, nlevmlfmori;
+  bool get_new_cluster;
+  
+  // initialize the parameters to be computed
+  numClusterLevels_ = 1;
+  
+  // determine the computation type for the current frequency
+  if(methodBEM_ == 0) // for a TRBEM job
+    {
+      methodFMM_ = 0; // TRBEM is used
     }
-    // set original value of the computation type
-    imultipori = methodFMM_;
-    nlevmlfmori = numClusterLevels_;
+  else // for a FMBEM job
+    {
+      if(dLamdBeL > thresholBEM)
+	{
+	  methodFMM_ = 0; // TRBEM is used
+	}
+      else
+	{
+	  if(methodBEM_ == 1) // for a SLFMBEM job
+	    {
+	      methodFMM_ = 1; // SLFMBEM is used
+	    }
+	  else if(methodBEM_ > 1) // for a MLFMBEM job
+	    {
+	      if(dLamdBeL > thresholFMM1)
+		{
+		  methodFMM_ = 1; // SLFMBEM is used
+		}
+	      else
+		{
+		  numClusterLevels_ = NC_EstimateNumLevelsMLFMM(NCout,true);
+		  if(numClusterLevels_ == 1)
+		    {
+		      methodFMM_ = 1;
+		    } else {
+		    if(methodBEM_ == 4) {methodFMM_ = 3;}
+		  }
+		  if(numClusterLevels_ > 10) NC_Error_Exit_1(NCout, "numClusterLevels_ must <= 10!",
+							     "numClusterLevels_ = ", numClusterLevels_);
+		}
+	    }
+	}
+    }
+  
+  // initialize
+  if(currentFrequency_ == istart_) for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
+  
+ Labsettradibem:
+  nlevtop_ = numClusterLevels_ - 1;
+  
+  if(currentFrequency_ > istart_) {
+    // see if the computation type and number of levels is changed
+    if(methodFMM_ == imultipori && numClusterLevels_ == nlevmlfmori) idifcomtyp = 0;
+    
+    // compute sum of cluster pairs which is located in the frequency near field
+    npair_ne_sum = 0;
+    for(i=0; i<nlevmlfmori; i++) npair_ne_sum += n_Pair_NeaF[i];
+
+    // check if there is a possible change in the edgelength
+    // if so, all arrays need to be recalculated, otherwise take the old ones
+    double rd_max = clulevarry[0].RadiMaxLv;
+    double rw = 2.0*rd_max*waveNumbers_ + 1.8*log10(2.0*rd_max*waveNumbers_ + PI);
+    if ( rw < (double)maxfmmlength )
+      get_new_cluster = false;
+    else
+      get_new_cluster = true;
+    // if the computation type is not changed and number cluster pairs in the
+    // frequncy near field is zero RETURN
+    if(idifcomtyp == 0 && npair_ne_sum == 0 & !get_new_cluster)
+      return(0);
+    
+    // delete the old arrays generated in the following loop
+    NC_DeleteArrays(imultipori, nlevmlfmori, 0);
+  }
+  
+  // generate clusters or cluster tree
+  for(i=0; i<numClusterLevels_; i++) n_Pair_FarD[i] = n_Pair_NeaF[i] = 0;
+  numOriginalReflectedClusters_ = numOriginalClusters_ = 0;
+  if(methodFMM_ == 1) // SLFMBEM
+    {
+      // generate clusters for SLFMBEM
+      numOriginalClusters_ = NC_GenerateClustersSLFMM(NCout,maxfmmlength);
+      
+      if(numOriginalClusters_ > 0) {
+	NC_CheckClusters(NCout, 0, numOriginalClusters_, clustarry);
+	
+	// reflection of the clusters
+	if(numReflectionsOfElements_ > 1) NC_ClusterReflectionsSLFMM(NCout);
+      } else {
+	NC_Error_Exit_1(NCout, "Number of clusters must > 0!", "Number of clusters = ",
+			numOriginalClusters_);
+      }
+    }
+  else if(methodFMM_ >= 2) // MLFMBEM
+    {
+      // generate the cluster tree
+      NC_GenerateClusterTreeMLFMM(NCout,maxfmmlength);
+      numOriginalClusters_ = clulevarry[nlevtop_].nClustOLv;
+      numOriginalReflectedClusters_ = clulevarry[nlevtop_].nClustSLv;
+    }
+  
+  // set the cluster working array
+  switch(methodFMM_)
+    {
+    case 1: // SLFMBEM
+      ClustArray = clustarry;
+      break;
+    case 3: // DMLFMBEM
+      ClustArray = clulevarry[nlevtop_].ClastArLv;
+      break;
+    }
+  
+  // compute the array JELIST (addresses of unknowns of each element in the global system)
+  numRowsOfCoefficientMatrix_ = 0;  // number of rows of the equation system
+  for(i=0; i<numElements_; i++)
+    {
+      if(listElementProperty[i] == 2) continue;
+      jelist[i][0] = numRowsOfCoefficientMatrix_++;
+    }
+  
+  // number of components of the coefficient matrix for the traditional BEM
+  numComponentsOfCoefficientMatrix_ = numRowsOfCoefficientMatrix_*numRowsOfCoefficientMatrix_;
+  
+  // compute the near field coefficient matrix and
+  // generate the clusters of internal points
+  numInternalPointsClusters_ = 0;
+  if(methodFMM_) // FMBEM is used
+    {
+      // compute the number of nonzeros of the near field coefficient matrix
+      // kreiza: This is expensive an not really needed for the estimation
+      //         of the entries. Trouble is that we have to estimate or
+      //         determine the number of nonzero-entries later explicitely
+      if( !estimate_ram )
+	NC_AllocateNmtx(NCout);
+      
+      // generate the clusters of the internal points
+      if(numNodesOfEvaluationMesh_ > 0) numInternalPointsClusters_ = NC_GenerateClustersEvalGrid(NCout);
+    }
+  if ( !estimate_ram ) {
+    // generate the arrays
+    switch(methodFMM_)
+      {
+      case 1:
+	dmtxlev = new D_mtx_lev[1];
+	break;
+      case 3:
+	dmtxlev = new D_mtx_lev[numClusterLevels_];
+	tmtxlev = new T_mtx_lev[numClusterLevels_];
+	smtxlev = new S_mtx_lev[numClusterLevels_];
+	break;
+      }
+    
+    // create the right hand side vector
+    zrhs = new Complex[numRowsOfCoefficientMatrix_];
+  }
+  // set original value of the computation type
+  imultipori = methodFMM_;
+  nlevmlfmori = numClusterLevels_;
     
     // compute the ratio of cluster paires in the frequency near field to the total number
     // of cluster pairs in the geometrical far field
@@ -289,7 +299,8 @@ Labsettradibem:
 // generate the element clusters for SLFMBEM
 int NC_GenerateClustersSLFMM
 (
-	ofstream& NCout
+ ofstream& NCout,
+ int maxfmmlength
 )
 {
 	int i, j;
@@ -340,7 +351,7 @@ int NC_GenerateClustersSLFMM
 
 	// generate clusters
 	NC_GenerateClustersFMM(NCout, num_clus, nel_clus, nuel_clus, nbegrp,
-				 nubegrp, nuelbegrp, 0, nfath_clus);
+			       nubegrp, nuelbegrp, 0, nfath_clus, maxfmmlength);
 
 	// compute the arrays for storing data of the clusters for SLFMBEM
 	NC_ComputeClusterArraysSLFMM(NCout, nel_clus, nuel_clus, num_clus);
@@ -634,7 +645,8 @@ void NC_GenerateClustersFMM
 	Vector<int>& nubegrp,		//I: numbers of boundary element groups
 	Vector<int>& nuelbegrp,		//w: numbers of elements of each BE group
 	const int& nu_lev,			//I: number of the current level
-	Vector<int>& nfath_clus		//O: number of the father clusters
+	Vector<int>& nfath_clus	,	//O: number of the father clusters
+	int maxfmmlength                //I: Max expansion length of the FMM
 )
 {
   int i, j, k, l, ibg, nelgri, nodgri, ieli, ndij, inodi, nclus, l1, iclus, i1;
@@ -642,38 +654,40 @@ void NC_GenerateClustersFMM
   Vector<int> nundgri(numNodesOfBoundaryMesh_), ndiv_xyz(NDIM);
   double d0, d1, dCluEdgLv = ClusEdgL1/pow(2.0, nu_lev);
   Vector<double> xyz_max(NDIM), xyz_min(NDIM), dif_xyz(NDIM);
-  
+  bool nicecluster = false;
+  int counter = 0;
   // compute (1) number of clusters; (2) number of elements of each cluster
   //         (3) numbers of elements of each cluster
-  for(ibg=0; ibg<nbegr_fcl; ibg++) {
-    
-    // number of elements and numbers of elements of the current element group
-    nelgri = 0;
-    nuelbegrp = 0;
-    if(nu_lev == 0) {
-      for(j=0; j<numElements_; j++)
-	if(indexOfElementGroup[nubegrp[ibg]] == listElementsElementGroup[j])
-	  nuelbegrp[nelgri++] = j;
-    }
-        else
+  while( !nicecluster ) {
+    counter++;
+    for(ibg=0; ibg<nbegr_fcl; ibg++) {
+      // number of elements and numbers of elements of the current element group
+      nelgri = 0;
+      nuelbegrp = 0;
+      if(nu_lev == 0) {
+	for(j=0; j<numElements_; j++)
+	  if(indexOfElementGroup[nubegrp[ibg]] == listElementsElementGroup[j])
+	    nuelbegrp[nelgri++] = j;
+      }
+      else
         {
-            nelgri = clulevarry[nu_lev - 1].ClastArLv[ibg].NumOfEl;
-            for(j=0; j<nelgri; j++) nuelbegrp[j] =
-                clulevarry[nu_lev - 1].ClastArLv[ibg].NumsOfEl[j];
+	  nelgri = clulevarry[nu_lev - 1].ClastArLv[ibg].NumOfEl;
+	  for(j=0; j<nelgri; j++) nuelbegrp[j] =
+				    clulevarry[nu_lev - 1].ClastArLv[ibg].NumsOfEl[j];
         }
 
-        // compute number of nodes of the current element group and store numbers of these nodes
-        nodgri = 0;
-        for(i=0; i<nelgri; i++)
+      // compute number of nodes of the current element group and store numbers of these nodes
+      nodgri = 0;
+      for(i=0; i<nelgri; i++)
         {
-            ieli = nuelbegrp[i];
-            inodi = listNumberNodesPerElement[ieli];
-            if(inodi > NETYP4) inodi /= 2;
-            for(j=0; j<inodi; j++)
+	  ieli = nuelbegrp[i];
+	  inodi = listNumberNodesPerElement[ieli];
+	  if(inodi > NETYP4) inodi /= 2;
+	  for(j=0; j<inodi; j++)
             {
-                ndij = elementsConnectivity[ieli][j];
-                for(k=0; k<nodgri; k++) if(nundgri[k] == ndij) goto Lab0clusMetho1;
-                nundgri[nodgri++] = ndij;
+	      ndij = elementsConnectivity[ieli][j];
+	      for(k=0; k<nodgri; k++) if(nundgri[k] == ndij) goto Lab0clusMetho1;
+	      nundgri[nodgri++] = ndij;
             Lab0clusMetho1: continue;
             }
         }
@@ -681,256 +695,295 @@ void NC_GenerateClustersFMM
 
 
         // compute the maximum and minimum coordinates of the nodes of the current group
-        xyz_max = -1.0e20;
-        xyz_min = 1.0e20;
-        for(i=0; i<nodgri; i++)
+      xyz_max = -1.0e20;
+      xyz_min = 1.0e20;
+      for(i=0; i<nodgri; i++)
         {
-            ndij = nundgri[i];
-            for(j=0; j<NDIM; j++)
+	  ndij = nundgri[i];
+	  for(j=0; j<NDIM; j++)
             {
-                if(nodesCoordinates[ndij][j] > xyz_max[j]) xyz_max[j] = nodesCoordinates[ndij][j];
-                if(nodesCoordinates[ndij][j] < xyz_min[j]) xyz_min[j] = nodesCoordinates[ndij][j];
+	      if(nodesCoordinates[ndij][j] > xyz_max[j]) xyz_max[j] = nodesCoordinates[ndij][j];
+	      if(nodesCoordinates[ndij][j] < xyz_min[j]) xyz_min[j] = nodesCoordinates[ndij][j];
             }
         }
-
-        for(j=0; j<NDIM; j++)
+      
+      for(j=0; j<NDIM; j++)
         {
-            xyz_max[j] += delta_;
-            xyz_min[j] -= delta_;
+	  xyz_max[j] += delta_;
+	  xyz_min[j] -= delta_;
         }
-        for(j=0; j<NDIM; j++) dif_xyz[j] = xyz_max[j] - xyz_min[j];
+      for(j=0; j<NDIM; j++) dif_xyz[j] = xyz_max[j] - xyz_min[j];
 
-        // compute number of divisions in each coordinate direction
-        if(nu_lev == 0)
+      // compute number of divisions in each coordinate direction
+      if(nu_lev == 0)
         {
-            for(j=0; j<NDIM; j++)
+	  for(j=0; j<NDIM; j++)
             {
-                d0 = dif_xyz[j]/ClusEdgL1;
-                i = (int)(d0);
-                if(i == 0) i = 1; else if(d0 - (double)(i) > 0.5) i++;
-                ndiv_xyz[j] = i;
-                dif_xyz[j] /= (double)(i);
+	      d0 = dif_xyz[j]/ClusEdgL1;
+	      i = (int)(d0);
+	      if(i == 0) i = 1; else if(d0 - (double)(i) > 0.5) i++;
+	      ndiv_xyz[j] = i;
+	      dif_xyz[j] /= (double)(i);
             }
         }
-        else
+      else
         {
-            for(j=0; j<NDIM; j++)
+	  for(j=0; j<NDIM; j++)
             {
-                d0 = dif_xyz[j]/dCluEdgLv;
-                i = (int)(d0);
-                if(i == 0) i = 1;
-                else
+	      d0 = dif_xyz[j]/dCluEdgLv;
+	      i = (int)(d0);
+	      if(i == 0) i = 1;
+	      else
                 {
-                    if(d0 - (double)(i) > 0.5) i++;
-                    if(i > 2) i = 2;
+		  if(d0 - (double)(i) > 0.5) i++;
+		  if(i > 2) i = 2;
                 }
-                ndiv_xyz[j] = i;
-                dif_xyz[j] /= (double)(i);
+	      ndiv_xyz[j] = i;
+	      dif_xyz[j] /= (double)(i);
             }
         }
-
-        // number of clusters in the current element group
-        nclus = ndiv_xyz[0]*ndiv_xyz[1]*ndiv_xyz[2];
-
-        // number of elements in each cluster and numbers of these elements
-        Vector<int> ne_clus(nclus, 0), nue_clus(nelgri);
-
-        // compute numbers of the interval in the three coordinate directions for each element of the current group, in which it is located
-        Matrix<int> nuindxyz(nelgri, NDIM, -1);
-        for(j=0; j<NDIM; j++)
+      
+      // number of clusters in the current element group
+      nclus = ndiv_xyz[0]*ndiv_xyz[1]*ndiv_xyz[2];
+      
+      // number of elements in each cluster and numbers of these elements
+      Vector<int> ne_clus(nclus, 0), nue_clus(nelgri);
+      
+      // compute numbers of the interval in the three coordinate directions for each element of the current group, in which it is located
+      Matrix<int> nuindxyz(nelgri, NDIM, -1);
+      for(j=0; j<NDIM; j++)
         {
-            d1 = xyz_min[j];
-            for(k=0; k<ndiv_xyz[j]; k++)
+	  d1 = xyz_min[j];
+	  for(k=0; k<ndiv_xyz[j]; k++)
             {
 	      d0 = d1; // changed by kreiza
 	      d1 += dif_xyz[j];
 	      //                d0 = d1 - dif_xyz[j];
-                for(i=0; i<nelgri; i++)
+	      for(i=0; i<nelgri; i++)
                 {
-                    ieli = nuelbegrp[i];
-                    if(nuindxyz(i, j) == -1 && centel[ieli][j] > d0 - epsilon_ &&
-                       centel[ieli][j] < d1 + epsilon_) nuindxyz(i, j) = k;
+		  ieli = nuelbegrp[i];
+		  if(nuindxyz(i, j) == -1 && centel[ieli][j] > d0 - epsilon_ &&
+		     centel[ieli][j] < d1 + epsilon_) nuindxyz(i, j) = k;
                 }
             }
         }
-
-        // check the results
-        for(i=0; i<nelgri; i++) for(j=0; j<NDIM; j++) {
-            if(nuindxyz(i, j) == -1) {
-                NC_Error_Exit_2(NCout, "The interval number of an element is not found!",
-                                "number of the element = ", extNumbersOfElements[i],
-                                "number of the direction = ", j);
-            }
+      
+      // check the results
+      for(i=0; i<nelgri; i++) for(j=0; j<NDIM; j++) {
+	  if(nuindxyz(i, j) == -1) {
+	    NC_Error_Exit_2(NCout, "The interval number of an element is not found!",
+			    "number of the element = ", extNumbersOfElements[i],
+			    "number of the direction = ", j);
+	  }
         }
-
-        // compute (1) number of elements in each cluster
-        //         (2) numbers of these elements
-        iclus = 0;
-        i1 = 0;
-        for(i=0; i<ndiv_xyz[0]; i++) for(j=0; j<ndiv_xyz[1]; j++)
-            for(k=0; k<ndiv_xyz[2]; k++)
-            {
-                l1 = 0;
-                for(l=0; l<nelgri; l++)
-                    if(nuindxyz(l, 0) == i && nuindxyz(l, 1) == j && nuindxyz(l, 2) == k)
-                    {
-                        l1++;
-                        nue_clus[i1++] = nuelbegrp[l];
-                    }
-                ne_clus[iclus++] = l1;
+      
+      // compute (1) number of elements in each cluster
+      //         (2) numbers of these elements
+      iclus = 0;
+      i1 = 0;
+      for(i=0; i<ndiv_xyz[0]; i++)
+	for(j=0; j<ndiv_xyz[1]; j++)
+	  for(k=0; k<ndiv_xyz[2]; k++)
+	    {
+	      l1 = 0;
+	      for(l=0; l<nelgri; l++)
+		if(nuindxyz(l, 0) == i && nuindxyz(l, 1) == j && nuindxyz(l, 2) == k)
+		  {
+		    l1++;
+		    nue_clus[i1++] = nuelbegrp[l];
+		  }
+	      ne_clus[iclus++] = l1;
             }
-        // if there are very small clusters, combine them with the nearest
-        // bigger one
-        NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
+      // if there are very small clusters, combine them with the nearest
+      // bigger one
+      double rwfact = 1.8;
+      double rd_max = NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
+      double rw = 2.0*rd_max*waveNumbers_ + rwfact*log10( 2.0*rd_max*waveNumbers_ + PI );
+      int nlvold = numClusterLevels_;
 
-
-
+      if( methodFMM_ > 1 && ClusEdgL0_ <= 0.0 && counter == 1) {
+	if( rw > maxfmmlength && nu_lev == 0 && counter == 1 ) {
+	  // the correction is a bit tricky because of the log
+	  // letzs just take the old value for the log
+	  double logfact = rwfact*log10(2.0*rd_max*waveNumbers_ + PI);
+	  ClusEdgL1 = (maxfmmlength - logfact) / (2.0 * waveNumbers_);
+	  // there is a slight problem, that NC_EstimateNumLevelsMLFMM would set
+	  // ClusEdgL1, which we already did, thats why the additional false
+	  numClusterLevels_ = NC_EstimateNumLevelsMLFMM(NCout,false);
+	  if( numClusterLevels_ > 10 ) {
+	    cerr << "Sorry, more than 10 FMM-levels are not allowed yet\n";
+	    exit(-1);
+	  }
+	
+	  if( numClusterLevels_ != nlvold) {
+	    // delete the old cluster pointers
+	    if( clulevarry != NULL ) {
+	      for ( i = 0; i < nlvold; i++)
+		if( clulevarry[i].ClastArLv != NULL )
+		  delete [] clulevarry[i].ClastArLv;
+	      delete[] clulevarry;
+	    }
+	    clulevarry = new ClusterLev[numClusterLevels_];
+	    nlevtop_ = numClusterLevels_ - 1;
+	  }
+	}
+	else
+	  nicecluster = true;
+      }
+      else
+	nicecluster = true; // set the new length only once
         // store the results
+      if( nicecluster)  {
         i1 = 0;
-        for(i=0; i<nclus; i++)
-        {
-            if(ne_clus[i] == 0) continue;
-
-            if(nu_lev > 0) nfath_clus[num_clus] = ibg;
+	for(i=0; i<nclus; i++)
+	  {
+	    if(ne_clus[i] == 0) continue;
+	    
+	    if(nu_lev > 0) nfath_clus[num_clus] = ibg;
             nel_clus[num_clus++] = ne_clus[i];
             for(j=0; j<ne_clus[i]; j++) nuel_clus[idexel++] = nue_clus[i1++];
-        }
-
+	  }
+      }
     } // end of loop IBG
+  } // end of while
 }
 
 
 // estimate number of levels for MLFMBEM
 int NC_EstimateNumLevelsMLFMM
 (
-	ofstream& NCout
-)
+ ofstream& NCout,
+ bool set_newlength  // calculate a new length
+ )
 {
-	int n_levs;
-	double ele_leng = sqrt(averageElementArea_), d_levs,
-		d_min = 25.0; // _ACHTUNG_ _PARAMETER_
-	double nclusroot, // estimated number of clusters at the root level
-		clu_l_min;    // estimated diameter of clusters at the finest level
+  int n_levs;
+  double ele_leng = sqrt(averageElementArea_), d_levs,
+    d_min = 25.0; // _ACHTUNG_ _PARAMETER_
+  double nclusroot, // estimated number of clusters at the root level
+    clu_l_min;    // estimated diameter of clusters at the finest level
+  
+  // without interpolation/filtering procedures: unsymmetric clustering
+  nclusroot = sqrt((double)numElementsOfBoundaryMesh_)*0.9;
+  if(nclusroot < d_min) nclusroot = d_min;
+  clu_l_min = sqrt(d_min)*ele_leng;
 
-	// without interpolation/filtering procedures: unsymmetric clustering
-    nclusroot = sqrt((double)numElementsOfBoundaryMesh_)*0.9;
-    if(nclusroot < d_min) nclusroot = d_min;
-    clu_l_min = sqrt(d_min)*ele_leng;
-
-	// compute the cluster length on level 0
-	if(ClusEdgL0_ <= 0.0) // the cluster length on level 0 is not input by the user
-	{
-		double clus_nels = (double)numElementsOfBoundaryMesh_/nclusroot;
-		ClusEdgL1 = sqrt(clus_nels)*ele_leng;
-	}
-	else // cluster length of the level 0 is input by the user
-	{
-		ClusEdgL1 = ClusEdgL0_;
-		if(ClusEdgL1 < clu_l_min)
-		{
-			NC_Error_Exit_2(NCout,
-				"Inputed value of cluster diameter for level 0 is too small!",
-				"Inputed value of cluster diameter for level 0 = ", ClusEdgL1,
-				"Smallst allowable value of cluster diameter for level 0 = ", clu_l_min);
-		}
-	}
-
-	d_levs = log10(ClusEdgL1/clu_l_min)/log10(2.0);
-	n_levs = (int)d_levs;
-	if(d_levs - (double)n_levs > 0.5) n_levs++;
-	n_levs++;
-	if(n_levs <= 0) n_levs = 1;
-
-	return(n_levs);
+  if( set_newlength) {
+    // compute the cluster length on level 0
+    if(ClusEdgL0_ <= 0.0) // the cluster length on level 0 is not input by the user
+      {
+	double clus_nels = (double)numElementsOfBoundaryMesh_/nclusroot;
+	ClusEdgL1 = sqrt(clus_nels)*ele_leng;
+      }
+    else // cluster length of the level 0 is input by the user
+      {
+	ClusEdgL1 = ClusEdgL0_;
+	if(ClusEdgL1 < clu_l_min)
+	  {
+	    NC_Error_Exit_2(NCout,
+			    "Inputed value of cluster diameter for level 0 is too small!",
+			    "Inputed value of cluster diameter for level 0 = ", ClusEdgL1,
+			    "Smallst allowable value of cluster diameter for level 0 = ", clu_l_min);
+	  }
+      }
+  }
+  d_levs = log10(ClusEdgL1/clu_l_min)/log10(2.0);
+  n_levs = (int)d_levs;
+  if(d_levs - (double)n_levs > 0.5) n_levs++;
+  n_levs++;
+  if(n_levs <= 0) n_levs = 1;
+  
+  return(n_levs);
 }
 
 // generate the cluster tree for MLFMBEM
 void NC_GenerateClusterTreeMLFMM
 (
-	ofstream& NCout
+ ofstream& NCout,
+ int maxfmmlength
 )
 {
-	int i, ncl;
-
-	// generate the array of levels of the tree
-	clulevarry = new ClusterLev[numClusterLevels_];
-
-	// compute the clusters at each level
-	for(i=0; i<numClusterLevels_; i++)
-	{
-		ncl = NC_GenerateClustersAtLevelMLFMM(NCout, i);
-		NC_CheckClusters(NCout, i, clulevarry[i].nClustOLv, clulevarry[i].ClastArLv);
-	}
+  int i, ncl;
+  
+  // generate the array of levels of the tree
+  clulevarry = new ClusterLev[numClusterLevels_];
+  
+  // compute the clusters at each level
+  for(i=0; i<numClusterLevels_; i++)
+    {
+      ncl = NC_GenerateClustersAtLevelMLFMM(NCout, i,maxfmmlength);
+      NC_CheckClusters(NCout, i, clulevarry[i].nClustOLv, clulevarry[i].ClastArLv);
+    }
 }
 
 // generate clusters at given level
 int NC_GenerateClustersAtLevelMLFMM
 (
-	ofstream& NCout,
-	const int& nu_lev	// number of the level
-)
+ ofstream& NCout,
+ const int& nu_lev,	// number of the level
+ int maxfmmlevel
+ )
 {
-	int i, j;
-	int nbegrp_facl, melpergrp=0;
-	int num_clus = 0; // number of clusters
-
-	// number of elements of each cluster and numbers of these elements
-	Vector<int> nel_clus(numElementsOfBoundaryMesh_), nuel_clus(numElementsOfBoundaryMesh_), nfath_clus(numElementsOfBoundaryMesh_);
-
-	if(nu_lev == 0) // the TRUNK level
+  int i, j;
+  int nbegrp_facl, melpergrp=0;
+  int num_clus = 0; // number of clusters
+  
+  // number of elements of each cluster and numbers of these elements
+  Vector<int> nel_clus(numElementsOfBoundaryMesh_), nuel_clus(numElementsOfBoundaryMesh_), nfath_clus(numElementsOfBoundaryMesh_);
+  
+  if(nu_lev == 0) // the TRUNK level
+    {
+      // number of BE groups
+      int nbegrp_facl = 0;
+      for(i=0; i<numElementGroups_; i++)
 	{
-		// number of BE groups
-		int nbegrp_facl = 0;
-		for(i=0; i<numElementGroups_; i++)
-		{
-			if(propertyOfGroup[i] == 0) nbegrp_facl++;
-		}
-
-		// numbers of BE groups
-		Vector<int> nubegrp(nbegrp_facl);
-		j = 0;
-		for(i=0; i<numElementGroups_; i++)
-		{
-			if(propertyOfGroup[i] == 0) nubegrp[j++] = i;
-		}
-
-		// maximal number of elements of an element group
-		for(i=0; i<nbegrp_facl; i++)
-			if(numberOfElementsInGroup[nubegrp[i]] > melpergrp) melpergrp = numberOfElementsInGroup[nubegrp[i]];
-		Vector<int> nuelbegrp(melpergrp);
-
-		// generate clusters
-		NC_GenerateClustersFMM(NCout, num_clus, nel_clus, nuel_clus, nbegrp_facl,
-					 nubegrp, nuelbegrp, nu_lev, nfath_clus);
+	  if(propertyOfGroup[i] == 0) nbegrp_facl++;
 	}
-	else // the BRANCH and LEAF levels
+      
+      // numbers of BE groups
+      Vector<int> nubegrp(nbegrp_facl);
+      j = 0;
+      for(i=0; i<numElementGroups_; i++)
 	{
-		// number of original clusters at the father level
-		nbegrp_facl = clulevarry[nu_lev - 1].nClustOLv;
-
-		// does not be used
-		Vector<int> nubegrp(0);
-
-		// maximal number of elements of a father cluster
-		for(i=0; i<nbegrp_facl; i++)
-		{
-			j = clulevarry[nu_lev - 1].ClastArLv[i].NumOfEl;
-			if(j > melpergrp) melpergrp = j;
-		}
-		Vector<int> nuelbegrp(melpergrp);
-
-		// generate clusters
-		NC_GenerateClustersFMM(NCout, num_clus, nel_clus, nuel_clus, nbegrp_facl,
-					 nubegrp, nuelbegrp, nu_lev, nfath_clus);
-	} // end of BRANCH and LEAF level
-
-	// generate the cluster structure at a given level
-	NC_GenerateClusterArrayAtLevelMLFMM(NCout, nel_clus, nuel_clus, num_clus, nu_lev, nfath_clus);
-
-	// reflection of the clusters with respect to the symmetry planes
-	if(numReflectionsOfElements_ > 1) NC_ClusterReflectionsAtLevelMLFMM(NCout, nu_lev);
-
-	return(num_clus);
+	  if(propertyOfGroup[i] == 0) nubegrp[j++] = i;
+	}
+      
+      // maximal number of elements of an element group
+      for(i=0; i<nbegrp_facl; i++)
+	if(numberOfElementsInGroup[nubegrp[i]] > melpergrp) melpergrp = numberOfElementsInGroup[nubegrp[i]];
+      Vector<int> nuelbegrp(melpergrp);
+      
+      // generate clusters
+      NC_GenerateClustersFMM(NCout, num_clus, nel_clus, nuel_clus, nbegrp_facl,
+			     nubegrp, nuelbegrp, nu_lev, nfath_clus, maxfmmlevel);
+    }
+  else // the BRANCH and LEAF levels
+    {
+      // number of original clusters at the father level
+      nbegrp_facl = clulevarry[nu_lev - 1].nClustOLv;
+      
+      // does not be used
+      Vector<int> nubegrp(0);
+      
+      // maximal number of elements of a father cluster
+      for(i=0; i<nbegrp_facl; i++)
+	{
+	  j = clulevarry[nu_lev - 1].ClastArLv[i].NumOfEl;
+	  if(j > melpergrp) melpergrp = j;
+	}
+      Vector<int> nuelbegrp(melpergrp);
+      
+      // generate clusters
+      NC_GenerateClustersFMM(NCout, num_clus, nel_clus, nuel_clus, nbegrp_facl,
+			     nubegrp, nuelbegrp, nu_lev, nfath_clus, maxfmmlevel);
+    } // end of BRANCH and LEAF level
+  
+  // generate the cluster structure at a given level
+  NC_GenerateClusterArrayAtLevelMLFMM(NCout, nel_clus, nuel_clus, num_clus, nu_lev, nfath_clus);
+  
+  // reflection of the clusters with respect to the symmetry planes
+  if(numReflectionsOfElements_ > 1) NC_ClusterReflectionsAtLevelMLFMM(NCout, nu_lev);
+  
+  return(num_clus);
 }
 
 // generate the cluster structure at a given level
@@ -2071,7 +2124,7 @@ void NC_DeleteArrays(const int& imultpol, const int& nlevmlfm, const int& ifdelN
 //       probably tested to some degree, so in general this factor can be
 //       trusted
 //--------------------------------------------------------------------------
-void NC_CancelSmallClusters
+double NC_CancelSmallClusters
 (
  Vector<int>& ne_clus,	// I,O: number of elements in each cluster
  Vector<int>& nue_clus,	// I,O: numbers of elements in each cluster
@@ -2163,7 +2216,7 @@ void NC_CancelSmallClusters
   if(!iffewel) {
     for(i=0; i<nclus; i++) delete [] crdcenters[i];
     delete [] crdcenters;
-    return;
+    return(rdmax);
   }
 
   // search the nearest cluster for each small cluster
@@ -2238,5 +2291,7 @@ void NC_CancelSmallClusters
   // delete the array of coordinates of the center of each cluster
   for(i=0; i<nclus; i++) delete [] crdcenters[i];
   delete [] crdcenters;
+
+  return(rdmax);
 }
 
