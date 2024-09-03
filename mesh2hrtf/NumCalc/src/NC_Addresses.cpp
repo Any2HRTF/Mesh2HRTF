@@ -133,10 +133,16 @@ int NC_DeclareArrays
 
     // check if there is a possible change in the edgelength
     // if so, all arrays need to be recalculated, otherwise take the old ones
-    double rd_max = clulevarry[0].RadiMaxLv;
-    double rw = 2.0*rd_max*waveNumbers_ + 1.8*log10(2.0*rd_max*waveNumbers_ + PI);
-    if ( rw < (double)maxfmmlength )
-      get_new_cluster = false;
+    if( clulevarry != NULL && methodFMM_ > 1) {
+      // this can happen, if the MLFMM has been reduced to the SLFMM before
+      
+      double rd_max = clulevarry[0].RadiMaxLv;
+      double rw = 2.0*rd_max*waveNumbers_ + 1.8*log10(2.0*rd_max*waveNumbers_ + PI);
+      if ( rw < (double)maxfmmlength )
+	get_new_cluster = false;
+      else
+	get_new_cluster = true;
+    }
     else
       get_new_cluster = true;
     // if the computation type is not changed and number cluster pairs in the
@@ -384,7 +390,7 @@ void NC_ComputeClusterArraysSLFMM
     numOriginalReflectedClusters_ = num_clus*numReflectionsOfElements_;
     clustarry = new ElCluster[numOriginalReflectedClusters_];
 
-    // loop over clusters
+    // loop over cluster
     l_sum = 0;
     for(i=0; i<num_clus; i++)
     {
@@ -392,7 +398,8 @@ void NC_ComputeClusterArraysSLFMM
         clustarry[i].NumOfDOFs = clustarry[i].NumOfEl = nel_clus[i];
 
         // numbers of the elements of the cluster
-        clustarry[i].NumsOfEl = new int[nel_clus[i]];
+	if( clustarry[i].NumOfEl > 0 )
+	  clustarry[i].NumsOfEl = new int[nel_clus[i]];
         for(j=0; j<nel_clus[i]; j++) clustarry[i].NumsOfEl[j] = nuel_clus[l_sum++];
 
         // number of the element group to which the cluster belongs
@@ -492,9 +499,10 @@ void NC_ComputeClusterArraysSLFMM
                 if(ifarclus(i, j)) {clustarry[i].NumFarClus++;}
                 else {clustarry[i].NumNeaClus++;}
             }
-
-            clustarry[i].NumsNeaClus = new int[clustarry[i].NumNeaClus];
-            clustarry[i].NumsFarClus = new int[clustarry[i].NumFarClus];
+	    if( clustarry[i].NumNeaClus > 0 )
+	      clustarry[i].NumsNeaClus = new int[clustarry[i].NumNeaClus];
+	    if( clustarry[i].NumFarClus > 0 )
+	      clustarry[i].NumsFarClus = new int[clustarry[i].NumFarClus];
             nnea = nfar = 0;
             for(j=0; j<num_clus; j++)
             {
@@ -568,21 +576,21 @@ void NC_ClusterReflectionsSLFMM
             clustarry[nucl].NDOFsPeEl = clustarry[icl].NDOFsPeEl;
 
             nel = clustarry[nucl].NumOfEl = clustarry[icl].NumOfEl;
-            clustarry[nucl].NumsOfEl = new int[nel];
+	    if (nel > 0)
+	      clustarry[nucl].NumsOfEl = new int[nel];
             for(i=0; i<nel; i++) clustarry[nucl].NumsOfEl[i] = clustarry[icl].NumsOfEl[i];
 
             clustarry[nucl].RadiClus = clustarry[icl].RadiClus;
 
-            for(i=0; i<NDIM; i++)
-            {
-                if(nrefi[i]%2) clustarry[nucl].ifrfdi[i] = true;
-                else clustarry[nucl].ifrfdi[i] = false;
-                if(clustarry[nucl].ifrfdi[i])
-                    clustarry[nucl].CoorCent[i] = 2.0*listSymmetryPlanesCoordinates[i] - clustarry[icl].CoorCent[i];
-                else
-                    clustarry[nucl].CoorCent[i] = clustarry[icl].CoorCent[i];
+            for(i=0; i<NDIM; i++) {
+	      if(nrefi[i]%2) clustarry[nucl].ifrfdi[i] = true;
+	      else clustarry[nucl].ifrfdi[i] = false;
+	      if(clustarry[nucl].ifrfdi[i])
+		clustarry[nucl].CoorCent[i] = 2.0*listSymmetryPlanesCoordinates[i] - clustarry[icl].CoorCent[i];
+	      else
+		clustarry[nucl].CoorCent[i] = clustarry[icl].CoorCent[i];
             }
-
+	    
             clustarry[nucl].OriClust = icl;
             clustarry[nucl].nuref = kref;
             if(kref%2) clustarry[nucl].ifmirro = true;
@@ -622,9 +630,10 @@ void NC_ClusterReflectionsSLFMM
             if(ifarclus(i, j)) clustarry[i].NumFarClus++;
             else clustarry[i].NumNeaClus++;
         }
-
-        clustarry[i].NumsNeaClus = new int[clustarry[i].NumNeaClus];
-        clustarry[i].NumsFarClus = new int[clustarry[i].NumFarClus];
+	if( clustarry[i].NumNeaClus > 0 )
+	  clustarry[i].NumsNeaClus = new int[clustarry[i].NumNeaClus];
+	if( clustarry[i].NumFarClus > 0 )
+	  clustarry[i].NumsFarClus = new int[clustarry[i].NumFarClus];
         nnea = nfar = 0;
         for(j=0; j<numOriginalReflectedClusters_; j++)
         {
@@ -675,26 +684,24 @@ void NC_GenerateClustersFMM
 	  for(j=0; j<nelgri; j++) nuelbegrp[j] =
 				    clulevarry[nu_lev - 1].ClastArLv[ibg].NumsOfEl[j];
         }
-
+      
       // compute number of nodes of the current element group and store numbers of these nodes
       nodgri = 0;
-      for(i=0; i<nelgri; i++)
-        {
-	  ieli = nuelbegrp[i];
-	  inodi = listNumberNodesPerElement[ieli];
-	  if(inodi > NETYP4) inodi /= 2;
-	  for(j=0; j<inodi; j++)
-            {
-	      ndij = elementsConnectivity[ieli][j];
-	      for(k=0; k<nodgri; k++) if(nundgri[k] == ndij) goto Lab0clusMetho1;
-	      nundgri[nodgri++] = ndij;
-            Lab0clusMetho1: continue;
-            }
-        }
-	// nundgri contains now the nodenumbers of the nodes in the current element group
-
-
-        // compute the maximum and minimum coordinates of the nodes of the current group
+      for(i=0; i<nelgri; i++) {
+	ieli = nuelbegrp[i];
+	inodi = listNumberNodesPerElement[ieli];
+	if(inodi > NETYP4) inodi /= 2;
+	for(j=0; j<inodi; j++) {
+	  ndij = elementsConnectivity[ieli][j];
+	  for(k=0; k<nodgri; k++) if(nundgri[k] == ndij) goto Lab0clusMetho1;
+	  nundgri[nodgri++] = ndij;
+	Lab0clusMetho1: continue;
+	}
+      }
+      // nundgri contains now the nodenumbers of the nodes in the current element group
+      
+      
+      // compute the maximum and minimum coordinates of the nodes of the current group
       xyz_max = -1.0e20;
       xyz_min = 1.0e20;
       for(i=0; i<nodgri; i++)
@@ -712,6 +719,7 @@ void NC_GenerateClustersFMM
 	  xyz_max[j] += delta_;
 	  xyz_min[j] -= delta_;
         }
+      
       for(j=0; j<NDIM; j++) dif_xyz[j] = xyz_max[j] - xyz_min[j];
 
       // compute number of divisions in each coordinate direction
@@ -781,9 +789,9 @@ void NC_GenerateClustersFMM
       //         (2) numbers of these elements
       iclus = 0;
       i1 = 0;
-      for(i=0; i<ndiv_xyz[0]; i++)
-	for(j=0; j<ndiv_xyz[1]; j++)
-	  for(k=0; k<ndiv_xyz[2]; k++)
+      for( i = 0; i < ndiv_xyz[0]; i++)
+	for( j = 0; j < ndiv_xyz[1]; j++)
+	  for( k = 0; k < ndiv_xyz[2]; k++)
 	    {
 	      l1 = 0;
 	      for(l=0; l<nelgri; l++)
@@ -800,7 +808,7 @@ void NC_GenerateClustersFMM
       double rd_max = NC_CancelSmallClusters(ne_clus, nue_clus, nclus, ibg);
       double rw = 2.0*rd_max*waveNumbers_ + rwfact*log10( 2.0*rd_max*waveNumbers_ + PI );
       int nlvold = numClusterLevels_;
-
+      
       if( methodFMM_ > 1 && ClusEdgL0_ <= 0.0 && counter == 1) {
 	if( rw > maxfmmlength && nu_lev == 0 && counter == 1 ) {
 	  // the correction is a bit tricky because of the log
@@ -814,34 +822,31 @@ void NC_GenerateClustersFMM
 	    cerr << "Sorry, more than 10 FMM-levels are not allowed yet\n";
 	    exit(-1);
 	  }
-	
+	  
 	  if( numClusterLevels_ != nlvold) {
 	    // delete the old cluster pointers
-	    if( clulevarry != NULL ) {
-	      for ( i = 0; i < nlvold; i++)
-		if( clulevarry[i].ClastArLv != NULL )
-		  delete [] clulevarry[i].ClastArLv;
-	      delete[] clulevarry;
-	    }
-	    clulevarry = new ClusterLev[numClusterLevels_];
-	    nlevtop_ = numClusterLevels_ - 1;
+	    /*	    if( clulevarry != NULL ) {
+		    for ( i = 0; i < nlvold; i++)
+		    if( clulevarry[i].ClastArLv != NULL )
+		    delete [] clulevarry[i].ClastArLv;
+		    delete[] clulevarry;*/
+	    delete [] clulevarry;
 	  }
+	  clulevarry = new ClusterLev[numClusterLevels_];
+	  nlevtop_ = numClusterLevels_ - 1;
 	}
-	else
-	  nicecluster = true;
       }
       else
-	nicecluster = true; // set the new length only once
-        // store the results
+	nicecluster = true;
       if( nicecluster)  {
-        i1 = 0;
+	i1 = 0;
 	for(i=0; i<nclus; i++)
 	  {
 	    if(ne_clus[i] == 0) continue;
 	    
 	    if(nu_lev > 0) nfath_clus[num_clus] = ibg;
-            nel_clus[num_clus++] = ne_clus[i];
-            for(j=0; j<ne_clus[i]; j++) nuel_clus[idexel++] = nue_clus[i1++];
+	    nel_clus[num_clus++] = ne_clus[i];
+	    for(j=0; j<ne_clus[i]; j++) nuel_clus[idexel++] = nue_clus[i1++];
 	  }
       }
     } // end of loop IBG
@@ -1026,7 +1031,8 @@ void NC_GenerateClusterArrayAtLevelMLFMM
 			clulevarry[nu_lev].ClastArLv[i].NumOfEl = nel_clus[i];
 
 		// numbers of the elements of the cluster
-		clulevarry[nu_lev].ClastArLv[i].NumsOfEl = new int[nel_clus[i]];
+		if ( nel_clus[i] > 0 )
+		  clulevarry[nu_lev].ClastArLv[i].NumsOfEl = new int[nel_clus[i]];
 		for(j=0; j<nel_clus[i]; j++) {
 		  // for debugging
 		  clulevarry[nu_lev].ClastArLv[i].NumsOfEl[j] = nuel_clus[l_sum++];
@@ -1113,45 +1119,46 @@ LbclustAray2: continue;
 	// define the near and far field clusters
 	if(numReflectionsOfElements_ == 1)
 	{
-		Matrix<bool> ifarclus(num_clus, num_clus, false);
-		for(i=0; i<num_clus; i++) for(j=0; j<i; j++)
-		{
-			dispo = Dispoi_dim3_(clulevarry[nu_lev].ClastArLv[i].CoorCent,
-				clulevarry[nu_lev].ClastArLv[j].CoorCent);
-
-			wk0 = clulevarry[nu_lev].ClastArLv[i].RadiClus +
-				clulevarry[nu_lev].ClastArLv[j].RadiClus;
-
-			if(dispo > farFieldClusterFactor_*wk0) {
-				if(dispo > minClusterDistance_) {
-					ifarclus(j, i) = ifarclus(i, j) = true;
-				} else {
-					n_Pair_NeaF[nu_lev]++;
-				}
-				n_Pair_FarD[nu_lev]++;
-			}
+	  Matrix<bool> ifarclus(num_clus, num_clus, false);
+	  for(i=0; i<num_clus; i++)
+	    for(j=0; j<i; j++) {
+	      dispo = Dispoi_dim3_(clulevarry[nu_lev].ClastArLv[i].CoorCent,	     clulevarry[nu_lev].ClastArLv[j].CoorCent);
+	      
+	      wk0 = clulevarry[nu_lev].ClastArLv[i].RadiClus +
+		clulevarry[nu_lev].ClastArLv[j].RadiClus;
+	      
+	      if(dispo > farFieldClusterFactor_*wk0) {
+		if(dispo > minClusterDistance_) {
+		  ifarclus(j, i) = ifarclus(i, j) = true;
+		} else {
+		  n_Pair_NeaF[nu_lev]++;
 		}
-
-		int nnea, nfar;
-		for(i=0; i<num_clus; i++)
-		{
-			clulevarry[nu_lev].ClastArLv[i].NumNeaClus =
-				clulevarry[nu_lev].ClastArLv[i].NumFarClus = 0;
-			for(j=0; j<num_clus; j++)
-				if(ifarclus(i, j)) clulevarry[nu_lev].ClastArLv[i].NumFarClus++;
-				else clulevarry[nu_lev].ClastArLv[i].NumNeaClus++;
-
-			clulevarry[nu_lev].ClastArLv[i].NumsNeaClus =
-				new int[clulevarry[nu_lev].ClastArLv[i].NumNeaClus];
-			clulevarry[nu_lev].ClastArLv[i].NumsFarClus =
-				new int[clulevarry[nu_lev].ClastArLv[i].NumFarClus];
-			nnea = nfar = 0;
-			for(j=0; j<num_clus; j++) if(ifarclus(i, j))
-				clulevarry[nu_lev].ClastArLv[i].NumsFarClus[nfar++] = j;
-			else clulevarry[nu_lev].ClastArLv[i].NumsNeaClus[nnea++] = j;
-		}
+		n_Pair_FarD[nu_lev]++;
+	      }
+	    }
+	  
+	  int nnea, nfar;
+	  for(i=0; i<num_clus; i++)
+	    {
+	      clulevarry[nu_lev].ClastArLv[i].NumNeaClus =
+		clulevarry[nu_lev].ClastArLv[i].NumFarClus = 0;
+	      for(j=0; j<num_clus; j++)
+		if(ifarclus(i, j)) clulevarry[nu_lev].ClastArLv[i].NumFarClus++;
+		else clulevarry[nu_lev].ClastArLv[i].NumNeaClus++;
+	      
+	      if( clulevarry[nu_lev].ClastArLv[i].NumNeaClus )
+		clulevarry[nu_lev].ClastArLv[i].NumsNeaClus =
+		  new int[clulevarry[nu_lev].ClastArLv[i].NumNeaClus];
+	      if( clulevarry[nu_lev].ClastArLv[i].NumFarClus )
+		clulevarry[nu_lev].ClastArLv[i].NumsFarClus =
+		  new int[clulevarry[nu_lev].ClastArLv[i].NumFarClus];
+	      nnea = nfar = 0;
+	      for(j=0; j<num_clus; j++) if(ifarclus(i, j))
+					  clulevarry[nu_lev].ClastArLv[i].NumsFarClus[nfar++] = j;
+		else clulevarry[nu_lev].ClastArLv[i].NumsNeaClus[nnea++] = j;
+	    }
 	} // end of NREFL == 1
-
+	
 	// create reflection informations
 	for(i=0; i<num_clus; i++)
 	{
@@ -1165,20 +1172,20 @@ LbclustAray2: continue;
 	// register the father-son relation
 	if(nu_lev > 0)
 	{
-		int nfacl, nl_f = nu_lev - 1;
-
-		for(i=0; i<clulevarry[nl_f].nClustOLv; i++)
-			clulevarry[nl_f].ClastArLv[i].n_Son = 0;
-
-		for(i=0; i<num_clus; i++)
-		{
-			nfacl = nfath_clus[i];
-			clulevarry[nu_lev].ClastArLv[i].nuFather = nfacl;
-			clulevarry[nl_f].ClastArLv[nfacl].nuSon
-				[clulevarry[nl_f].ClastArLv[nfacl].n_Son++] = i;
-		}
+	  int nfacl, nl_f = nu_lev - 1;
+	  
+	  for(i=0; i<clulevarry[nl_f].nClustOLv; i++)
+	    clulevarry[nl_f].ClastArLv[i].n_Son = 0;
+	  
+	  for(i=0; i<num_clus; i++)
+	    {
+	      nfacl = nfath_clus[i];
+	      clulevarry[nu_lev].ClastArLv[i].nuFather = nfacl;
+	      clulevarry[nl_f].ClastArLv[nfacl].nuSon
+		[clulevarry[nl_f].ClastArLv[nfacl].n_Son++] = i;
+	    }
 	}
-
+	
 	// level number
 	for(i=0; i<num_clus; i++) clulevarry[nu_lev].ClastArLv[i].nuLev = nu_lev;
 }
@@ -1373,156 +1380,159 @@ void NC_ClusterReflectionsAtLevelMLFMM
 	const int& nu_lev			//I: number of the level
 )
 {
-	int i, j, i0 = 0, icl, nucl, kref, nrdir = 0, nel;
-	double dispo, wk0;
-	int nrefi[NDIM];
-	int nrefdi[] = {0, 0, 1, 0, 2, 0, 1, 0};
-
-	// generate the reflected clusters
-	nucl = clulevarry[nu_lev].nClustOLv; // number of the generated cluster (updated)
-	for(icl=0; icl<clulevarry[nu_lev].nClustOLv; icl++)
+  int i, j, i0 = 0, icl, nucl, kref, nrdir = 0, nel;
+  double dispo, wk0;
+  int nrefi[NDIM];
+  int nrefdi[] = {0, 0, 1, 0, 2, 0, 1, 0};
+  
+  // generate the reflected clusters
+  nucl = clulevarry[nu_lev].nClustOLv; // number of the generated cluster (updated)
+  for(icl=0; icl<clulevarry[nu_lev].nClustOLv; icl++) {
+    for(i=0; i<NDIM; i++) nrefi[i] = 0;
+    for(kref=1; kref<numReflectionsOfElements_; kref++) {
+      // direction of the current reflection
+      switch(numReflectionsOfElements_)
 	{
-		for(i=0; i<NDIM; i++) nrefi[i] = 0;
-		for(kref=1; kref<numReflectionsOfElements_; kref++)
-		{
-			// direction of the current reflection
-			switch(numReflectionsOfElements_)
-			{
-			case 8:  // there are 3 symmetric planes
-				nrdir = nrefdi[kref];
-				nrefi[nrdir]++;
-				break;
-			case 4:  // there are 2 symmetric planes
-				for(i=0; i<NDIM; i++) if(listSymmetryPlanes[i] == 0)
-				{
-					i0 = i + 1;
-					break;
-				}
-				nrdir = i0 + nrefdi[kref];
-				if(nrdir >= NDIM) nrdir -= NDIM;
-				nrefi[nrdir]++;
-				break;
-			case 2:  // there is 1 symmetric plane
-				for(i=0; i<NDIM; i++) if(listSymmetryPlanes[i] != 0)
-				{
-					nrdir = i;
-					break;
-				}
-				nrefi[nrdir]++;
-			} // end of SWITCH
-
-			// parameters of the reflected cluster
-			clulevarry[nu_lev].ClastArLv[nucl].NuElGr = clulevarry[nu_lev].ClastArLv[icl].NuElGr;
-			clulevarry[nu_lev].ClastArLv[nucl].listElementPropertyEl = clulevarry[nu_lev].ClastArLv[icl].listElementPropertyEl;
-			clulevarry[nu_lev].ClastArLv[nucl].IfMonoEl = clulevarry[nu_lev].ClastArLv[icl].IfMonoEl;
-			clulevarry[nu_lev].ClastArLv[nucl].IfAdmiBc = clulevarry[nu_lev].ClastArLv[icl].IfAdmiBc;
-			clulevarry[nu_lev].ClastArLv[nucl].NumOfDOFs = clulevarry[nu_lev].ClastArLv[icl].NumOfDOFs;
-			clulevarry[nu_lev].ClastArLv[nucl].NDOFsPeEl = clulevarry[nu_lev].ClastArLv[icl].NDOFsPeEl;
-
-			nel = clulevarry[nu_lev].ClastArLv[nucl].NumOfEl =
-				clulevarry[nu_lev].ClastArLv[icl].NumOfEl;
-			clulevarry[nu_lev].ClastArLv[nucl].NumsOfEl = new int[nel];
-			for(i=0; i<nel; i++) clulevarry[nu_lev].ClastArLv[nucl].NumsOfEl[i] =
-				clulevarry[nu_lev].ClastArLv[icl].NumsOfEl[i];
-
-			clulevarry[nu_lev].ClastArLv[nucl].RadiClus = clulevarry[nu_lev].ClastArLv[icl].RadiClus;
-
-			for(i=0; i<NDIM; i++)
-			{
-				if(nrefi[i]%2) clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i] = true;
-				else clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i] = false;
-				if(clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i])
-					clulevarry[nu_lev].ClastArLv[nucl].CoorCent[i] = 2.0*listSymmetryPlanesCoordinates[i] -
-						clulevarry[nu_lev].ClastArLv[icl].CoorCent[i];
-				else
-					clulevarry[nu_lev].ClastArLv[nucl].CoorCent[i] =
-						clulevarry[nu_lev].ClastArLv[icl].CoorCent[i];
-			}
-
-			clulevarry[nu_lev].ClastArLv[nucl].OriClust = icl;
-			clulevarry[nu_lev].ClastArLv[nucl].nuref = kref;
-			if(kref%2) clulevarry[nu_lev].ClastArLv[nucl].ifmirro = true;
-			else clulevarry[nu_lev].ClastArLv[nucl].ifmirro = false;
-
-			clulevarry[nu_lev].ClastArLv[nucl].rffac = 1;
-			for(i=0; i<NDIM; i++) {
-				if(clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i] && listSymmetryPlanes[i] < 0)
-					clulevarry[nu_lev].ClastArLv[nucl].rffac *= -1;
-			}
-
-			nucl++;
-		} // end of KREF
-	} // end of loop ICL
-
-	// compute the far and near field clusters of each cluster
-	int nclusLev = clulevarry[nu_lev].nClustSLv;
-	Matrix<bool> ifarclus(nclusLev, nclusLev, false);
-
-	for(i=0; i<nclusLev; i++) for(j=0; j<i; j++)
+	case 8:  // there are 3 symmetric planes
+	  nrdir = nrefdi[kref];
+	  nrefi[nrdir]++;
+	  break;
+	case 4:  // there are 2 symmetric planes
+	  for(i=0; i<NDIM; i++)
+	    if(listSymmetryPlanes[i] == 0)
+	      {
+		i0 = i + 1;
+		break;
+	      }
+	  nrdir = i0 + nrefdi[kref];
+	  if(nrdir >= NDIM) nrdir -= NDIM;
+	  nrefi[nrdir]++;
+	  break;
+	case 2:  // there is 1 symmetric plane
+	  for(i=0; i<NDIM; i++)
+	    if(listSymmetryPlanes[i] != 0)
+	      {
+		nrdir = i;
+		break;
+	      }
+	  nrefi[nrdir]++;
+	} // end of SWITCH
+      
+      // parameters of the reflected cluster
+      clulevarry[nu_lev].ClastArLv[nucl].NuElGr = clulevarry[nu_lev].ClastArLv[icl].NuElGr;
+      clulevarry[nu_lev].ClastArLv[nucl].listElementPropertyEl = clulevarry[nu_lev].ClastArLv[icl].listElementPropertyEl;
+      clulevarry[nu_lev].ClastArLv[nucl].IfMonoEl = clulevarry[nu_lev].ClastArLv[icl].IfMonoEl;
+      clulevarry[nu_lev].ClastArLv[nucl].IfAdmiBc = clulevarry[nu_lev].ClastArLv[icl].IfAdmiBc;
+      clulevarry[nu_lev].ClastArLv[nucl].NumOfDOFs = clulevarry[nu_lev].ClastArLv[icl].NumOfDOFs;
+      clulevarry[nu_lev].ClastArLv[nucl].NDOFsPeEl = clulevarry[nu_lev].ClastArLv[icl].NDOFsPeEl;
+      
+      nel = clulevarry[nu_lev].ClastArLv[nucl].NumOfEl =
+	clulevarry[nu_lev].ClastArLv[icl].NumOfEl;
+      if( nel > 0 )
+	clulevarry[nu_lev].ClastArLv[nucl].NumsOfEl = new int[nel];
+      for(i=0; i<nel; i++)
+	clulevarry[nu_lev].ClastArLv[nucl].NumsOfEl[i] =
+	  clulevarry[nu_lev].ClastArLv[icl].NumsOfEl[i];
+      
+      clulevarry[nu_lev].ClastArLv[nucl].RadiClus = clulevarry[nu_lev].ClastArLv[icl].RadiClus;
+      
+      for(i=0; i<NDIM; i++)
 	{
-		dispo = Dispoi_dim3_(clulevarry[nu_lev].ClastArLv[i].CoorCent,
-			clulevarry[nu_lev].ClastArLv[j].CoorCent);
-		wk0 = clulevarry[nu_lev].ClastArLv[i].RadiClus +
-			clulevarry[nu_lev].ClastArLv[j].RadiClus;
-
-		if(dispo > farFieldClusterFactor_*wk0) {
-			if(dispo > minClusterDistance_) {
-				ifarclus(j, i) = ifarclus(i, j) = true;
-			} else {
-				n_Pair_NeaF[nu_lev]++;
-			}
-			n_Pair_FarD[nu_lev]++;
-		}
+	  if(nrefi[i]%2) clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i] = true;
+	  else clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i] = false;
+	  if(clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i])
+	    clulevarry[nu_lev].ClastArLv[nucl].CoorCent[i] = 2.0*listSymmetryPlanesCoordinates[i] -
+	      clulevarry[nu_lev].ClastArLv[icl].CoorCent[i];
+	  else
+	    clulevarry[nu_lev].ClastArLv[nucl].CoorCent[i] =
+	      clulevarry[nu_lev].ClastArLv[icl].CoorCent[i];
 	}
-
-	int nnea, nfar;
-	for(i=0; i<nclusLev; i++)
-	{
-		clulevarry[nu_lev].ClastArLv[i].NumNeaClus =
-			clulevarry[nu_lev].ClastArLv[i].NumFarClus = 0;
-		for(j=0; j<nclusLev; j++)
-			if(ifarclus(i, j)) clulevarry[nu_lev].ClastArLv[i].NumFarClus++;
-			else clulevarry[nu_lev].ClastArLv[i].NumNeaClus++;
-
-		clulevarry[nu_lev].ClastArLv[i].NumsNeaClus = new int[clulevarry[nu_lev].ClastArLv[i].NumNeaClus];
-		clulevarry[nu_lev].ClastArLv[i].NumsFarClus = new int[clulevarry[nu_lev].ClastArLv[i].NumFarClus];
-		nnea = nfar = 0;
-		for(j=0; j<nclusLev; j++)
-			if(ifarclus(i, j)) clulevarry[nu_lev].ClastArLv[i].NumsFarClus[nfar++] = j;
-			else clulevarry[nu_lev].ClastArLv[i].NumsNeaClus[nnea++] = j;
+      
+      clulevarry[nu_lev].ClastArLv[nucl].OriClust = icl;
+      clulevarry[nu_lev].ClastArLv[nucl].nuref = kref;
+      if(kref%2) clulevarry[nu_lev].ClastArLv[nucl].ifmirro = true;
+      else clulevarry[nu_lev].ClastArLv[nucl].ifmirro = false;
+      
+      clulevarry[nu_lev].ClastArLv[nucl].rffac = 1;
+      for(i=0; i<NDIM; i++) {
+	if(clulevarry[nu_lev].ClastArLv[nucl].ifrfdi[i] && listSymmetryPlanes[i] < 0)
+	  clulevarry[nu_lev].ClastArLv[nucl].rffac *= -1;
+      }
+      
+      nucl++;
+    } // end of KREF
+  } // end of loop ICL
+  
+  // compute the far and near field clusters of each cluster
+  int nclusLev = clulevarry[nu_lev].nClustSLv;
+  Matrix<bool> ifarclus(nclusLev, nclusLev, false);
+  
+  for(i=0; i<nclusLev; i++)
+    for(j=0; j<i; j++)
+      {
+	dispo = Dispoi_dim3_(clulevarry[nu_lev].ClastArLv[i].CoorCent,
+			     clulevarry[nu_lev].ClastArLv[j].CoorCent);
+	wk0 = clulevarry[nu_lev].ClastArLv[i].RadiClus +
+	  clulevarry[nu_lev].ClastArLv[j].RadiClus;
+	
+	if(dispo > farFieldClusterFactor_*wk0) {
+	  if(dispo > minClusterDistance_) {
+	    ifarclus(j, i) = ifarclus(i, j) = true;
+	  } else {
+	    n_Pair_NeaF[nu_lev]++;
+	  }
+	  n_Pair_FarD[nu_lev]++;
 	}
-
-
-	// register the father-son relation
-	if(nu_lev > 0)
-	{
-		int nfacl, nrefres = numReflectionsOfElements_ - 1, nclofa = clulevarry[nu_lev - 1].nClustOLv,
-			nl_f = nu_lev - 1;
-
-		nucl = clulevarry[nu_lev].nClustOLv;
-		for(icl=0; icl<clulevarry[nu_lev].nClustOLv; icl++)
-		{
-			nfacl = nclofa + nrefres*clulevarry[nu_lev].ClastArLv[icl].nuFather;
-			for(kref=1; kref<numReflectionsOfElements_; kref++)
-			{
-				clulevarry[nu_lev].ClastArLv[nucl++].nuFather = nfacl++;
-			}
-		}
-
-		for(i=clulevarry[nl_f].nClustOLv; i<clulevarry[nl_f].nClustSLv; i++)
-			clulevarry[nl_f].ClastArLv[i].n_Son = 0;
-
-		for(i=clulevarry[nu_lev].nClustOLv; i<clulevarry[nu_lev].nClustSLv; i++)
-		{
-			nfacl = clulevarry[nu_lev].ClastArLv[i].nuFather;
-			clulevarry[nl_f].ClastArLv[nfacl].nuSon
-				[clulevarry[nl_f].ClastArLv[nfacl].n_Son++] = i;
-		}
-	}
-
-	// level number
-	for(i=clulevarry[nu_lev].nClustOLv; i<clulevarry[nu_lev].nClustSLv; i++)
-		clulevarry[nu_lev].ClastArLv[i].nuLev = nu_lev;
+      }
+  
+  int nnea, nfar;
+  for(i=0; i<nclusLev; i++)
+    {
+      clulevarry[nu_lev].ClastArLv[i].NumNeaClus =
+	clulevarry[nu_lev].ClastArLv[i].NumFarClus = 0;
+      for(j=0; j<nclusLev; j++)
+	if(ifarclus(i, j)) clulevarry[nu_lev].ClastArLv[i].NumFarClus++;
+	else clulevarry[nu_lev].ClastArLv[i].NumNeaClus++;
+      if( clulevarry[nu_lev].ClastArLv[i].NumNeaClus )
+	clulevarry[nu_lev].ClastArLv[i].NumsNeaClus = new int[clulevarry[nu_lev].ClastArLv[i].NumNeaClus];
+      if( clulevarry[nu_lev].ClastArLv[i].NumFarClus )
+	clulevarry[nu_lev].ClastArLv[i].NumsFarClus = new int[clulevarry[nu_lev].ClastArLv[i].NumFarClus];
+      nnea = nfar = 0;
+      for(j=0; j<nclusLev; j++)
+	if(ifarclus(i, j)) clulevarry[nu_lev].ClastArLv[i].NumsFarClus[nfar++] = j;
+	else clulevarry[nu_lev].ClastArLv[i].NumsNeaClus[nnea++] = j;
+    }
+  
+  
+  // register the father-son relation
+  if(nu_lev > 0) {
+    int nfacl, nrefres = numReflectionsOfElements_ - 1, nclofa = clulevarry[nu_lev - 1].nClustOLv,
+      nl_f = nu_lev - 1;
+    
+    nucl = clulevarry[nu_lev].nClustOLv;
+    for(icl=0; icl<clulevarry[nu_lev].nClustOLv; icl++)
+      {
+	nfacl = nclofa + nrefres*clulevarry[nu_lev].ClastArLv[icl].nuFather;
+	for(kref=1; kref<numReflectionsOfElements_; kref++)
+	  {
+	    clulevarry[nu_lev].ClastArLv[nucl++].nuFather = nfacl++;
+	  }
+      }
+    
+    for(i=clulevarry[nl_f].nClustOLv; i<clulevarry[nl_f].nClustSLv; i++)
+      clulevarry[nl_f].ClastArLv[i].n_Son = 0;
+    
+    for(i=clulevarry[nu_lev].nClustOLv; i<clulevarry[nu_lev].nClustSLv; i++)
+      {
+	nfacl = clulevarry[nu_lev].ClastArLv[i].nuFather;
+	clulevarry[nl_f].ClastArLv[nfacl].nuSon
+	  [clulevarry[nl_f].ClastArLv[nfacl].n_Son++] = i;
+      }
+  }
+  
+  // level number
+  for(i=clulevarry[nu_lev].nClustOLv; i<clulevarry[nu_lev].nClustSLv; i++)
+    clulevarry[nu_lev].ClastArLv[i].nuLev = nu_lev;
 }
 
 // compute the auxiliary arrays used for storing the sparse far field matrices for the SLFMBEM (called by NC_ControlProgram)
@@ -1806,32 +1816,32 @@ void NC_AllocateDmtxMLFMM
         for(i=0; i<clulevarry[nlv].nClustOLv; i++)
         {
             clulevarry[nlv].ClastArLv[i].NumFanClus = nclufar[i];
-
-            clulevarry[nlv].ClastArLv[i].NumsFanClus = new int[nclufar[i]];
+	    if ( nclufar[i] > 0 )
+	      clulevarry[nlv].ClastArLv[i].NumsFanClus = new int[nclufar[i]];
             for(j=0; j<nclufar[i]; j++)
-                clulevarry[nlv].ClastArLv[i].NumsFanClus[j] = nuclfar(i, j);
+	      clulevarry[nlv].ClastArLv[i].NumsFanClus[j] = nuclfar(i, j);
         }
-
+	
         nrosdmtx = clulevarry[nlv].nClustOLv*clulevarry[nlv].nPoinSpheLv;
         nnonzerdmtx = 0;
         for(i=0; i<clulevarry[nlv].nClustOLv; i++) nnonzerdmtx += nclufar[i];
         nnonzerdmtx *= clulevarry[nlv].nPoinSpheLv;
-
+	
         dmtxlev[nlv].jcolDmxLv = new int[nnonzerdmtx];
         dmtxlev[nlv].irowDmxLv = new int[nrosdmtx + 1];
-
+	
         irowd = nnze = 0;
         for(i=0; i<clulevarry[nlv].nClustOLv; i++)
-        {
+	  {
             for(k=0; k<clulevarry[nlv].nPoinSpheLv; k++)
-            {
+	      {
                 dmtxlev[nlv].irowDmxLv[irowd++] =  nnze;
                 for(j=0; j<nclufar[i]; j++)
-                    dmtxlev[nlv].jcolDmxLv[nnze++] =
+		  dmtxlev[nlv].jcolDmxLv[nnze++] =
                     nuclfar(i,j)*clulevarry[nlv].nPoinSpheLv + k;
-            }
-        }
-
+	      }
+	  }
+	
         dmtxlev[nlv].irowDmxLv[irowd] =  nnze;
         if(maxRowNumberD_ < nrosdmtx) maxRowNumberD_ = nrosdmtx;
         dmtxlev[nlv].nRowsD = nrosdmtx;
@@ -1842,19 +1852,19 @@ void NC_AllocateDmtxMLFMM
 // generate the S-matrices at all levels
 void NC_AllocateSmtxMLFMM
 (
-	ofstream& NCout
-)
+ ofstream& NCout
+ )
 {
-	int nlv, i, j, ij, kcol, itr;
-	Vector<int> nuclusrow(numRowsOfCoefficientMatrix_);
-
-	// loop over the levels
-	for(nlv=0; nlv<numClusterLevels_; nlv++)
-	{
-		// initialize
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) nuclusrow[i] = -1;
-
-		// compute the cluster number of each row
+  int nlv, i, j, ij, kcol, itr;
+  Vector<int> nuclusrow(numRowsOfCoefficientMatrix_);
+  
+  // loop over the levels
+  for(nlv=0; nlv<numClusterLevels_; nlv++)
+    {
+      // initialize
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++) nuclusrow[i] = -1;
+      
+      // compute the cluster number of each row
 		for(i=0; i<clulevarry[nlv].nClustOLv; i++)
 		{
 			for(j=0; j<clulevarry[nlv].ClastArLv[i].NumOfEl; j++)
@@ -2046,71 +2056,74 @@ void NC_CheckClusters
 // delete arrays generated by addressing computations
 void NC_DeleteArrays(const int& imultpol, const int& nlevmlfm, const int& ifdelNFC)
 {
-	int i, j;
-
-	// delete the D-, T- and S-matrices
-	switch(imultpol)
-	{
-	case 1:
-	case 2:
-		delete [] dmtxlev;
-		break;
-	case 3:
-		delete [] dmtxlev;
+  int i, j;
+  
+  // delete the D-, T- and S-matrices
+  switch(imultpol)
+    {
+    case 1:
+    case 2:
+      delete [] dmtxlev;
+      break;
+    case 3:
+      delete [] dmtxlev;
 		delete [] tmtxlev;
 		delete [] smtxlev;
 		break;
-	}
+    }
+  
+  if(imultpol && numInternalPointsClusters_ > 0) {
+    for(i=0; i<numInternalPointsClusters_; i++)
+      delete [] ipcluarry[i].NumsOfIps;
+    delete [] ipcluarry;
+  }
 
-	if(imultpol && numInternalPointsClusters_ > 0)
-	{
-		for(i=0; i<numInternalPointsClusters_; i++) delete [] ipcluarry[i].NumsOfIps;
-		delete [] ipcluarry;
-	}
-
-	switch(imultpol)
-	{
-	case 1: // SLFMBEM
-		for(i=0; i<numOriginalReflectedClusters_; i++)
-		{
-			delete [] clustarry[i].NumsFarClus;
-			delete [] clustarry[i].NumsNeaClus;
-			delete [] clustarry[i].NumsOfEl;
-		}
-		delete [] clustarry;
-		break;
-	case 3: // DMLFMBEM
-		for(i=0; i<nlevmlfm; i++)
-		{
-			for(j=0; j<clulevarry[i].nClustSLv; j++)
-			{
-				delete [] clulevarry[i].ClastArLv[j].NumsFarClus;
-				delete [] clulevarry[i].ClastArLv[j].NumsNeaClus;
-				delete [] clulevarry[i].ClastArLv[j].NumsOfEl;
-			}
-
-			if(ifdelNFC)
-			{
-				for(j=0; j<clulevarry[i].nClustOLv; j++)
-				{
-					delete [] clulevarry[i].ClastArLv[j].NumsFanClus;
-				}
-			}
-
-			delete [] clulevarry[i].ClastArLv;
-
-		}
-		delete [] clulevarry;
-		break;
-	}
-
-	if(imultpol) // FMBEM
-	{
-		delete [] jcolnea;
-		delete [] irownea;
-	}
-
-	delete [] zrhs;
+  switch(imultpol) {
+  case 1: // SLFMBEM
+    for(i=0; i<numOriginalReflectedClusters_; i++)
+      {
+	/*	  delete [] clustarry[i].NumsFarClus;
+		  delete [] clustarry[i].NumsNeaClus;
+		  delete [] clustarry[i].NumsOfEl; */
+	//delete clustarry[i]; // call the destructor
+      }
+    delete [] clustarry;
+    break;
+  case 3: // DMLFMBEM
+    for(i=0; i<nlevmlfm; i++)
+      {
+	/*
+	  for(j=0; j<clulevarry[i].nClustSLv; j++)
+	  {
+	  delete [] clulevarry[i].ClastArLv[j].NumsFarClus;
+	  delete [] clulevarry[i].ClastArLv[j].NumsNeaClus;
+	  delete [] clulevarry[i].ClastArLv[j].NumsOfEl;
+	  }
+	*/
+	
+	/*	  if(ifdelNFC)
+		  {
+		  for(j=0; j<clulevarry[i].nClustOLv; j++)
+		  {
+		  delete [] clulevarry[i].ClastArLv[j].NumsFanClus;
+		  }
+		  }
+	*/
+	//delete [] clulevarry[i].ClastArLv;
+	
+      }
+    //      delete [] clulevarry;
+    delete [] clulevarry;
+    break;
+  }
+  
+  if(imultpol) // FMBEM
+    {
+      delete [] jcolnea;
+      delete [] irownea;
+    }
+  
+  delete [] zrhs;
 }
 
 

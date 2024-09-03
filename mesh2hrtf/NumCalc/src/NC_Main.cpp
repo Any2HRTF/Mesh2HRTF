@@ -813,8 +813,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, int maxfmmle
 	    clulevarry[j].weisphe = new double[npsh];
 
 	    // create the arrays of the coorninates and weights of the Gauss points in the theta-direction
-	    clulevarry[j].CrdGauLv = new double[nthej];
-	    clulevarry[j].WeiGauLv = new double[nthej];
+	    //clulevarry[j].CrdGauLv = new double[nthej];
+	    //clulevarry[j].WeiGauLv = new double[nthej];
 
 	    // create the T-matrix and the T-vector, the D- and S-matrices
 	    tmtxlev[j].zTmxLv = new Complex[tmtxlev[j].nEntriesT];
@@ -924,20 +924,26 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, int maxfmmle
       case 3: // DMLFMBEM
 	for(j=0; j<numClusterLevels_; j++)
 	  {
-	    delete [] clulevarry[j].CrdGauLv;
-	    delete [] clulevarry[j].WeiGauLv;
+	    //delete [] clulevarry[j].CrdGauLv;
+	    //delete [] clulevarry[j].WeiGauLv;
 
-	    for(i=0; i<clulevarry[j].nPoinSpheLv; i++) delete [] clulevarry[j].uvcsphe[i];
+	    /* do not delete everything, just frequency dependent parts */
+	    for(i=0; i<clulevarry[j].nPoinSpheLv; i++)
+	      delete [] clulevarry[j].uvcsphe[i];
 	    delete [] clulevarry[j].uvcsphe;
 	    delete [] clulevarry[j].weisphe;
 
 	    delete [] clulevarry[j].zwkT;
 	    delete [] clulevarry[j].zwkS;
-
-
+	    clulevarry[j].nPoinSpheLv = 0;
+	    clulevarry[j].uvcsphe = NULL;
+	    clulevarry[j].weisphe = NULL;
+	    clulevarry[j].zwkT = NULL;
+	    clulevarry[j].zwkS = NULL;
+	    
 	    delete [] dmtxlev[j].jcolDmxLv;
 	    delete [] dmtxlev[j].irowDmxLv;
-	    delete [] dmtxlev[j].zDmxLv;
+	    delete [] dmtxlev[j].zDmxLv; 
 	  }
 	break;
       }

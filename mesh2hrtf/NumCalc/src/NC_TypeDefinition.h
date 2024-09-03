@@ -596,41 +596,90 @@ void Tfbelim(T *Coef, T *rhsv, const int& n_row_col)
 // structure of an element cluster
 struct ElCluster
 {
-    int NuElGr;            // number of the element group to which the cluster belongs
-    int NumOfEl;           // number of elements in the cluster
-    int listElementPropertyEl;          // = 0: surface elements
-                           // = 1: middle face elements
+  int NuElGr;            // number of the element group to which the cluster belongs
+  int NumOfEl;           // number of elements in the cluster
+  int listElementPropertyEl;          // = 0: surface elements
+  // = 1: middle face elements
                            // = 2: evaluation elements
-    bool IfMonoEl;         // = true:  all elements of the cluster are of the same number of nodes 
-                           // = false: the cluster contains elements with different number of nodes
-    bool IfAdmiBc;         // = true: admittance boundary condition are prescribed
-    int NumOfDOFs;         // number of the unknown DOFs of the cluster
-    int NDOFsPeEl;         // number of the unknown DOFs per element
-    int *NumsOfEl;         // numbers of the elements in the cluster
-    double CoorCent[3];	   // coordinates of the center of the cluster
-    double RadiClus;       // radius of the cluster
-    int NumNeaClus;        // number of near clusters
-    int NumFarClus;        // number of far clusters
-    int *NumsNeaClus;      // numbers of the near clusters
-    int *NumsFarClus;      // numbers of the far clusters
-    int OriClust;          // number of the corresponding original cluster
-    int nuref;             // number of the reflection (= one number in [0, 1, ..., 7])
-    int rffac;             // factor for velocity boundary condition (= 1 or -1)
-    bool ifmirro;          // = false: element conectivities are ident to original ones
-                           // = true:  these are mirror image of the original ones
-    bool ifrfdi[3];        // ifrfdi[i] = treu: elements must be reflected in the
-                           //                   ith-direction
-                           //           = false: do not reflected in this direction
-    int nuFather;          // number of the father cluster
-    int n_Son;             // number of the son clusters
-    int nuSon[8];          // numbers of the son clusters
-    int nuLev;             // number of the level to which the cluster belongs
-    int NumFanClus;        // number of clusters, that is located in the far field of
-                           // current cluster but the fathers are located in the near
-                           // field
-    int *NumsFanClus;      // numbers of the above clusters
-};
+  bool IfMonoEl;         // = true:  all elements of the cluster are of the same number of nodes 
+  // = false: the cluster contains elements with different number of nodes
+  bool IfAdmiBc;         // = true: admittance boundary condition are prescribed
+  int NumOfDOFs;         // number of the unknown DOFs of the cluster
+  int NDOFsPeEl;         // number of the unknown DOFs per element
+  int *NumsOfEl;         // numbers of the elements in the cluster
+  double CoorCent[3];	   // coordinates of the center of the cluster
+  double RadiClus;       // radius of the cluster
+  int NumNeaClus;        // number of near clusters
+  int NumFarClus;        // number of far clusters
+  int *NumsNeaClus;      // numbers of the near clusters
+  int *NumsFarClus;      // numbers of the far clusters
+  int OriClust;          // number of the corresponding original cluster
+  int nuref;             // number of the reflection (= one number in [0, 1, ..., 7])
+  int rffac;             // factor for velocity boundary condition (= 1 or -1)
+  bool ifmirro;          // = false: element conectivities are ident to original ones
+  // = true:  these are mirror image of the original ones
+  bool ifrfdi[3];        // ifrfdi[i] = treu: elements must be reflected in the
+  //                   ith-direction
+  //           = false: do not reflected in this direction
+  int nuFather;          // number of the father cluster
+  int n_Son;             // number of the son clusters
+  int nuSon[8];          // numbers of the son clusters
+  int nuLev;             // number of the level to which the cluster belongs
+  int NumFanClus;        // number of clusters, that is located in the far field of
+  // current cluster but the fathers are located in the near
+  // field
+  int *NumsFanClus;      // numbers of the above clusters
+  // ***************************************
+  // Constructors and Destructors
+  // *******************************
+  ElCluster() { // lets see if the constructor works
+    NuElGr = 0;
+    NumOfEl = 0;
+    listElementPropertyEl = 0;
+    IfMonoEl = true;
+    IfAdmiBc = false;
+    NumOfDOFs = 0;
+    NDOFsPeEl = 0;
+    NumsOfEl = NULL;  
+    
+    RadiClus = 0.0;      
+    NumNeaClus = 0;      
+    NumFarClus = 0;      
+    NumsNeaClus = NULL;  
+    NumsFarClus = NULL;  
+    OriClust = -1;       
+    nuref = -1;          
+    rffac = 0;           
+    ifmirro = false;     
+    nuFather = -1;      
+    n_Son = -1;         
+    nuLev = -1;         
+    NumFanClus = 0;     
+    NumsFanClus = NULL;      // numbers of the above clusters
+    //    ClastArLv = NULL;
+  };
+  ~ElCluster() {
 
+    if( NumOfEl > 0 ) {
+      delete [] NumsOfEl;
+      NumOfEl = 0;
+    }
+    if( NumNeaClus > 0 ) {
+      delete [] NumsNeaClus;
+      NumNeaClus = 0;
+    }
+    if( NumFarClus > 0 ) {
+      delete [] NumsFarClus;
+      NumFarClus = 0;
+    }
+    if( NumsFanClus != NULL) 
+      delete [] NumsFanClus;
+    /*    if (nClustSLv > 0)
+      for (int i = 0; i < nClustSLv; i++) 
+	delete ClustArLv[i];
+    */
+  };
+};
 // structure of a cluster of internal points
 struct IpCluster
 {
@@ -643,43 +692,78 @@ struct IpCluster
 // structure of a level of a cluster tree
 struct ClusterLev
 {
-    // all the variables and arrays are defined for a given level in the tree
-    int nClustSLv;         // number of all clusters 
-    int nClustOLv;         // number of the original clusters
-    double RadiMaxLv;      // maximum radius of clusters
-    double RadiAveLv;      // average radius of clusters
-    double RadiMinLv;      // minimum radius of clusters
-    int nExpaTermLv;       // number of terms in the expresions of the Green functions
-    int nPoinSpheLv;       // number of integration points on the unit sphere surface
-    int nPoinThetLv;       // number of integration points in the thetha direction
-    int nPoinPhiLv;        // number of integration points in the phi direction
-    int Pow_532Lv[3];      // working array: nPoinPhiLv expressed in product of pwoers of
-                           // 5, 3 and 2 is stored in this array
-    int iplacsum;          // = Pow_532Lv[0] + Pow_532Lv[1] + Pow_532Lv[2]
-    int **iplacpova;       // working array used by FFT 
-    int **iregister;       // working array used by FFT
-    double *CrdGauLv;      // coordinates of Gaussean points in the thetha-direction
-    double *WeiGauLv;      // weights of Gaussean points in the thetha-direction
-    double *XvThetLv;      // X-vector in the thetha-direction for spline interpolaton
-    double *XvPhiLv;       // X-vector in the phi-direction for spline interpolaton
-    double *CmThetLv;      // Coefficient matrix of the m-vector in the thetha-direction
+  // all the variables and arrays are defined for a given level in the tree
+  int nClustSLv;         // number of all clusters 
+  int nClustOLv;         // number of the original clusters
+  double RadiMaxLv;      // maximum radius of clusters
+  double RadiAveLv;      // average radius of clusters
+  double RadiMinLv;      // minimum radius of clusters
+  int nExpaTermLv;       // number of terms in the expresions of the Green functions
+  int nPoinSpheLv;       // number of integration points on the unit sphere surface
+  int nPoinThetLv;       // number of integration points in the thetha direction
+  int nPoinPhiLv;        // number of integration points in the phi direction
+  //  int Pow_532Lv[3];      // working array: nPoinPhiLv expressed in product of pwoers of
+  // 5, 3 and 2 is stored in this array
+  //int iplacsum;          // = Pow_532Lv[0] + Pow_532Lv[1] + Pow_532Lv[2]
+  //    int **iplacpova;       // working array used by FFT 
+  //  int **iregister;       // working array used by FFT
+  //  double *CrdGauLv;      // coordinates of Gaussean points in the thetha-direction
+  //double *WeiGauLv;      // weights of Gaussean points in the thetha-direction
+  /*
+  double *XvThetLv;      // X-vector in the thetha-direction for spline interpolaton
+  double *XvPhiLv;       // X-vector in the phi-direction for spline interpolaton
+  double *CmThetLv;      // Coefficient matrix of the m-vector in the thetha-direction
+  // for spline interpolaton
+  double *CmPhiLv;	   // Coefficient matrix of the m-vector in the phi-direction
                            // for spline interpolaton
-    double *CmPhiLv;	   // Coefficient matrix of the m-vector in the phi-direction
-                           // for spline interpolaton
-    double *LmThetLv;      // Lagrange matrix for the level (stored as a vector)
-    Complex *ZmThetLv;     // the m-vector in the thetha-direction for spline interpolaton
-    Complex *ZmPhiLv;      // the m-vector in the phi-direction for spline interpolaton
-    Complex *PbarnmLv;     // P_bar^{m}_{n} at all Gaussean points in the theta-direction
-    Complex *PbarfaLv;     // P_bar^{m}_{n} at all Gaussean points of the father level
-    Complex *zwkT;		   // working array for T-vectors
-    Complex *zwkS;		   // working array for S-vectors
-    double **uvcsphe;      // coordinates of the integration points on the unit sphere
-    double *weisphe;       // weights of these integration points
-    Complex **zIntpMtx;    // interpolation matrix from the current level to the father
-                           // level
-    Complex **zFiltMtx;    // filter matrix from the current level to the son level
-    ElCluster *ClastArLv;  // array of clusters
+  double *LmThetLv;      // Lagrange matrix for the level (stored as a vector)
+  Complex *ZmThetLv;     // the m-vector in the thetha-direction for spline interpolaton
+  Complex *ZmPhiLv;      // the m-vector in the phi-direction for spline interpolaton
+  Complex *PbarnmLv;     // P_bar^{m}_{n} at all Gaussean points in the theta-direction
+  Complex *PbarfaLv;     // P_bar^{m}_{n} at all Gaussean points of the father level
+  */
+  Complex *zwkT;		   // working array for T-vectors
+  Complex *zwkS;		   // working array for S-vectors
+  double **uvcsphe;      // coordinates of the integration points on the unit sphere
+  double *weisphe;       // weights of these integration points
+  //Complex **zIntpMtx;    // interpolation matrix from the current level to the father
+  // level
+  //Complex **zFiltMtx;    // filter matrix from the current level to the son level
+  ElCluster *ClastArLv;  // array of clusters
+  // Konstruktor
+  ClusterLev() {
+    nClustSLv = 0;         
+    nClustOLv = 0;
+    
+    RadiMaxLv = 0.0;	
+    RadiAveLv = 0.0;	
+    RadiMinLv = 0.0;	
+    nExpaTermLv = 0;	
+    nPoinSpheLv = 0;	
+    nPoinThetLv = 0;	
+    nPoinPhiLv = 0;	
+ 
+    zwkT = NULL;		
+    zwkS = NULL;		
+    uvcsphe = NULL;      
+    weisphe = NULL;	
+    ClastArLv = NULL;
+  };
+  ~ClusterLev() {
+
+    if( nPoinThetLv * nPoinSpheLv > 0 ) {
+      delete [] zwkT;
+      delete [] zwkS;
+      for (int i = 0; i < nPoinSpheLv; i++)
+	delete [] uvcsphe[i];
+      delete [] uvcsphe;
+      delete [] weisphe;
+    }
+    delete [] ClastArLv;
+  }
 };
+
+
 
 // structure of the D-matrices
 struct D_mtx_lev
