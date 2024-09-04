@@ -118,7 +118,10 @@ int NC_DeclareArrays
     }
   
   // initialize
-  if(currentFrequency_ == istart_) for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
+  if(currentFrequency_ == istart_) {
+    for(i=0; i<numClusterLevels_; i++) n_Pair_NeaF[i] = 1;
+    maxClusterRadiusBE_ = 0.0;
+  }
   
  Labsettradibem:
   nlevtop_ = numClusterLevels_ - 1;
@@ -133,10 +136,12 @@ int NC_DeclareArrays
 
     // check if there is a possible change in the edgelength
     // if so, all arrays need to be recalculated, otherwise take the old ones
-    if( clulevarry != NULL && methodFMM_ > 1) {
+    //if( clulevarry != NULL && methodFMM_ > 1) {
+    if( methodFMM_ > 0)  {
       // this can happen, if the MLFMM has been reduced to the SLFMM before
       
-      double rd_max = clulevarry[0].RadiMaxLv;
+      //      double rd_max = clulevarry[0].RadiMaxLv;
+      double rd_max = maxClusterRadiusBE_;
       double rw = 2.0*rd_max*waveNumbers_ + 1.8*log10(2.0*rd_max*waveNumbers_ + PI);
       if ( rw < (double)maxfmmlength )
 	get_new_cluster = false;
@@ -179,8 +184,7 @@ int NC_DeclareArrays
       numOriginalClusters_ = clulevarry[nlevtop_].nClustOLv;
       numOriginalReflectedClusters_ = clulevarry[nlevtop_].nClustSLv;
     }
-  
-  // set the cluster working array
+   // set the cluster working array
   switch(methodFMM_)
     {
     case 1: // SLFMBEM
@@ -809,7 +813,7 @@ void NC_GenerateClustersFMM
       double rw = 2.0*rd_max*waveNumbers_ + rwfact*log10( 2.0*rd_max*waveNumbers_ + PI );
       int nlvold = numClusterLevels_;
       
-      if( methodFMM_ > 1 && ClusEdgL0_ <= 0.0 && counter == 1) {
+      if( methodFMM_ > 0 && ClusEdgL0_ <= 0.0 && counter == 1) {
 	if( rw > maxfmmlength && nu_lev == 0 && counter == 1 ) {
 	  // the correction is a bit tricky because of the log
 	  // letzs just take the old value for the log
@@ -817,23 +821,25 @@ void NC_GenerateClustersFMM
 	  ClusEdgL1 = (maxfmmlength - logfact) / (2.0 * waveNumbers_);
 	  // there is a slight problem, that NC_EstimateNumLevelsMLFMM would set
 	  // ClusEdgL1, which we already did, thats why the additional false
-	  numClusterLevels_ = NC_EstimateNumLevelsMLFMM(NCout,false);
-	  if( numClusterLevels_ > 10 ) {
-	    cerr << "Sorry, more than 10 FMM-levels are not allowed yet\n";
-	    exit(-1);
+	  if( methodFMM_ > 1 ) {
+	    numClusterLevels_ = NC_EstimateNumLevelsMLFMM(NCout,false);
+	    if( numClusterLevels_ > 10 ) {
+	      cerr << "Sorry, more than 10 FMM-levels are not allowed yet\n";
+	      exit(-1);
+	    }
+	    
+	    if( numClusterLevels_ != nlvold) {
+	      // delete the old cluster pointers
+	      /*	    if( clulevarry != NULL ) {
+			    for ( i = 0; i < nlvold; i++)
+			    if( clulevarry[i].ClastArLv != NULL )
+			    delete [] clulevarry[i].ClastArLv;
+			    delete[] clulevarry;*/
+	      delete [] clulevarry;
+	    }
+	    clulevarry = new ClusterLev[numClusterLevels_];
+	    nlevtop_ = numClusterLevels_ - 1;
 	  }
-	  
-	  if( numClusterLevels_ != nlvold) {
-	    // delete the old cluster pointers
-	    /*	    if( clulevarry != NULL ) {
-		    for ( i = 0; i < nlvold; i++)
-		    if( clulevarry[i].ClastArLv != NULL )
-		    delete [] clulevarry[i].ClastArLv;
-		    delete[] clulevarry;*/
-	    delete [] clulevarry;
-	  }
-	  clulevarry = new ClusterLev[numClusterLevels_];
-	  nlevtop_ = numClusterLevels_ - 1;
 	}
       }
       else
