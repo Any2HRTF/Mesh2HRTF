@@ -172,6 +172,22 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         min=0,
         max=24000,
         )
+    bins_per_oct_decim: IntProperty(
+        name="Bins/octave",
+        description=("Value for distributing the frequencies in log scale," 
+                     "in bins/octave."),
+        default=18,
+        min=0,
+        max=36,
+        )
+    num_octaves_decim: IntProperty(
+        name="Num. of octaves",
+        description=("Number of higher octaves in which the frequencies will" 
+                     "be distributed in log scale."),
+        default=2,
+        min=0,
+        max=6,
+        )
 
     @classmethod
     def poll(cls, context):
@@ -234,6 +250,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "frequencyVectorType")
         row = layout.row()
         row.prop(self, "frequencyVectorValue")
+        row = layout.row()
+        row.prop(self, "bins_per_oct_decim")
+        row = layout.row()
+        row.prop(self, "num_octaves_decim")
 
     def save(operator,
              context,
@@ -243,6 +263,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              maxFrequency=20000,
              frequencyVectorType='Step size',
              frequencyVectorValue=100,
+             bins_per_oct_decim=18, 
+             num_octaves_decim=2,             
              pictures=True,
              evaluationGrids='ARI',
              materialSearchPaths='None',
@@ -445,8 +467,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             numFrequencySteps = int(frequencyVectorValue)
 
         frequencies, frequencyStepSize, numFrequencySteps = \
-            _distribute_frequencies(minFrequency, maxFrequency,
-                                    frequencyStepSize, numFrequencySteps)
+            _distribute_frequencies_octaves(minFrequency, maxFrequency, 
+                            frequencyStepSize, numFrequencySteps,
+                            bins_per_oct_decim, num_octaves_decim)
 
 # Write parameters.json (feedback for user, not used by NumCalc) --------------
         _write_parameters_json(
@@ -456,7 +479,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             reference, computeHRIRs,
             sourceType, numSources, sourceXPosition,
             sourceYPosition, sourceZPosition,
-            frequencies, frequencyStepSize, numFrequencySteps)
+            frequencies, frequencyStepSize, numFrequencySteps,
+            bins_per_oct_decim, num_octaves_decim)
 
 # Render pictures of the model ------------------------------------------------
         if pictures:
@@ -873,7 +897,8 @@ def _write_parameters_json(
         reference, computeHRIRs,
         sourceType, numSources, sourceXPosition,
         sourceYPosition, sourceZPosition,
-        frequencies, frequencyStepSize, numFrequencySteps):
+        frequencies, frequencyStepSize, numFrequencySteps,
+        bins_per_oct_decim, num_octaves_decim):
 
     # calculate missing parameters
     if "ear" in sourceType:
@@ -924,6 +949,8 @@ def _write_parameters_json(
         "frequencyStepSize": frequencyStepSize,
         "minFrequency": frequencies[0],
         "maxFrequency": frequencies[-1],
+        "bins_per_oct_decim": bins_per_oct_decim, 
+        "num_octaves_decim": num_octaves_decim,
         "frequencies": frequencies
     }
 
@@ -1034,8 +1061,9 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
     return earCenter, earArea
 
 
-def _distribute_frequencies(minFrequency, maxFrequency,
-                            frequencyStepSize, numFrequencySteps):
+def _distribute_frequencies_octaves(minFrequency, maxFrequency, 
+                            frequencyStepSize, numFrequencySteps,
+                            bins_per_oct_decim, num_octaves_decim):
     """Calculate list of frequencies.
 
     Returns
@@ -1044,11 +1072,11 @@ def _distribute_frequencies(minFrequency, maxFrequency,
     frequencies: list
         list that holds the frequencies in Hz that are calculated.
     frequencyStepSize: float
-        Step size between successive frequencies (written to parameters.json).
-        This is returned because it might be zero during the function call.
+        Step size between successive frequencies (written to Info.txt). This is
+        returned because it might be zero during the function call.
     numFrequencySteps: int
-        Number of frequencies to be simulated (written to parameters.json).
-        This is returned because it might be zero during the function call.
+        Number of frequencies to be simulated (written to Info.txt). This is
+        returned because it might be zero during the function call.
 
     """
 
@@ -1096,7 +1124,26 @@ def _distribute_frequencies(minFrequency, maxFrequency,
     else:
         frequencyStepSize = frequencies[1] - frequencies[0]
 
+    if bins_per_oct_decim > 0 and num_octaves_decim > 0:
+
+        freqs_log = frequencies[-1]*np.power(2,-(1/bins_per_oct_decim)*(np.linspace( 
+                                                bins_per_oct_decim*num_octaves_decim, 0, 
+                                                int(1 + np.round(bins_per_oct_decim*num_octaves_decim)))))
+
+        freqs_log = freqs_log[np.append(np.diff(freqs_log), frequencyStepSize + 1) > frequencyStepSize]
+
+        frequencies = np.array(frequencies)
+
+        freqs_lin = frequencies[frequencies < freqs_log[0]]
+
+        frequencies = np.append(freqs_lin, freqs_log)
+
+        frequencies = frequencies.tolist()
+
+        numFrequencySteps = len(frequencies)
+
     return frequencies, frequencyStepSize, numFrequencySteps
+
 
 
 def _render_pictures(filepath1, unitFactor):

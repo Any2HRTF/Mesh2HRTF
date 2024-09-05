@@ -107,6 +107,25 @@ def output2hrtf(folder=None):
                 sofa, params["sourceType"], params["sourceArea"],
                 params["speedOfSound"], params["densityOfMedium"], mode="min")
 
+        # Resampling spectrum to regular sampling, if necessary
+        if num_octaves_decim > 0:
+            pressure = sofa.Data_Real + 1j*sofa.Data_Imag
+            frequencies = sofa.N
+            sampling_rate = round(2*sofa.N[-1])
+
+            num_octaves_decim = params["num_octaves_decim"]
+
+            pressure, frequencies, inds_lin_freq = _convert_to_regular_samp_freq(
+                                                    pressure, frequencies)
+
+            inds_correct_phase = inds_lin_freq
+
+            pressure = _correct_phase(pressure, inds_correct_phase)
+
+            sofa.N = frequencies.flatten()
+            sofa.Data_Real = np.real(pressure)
+            sofa.Data_Imag = np.imag(pressure)
+
         # write HRTF data to SOFA file
         sf.write_sofa(os.path.join(
             folder, 'Output2HRTF', f'HRTF_{grid}.sofa'), sofa)
@@ -361,3 +380,73 @@ def _output_to_hrtf_load(foldername, filename, numFrequencies):
         data[ii, :] = tmpData if tmpData else np.nan
 
     return data, np.arange(start_index, numDatalines + start_index)
+
+
+
+def _convert_to_regular_samp_freq(pressure, frequencies):
+    """
+    Converts irregularly sampled frequency axis into regular intervals via 
+    interpolation.
+    """
+    print('\n \n Irregular frequency sampling identified. \n \n'
+          'Converting to regular frequency sampling... \n \n')
+
+    freqs_decim = np.array(frequencies).flatten()
+    minFrequency = freqs_decim[0]
+    frequencyStepSize = freqs_decim[1] - freqs_decim[0]
+    frequencySteps = freqs_decim[-1]/frequencyStepSize
+
+    # get all frequencies to be calculated
+    frequencies = np.array([ff*frequencyStepSize+minFrequency
+                            for ff in range(int(frequencySteps))])
+    pressure_decim = np.squeeze(pressure)
+
+    # Interpolate spectra back to regular sampling in frequency
+    pressure_decim_mag = np.array([np.interp(frequencies, freqs_decim, np.abs(
+                    pressure_decim)[i]) for i in range(pressure_decim.shape[0])])
+
+    pressure_decim_phase = np.array([np.interp(frequencies, freqs_decim, 
+                                    np.angle(pressure_decim)[i]) 
+                                    for i in range(pressure_decim.shape[0])])
+
+    # # Zeroing phase for high frequencies in the interpolated region
+    inds_lin_freq = ((np.diff(np.diff(np.concatenate((freqs_decim, 
+                        np.array([freqs_decim[-1]*2, freqs_decim[-1]*4])))))) == 0)
+    
+    pressure_decim_phase[:, np.sum(np.array(inds_lin_freq)) : ] = 0
+
+    pressure = np.zeros([pressure.shape[0], pressure.shape[1], 
+                         pressure_decim_mag.shape[1]], dtype = "complex_")
+
+    pressure[:,0,:] = np.multiply(pressure_decim_mag, np.exp(1j*pressure_decim_phase))  
+
+    inds_lin_freq = (frequencies < frequencies[np.sum(np.array(inds_lin_freq))])
+
+    return pressure, frequencies, inds_lin_freq
+
+
+def _correct_phase(pressure, inds_correct_phase):
+    """
+    Corrects the phase for high frequencies that were simulated using irregular
+    frequency sampling using the overall group delay of the linearly sampled region.
+    """
+    new_phase_all = np.zeros(shape=pressure.shape)
+
+    for Direction_ind in range(pressure.shape[0]):
+        for ear_ind in range(pressure.shape[1]):
+
+            phase = np.unwrap(np.angle(pressure[Direction_ind, ear_ind, :]))
+
+            phase_diff = np.diff(phase[inds_correct_phase])
+            phase_diff_mean = np.average(phase_diff)
+
+            phase[~inds_correct_phase] = np.linspace(
+                        start = (phase[inds_correct_phase])[-1] + phase_diff_mean, 
+                        stop = (phase[inds_correct_phase])[-1] + phase_diff_mean*np.sum(~inds_correct_phase), 
+                        num = np.sum(~inds_correct_phase))
+
+            new_phase_all[Direction_ind, ear_ind, :] = phase
+            
+    pressure = np.multiply(np.abs(pressure), np.exp(1j*new_phase_all))
+    
+    return pressure
