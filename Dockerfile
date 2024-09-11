@@ -17,7 +17,7 @@
 # Start the container with an external volume mounted at /home/data:
 # `docker run -dit --name mesh2hrtf -v '/local/folder:/home/data' ubuntu:mesh2hrtf /bin/bash`
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # All commands are run from this path
 WORKDIR /home
@@ -29,7 +29,8 @@ WORKDIR /home
 # install required dependencies (remove specific versions if desired)
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y cmake \
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                   cmake \
                    make \
                    build-essential\
                    libx11-dev \
@@ -41,7 +42,13 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y cmake \
                    libglu1-mesa-dev \
                    libeigen3-dev \
                    python3 \
-                   python3-pip
+                   python3-pip \
+                   python3-venv
+
+# create and prepend it to the path
+# (all python commands will use venv after this)
+RUN python3 -m venv venv
+ENV PATH="/home/venv/bin:$PATH"
 
 # copy Mesh2HRTF git repo to docker container
 COPY . /home/Mesh2HRTF
@@ -49,8 +56,10 @@ COPY . /home/Mesh2HRTF
 # install Mesh2HRTF Python API
 RUN pip install -e /home/Mesh2HRTF
 
-# build NumCalc
-RUN cd /home/Mesh2HRTF/mesh2hrtf/NumCalc/src && make
+# build NumCalc and run make clean if any *.o files exist
+RUN cd /home/Mesh2HRTF/mesh2hrtf/NumCalc/src && \
+    if ls *.o 1> /dev/null 2>&1; then make clean; fi && \
+    make
 
 # add symbolic linc for NumCalc
 RUN ln -s /home/Mesh2HRTF/mesh2hrtf/NumCalc/bin/NumCalc /usr/local/bin
