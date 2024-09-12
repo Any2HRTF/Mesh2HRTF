@@ -1,6 +1,10 @@
 History
 =======
 
+v1.2.1 (11 September 2024)
+--------------------------
+* Update dockerfile: update to latest long time support Ubuntu version, create a Python virtual environment because Python 3.12 does not allow `pip install` outside an environment anymore.
+
 v1.2.0 (1 July 2024)
 --------------------
 * `hrtf_mesh_grading` from the folder mesh2hrtf/Mesh2Input/Meshes/GradingHybrid can now also do purely distance based mesh grading
