@@ -7,6 +7,7 @@ import os
 import scipy.io
 import numpy
 import utils
+import pytest
 import matplotlib.pyplot as plt
 import mesh2hrtf as m2h
 
@@ -40,7 +41,7 @@ def test_numcalc_invalid_parameter(capfd):
         _, err = capfd.readouterr()
         assert "NumCalc was called with an unknown parameter or flag." in err
     else:
-        ValueError("Num calc did not throw an error")
+        raise ValueError("Num calc did not throw an error")
 
 
 @pytest.mark.parametrize("nitermax, use", [(0, True), (1, True), (2, True),
@@ -344,3 +345,48 @@ def test_numcalc_ear_source_types(boundary_condition, source, bem_method,
     numpy.testing.assert_allclose(
         numpy.abs(hrtf_sim[numpy.isfinite(hrtf_sim)]),
         numpy.abs(hrtf_ana[numpy.isfinite(hrtf_ana)]), rtol=11.1)
+
+
+@pytest.mark.parametrize('normals', ['valid', 'invalid'])
+def test_numcalc_check_normals(normals, capfd):
+    """Test the check_normals command line parameter"""
+
+    # --- Setup ---
+    # create temporary directory
+    tmp = tempfile.TemporaryDirectory()
+
+    # copy test directory
+    shutil.copytree(
+        os.path.join(base_dir, 'resources', 'test_numcalc',
+                     'project_folder_pspw'),
+        os.path.join(tmp.name, 'project'))
+    # copy input file and rename it to NC.inp
+    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc'))
+    os.mkdir(os.path.join(tmp.name, 'project', 'NumCalc', 'source_1'))
+    shutil.copyfile(
+        os.path.join(base_dir, 'resources', 'test_numcalc', 'ncinp_files',
+                     'NC_rigid_point_ml-fmm-bem.inp'),
+        os.path.join(tmp.name, 'project', 'NumCalc', 'source_1', 'NC.inp'))
+    # copy the reference mesh
+    shutil.rmtree(os.path.join(
+        tmp.name, 'project', 'ObjectMeshes', 'Reference'))
+    shutil.copytree(os.path.join(
+        base_dir, 'resources', 'test_numcalc', 'reference_meshes', normals),
+        os.path.join(tmp.name, 'project', 'ObjectMeshes', 'Reference'))
+
+    # run NumCalc with subprocess
+    tmp_path = os.path.join(tmp.name, "project", "NumCalc", "source_1")
+    if normals == 'valid':
+        subprocess.run([f'{numcalc} -check_normals'], cwd=tmp_path,
+            check=True, shell=True)
+        std, _ = capfd.readouterr()
+        assert 'There seems to be at least one element' not in std
+    else:
+        try:
+            subprocess.run([f'{numcalc} -check_normals'],
+                cwd=tmp_path, check=True, shell=True)
+        except subprocess.CalledProcessError:
+            _, err = capfd.readouterr()
+            assert 'There seems to be at least one element' not in err
+        else:
+            raise ValueError("Num calc did not throw an error")
