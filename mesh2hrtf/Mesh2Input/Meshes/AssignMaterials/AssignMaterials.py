@@ -102,60 +102,25 @@ def get_ear_indices(bm, obj, tolerance, ear):
     bm.verts.ensure_lookup_table()
     bm.faces.ensure_lookup_table()
 
-    # initialize helper variables
-    left_indices = []
-    left_xy_distance = []
-    left_y = []
-    right_indices = []
-    right_xy_distance = []
-    right_y = []
+    # initialize helper variable
     min_y = [1000, 1000]
-
-    # world matrix for obtaining vertex positions in world coorindates
-    world = obj.matrix_world
-
-    # find possible faces at the ear channel entrances
-    for face in bm.faces:
-
-        # current face location in world coordinates
-        xyz = world @ face.calc_center_median()
-        # distance from y axis, and y-value
-        xy_distance = abs(xyz[0]) + abs(xyz[2])
-        y = xyz[1]
-
-        # potential left ear
-        if y > 0 and abs(xyz[0]) < tolerance and abs(xyz[2]) < tolerance:
-            left_indices.append(face.index)
-            left_xy_distance.append(xy_distance)
-            left_y.append(abs(y))
-            if abs(y) < min_y[0]:
-                min_y[0] = abs(y)
-        # potential right ear
-        elif y < 0 and abs(xyz[0]) < tolerance and abs(xyz[2]) < tolerance:
-            right_indices.append(face.index)
-            right_xy_distance.append(xy_distance)
-            right_y.append(abs(y))
-            if abs(y) < min_y[1]:
-                min_y[1] = abs(y)
-
-    # find left ear element and try to exclude faces at the tragus
     left_index = None
-    if ear in ("Both ears", "Left ear"):
-        min_xy_dist = 1000
-        for n in range(len(left_indices)):
-            if left_y[n] < min_y[0] + tolerance and left_xy_distance[n] < \
-                    min_xy_dist:
-                min_xy_dist = left_xy_distance[n]
-                left_index = left_indices[n]
-    # find left ear element and try to exclude faces at the tragus
     right_index = None
-    if ear in ("Both ears", "Right ear"):
-        min_xy_dist = 1000
-        for n in range(len(right_indices)):
-            if right_y[n] < min_y[1] + tolerance and right_xy_distance[n] < \
-                    min_xy_dist:
-                min_xy_dist = right_xy_distance[n]
-                right_index = right_indices[n]
+
+    # find optimal faces for left and right mic position
+    # by choosing the face with min y value in the area around the y axis with radius=tolerance
+    for f in bm.faces:
+        f_median= f.calc_center_median()  # compute face location
+        xz_distance = np.sqrt(f_median.x**2 + f_median.z**2)  # compute distance to y axis
+        if xz_distance < tolerance:
+            if f_median.y > 0 and ear in ("Both ears", "Left ear"):  # Left
+                if f_median.y < min_y[0]:
+                    min_y[0] = f_median.y
+                    left_index = f.index
+            elif f_median.y < 0 and ear in ("Both ears", "Right ear"):  # Right
+                if abs(f_median.y) < min_y[1]:
+                    min_y[1] = abs(f_median.y)
+                    right_index = f.index
 
     return left_index, right_index
 
