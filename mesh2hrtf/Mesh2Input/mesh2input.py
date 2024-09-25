@@ -285,6 +285,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             raise ValueError("Did not find the 3D Mesh. It must be named"
                              "'Reference' (case sensitive).")
 
+        # make sure object is single user to avoid export error
+        bpy.ops.object.make_single_user(object=True, obdata=True)
+
         # check if 'Reference' object is a triangular mesh
         has_error_message = False
 
