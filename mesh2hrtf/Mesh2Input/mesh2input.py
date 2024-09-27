@@ -11,6 +11,8 @@ import numpy as np
 from bpy.props import StringProperty, BoolProperty, EnumProperty, \
     IntProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper
+import re
+from object_print3d_utils import report
 
 bl_info = {
     "name": "Mesh2HRTF export add-on",
@@ -83,6 +85,13 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         description="Render pictures of the 3D mesh",
         default=True,
         )
+    
+    checkall: BoolProperty(
+        name="3D-Print Checks",
+        description= ("Check geometry"),   #Added by Sanket
+        default=True,
+    )
+
     # post-processing ---------------------------------------------------------
     reference: BoolProperty(
         name="Reference",
@@ -200,6 +209,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "programPath")
         row = layout.row()
         row.prop(self, "pictures")
+        row.prop(self, "checkall")  #Added by Sanket
         # post-processing
         layout.label(text="Post-processing:")
         row = layout.row()
@@ -244,6 +254,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              frequencyVectorType='Step size',
              frequencyVectorValue=100,
              pictures=True,
+             checkall=True,  #Added by Sanket
              evaluationGrids='ARI',
              materialSearchPaths='None',
              method='ML-FMM BEM',
@@ -318,6 +329,10 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         if os.path.exists(os.path.join(filepath1, "NumCalc")):
             raise ValueError((f"Project folder {filepath1} already exists. "
                               "Choose another folder or delete files."))
+        if checkall:
+            _write_checkall_txt(filepath1) #Added by Sanket
+
+
         # create sub-folders
         subfolders = ["ObjectMeshes", "EvaluationGrids", "NumCalc"]
         for subfolder in subfolders:
@@ -1160,6 +1175,48 @@ def _render_pictures(filepath1, unitFactor):
         nameRender = ("%d_deg_azimuth" % azim[ii])
         bpy.data.images['Render Result'].save_render(
             os.path.join(dirRender, "%s.png" % nameRender))
+        
+
+#Added by Sanket
+def _write_checkall_txt(filepath1):
+    """check all before export"""
+    #check for geometry is solid
+    bpy.ops.mesh.print3d_check_solid()
+    info = report.info()
+    non_manifold = info[0][0]
+    non_manifold_num = int(re.search(r'\d+', non_manifold).group())
+    bad_contiguous = info[1][0]
+    bad_contiguous_num = int(re.search(r'\d+', bad_contiguous).group())
+    #check geometry for self intersections
+    bpy.ops.mesh.print3d_check_intersect()
+    info = report.info()
+    intersect_face = info[0][0]
+    intersect_face_num = int(re.search(r'\d+', intersect_face).group())
+    #check edges are below the sharpness preference
+    bpy.ops.mesh.print3d_check_sharp()
+    info = report.info()
+    sharp_edge = info[0][0]
+    sharp_edge_num = int(re.search(r'\d+', sharp_edge).group())
+
+    #If there is non-zero number after check-all then raise an error
+    if non_manifold_num != 0 or bad_contiguous_num != 0 or intersect_face_num != 0 or sharp_edge_num != 0:
+        file = open(os.path.join(filepath1, "Error_Checkall_info.txt"), "w",
+                    encoding="utf8", newline="\n")
+        fw = file.write
+        # header --------------------------------------------------------------
+        fw("##-------------------------------------------\n")
+        fw("## This file was created by mesh2input, export failed because of non-zero values during check-all\n")
+        fw("##\n")
+        fw("##\n")
+        fw("## %s\n" % non_manifold)
+        fw("## %s\n" % bad_contiguous)
+        fw("## %s\n" % intersect_face)
+        fw("## %s\n" % sharp_edge)
+        fw("##\n")
+        fw("##\n")
+        fw("Please make sure the object doesn't have non manifold edges/bad contiguous edges/intersect faces/sharp edges before export")
+        file.close()
+        raise ValueError(("Export failed, please refer to Error_checkall_info.txt in defined folder for details"))
 
 
 def _write_nc_inp(filepath1, version, title,
