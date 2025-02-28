@@ -1,6 +1,12 @@
 History
 =======
 
+v1.2.2 (28 February 2054)
+-------------------------
+* Enhancement: Make the Mesh2HRTF project export from blender work if the Reference mesh is multi-user by forcing it to be single user (PR #145)
+* Enhancement: Make an issue template to make users aware that Mesh2HRTF is not the same as mesh2hrtf_tools (PR #151)
+* Packaging: Move python package from setup.py to pyproject.toml (PR #155)
+
 v1.2.1 (11 September 2024)
 --------------------------
 * Update dockerfile: update to latest long time support Ubuntu version, create a Python virtual environment because Python 3.12 does not allow `pip install` outside an environment anymore.

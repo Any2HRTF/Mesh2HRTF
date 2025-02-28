@@ -2027,28 +2027,31 @@ void NC_DeleteArrays(const int& imultpol, const int& nlevmlfm, const int& ifdelN
 		delete [] clustarry;
 		break;
 	case 3: // DMLFMBEM
-		for(i=0; i<nlevmlfm; i++)
+	  for(i=0; i<nlevmlfm; i++)
+	    {
+	      for(j=0; j<clulevarry[i].nClustSLv; j++)
 		{
-			for(j=0; j<clulevarry[i].nClustSLv; j++)
-			{
-				delete [] clulevarry[i].ClastArLv[j].NumsFarClus;
-				delete [] clulevarry[i].ClastArLv[j].NumsNeaClus;
-				delete [] clulevarry[i].ClastArLv[j].NumsOfEl;
-			}
-
-			if(ifdelNFC)
-			{
-				for(j=0; j<clulevarry[i].nClustOLv; j++)
-				{
-					delete [] clulevarry[i].ClastArLv[j].NumsFanClus;
-				}
-			}
-
-			delete [] clulevarry[i].ClastArLv;
-
+		  // kreiza 2024: there is the theoretical chance that
+		  //      no Far Field Clusters exist, check for that
+		  if( clulevarry[i].ClastArLv[j].NumsFarClus != NULL )
+		    delete [] clulevarry[i].ClastArLv[j].NumsFarClus;
+		  delete [] clulevarry[i].ClastArLv[j].NumsNeaClus;
+		  delete [] clulevarry[i].ClastArLv[j].NumsOfEl;
 		}
-		delete [] clulevarry;
-		break;
+	      
+	      if(ifdelNFC)
+		{
+		  for(j=0; j<clulevarry[i].nClustOLv; j++)
+		    {
+		      delete [] clulevarry[i].ClastArLv[j].NumsFanClus;
+		    }
+		}
+	      
+	      delete [] clulevarry[i].ClastArLv;
+	      
+	    }
+	  delete [] clulevarry;
+	  break;
 	}
 
 	if(imultpol) // FMBEM

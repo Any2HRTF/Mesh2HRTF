@@ -28,7 +28,7 @@ using namespace std;                                                            
 
 // local functions
 void NC_ReadBasicParametersB(ofstream&,FILE* inputFile_,char*,string[],double*);
-void NC_ReadMesh(ofstream&,FILE* inputFile_,char*, string[]);
+void NC_ReadMesh(ofstream&,FILE* inputFile_,char*, string[], bool);
 void NC_ReadBoundaryConditions(ofstream&,FILE* inputFile_,char*,string[],int&,int&,inputLineBoundaryCondition *);
 void NC_ReadSoundSources(ofstream&,FILE* inputFile_,char*, string[]);
 void NC_ReadFrequencyCurves(ofstream&,FILE* inputFile_,char*, string[]);
@@ -38,7 +38,7 @@ void NC_ComputeFrequencies(ofstream&,int&, double*,double*,double*);
 int NC_GetLine(FILE *,char *,string[]);
 int NC_String2Integer(string);
 double NC_String2Double(string Ori_Str);
-
+bool NC_checkedges(void);
 
 
 // read the input file
@@ -48,7 +48,8 @@ void NC_Read
 	FILE* inputFile_,			// W: input file
 	char* chinpline,		// W: input line
 	string chterms[NTRM],	// W: entries in the input line
-	double* Freqs			// O: array of the frequencies
+	double* Freqs,			// O: array of the frequencies
+	bool check_normals
 )
 {
 	int i, nabspsourc, maxbcline3, nbcline3;
@@ -116,8 +117,14 @@ void NC_Read
 	zposoo = new Complex[nabspsourc];
 
 	// read mesh
-	NC_ReadMesh(NCout, inputFile_, chinpline, chterms);
+	// please note, that there are some checks in
+	// NC_ReadMesh that produce exits without correctly
+	// deleting the above arrays
+	NC_ReadMesh(NCout, inputFile_, chinpline, chterms, check_normals);
 
+
+	
+	
 	// read boundary conditions
 	maxbcline3 = 2*numElementsOfBoundaryMesh_;
 	bouconlin3 = new inputLineBoundaryCondition[maxbcline3];
@@ -340,399 +347,446 @@ void NC_ReadBasicParametersB
 }
 
 // read mesh
+// as the mesh definition allows jumps in the indices of elements and node
+// we alway need reference vectors for matrix entry to the reference number
+// and element
 void NC_ReadMesh
 (
-	ofstream& NCout,
-	FILE* inputFile_,			// input file
-	char* chinpline,		// input line
-	string chterms[NTRM]	// entries in the input line
-)
+ ofstream& NCout,
+ FILE* inputFile_,			// input file
+ char* chinpline,		// input line
+ string chterms[NTRM],	// entries in the input line
+ bool check_normals  // check if the normals all point to the same domain
+ )
 {
-	int i, j = 0, k = 0, nterms;
-	double areevl;
+  int i, j = 0, k = 0, nterms;
+  double areevl;
+  
+  // read the key word NODES
+  while(!NC_GetLine(inputFile_, chinpline, chterms));
+  if(chterms[0].compare("NODES")) NC_Error_Exit_0(NCout, "Key word NODES expected!");
 
-	// read the key word NODES
-	while(!NC_GetLine(inputFile_, chinpline, chterms));
-	if(chterms[0].compare("NODES")) NC_Error_Exit_0(NCout, "Key word NODES expected!");
+  // read the nodal coordinates + the reference number of each node
+  i=0;
+  while(i<numNodes_) {
+    while(!NC_GetLine(inputFile_, chinpline, chterms));
+    tmpFile_ = fopen(chterms[0].c_str(), "r");
+    if(tmpFile_) // If file exists
+      {
+	while(!NC_GetLine(tmpFile_, chinpline, chterms));
+	int tmpFileLength = NC_String2Integer(chterms[0]);
+	for(int jj=0; jj<tmpFileLength; jj++)
+	  {
+	    while(!NC_GetLine(tmpFile_, chinpline, chterms));
+	    extNumbersOfNodes[i] = NC_String2Integer(chterms[0]);
+	    nodesCoordinates[i][0] = NC_String2Double(chterms[1]);
+	    nodesCoordinates[i][1] = NC_String2Double(chterms[2]);
+	    nodesCoordinates[i][2] = NC_String2Double(chterms[3]);
+	    i+=1;
+	  }
+      }
+    else // If file does not exist
+      {
+	cout << "No Nodes file found!" << endl;
+	NCout << "No Nodes file found!" << endl;
+	exit(-1);
+      }
+    fclose(tmpFile_); // everything that is open should be closed
+  }
 
-    i=0;
-    while(i<numNodes_)
-    {
-        while(!NC_GetLine(inputFile_, chinpline, chterms));
-        tmpFile_ = fopen(chterms[0].c_str(), "r");
-        if(tmpFile_) // If file exists
-        {
-            while(!NC_GetLine(tmpFile_, chinpline, chterms));
-            int tmpFileLength = NC_String2Integer(chterms[0]);
-            for(int jj=0; jj<tmpFileLength; jj++)
-            {
-                while(!NC_GetLine(tmpFile_, chinpline, chterms));
-                extNumbersOfNodes[i] = NC_String2Integer(chterms[0]);
-                nodesCoordinates[i][0] = NC_String2Double(chterms[1]);
-                nodesCoordinates[i][1] = NC_String2Double(chterms[2]);
-                nodesCoordinates[i][2] = NC_String2Double(chterms[3]);
-                i+=1;
-            }
-        }
-        else // If file does not exist
-        {
-            cout << "No Nodes file found!" << endl;
-            NCout << "No Nodes file found!" << endl;
-	    exit(-1);
-        }
-	fclose(tmpFile_); // everything that is open should be closed
+  // read the key word ELEMENTS
+  while(!NC_GetLine(inputFile_, chinpline, chterms));
+  if(chterms[0].compare("ELEMENTS")) NC_Error_Exit_0(NCout, "Key word ELEMENTS expected!");
+  
+  i=0;
+  while(i<numElements_) {
+    while(!NC_GetLine(inputFile_, chinpline, chterms));
+    tmpFile_ = fopen(chterms[0].c_str(), "r");
+    if(tmpFile_) // If file exists
+      {
+	while(!NC_GetLine(tmpFile_, chinpline, chterms));
+	int tmpFileLength = NC_String2Integer(chterms[0]);
+	
+	for(int jj=0; jj<tmpFileLength; jj++)
+	  {
+	    nterms = 0;
+	    while(!nterms){nterms = NC_GetLine(tmpFile_, chinpline, chterms);}
+	    
+	    if(nterms < 7 || nterms > 8) NC_Error_Exit_2(NCout,
+							 "number of entris of a input line must be 7 or 8!",
+							 "number of the element under the key word ELEMENTS = ", NC_String2Integer(chterms[0]),
+							 "number of entrie of the line = ", nterms);
+	    
+	    extNumbersOfElements[i] = NC_String2Integer(chterms[0]);
+	    listNumberNodesPerElement[i] = nterms - 4;
+	    for(j=0; j<listNumberNodesPerElement[i]; j++) elementsConnectivity[i][j] = NC_String2Integer(chterms[j + 1]);
+	    listElementProperty[i] = NC_String2Integer(chterms[nterms - 3]);
+	    listElementsElementGroup[i] = NC_String2Integer(chterms[nterms - 1]);
+	    i+=1;
+	  }
+      }
+    else // If file does not exist
+      {
+	cout << "No Elements file found!" << endl;
+	NCout << "No Elements file found!" << endl;
+	exit(-1);
+      }
+    fclose(tmpFile_);
+  }
+  
+  // compute the number of BEs and the number of evaluation elements
+  numElementsOfBoundaryMesh_ = numElementsOfEvaluationMesh_ = 0;
+  for(i=0; i<numElements_; i++) {
+    if(listElementProperty[i] == 0)
+      numElementsOfBoundaryMesh_++;
+    else if(listElementProperty[i] == 2) {
+      if(numElementsOfEvaluationMesh_ == 0) {
+	j = listElementsElementGroup[i];
+	k = i;
+      }
+      else if(listElementsElementGroup[i] != j) {
+	cout << "\n" << "Element " << extNumbersOfElements[k] << " belongs to the el. group " << listElementsElementGroup[k] << " but" << endl;
+	cout << "Element " << extNumbersOfElements[i] << " belongs to the el. group " << listElementsElementGroup[i] << "!" << endl;
+	NCout << "\n" << "Element " << extNumbersOfElements[k] << " belongs to the el. group " << listElementsElementGroup[k] << " but" << endl;
+	NCout << "Element " << extNumbersOfElements[i] << " belongs to the el. group " << listElementsElementGroup[i] << "!" << endl;
+	NC_Error_Exit_0(NCout, "Elements of the evaluation mesh must be of the same el. group!");
+      }
+      numElementsOfEvaluationMesh_++;
     }
-
-	// read the key word ELEMENTS
-	while(!NC_GetLine(inputFile_, chinpline, chterms));
-	if(chterms[0].compare("ELEMENTS")) NC_Error_Exit_0(NCout, "Key word ELEMENTS expected!");
-
-    i=0;
-    while(i<numElements_)
-    {
-        while(!NC_GetLine(inputFile_, chinpline, chterms));
-        tmpFile_ = fopen(chterms[0].c_str(), "r");
-        if(tmpFile_) // If file exists
-        {
-            while(!NC_GetLine(tmpFile_, chinpline, chterms));
-            int tmpFileLength = NC_String2Integer(chterms[0]);
-
-            for(int jj=0; jj<tmpFileLength; jj++)
-            {
-                nterms = 0;
-                while(!nterms){nterms = NC_GetLine(tmpFile_, chinpline, chterms);}
-
-                if(nterms < 7 || nterms > 8) NC_Error_Exit_2(NCout,
-                                                        "number of entris of a input line must be 7 or 8!",
-                                                        "number of the element under the key word ELEMENTS = ", NC_String2Integer(chterms[0]),
-                                                        "number of entrie of the line = ", nterms);
-
-                extNumbersOfElements[i] = NC_String2Integer(chterms[0]);
-                listNumberNodesPerElement[i] = nterms - 4;
-                for(j=0; j<listNumberNodesPerElement[i]; j++) elementsConnectivity[i][j] = NC_String2Integer(chterms[j + 1]);
-                listElementProperty[i] = NC_String2Integer(chterms[nterms - 3]);
-                listElementsElementGroup[i] = NC_String2Integer(chterms[nterms - 1]);
-                i+=1;
-            }
-        }
-        else // If file does not exist
-        {
-            cout << "No Elements file found!" << endl;
-            NCout << "No Elements file found!" << endl;
-	    exit(-1);
-        }
-	fclose(tmpFile_);
+    else NC_Error_Exit_2(NCout, "listElementProperty[i] must be 0 or 2!", "i = ", i, "listElementProperty[i] = ",  listElementProperty[i]);
+    } // end of loop I
+  
+  // input the symmetric planes
+  if(numSymmetricPlanes_ > 0) {
+    while(!NC_GetLine(inputFile_, chinpline, chterms));
+    if(chterms[0].compare("SYMMETRY")) NC_Error_Exit_0(NCout, "Key word SYMMETRY expected!");
+    
+    while(!NC_GetLine(inputFile_, chinpline, chterms));
+    for(i=0; i<NDIM; i++) listSymmetryPlanes[i] = NC_String2Integer(chterms[i]);
+    
+    while(!NC_GetLine(inputFile_, chinpline, chterms));
+    for(i=0; i<NDIM; i++) listSymmetryPlanesCoordinates[i] = NC_String2Double(chterms[i]);
+    
+    j = 0;
+    for(i=0; i<NDIM; i++)
+      {
+	if(listSymmetryPlanes[i]) j++;
+	switch(listSymmetryPlanes[i])
+	  {
+	  case 0:
+	  case 1:
+	    break;
+	  case 2:
+	    listSymmetryPlanes[i] = -1;
+	    break;
+	  case 3:
+	    listSymmetryPlanes[i] = 2;
+	    break;
+	  case 4:
+	    listSymmetryPlanes[i] = -2;
+	    break;
+	  default:
+	    NC_Error_Exit_2(NCout, "listSymmetryPlanes[i] must be equal to 0, 1, 2, 3, or 4!",
+			    "i = ", i, "listSymmetryPlanes[i] = ", listSymmetryPlanes[i]);
+	  }
+      }
+    if(j != numSymmetricPlanes_) NC_Error_Exit_2(NCout, "j must equal to numSymmetricPlanes_", "j = ", j,
+						 "numSymmetricPlanes_ = ", numSymmetricPlanes_);
+  }
+  
+  // change the connectivities: replace the external nodal numbers with the corresponding internal nodal numbers, this is essential for finding the right position in the system matrix. Remember, NumCalc allows for mesh definition with jumps in element index and node index
+  for(i=0; i<numElements_; i++) {
+    for(j=0; j<listNumberNodesPerElement[i]; j++) {
+      for(k=0; k<numNodes_; k++) {
+	if(elementsConnectivity[i][j] == extNumbersOfNodes[k])
+	  {
+	    elementsConnectivity[i][j] = k;
+	    goto outofloopk_cc;
+	  }
+      }
+      NC_Error_Exit_2(NCout, "Node of element does not exist in the connectivity list!", "Number of element = ", extNumbersOfElements[i], "Local number of the node in the element = ", j);
+    outofloopk_cc:
+      continue;
     }
+  }
 
-	// compute the number of BEs and the number of evaluation elements
-	numElementsOfBoundaryMesh_ = numElementsOfEvaluationMesh_ = 0;
-	for(i=0; i<numElements_; i++)
-	{
-		if(listElementProperty[i] == 0)
-		{
-			numElementsOfBoundaryMesh_++;
-		}
-		else if(listElementProperty[i] == 2)
-		{
-			if(numElementsOfEvaluationMesh_ == 0)
-			{
-				j = listElementsElementGroup[i];
-				k = i;
-			}
-			else if(listElementsElementGroup[i] != j)
-			{
-				cout << "\n" << "Element " << extNumbersOfElements[k] << " belongs to the el. group " <<
-					listElementsElementGroup[k] << " but" << endl;
-				cout << "Element " << extNumbersOfElements[i] << " belongs to the el. group " <<
-					listElementsElementGroup[i] << "!" << endl;
-				NCout << "\n" << "Element " << extNumbersOfElements[k] << " belongs to the el. group " <<
-					listElementsElementGroup[k] << " but" << endl;
-				NCout << "Element " << extNumbersOfElements[i] << " belongs to the el. group " <<
-					listElementsElementGroup[i] << "!" << endl;
-				NC_Error_Exit_0(NCout, "Elements of the evaluation mesh must be of the same el. group!");
-			}
-			numElementsOfEvaluationMesh_++;
-		}
-		else NC_Error_Exit_2(NCout, "listElementProperty[i] must be 0 or 2!", "i = ", i, "listElementProperty[i] = ",
-			listElementProperty[i]);
-	} // end of loop I
+  // as we have all information about the edges, we if all normal vectors point
+  // in the same direction.
+  
+  if( check_normals)
+    if( !NC_checkedges() )
+      NC_Error_Exit_0(NCout, "There seems to be at least one element that is differently ordered to the rest");
+  
 
-	// input the symmetric planes
-	if(numSymmetricPlanes_ > 0)
-	{
-		while(!NC_GetLine(inputFile_, chinpline, chterms));
-		if(chterms[0].compare("SYMMETRY")) NC_Error_Exit_0(NCout, "Key word SYMMETRY expected!");
-
-		while(!NC_GetLine(inputFile_, chinpline, chterms));
-		for(i=0; i<NDIM; i++) listSymmetryPlanes[i] = NC_String2Integer(chterms[i]);
-
-		while(!NC_GetLine(inputFile_, chinpline, chterms));
-		for(i=0; i<NDIM; i++) listSymmetryPlanesCoordinates[i] = NC_String2Double(chterms[i]);
-
-		j = 0;
-		for(i=0; i<NDIM; i++)
-		{
-			if(listSymmetryPlanes[i]) j++;
-			switch(listSymmetryPlanes[i])
-			{
-			case 0:
-			case 1:
-				break;
-			case 2:
-				listSymmetryPlanes[i] = -1;
-				break;
-			case 3:
-				listSymmetryPlanes[i] = 2;
-				break;
-			case 4:
-				listSymmetryPlanes[i] = -2;
-				break;
-			default:
-				NC_Error_Exit_2(NCout, "listSymmetryPlanes[i] must be equal to 0, 1, 2, 3, or 4!",
-					"i = ", i, "listSymmetryPlanes[i] = ", listSymmetryPlanes[i]);
-			}
-		}
-		if(j != numSymmetricPlanes_) NC_Error_Exit_2(NCout, "j must equal to numSymmetricPlanes_", "j = ", j,
-			"numSymmetricPlanes_ = ", numSymmetricPlanes_);
-	}
-
-	// change the connectivities: replace the external nodal numbers with the corresponding internal nodal numbers
-	for(i=0; i<numElements_; i++)
-	{
-		for(j=0; j<listNumberNodesPerElement[i]; j++)
-		{
-			for(k=0; k<numNodes_; k++)
-			{
-				if(elementsConnectivity[i][j] == extNumbersOfNodes[k])
-				{
-					elementsConnectivity[i][j] = k;
-					goto outofloopk_cc;
-				}
-			}
-			NC_Error_Exit_2(NCout, "Node of element does not exist in the connectivity list!",
-				"Number of element = ", extNumbersOfElements[i],
-				"Local number of the node in the element = ", j);
-outofloopk_cc:
-			continue;
-		}
-	}
-
-	// compute (1) normal vector to each element at its center
-	//         (2) area of each element
-	//         (3) coordinates of the center point of each element
-	Matrix<double>crdel(NNODPE, NDIM);
-	Vector<double> crdpoi(NDIM), shfunx(NNODPE), elnorv(NDIM), shnds(NNODPE),
-		shndt(NNODPE), dxds(NDIM), dxdt(NDIM);
-
-
-    averageElementArea_ = areevl = 0.0;
-	int nbouel = 0, inode, nevlel = 0;
-	double s, t, are0 = 0.0, leng;
-
-	for(i=0; i<numElements_; i++)
-	{
-
-		if(listElementProperty[i] < 0 || listElementProperty[i] > 2 || listElementProperty[i] == 1)
-			NC_Error_Exit_2(NCout, "listElementProperty[i] must be equal to 0 or 2!",
+  
+  // compute (1) normal vector to each element at its center
+  //         (2) area of each element
+  //         (3) coordinates of the center point of each element
+  Matrix<double>crdel(NNODPE, NDIM);
+  Vector<double> crdpoi(NDIM), shfunx(NNODPE), elnorv(NDIM), shnds(NNODPE),
+    shndt(NNODPE), dxds(NDIM), dxdt(NDIM);
+  
+  
+  averageElementArea_ = areevl = 0.0;
+  int nbouel = 0, inode, nevlel = 0;
+  double s, t, are0 = 0.0, leng;
+  
+  for(i=0; i<numElements_; i++)
+    {
+      
+      if(listElementProperty[i] < 0 || listElementProperty[i] > 2 || listElementProperty[i] == 1)
+	NC_Error_Exit_2(NCout, "listElementProperty[i] must be equal to 0 or 2!",
 			"number of the element = ", extNumbersOfElements[i], "listElementProperty[i] = ", listElementProperty[i]);
-
-		inode = listNumberNodesPerElement[i];
-
-		for(j=0; j<inode; j++) for(k=0; k<NDIM; k++) crdel(j, k) = nodesCoordinates[elementsConnectivity[i][j]][k];
-
-		switch(inode)
-		{
-			case 3:
-				s = t = 1.0/3.0;
-				are0 = 0.5;
-				break;
-			case 4:
-				s = t = 0.0;
-				are0 = 4.0;
-				break;
-			default: NC_Error_Exit_2(NCout, "Number of nodes of an element must be 3 or 4!",
-						 "number of nodes of the element = ", inode,
-						 "number of the element = ", extNumbersOfElements[i]);
-		}
-
-
-		NC_ComputeGlobalCoordinates(crdpoi, shfunx, crdel, s, t, inode);
-		leng = NC_ComputeUnitVectorOnElement(elnorv, shnds, shndt, dxds, dxdt, crdel, s, t, inode);
-
-		for(k=0; k<NDIM; k++)
-		{
-			elenor[i][k] = elnorv[k];
-			centel[i][k] = crdpoi[k];
-		}
-		areael[i] = leng*are0;
-
-		if(listElementProperty[i] == 2)
-		{
-			areevl += areael[i];
-			nevlel++;
-		}
-		else
-		{
-			averageElementArea_ += areael[i];
-			nbouel++;
-		}
-
-		for(j=0; j<inode; j++)
-		{
-			if(inode == NETYP3)
-			{
-				s = CSI6[j];
-				t = ETA6[j];
-			}
-			else
-			{
-				s = CSI8[j];
-				t = ETA8[j];
-			}
-		    leng = NC_ComputeUnitVectorOnElement(elnorv, shnds, shndt, dxds, dxdt, crdel,
-			                s, t, inode);
-
-			for(k=0; k<NDIM; k++)
-			{
-				elenor[i][(j + 1)*NDIM + k] = elnorv[k];
-			}
-		}
-	} // end of loop I //
-
-	averageElementArea_ /= (double)nbouel;
-	if(nevlel > 0) areevl /= (double)nevlel;
-
-	// compute the array isNodeMeshOrEvalNode and the variables NNODBE and NNODIN
-	// isNodeMeshOrEvalNode[i] >=  0: I is node of the BE mesh
-	//              = -1: it is a node of the evaluation mesh
-	for(i=0; i<numNodes_; i++) isNodeMeshOrEvalNode[i] = -3;
-
-	for(i=0; i<numElements_; i++)
+      
+      inode = listNumberNodesPerElement[i];
+      
+      for(j=0; j<inode; j++) for(k=0; k<NDIM; k++) crdel(j, k) = nodesCoordinates[elementsConnectivity[i][j]][k];
+      
+      switch(inode)
 	{
-		if(listElementProperty[i] == 0)
-		{
-			for(j=0; j<listNumberNodesPerElement[i]; j++) isNodeMeshOrEvalNode[elementsConnectivity[i][j]] = 1;
-		}
+	case 3:
+	  s = t = 1.0/3.0;
+	  are0 = 0.5;
+	  break;
+	case 4:
+	  s = t = 0.0;
+	  are0 = 4.0;
+	  break;
+	default: NC_Error_Exit_2(NCout, "Number of nodes of an element must be 3 or 4!",
+				 "number of nodes of the element = ", inode,
+				 "number of the element = ", extNumbersOfElements[i]);
 	}
-
-	for(i=0; i<numElements_; i++)
+      
+      
+      NC_ComputeGlobalCoordinates(crdpoi, shfunx, crdel, s, t, inode);
+      leng = NC_ComputeUnitVectorOnElement(elnorv, shnds, shndt, dxds, dxdt, crdel, s, t, inode);
+      
+      for(k=0; k<NDIM; k++)
 	{
-		if(listElementProperty[i] == 2)
-		{
-			for(j=0; j<listNumberNodesPerElement[i]; j++)
-			{
-				if(isNodeMeshOrEvalNode[elementsConnectivity[i][j]] != 1)
-				{
-					isNodeMeshOrEvalNode[elementsConnectivity[i][j]] = -1;
-				}
-				else NC_Error_Exit_1(NCout, "BE mesh and evaluation mesh have common node!",
-						"Number of the common node = ", extNumbersOfNodes[elementsConnectivity[i][j]]);
-			}
-		}
+	  elenor[i][k] = elnorv[k];
+	  centel[i][k] = crdpoi[k];
 	}
-
-	numNodesOfBoundaryMesh_ = numNodesOfEvaluationMesh_ = 0;
-	for(i=0; i<numNodes_; i++)
+      areael[i] = leng*are0;
+      
+      if(listElementProperty[i] == 2)
 	{
-		if(isNodeMeshOrEvalNode[i] == 1)
-		{
-			isNodeMeshOrEvalNode[i] = numNodesOfBoundaryMesh_;
-			numNodesOfBoundaryMesh_++;
-		}
-		else if(isNodeMeshOrEvalNode[i] == -1)
-		{
-			numNodesOfEvaluationMesh_++;
-		}
-		else if(isNodeMeshOrEvalNode[i] == -3)
-		{
-			cout << "\n" << "number of the isolated node: " << extNumbersOfNodes[i] << endl;
-			NCout << "\n" << "number of the isolated node: " << extNumbersOfNodes[i] << endl;
-			NC_Error_Exit_0(NCout, "Isolated node found!");
-		}
+	  areevl += areael[i];
+	  nevlel++;
 	}
-
-	if(numNodesOfBoundaryMesh_ == 0)
-		NC_Error_Exit_0(NCout, "Number of boundary elements is zero!");
-
-	// compute the dimension of the box including all boundary elements
-	double crdmaxmin[3][2], dtl = sqrt(averageElementArea_)/100.0;
-
-	for(j=0; j<NDIM; j++)
+      else
 	{
-		crdmaxmin[j][0] = -9.9e20;
-		crdmaxmin[j][1] = 9.9e20;
+	  averageElementArea_ += areael[i];
+	  nbouel++;
 	}
-	for(i=0; i<numNodes_; i++)
+      
+      for(j=0; j<inode; j++)
 	{
-		if(isNodeMeshOrEvalNode[i] < 0) continue;
-		for(j=0; j<NDIM; j++)
-		{
-			if(nodesCoordinates[i][j] > crdmaxmin[j][0]) crdmaxmin[j][0] = nodesCoordinates[i][j];
-			if(nodesCoordinates[i][j] < crdmaxmin[j][1]) crdmaxmin[j][1] = nodesCoordinates[i][j];
-		}
+	  if(inode == NETYP3)
+	    {
+	      s = CSI6[j];
+	      t = ETA6[j];
+	    }
+	  else
+	    {
+	      s = CSI8[j];
+	      t = ETA8[j];
+	    }
+	  leng = NC_ComputeUnitVectorOnElement(elnorv, shnds, shndt, dxds, dxdt, crdel,
+					       s, t, inode);
+	  
+	  for(k=0; k<NDIM; k++)
+	    {
+	      elenor[i][(j + 1)*NDIM + k] = elnorv[k];
+	    }
 	}
-
-	for(j=0; j<NDIM; j++) {
-		if(numSymmetricPlanes_ == 0) {
-			crdmaxmin[j][0] -= crdmaxmin[j][1];
-		} else {
-			if(listSymmetryPlanes[j] == 0) {
-				crdmaxmin[j][0] -= crdmaxmin[j][1];
-			} else if(abs(listSymmetryPlanes[j]) <= 2) {
-				if(crdmaxmin[j][0] >= listSymmetryPlanesCoordinates[j]-dtl && crdmaxmin[j][1] >= listSymmetryPlanesCoordinates[j]-dtl){
-					crdmaxmin[j][0] = 2.0*(crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j]);
-				} else if(crdmaxmin[j][0] <= listSymmetryPlanesCoordinates[j]+dtl && crdmaxmin[j][1] <= listSymmetryPlanesCoordinates[j]+dtl) {
-					crdmaxmin[j][0] = 2.0*(listSymmetryPlanesCoordinates[j] - crdmaxmin[j][1]);
-				} else {
-					NC_Error_Warning_1(NCout, "", "Number of the symmetric plane = ", j);
-					NC_Error_Exit_2(NCout,
-						"All BE nodes must be located on the same side of a symmetric plane!",
-						"crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j] = ", crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j],
-						"crdmaxmin[j][1] - listSymmetryPlanesCoordinates[j] =  = ", crdmaxmin[j][1] - listSymmetryPlanesCoordinates[j]);
-				}
-			} else {
-				NC_Error_Exit_2(NCout, "listSymmetryPlanes[j] mist be 0, -1, 1, -2, 2!", "listSymmetryPlanes[j] = ", listSymmetryPlanes[j],
-					"j = ", j);
-			}
-		}
-	}
-	diameterBE_ = 0.0;
-	for(j=0; j<NDIM; j++) diameterBE_ += crdmaxmin[j][0]*crdmaxmin[j][0];
-	diameterBE_ = sqrt(diameterBE_);
-
-	// compute the number of each element group
-	int ielgrp = 0;
-	for(i=0; i<numElements_; i++)
+    } // end of loop I //
+  
+  averageElementArea_ /= (double)nbouel;
+  if(nevlel > 0) areevl /= (double)nevlel;
+  
+  // compute the array isNodeMeshOrEvalNode and the variables NNODBE and NNODIN
+  // isNodeMeshOrEvalNode[i] >=  0: I is node of the BE mesh
+  //              = -1: it is a node of the evaluation mesh
+  for(i=0; i<numNodes_; i++) isNodeMeshOrEvalNode[i] = -3;
+  
+  for(i=0; i<numElements_; i++)
+    {
+      if(listElementProperty[i] == 0)
 	{
-		for(j=0; j<ielgrp; j++)
-		{
-			if(listElementsElementGroup[i] == indexOfElementGroup[j]) goto EndOfLoopI_Elgr;
-		}
-		indexOfElementGroup[ielgrp] = listElementsElementGroup[i];
-		propertyOfGroup[ielgrp] = listElementProperty[i];
-		ielgrp++;
-EndOfLoopI_Elgr: continue;
+	  for(j=0; j<listNumberNodesPerElement[i]; j++) isNodeMeshOrEvalNode[elementsConnectivity[i][j]] = 1;
 	}
-
-	if(ielgrp < numElementGroups_) numElementGroups_ = ielgrp;
-	else if(ielgrp > numElementGroups_)
-		NC_Error_Exit_2(NCout, "ielgrp must be less than or equal to nelgrp", "ielgrp = ",
-		ielgrp, "nelgrp = ", numElementGroups_);
-
-	// compute number of elements of each element group
-	for(j=0; j<numElementGroups_; j++) numberOfElementsInGroup[j] = 0;
-	for(i=0; i<numElements_; i++)
+    }
+  
+  for(i=0; i<numElements_; i++)
+    {
+      if(listElementProperty[i] == 2)
 	{
-		for(j=0; j<numElementGroups_; j++)
+	  for(j=0; j<listNumberNodesPerElement[i]; j++)
+	    {
+	      if(isNodeMeshOrEvalNode[elementsConnectivity[i][j]] != 1)
 		{
-			if(listElementsElementGroup[i] == indexOfElementGroup[j])
-			{
-				numberOfElementsInGroup[j]++;
-				break;
-			}
+		  isNodeMeshOrEvalNode[elementsConnectivity[i][j]] = -1;
 		}
+	      else NC_Error_Exit_1(NCout, "BE mesh and evaluation mesh have common node!",
+				   "Number of the common node = ", extNumbersOfNodes[elementsConnectivity[i][j]]);
+	    }
 	}
+    }
+  
+  numNodesOfBoundaryMesh_ = numNodesOfEvaluationMesh_ = 0;
+  for(i=0; i<numNodes_; i++)
+    {
+      if(isNodeMeshOrEvalNode[i] == 1)
+	{
+	  isNodeMeshOrEvalNode[i] = numNodesOfBoundaryMesh_;
+	  numNodesOfBoundaryMesh_++;
+	}
+      else if(isNodeMeshOrEvalNode[i] == -1)
+	{
+	  numNodesOfEvaluationMesh_++;
+	}
+      else if(isNodeMeshOrEvalNode[i] == -3)
+	{
+	  cout << "\n" << "number of the isolated node: " << extNumbersOfNodes[i] << endl;
+	  NCout << "\n" << "number of the isolated node: " << extNumbersOfNodes[i] << endl;
+	  NC_Error_Exit_0(NCout, "Isolated node found!");
+	}
+    }
+  
+  if(numNodesOfBoundaryMesh_ == 0)
+    NC_Error_Exit_0(NCout, "Number of boundary elements is zero!");
+  
+  // compute the dimension of the box including all boundary elements
+  double crdmaxmin[3][2], dtl = sqrt(averageElementArea_)/100.0;
+  
+  for(j=0; j<NDIM; j++)
+    {
+      crdmaxmin[j][0] = -9.9e20;
+      crdmaxmin[j][1] = 9.9e20;
+    }
+  for(i=0; i<numNodes_; i++)
+    {
+      if(isNodeMeshOrEvalNode[i] < 0) continue;
+      for(j=0; j<NDIM; j++)
+	{
+	  if(nodesCoordinates[i][j] > crdmaxmin[j][0]) crdmaxmin[j][0] = nodesCoordinates[i][j];
+	  if(nodesCoordinates[i][j] < crdmaxmin[j][1]) crdmaxmin[j][1] = nodesCoordinates[i][j];
+	}
+    }
+  
+  for(j=0; j<NDIM; j++) {
+    if(numSymmetricPlanes_ == 0) {
+      crdmaxmin[j][0] -= crdmaxmin[j][1];
+    } else {
+      if(listSymmetryPlanes[j] == 0) {
+	crdmaxmin[j][0] -= crdmaxmin[j][1];
+      } else if(abs(listSymmetryPlanes[j]) <= 2) {
+	if(crdmaxmin[j][0] >= listSymmetryPlanesCoordinates[j]-dtl && crdmaxmin[j][1] >= listSymmetryPlanesCoordinates[j]-dtl){
+	  crdmaxmin[j][0] = 2.0*(crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j]);
+	} else if(crdmaxmin[j][0] <= listSymmetryPlanesCoordinates[j]+dtl && crdmaxmin[j][1] <= listSymmetryPlanesCoordinates[j]+dtl) {
+	  crdmaxmin[j][0] = 2.0*(listSymmetryPlanesCoordinates[j] - crdmaxmin[j][1]);
+	} else {
+	  NC_Error_Warning_1(NCout, "", "Number of the symmetric plane = ", j);
+	  NC_Error_Exit_2(NCout,
+			  "All BE nodes must be located on the same side of a symmetric plane!",
+			  "crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j] = ", crdmaxmin[j][0] - listSymmetryPlanesCoordinates[j],
+			  "crdmaxmin[j][1] - listSymmetryPlanesCoordinates[j] =  = ", crdmaxmin[j][1] - listSymmetryPlanesCoordinates[j]);
+	}
+      } else {
+	NC_Error_Exit_2(NCout, "listSymmetryPlanes[j] mist be 0, -1, 1, -2, 2!", "listSymmetryPlanes[j] = ", listSymmetryPlanes[j],
+			"j = ", j);
+      }
+    }
+  }
+  diameterBE_ = 0.0;
+  for(j=0; j<NDIM; j++) diameterBE_ += crdmaxmin[j][0]*crdmaxmin[j][0];
+  diameterBE_ = sqrt(diameterBE_);
+  
+  // compute the number of each element group
+  int ielgrp = 0;
+  for(i=0; i<numElements_; i++)
+    {
+      for(j=0; j<ielgrp; j++)
+	{
+	  if(listElementsElementGroup[i] == indexOfElementGroup[j]) goto EndOfLoopI_Elgr;
+	}
+      indexOfElementGroup[ielgrp] = listElementsElementGroup[i];
+      propertyOfGroup[ielgrp] = listElementProperty[i];
+      ielgrp++;
+    EndOfLoopI_Elgr: continue;
+    }
+  
+  if(ielgrp < numElementGroups_) numElementGroups_ = ielgrp;
+  else if(ielgrp > numElementGroups_)
+    NC_Error_Exit_2(NCout, "ielgrp must be less than or equal to nelgrp", "ielgrp = ",
+		    ielgrp, "nelgrp = ", numElementGroups_);
+  
+  // compute number of elements of each element group
+  for(j=0; j<numElementGroups_; j++) numberOfElementsInGroup[j] = 0;
+  for(i=0; i<numElements_; i++)
+    {
+      for(j=0; j<numElementGroups_; j++)
+	{
+	  if(listElementsElementGroup[i] == indexOfElementGroup[j])
+	    {
+	      numberOfElementsInGroup[j]++;
+	      break;
+	    }
+	}
+    }
 }
+
+
+// check if the normalvectors point in the same direction
+bool NC_checkedges(void) {
+  // uses more or less a definition of halfedges. For every node, we
+  // record the index of the vertices of incoming and outgoing halfedge
+  // with different sign. If all is well, the sum of these indices needs to be 0
+  // Warning: There is probably the slight possibility that the sum adds up
+  // to zero, and still the normal vectors are wrong, but this is very unlikely
+  //
+  // Global variables used:
+  //     numNodes_ : integer, number of all nodes, including BEM and Eval
+  //     numElements_ : integer, number of all elements
+  //     listElementProperty: integer array, Info if an element is BE or Eval
+  //     listNumberNodesPerElement: integer array,
+  //          Number of vertices of the element
+  //     elementsConnectivity: integer matrix, Elements times nodes per element
+  //          List of the node indices of every vertix in the element
+
+  int hedges[numNodes_];
+  int nvert, iel, first, second, j;
+  bool meshokay;
+  meshokay = true;
+  for (j = 0; j < numNodes_; j++)
+    hedges[j] = 0;
+  for(iel = 0; iel < numElements_; iel++) {
+    if( listElementProperty[iel] == 2 ) continue;  // no need to look at eval meshes
+    nvert = listNumberNodesPerElement[iel];
+    
+    for (j = 0; j < nvert - 1; j++) {
+      first = elementsConnectivity[iel][j];
+      second = elementsConnectivity[iel][j+1];
+	  
+      //  0 is part of connectivity list, thus add 1
+      hedges[first] -= second + 1;
+      hedges[second] += first + 1;
+    }
+    
+    hedges[ elementsConnectivity[iel][nvert - 1] ] -= elementsConnectivity[iel][0] + 1;
+    hedges[ elementsConnectivity[iel][0] ] += elementsConnectivity[iel][nvert - 1] + 1;
+  }
+
+
+  // if everything went well, hedges should be 0
+  for (j = 0; j < numNodes_; j++) {
+    if( hedges[j] != 0 ) {
+      cerr << "Problem with element containing the node " << extNumbersOfNodes[j] << "\n";
+      meshokay = false;
+    }
+  }
+  return(meshokay);
+}  
 
 // read the boundary conditions
 void NC_ReadBoundaryConditions
