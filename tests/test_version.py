@@ -23,6 +23,16 @@ def test_version():
     # extract version from Blender export plug-in
     version_3 = re.search(r'\((.*?)\)', line).group(1).replace(', ', '.')
 
+    # version pyproject.toml
+    with open('pyproject.toml') as f:
+        pyproject = f.readlines()
+    for line in pyproject:
+        if 'version = "' in line:
+            break
+    # extract version from Blender export plug-in
+    version_4 = re.search(r'version = "(.*?)"', line).group(1)
+
     # compare versions
     assert version.parse(version_1) == version.parse(version_2)
     assert version.parse(version_1) == version.parse(version_3)
+    assert version.parse(version_1) == version.parse(version_4)

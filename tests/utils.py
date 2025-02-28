@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sofar as sf
 
 # set to correctly obtain paths from `blender_paths()` below:
-computer_id = 1
+COMPUTER_ID = 2
 
 
 def blender_paths():
@@ -17,7 +17,7 @@ def blender_paths():
     first entry and contains the Blender addon and startup directories.
     """
 
-    if computer_id == 1:
+    if COMPUTER_ID == 1:
         # bruel @ audio communication group
         blender_paths = [
             # earliest supported LTS version
@@ -32,7 +32,7 @@ def blender_paths():
             ('/home/bruel/Daten/Applications/blender-4.1.1-linux-x64/',
              '4.1/scripts/addons',
              '4.1/scripts/startup'),]
-    elif computer_id == 2:
+    elif COMPUTER_ID == 2:
         # panik macbook
         blender_paths = [
             # blender 4.1
