@@ -1,0 +1,66 @@
+[project]
+name = "mesh2hrtf"
+version = "1.2.1"
+description = "Numerical calculation of head-related transfer functions."
+readme = "README.rst"
+license = {file = "LICENSE.txt"}
+requires-python = ">=3.9"
+authors = [
+    {name = "The mesh2hrtf developers"},
+]
+keywords = [
+    "HRTF",
+    "head related transfer functions",
+    "BEM",
+    "boundary element method",
+    "virtual acoustics",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: EUPL 1.2",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "numpy>=1.14.0",
+    "scipy>=1.5.0",
+    "psutil",
+    "sofar>=1.0.0",
+    "pyfar>=0.6.0",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pip",
+    "pytest",
+    "pytest-cov",
+    "coverage",
+    "flake8",
+]
+docs = [
+    "sphinx",
+    "autodocsumm>=0.2.14",
+    "insipid-sphinx-theme",
+]
+dev = ["mesh2hrtf[tests,docs]"]
+
+[project.urls]
+Tracker = "https://github.com/Any2HRTF/Mesh2HRTF/issues"
+Documentation = "https://github.com/Any2HRTF/Mesh2HRTF/wiki"
+Download = "https://github.com/Any2HRTF/Mesh2HRTF/releases"
+Homepage = "https://mesh2hrtf.org/"
+Source = "https://github.com/Any2HRTF/Mesh2HRTF"
+Changelog = "https://github.com/Any2HRTF/Mesh2HRTF/releases"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages]
+find = {}  # Scan the project directory with the default parameters

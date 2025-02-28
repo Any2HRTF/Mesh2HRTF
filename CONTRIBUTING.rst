@@ -61,10 +61,11 @@ the API for local development
 
     $ conda create --name mesh2hrtf python
     $ conda activate mesh2hrtf
-    $ conda install pip
-    $ pip install -e .
-    $ pip install -r requirements_python.txt
+    $ pip install -e ".[dev]"
 
+If the installation fails, try to restrict the python version first, e.g., by using.
+
+    $ conda create --name mesh2hrtf 'python<3.13'
 
 The latest work is contained in `develop`. For bug-fixes, enhancements, and new
 ideas please create a new branch based on develop.
