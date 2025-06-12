@@ -662,6 +662,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	/* **************************************************
 	   The D Matrices
 	   ************************************************** */
+	nnonzers = 0;
 	for(nlv=0; nlv<numClusterLevels_; nlv++) {
 	  // compute the relevant far clusters for the current level
 	  if(nlv == 0) {// the TRUNK level
@@ -690,10 +691,10 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
                 }
             }
 	  } // end of ELSE
-	  nnonzers = 0;
+	  
 	  for(i=0; i<clulevarry[nlv].nClustOLv; i++)
-	    nnonzers += nclufar[i];
-	  nnonzers *= clulevarry[nlv].nPoinSpheLv;
+	    nnonzers += nclufar[i] * clulevarry[nlv].nPoinSpheLv;
+
 
 	  nint += (uint)nnonzers + (uint)clulevarry[nlv].nClustOLv*clulevarry[nlv].nPoinSpheLv + 1;
 	  ncmplx += (uint)nnonzers;
