@@ -662,8 +662,9 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	/* **************************************************
 	   The D Matrices
 	   ************************************************** */
-	nnonzers = 0;
+
 	for(nlv=0; nlv<numClusterLevels_; nlv++) {
+	  nnonzers = 0;
 	  // compute the relevant far clusters for the current level
 	  if(nlv == 0) {// the TRUNK level
 	    for(i=0; i<clulevarry[nlv].nClustOLv; i++) {
