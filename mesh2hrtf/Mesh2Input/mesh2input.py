@@ -1128,7 +1128,9 @@ def _render_pictures(filepath1, unitFactor):
     bpy.data.lights['Light'].shadow_soft_size = .1 / unitFactor
     bpy.data.lights['Light'].cutoff_distance = 10 / unitFactor
     bpy.data.lights['Light'].shadow_buffer_clip_start = .05 / unitFactor
-    bpy.data.lights['Light'].shadow_buffer_bias = 1 / unitFactor
+    if bpy.app.version < (4, 3, 0):
+        # shadow_buffer_bias property was removed in Blender 4.3
+        bpy.data.lights['Light'].shadow_buffer_bias = 1 / unitFactor
 
     # camera positions, rotations, and azimuth angles
     renderloc = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
