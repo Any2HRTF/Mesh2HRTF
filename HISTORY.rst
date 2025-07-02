@@ -1,7 +1,13 @@
 History
 =======
 
-v1.2.2 (28 February 2054)
+v1.2.3 (2 July 2025)
+-------------------------
+* Fixed exporting Pictures with the Mesh2HRTF Blender Plugin for Blender Versions 4.3 and higher. The export failed because the `shadow_buffer_bias` property of the `PointLight` was removed in Blender 4.3 (PR #162)
+* Restrict pyfar to versions below 0.8 because `compute_dtfs` from the Mesh2HRTF Python API uses pyfar functionality that will be deprecated with version 0.8 (PR #163, #164)
+* Fix a small bug in the `estimate-ram` functionality of NumCalc
+
+v1.2.2 (28 February 2025)
 -------------------------
 * Enhancement: Make the Mesh2HRTF project export from blender work if the Reference mesh is multi-user by forcing it to be single user (PR #145)
 * Enhancement: Make an issue template to make users aware that Mesh2HRTF is not the same as mesh2hrtf_tools (PR #151)

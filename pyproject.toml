@@ -1,6 +1,6 @@
 [project]
 name = "mesh2hrtf"
-version = "1.2.1"
+version = "1.2.3"
 description = "Numerical calculation of head-related transfer functions."
 readme = "README.rst"
 license = {file = "LICENSE.txt"}
@@ -32,7 +32,7 @@ dependencies = [
     "scipy>=1.5.0",
     "psutil",
     "sofar>=1.0.0",
-    "pyfar>=0.6.0",
+    "pyfar>=0.6.0,<0.8.0",
 ]
 
 [project.optional-dependencies]
