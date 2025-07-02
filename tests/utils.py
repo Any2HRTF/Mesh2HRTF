@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sofar as sf
 
 # set to correctly obtain paths from `blender_paths()` below:
-COMPUTER_ID = 2
+COMPUTER_ID = 1
 
 
 def blender_paths():
@@ -24,14 +24,18 @@ def blender_paths():
             ('/home/bruel/Daten/Applications/blender-2.83.20-linux-x64/',
              '2.83/scripts/addons',
              '2.83/scripts/startup'),
-            # latest LTS version
+            # latest LTS 3 version
             ('/home/bruel/Daten/Applications/blender-3.6.12-linux-x64/',
              '3.6/scripts/addons',
              '3.6/scripts/startup'),
+            # latest LTS 4 version
+            ('/home/bruel/Daten/Applications/blender-4.2.11-linux-x64/',
+             '4.2/scripts/addons_core',
+             '4.2/scripts/startup'),
             # latest version
-            ('/home/bruel/Daten/Applications/blender-4.1.1-linux-x64/',
-             '4.1/scripts/addons',
-             '4.1/scripts/startup'),]
+            ('/home/bruel/Daten/Applications/blender-4.4.3-linux-x64/',
+             '4.4/scripts/addons_core',
+             '4.4/scripts/startup'),]
     elif COMPUTER_ID == 2:
         # panik macbook
         blender_paths = [
