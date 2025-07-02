@@ -662,7 +662,6 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	/* **************************************************
 	   The D Matrices
 	   ************************************************** */
-	
 	for(nlv=0; nlv<numClusterLevels_; nlv++) {
 	  nnonzers = 0;
 	  // compute the relevant far clusters for the current level
@@ -692,10 +691,10 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
                 }
             }
 	  } // end of ELSE
-	  
+
 	  for(i=0; i<clulevarry[nlv].nClustOLv; i++)
 	    nnonzers += nclufar[i] * clulevarry[nlv].nPoinSpheLv;
-
+	  // nnonzers *= clulevarry[nlv].nPoinSpheLv;
 
 	  nint += (uint)nnonzers + (uint)clulevarry[nlv].nClustOLv*clulevarry[nlv].nPoinSpheLv + 1;
 	  ncmplx += (uint)nnonzers;
@@ -857,7 +856,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	}
 	delete[] ipiv;
 #else
-	
+
 	Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
 
 	// forward substitution and backward eliminations
@@ -903,7 +902,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
     time(&ltim[5]);
     lti_sst = ltim[5] - ltim[4];
     lti_sol += lti_sst;
-    
+
     // post process: compute and output the results
     NC_PostProcessing(NCout);
 
