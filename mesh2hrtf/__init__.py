@@ -20,7 +20,7 @@ from .Mesh2Input.EvaluationGrids.write_evaluation_grid import \
     write_evaluation_grid
 from .Mesh2Input.Materials.write_material import write_material
 
-__version__ = '1.2.1'
+__version__ = '1.2.3'
 
 __all__ = [
     'output2hrtf',
