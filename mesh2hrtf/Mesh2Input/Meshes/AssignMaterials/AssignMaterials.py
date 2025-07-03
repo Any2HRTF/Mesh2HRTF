@@ -216,3 +216,7 @@ if __name__ == "__main__":
 #
 # importlib.reload(AssignMaterials)
 # AssignMaterials.assign_material(bpy.context.active_object, tolerance=2)
+#Test test
+
+for i in range(0,12):
+    print(i)
