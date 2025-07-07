@@ -212,7 +212,7 @@ if __name__ == "__main__":
 # for debugging only
 # import AssignMaterials
 # import importlib
-# import bpy
+import bpy
 #
 # importlib.reload(AssignMaterials)
 # AssignMaterials.assign_material(bpy.context.active_object, tolerance=2)
