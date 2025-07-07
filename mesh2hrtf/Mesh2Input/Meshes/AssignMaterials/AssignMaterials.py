@@ -9,7 +9,7 @@ import bpy
 import bmesh
 import math
 from bpy.props import FloatProperty, StringProperty
-
+import os
 
 class AssignMaterials(bpy.types.Operator):
     '''Create and assign skin and ear materials for Mesh2HRTF export.
@@ -179,8 +179,17 @@ def load_ear_indices_mapping(filepath):
             mapping[name.strip()] = (int(left.strip()), int(right.strip()))
     return mapping
 
-# Load once at startup
-EAR_INDEX_MAP = load_ear_indices_mapping("head_indices.txt")
+# Path to the text file. 
+
+here = os.path.dirname(os.path.abspath(__file__))
+path_to_indices = os.path.join(
+    here,
+    '..', '..', '..', '..', '..', '..',
+    'data',
+    'head_indices.txt'
+)
+
+EAR_INDEX_MAP = load_ear_indices_mapping(path_to_indices)
 
 
 def assign_material(obj, tolerance, ear):
