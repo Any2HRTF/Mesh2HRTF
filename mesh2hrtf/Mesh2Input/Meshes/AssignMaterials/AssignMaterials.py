@@ -159,6 +159,29 @@ def get_ear_indices(bm, obj, tolerance, ear):
 
     return left_index, right_index
 
+#Alternative to get ear indices- Read from text file. 
+
+def load_ear_indices_mapping(filepath):
+    """
+    Reads the text file and returns a dictionary:
+    {
+        "sub_1_highRes.ply": (911901, 879842),
+        ...
+    }
+    """
+    mapping = {}
+    with open(filepath, 'r') as f:
+        for line in f:
+            parts = line.strip().split(',')
+            if len(parts) != 3:
+                continue
+            left, right, name = parts
+            mapping[name.strip()] = (int(left.strip()), int(right.strip()))
+    return mapping
+
+# Load once at startup
+EAR_INDEX_MAP = load_ear_indices_mapping("head_indices.txt")
+
 
 def assign_material(obj, tolerance, ear):
 
@@ -172,9 +195,18 @@ def assign_material(obj, tolerance, ear):
     bm = bmesh.new()
     bm.from_mesh(obj.data)
 
+    print(f"Assigned indices from file: Left={left_index}, Right={right_index}")
+
     # get indicees
-    print(f"Search tolerance: {tolerance} blender units")
-    left_index, right_index = get_ear_indices(bm, obj, tolerance, ear)
+    #print(f"Search tolerance: {tolerance} blender units")
+    #left_index, right_index = get_ear_indices(bm, obj, tolerance, ear)
+
+    mesh_name = f"{obj.name}.ply"  # or whatever identifies this mesh
+    if mesh_name in EAR_INDEX_MAP:
+        left_index, right_index = EAR_INDEX_MAP[mesh_name]
+    else:
+        print(f"Mesh name {mesh_name} not found in index file.")
+        left_index, right_index = None, None
 
     # assign indicees
     if ear in ("Both ears", "Left ear"):
@@ -212,7 +244,8 @@ if __name__ == "__main__":
 # for debugging only
 # import AssignMaterials
 # import importlib
-import bpy
+#import bpy
+#print("Hello")
 #
 # importlib.reload(AssignMaterials)
 # AssignMaterials.assign_material(bpy.context.active_object, tolerance=2)

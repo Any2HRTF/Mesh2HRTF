@@ -1,0 +1,15 @@
+911901, 879842, sub_1_highRes.ply
+911435, 879389, sub_2_highRes.ply
+921864, 889865, sub_3_highRes.ply
+912977, 880913, sub_4_highRes.ply
+914444, 882390, sub_5_highRes.ply
+925732, 893623, sub_6_highRes.ply
+925821, 893722, sub_7_highRes.ply
+937065, 905063, sub_8_highRes.ply
+927360, 895280, sub_9_highRes.ply
+928290, 896224, sub_10_highRes.ply
+912961, 880911, sub_11_highRes.ply
+913570, 881506, sub_12_highRes.ply
+922750, 890757, sub_13_highRes.ply
+914863, 882819, sub_14_highRes.ply
+916088, 884054, sub_15_highRes.ply
