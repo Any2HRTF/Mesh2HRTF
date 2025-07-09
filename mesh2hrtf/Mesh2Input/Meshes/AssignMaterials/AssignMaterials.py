@@ -181,13 +181,15 @@ def load_ear_indices_mapping(filepath):
 
 # Path to the text file. 
 
-here = os.path.dirname(os.path.abspath(__file__))
-path_to_indices = os.path.join(
-    here,
-    '..', '..', '..', '..', '..', '..',
-    'data',
-    'head_indices.txt'
-)
+# here = os.path.dirname(os.path.abspath(__file__))
+# path_to_indices = os.path.join(
+#     here,
+#     '..', '..', '..', '..', '..', '..',
+#     'data',
+#     'head_indices.txt'
+# )
+data_path = os.path.join(os.getcwd(), 'data')
+path_to_indices = os.path.join(data_path, 'head_indices.txt')
 
 EAR_INDEX_MAP = load_ear_indices_mapping(path_to_indices)
 
