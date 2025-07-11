@@ -202,9 +202,9 @@ def assign_material(obj, tolerance, ear):
     # create materials
     setup_materials(obj)
 
-    # create mesh from object
-    bm = bmesh.new()
-    bm.from_mesh(obj.data)
+    # create mesh from object #commented below lines because reading indices might not work
+    # bm = bmesh.new()
+    # bm.from_mesh(obj.data)
 
     print(f"Assigned indices from file: Left={left_index}, Right={right_index}")
 
@@ -218,6 +218,10 @@ def assign_material(obj, tolerance, ear):
     else:
         print(f"Mesh name {mesh_name} not found in index file.")
         left_index, right_index = None, None
+    
+    bpy.ops.object.mode_set(mode='EDIT')
+    bm=bmesh.from_edit_mesh(obj.data)
+    bm.faces.ensure_lookup_table()
 
     # assign indicees
     if ear in ("Both ears", "Left ear"):
@@ -233,8 +237,9 @@ def assign_material(obj, tolerance, ear):
         else:
             print("Right ear not found. Consider increasing the tolerance.")
 
-    bm.to_mesh(obj.data)
+    # bm.to_mesh(obj.data)
     bm.free()
+    bpy.ops.object.mode_set(mode='OBJECT')
 
     # renaming the object
     obj.name = "Reference"
