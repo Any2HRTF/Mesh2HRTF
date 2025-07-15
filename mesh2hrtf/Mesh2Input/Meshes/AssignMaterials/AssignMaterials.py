@@ -188,13 +188,13 @@ def load_ear_indices_mapping(filepath):
 #     'data',
 #     'head_indices.txt'
 # )
-data_path = os.path.join(os.getcwd(), 'data')
-path_to_indices = os.path.join(data_path, 'head_indices.txt')
-
-EAR_INDEX_MAP = load_ear_indices_mapping(path_to_indices)
-
 
 def assign_material(obj, tolerance, ear):
+    
+    data_path = os.path.join(os.getcwd(), 'data')
+    path_to_indices = os.path.join(data_path, 'head_indices.txt')
+
+    EAR_INDEX_MAP = load_ear_indices_mapping(path_to_indices)
 
     # Switch to object mode to avoid export errors
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
