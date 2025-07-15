@@ -206,8 +206,6 @@ def assign_material(obj, tolerance, ear):
     # bm = bmesh.new()
     # bm.from_mesh(obj.data)
 
-    print(f"Assigned indices from file: Left={left_index}, Right={right_index}")
-
     # get indicees
     #print(f"Search tolerance: {tolerance} blender units")
     #left_index, right_index = get_ear_indices(bm, obj, tolerance, ear)
@@ -219,6 +217,8 @@ def assign_material(obj, tolerance, ear):
         print(f"Mesh name {mesh_name} not found in index file.")
         left_index, right_index = None, None
     
+    print(f"Assigned indices from file: Left={left_index}, Right={right_index}")
+
     bpy.ops.object.mode_set(mode='EDIT')
     bm=bmesh.from_edit_mesh(obj.data)
     bm.faces.ensure_lookup_table()
