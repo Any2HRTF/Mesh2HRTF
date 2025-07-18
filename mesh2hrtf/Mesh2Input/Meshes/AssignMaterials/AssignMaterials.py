@@ -168,33 +168,91 @@ def assign_material(obj, tolerance, ear):
     # create materials
     setup_materials(obj)
 
-    # create mesh from object
-    bm = bmesh.new()
-    bm.from_mesh(obj.data)
-
     # get indicees
     print(f"Search tolerance: {tolerance} blender units")
-    left_index, right_index = get_ear_indices(bm, obj, tolerance, ear)
 
-    # assign indicees
+    bpy.ops.object.mode_set(mode='EDIT')
+    bm = bmesh.from_edit_mesh(obj.data)
+    bm.faces.ensure_lookup_table()
+
+    def point_in_triangle_xz_plane(p, a, b, c):
+        v0 = (c[0] - a[0], c[1] - a[1])
+        v1 = (b[0] - a[0], b[1] - a[1])
+        v2 = (p[0] - a[0], p[1] - a[1])
+
+        dot00 = v0[0]*v0[0] + v0[1]*v0[1]
+        dot01 = v0[0]*v1[0] + v0[1]*v1[1]
+        dot02 = v0[0]*v2[0] + v0[1]*v2[1]
+        dot11 = v1[0]*v1[0] + v1[1]*v1[1]
+        dot12 = v1[0]*v2[0] + v1[1]*v2[1]
+
+        denom = dot00 * dot11 - dot01 * dot01
+        if denom == 0:
+            return False
+        inv_denom = 1 / denom
+        u = (dot11 * dot02 - dot01 * dot12) * inv_denom
+        v = (dot00 * dot12 - dot01 * dot02) * inv_denom
+
+        return (u >= 0) and (v >= 0) and (u + v <= 1)
+
+    def find_face_intersect_y_axis(obj, bm, side):
+        intersecting_faces = []
+        origin = (0.0, 0.0)
+
+        for face in bm.faces:
+            verts = face.verts
+            if len(verts) != 3:
+                continue
+
+            a = (verts[0].co.x, verts[0].co.z)
+            b = (verts[1].co.x, verts[1].co.z)
+            c = (verts[2].co.x, verts[2].co.z)
+
+            if point_in_triangle_xz_plane(origin, a, b, c):
+                intersecting_faces.append(face)
+
+        best_y_face = None
+        if side == 'left':
+            best_avg_y = float('inf')
+        elif side == 'right':
+            best_avg_y = -float('inf')
+
+        for face in intersecting_faces:
+            avg_y = sum(v.co.y for v in face.verts) / len(face.verts)
+            if side == 'left':
+                if avg_y < best_avg_y and avg_y > 0:
+                    best_avg_y = avg_y
+                    best_y_face = face
+            elif side == 'right':
+                if avg_y > best_avg_y and avg_y < 0 :
+                    best_avg_y = avg_y
+                    best_y_face = face
+
+        return best_y_face
+
     if ear in ("Both ears", "Left ear"):
-        if left_index is not None:
-            bm.faces[left_index].material_index = 1
-            print(f"Left ear index: {left_index}")
-        else:
-            print("Left ear not found. Consider increasing the tolerance.")
-    if ear in ("Both ears", "Right ear"):
-        if right_index is not None:
-            bm.faces[right_index].material_index = 2
-            print(f"Right ear index {right_index}")
-        else:
-            print("Right ear not found. Consider increasing the tolerance.")
+        left_face = find_face_intersect_y_axis(obj, bm, side='left')
+        left_y_coord = get_vertex_y(left_face)
+        left_face.material_index = 1
+        print(f"Left ear index: {left_face.index}, left y-coordinate: {left_y_coord}")
 
-    bm.to_mesh(obj.data)
+    if ear in ("Both ears", "Right ear"):
+        right_face = find_face_intersect_y_axis(obj, bm, side='right')
+        right_y_coord = get_vertex_y(right_face)
+        right_face.material_index = 2
+        print(f"Right ear index: {right_face.index}, rigjt y-coordinate: {right_y_coord}")
+
+    # bm.to_mesh(obj.data)
     bm.free()
+    bpy.ops.object.mode_set(mode='OBJECT')
 
     # renaming the object
     obj.name = "Reference"
+
+def get_vertex_y(face):
+    vertex=face.verts[0]
+    return vertex.co.y
+
 
 
 def register():
