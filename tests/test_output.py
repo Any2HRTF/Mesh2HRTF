@@ -387,6 +387,41 @@ def test_read_and_write_evaluation_grid(n_dim, coordinates, show):
     npt.assert_equal(coordinates.cartesian, points)
 
 
+@pytest.mark.parametrize('n_points', [5, 6])
+def test_write_evaluation_grid_without_triangulation(n_points):
+    """
+    Test writing evaluation grid without triangulation for number of points
+    that are a multiple of three and that aren't a multiple of three.
+    """
+
+    # file handling
+    tmp = TemporaryDirectory()
+    grid = f'1D_{n_points}_points'
+
+    # points on a line ...
+    x = np.arange(n_points)
+    y = np.zeros_like(x)
+    z = np.zeros_like(x)
+    points = np.vstack((x, y, z)).T
+
+    # ... cannot be written as evaluation grid with triangulation ...
+    with pytest.raises(ValueError, match='Use triangulate=False'):
+        m2h.write_evaluation_grid(points, os.path.join(tmp.name, grid))
+
+    # ... but can be written without triangulation.
+    m2h.write_evaluation_grid(
+        points, os.path.join(tmp.name, grid), triangulate=False)
+
+    # check the nodes and elements
+    for file in ["Nodes.txt", "Elements.txt"]:
+        with open(os.path.join(data_grids, grid, file), "r") as f:
+            ref = "".join(f.readlines())
+        with open(os.path.join(tmp.name, grid, file), "r") as f:
+            test = "".join(f.readlines())
+
+        assert test == ref
+
+
 @pytest.mark.parametrize("mode,object,dB,deg,unwrap,folder", (
     ["pressure", None, True, False, False, "Reference_pressure_db"],
     ["pressure", None, False, False, False, "Reference_pressure_lin"],

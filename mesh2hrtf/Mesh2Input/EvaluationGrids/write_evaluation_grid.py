@@ -1,11 +1,12 @@
 import os
-from scipy.spatial import Delaunay, ConvexHull
+from scipy.spatial import Delaunay, ConvexHull, QhullError
 import matplotlib.pyplot as plt
 import pyfar as pf
 
 
 def write_evaluation_grid(
-        points, name, start=200000, discard=None, show=False):
+        points, name, start=200000, discard=None, show=False,
+        triangulate=True):
     """
     Write evaluation grid for use in Mesh2HRTF.
 
@@ -36,6 +37,13 @@ def write_evaluation_grid(
     show : bool, optional
         If ``True`` the evaluation grid is plotted and the plot is saved to
         the folder given by `name`
+    triangulate : bool, optional
+        If ``True`` a Delauney triangulation of `points` is performed. This is
+        useful for example for plotting the sound pressure over the evaluation
+        grid using ParaView. The disadvantage is that not all sets of points
+        can be triangulated, e.g., points that are on a line or spherical grids
+        with multiple radii. If ``False`` the triangles written to Elements.txt
+        are meaningless. The default is ``True``.
 
     Examples
     --------
@@ -61,6 +69,36 @@ def write_evaluation_grid(
         raise ValueError(
             "points must be a 2D array of shape (N, 3) with N > 2")
 
+    # get evaluation grid depending on the triangulation flag
+    if triangulate:
+        try:
+            nodes, elems = _evaluation_grid_with_triangulation(
+                points, start, discard)
+        except QhullError as e:
+            raise ValueError(
+                'points could not be triangulated. Use triangulate=False '
+                'to write the evaluation grid.') from e
+    else:
+        nodes, elems = _evaluation_grid_without_triangulation(points, start)
+
+    # write grid to text files
+    if not os.path.isdir(name):
+        os.mkdir(name)
+    with open(os.path.join(name, "Nodes.txt"), "w") as f_id:
+        f_id.write(nodes)
+    with open(os.path.join(name, "Elements.txt"), "w") as f_id:
+        f_id.write(elems)
+
+    # plot the evaluation grid
+    if show:
+        points = pf.Coordinates(
+            points[:, 0], points[:, 1], points[:, 2]).show()
+        plt.savefig(os.path.join(name, "evaluation_grid.png"), dpi=300)
+
+
+def _evaluation_grid_with_triangulation(points, start, discard):
+    """private function to create evaluation grids with triangulation."""
+
     # discard dimension
     if discard == "x":
         mask = (1, 2)
@@ -77,10 +115,6 @@ def write_evaluation_grid(
     else:
         tri = Delaunay(points[:, mask])
 
-    # check output directory
-    if not os.path.isdir(name):
-        os.mkdir(name)
-
     # write nodes
     N = int(points.shape[0])
     start = int(start)
@@ -92,9 +126,6 @@ def write_evaluation_grid(
                   f"{points[nn, 1]} "
                   f"{points[nn, 2]}\n")
 
-    with open(os.path.join(name, "Nodes.txt"), "w") as f_id:
-        f_id.write(nodes)
-
     # write elements
     N = int(tri.simplices.shape[0])
     elems = f"{N}\n"
@@ -105,11 +136,31 @@ def write_evaluation_grid(
                   f"{tri.simplices[nn, 2] + start} "
                   "2 0 1\n")
 
-    with open(os.path.join(name, "Elements.txt"), "w") as f_id:
-        f_id.write(elems)
+    return nodes, elems
 
-    # plot the evaluation grid
-    if show:
-        points = pf.Coordinates(
-            points[:, 0], points[:, 1], points[:, 2]).show()
-        plt.savefig(os.path.join(name, "evaluation_grid.png"), dpi=300)
+
+def _evaluation_grid_without_triangulation(points, start):
+    """private function to create evaluation grids without triangulation."""
+
+    # write nodes
+    N_nodes = int(points.shape[0])
+    start = int(start)
+
+    nodes = f"{N_nodes}\n"
+    for nn in range(N_nodes):
+        nodes += (f"{int(start + nn)} "
+                  f"{points[nn, 0]} "
+                  f"{points[nn, 1]} "
+                  f"{points[nn, 2]}\n")
+
+    # write elements
+    N_elements = int(N_nodes/3) + 1 if N_nodes % 3 else int(N_nodes/3)
+    elems = f"{N_elements}\n"
+    for nn in range(N_elements):
+        elems += (f"{int(start + nn)} "
+                  f"{(nn * 3 + 0) % N_nodes + start} "
+                  f"{(nn * 3 + 1) % N_nodes + start} "
+                  f"{(nn * 3 + 2) % N_nodes + start} "
+                  "2 0 1\n")
+
+    return nodes, elems
