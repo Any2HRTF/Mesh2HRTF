@@ -1,8 +1,12 @@
 History
 =======
 
+v1.2.4 (12 August 2025)
+-----------------------
+* Enhancement: `mesh2hhrtf.write_evaluation_grid` from the Python API can now write arbitrary evaluation grids. Previously, the grids were always Delauney triangulated, which did not work in some cases (e.g., evaluation points on a line, or spherical grids with multiple radii). Without triangulating, values computed on the evaluation grid can not be visualized in ParaView, which is a minor drawback.
+
 v1.2.3 (2 July 2025)
--------------------------
+--------------------
 * Fixed exporting Pictures with the Mesh2HRTF Blender Plugin for Blender Versions 4.3 and higher. The export failed because the `shadow_buffer_bias` property of the `PointLight` was removed in Blender 4.3 (PR #162)
 * Restrict pyfar to versions below 0.8 because `compute_dtfs` from the Mesh2HRTF Python API uses pyfar functionality that will be deprecated with version 0.8 (PR #163, #164)
 * Fix a small bug in the `estimate-ram` functionality of NumCalc
