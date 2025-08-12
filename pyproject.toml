@@ -1,6 +1,6 @@
 [project]
 name = "mesh2hrtf"
-version = "1.2.3"
+version = "1.2.4"
 description = "Numerical calculation of head-related transfer functions."
 readme = "README.rst"
 license = {file = "LICENSE.txt"}
