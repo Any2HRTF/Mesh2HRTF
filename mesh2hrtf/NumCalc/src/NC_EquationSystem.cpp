@@ -72,8 +72,7 @@ double Gama3;
 Complex zBta3;
 const int GauFMBOrd3 = 2;
 double csiFMgau[GauFMBOrd3*GauFMBOrd3], etaFMgau[GauFMBOrd3*GauFMBOrd3], weiFMgau[GauFMBOrd3*GauFMBOrd3];
-
-
+extern bool adapt_fmmlength_;
 
 // the main program for seting up the equation system
 void NC_SetupEquationSystem
@@ -846,7 +845,9 @@ void NC_BuildDforMLFMM
     Vector<Complex> zH1m(clulevarry[0].nExpaTermLv), zdiat(clulevarry[0].nPoinSpheLv);
     Vector<double> Pm(clulevarry[0].nExpaTermLv), disij(NDIM);
     Complex *zwork_d;
-    
+    int expalength, npointsphere;
+    expalength = clulevarry[0].nExpaTermLv;
+    npointsphere = clulevarry[0].nPoinSpheLv;
     // loop over levels
     for(int nlv=0; nlv<numClusterLevels_; nlv++)
     {
@@ -855,37 +856,49 @@ void NC_BuildDforMLFMM
         
         // loop over the original clusters
         identry = 0; // address of first entry of the submatrices of the D-matrix that correspond to the cluster i
-        for(i=0; i<clulevarry[nlv].nClustOLv; i++)
-        {
-            // compute and store the nonzeros corresponding to the current cluster
-            for(j=0; j<clulevarry[nlv].ClastArLv[i].NumFanClus; j++)
-            {
-                jcl = clulevarry[nlv].ClastArLv[i].NumsFanClus[j];
-                for(k=0; k<NDIM; k++) disij[k] = clulevarry[nlv].ClastArLv[i].CoorCent[k] -
-                    clulevarry[nlv].ClastArLv[jcl].CoorCent[k];
-                Vcnorm_dim3_(disij, dij);
-                dkij = dij*waveNumbers_;
+        for(i=0; i<clulevarry[nlv].nClustOLv; i++) {
+	  // compute and store the nonzeros corresponding to the current cluster
+	  for(j=0; j<clulevarry[nlv].ClastArLv[i].NumFanClus; j++) {
+	    jcl = clulevarry[nlv].ClastArLv[i].NumsFanClus[j];
+	    for(k=0; k<NDIM; k++)
+	      disij[k] = clulevarry[nlv].ClastArLv[i].CoorCent[k] - clulevarry[nlv].ClastArLv[jcl].CoorCent[k];
+	    Vcnorm_dim3_(disij, dij);
+	    dkij = dij*waveNumbers_;
+
+	    if( adapt_fmmlength_) {
+	      // change the truncation based on the radii of the clusters
+	      // involved, not on the max radius for the level
+	      // helps with differently sized clusters
+	      double d = clulevarry[nlv].ClastArLv[i].RadiClus + clulevarry[nlv].ClastArLv[jcl].RadiClus;
+	      double rw = d*waveNumbers_ + 1.8*log10(d*waveNumbers_ + PI);
+	      expalength = (int)(rw);
+	      if((double)expalength - rw >= 0.5) expalength++;
+	      if(expalength < minExpansionTermsFMM_) 
+		expalength = minExpansionTermsFMM_;
+	      NC_SphericalHankel(NCout, zH1m, expalength,dkij);
+	    }
+	    else {
+	      // compute the Hankel functions
+	      NC_SphericalHankel(NCout, zH1m, clulevarry[nlv].nExpaTermLv, dkij);
+	      expalength = clulevarry[nlv].nExpaTermLv;
+	    }
+	    for(jgp=0; jgp<clulevarry[nlv].nPoinSpheLv; jgp++)
+	      {
+		scprd = Scprod_dim3_(disij, clulevarry[nlv].uvcsphe[jgp]);
                 
-                // compute the Hankel functions
-                NC_SphericalHankel(NCout, zH1m, clulevarry[nlv].nExpaTermLv, dkij);
-                
-                for(jgp=0; jgp<clulevarry[nlv].nPoinSpheLv; jgp++)
-                {
-                    scprd = Scprod_dim3_(disij, clulevarry[nlv].uvcsphe[jgp]);
-                    
-                    // compute the Legendre plynomes
-                    NC_LegendrePolynomes(NCout, Pm, clulevarry[nlv].nExpaTermLv, scprd);
-                    
-                    // compute the function Mu_n
-                    zmun.set(0.0, 0.0);
-                    zi.set(1.0, 0.0);
-                    for(k=0; k<clulevarry[nlv].nExpaTermLv; k++)
-                    {
-                        zmun += zi*zH1m[k]*Pm[k]*(double)(2*k + 1);
-                        zi.mul_i(harmonicTimeFactor_); // _ruimag!
-                    }
-                    zdiat[jgp] = zmun;
-                } // end of loop JGP
+		// compute the Legendre plynomes
+		NC_LegendrePolynomes(NCout, Pm, clulevarry[nlv].nExpaTermLv, scprd);
+		
+		// compute the function Mu_n
+		zmun.set(0.0, 0.0);
+		zi.set(1.0, 0.0);
+		for(k = 0; k < expalength; k++)
+		  {
+		    zmun += zi*zH1m[k]*Pm[k]*(double)(2*k + 1);
+		    zi.mul_i(harmonicTimeFactor_); // _ruimag!
+		  }
+		zdiat[jgp] = zmun;
+	      } // end of loop JGP
                 
                 // store the nonzeros into the D-matrix
                 for(k=0; k<clulevarry[nlv].nPoinSpheLv; k++)
