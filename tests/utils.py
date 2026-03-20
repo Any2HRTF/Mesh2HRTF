@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sofar as sf
 
 # set to correctly obtain paths from `blender_paths()` below:
-COMPUTER_ID = 1
+COMPUTER_ID = 2
 
 
 def blender_paths():
@@ -39,10 +39,14 @@ def blender_paths():
     elif COMPUTER_ID == 2:
         # panik macbook
         blender_paths = [
-            # blender 4.1
-            ('/Applications/Blender.app/Contents/MacOS/',
-             '../Resources/4.1/scripts/addons',
-             '../Resources/4.1/scripts/startup')
+            # Latest LTS Blender 4.5
+            ('/Applications/Blender 4.5.app/Contents/MacOS/',
+             '../Resources/4.5/scripts/addons',
+             '../Resources/4.5/scripts/startup'),
+            # Latest Blender 5.1
+            ('/Applications/Blender 5.1.app/Contents/MacOS/',
+             '../Resources/5.1/scripts/addons',
+             '../Resources/5.1/scripts/startup'),
         ]
     else:
         raise ValueError("Invalid computer id")
