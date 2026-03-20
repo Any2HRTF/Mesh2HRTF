@@ -36,9 +36,8 @@ def compute_dtfs(
        be loaded. SOFA object/file must be of the convention
        SimpleFreeFieldHRIR or GeneralFIR
     smooth_fractions : number, None, optional
-        Apply `fractional octave smoothing
-        <https://pyfar.readthedocs.io/en/latest/modules/pyfar.dsp.html\
-        ?highlight=smooth#pyfar.dsp.smooth_fractional_octave>`_ to the DFTF.
+        Apply fractional octave smoothing to the DFTF using
+        :py:func:`pyfar.dsp.smooth_fractional_octave` to the DFTF.
         E.g. a value of ``3`` applies third octave smoothing and a value of
         ``1`` applies octave smoothing. The default ``None`` does not apply any
         smoothing.
@@ -46,13 +45,11 @@ def compute_dtfs(
         Define the phase of the inverse DFTF.
 
         ``'minimum'``
-            generate a `minimum phase response
-            <https://pyfar.readthedocs.io/en/latest/modules/pyfar.dsp.html?\
-            highlight=minimum%20phase#pyfar.dsp.minimum_phase>`_
+            generate a minimum phase response using
+            :py:func:`pyfar.dsp.minimum_phase`
         ``'linear'``
-            generate a `linear phase response
-            <https://pyfar.readthedocs.io/en/latest/modules/pyfar.dsp.html?\
-            highlight=linear%20phase#pyfar.dsp.linear_phase>`_
+            generate a linear phase response using
+            :py:func:`pyfar.dsp.linear_phase`
         ``'zero'``
             generates a zero phase response.
 
@@ -63,9 +60,10 @@ def compute_dtfs(
         ``'equal'``
             Uses equal weights across source positions
         ``'voronoi'``
-            Uses `spherical Voronoi weights
-            <https://pyfar.readthedocs.io/en/latest/modules/pyfar.samplings.html\
-            ?highlight=voronoi#pyfar.samplings.calculate_sph_voronoi_weights>`_
+            Computes spherical Voronoi weights using
+            :py:func:`spharpy.samplings.calculate_sampling_weights`. This
+            requires that all points defined by `sofa.SourcePosition` have
+            the same radius.
         array like
             Uses the weights provided in a list or numpy array. The size of the
             array like must agree with the number of HRTFs
@@ -75,13 +73,11 @@ def compute_dtfs(
     Returns
     -------
     sofa : sofar Sofa.object
-        The DTFs as Sofa object. Can be written to disk with `sofar.write_sofa
-        <https://sofar.readthedocs.io/en/latest/sofar.html#sofar.sofar.write_sofa\
-        sofar.sofar.write_sofa>`_.
+        The DTFs as :py:class:`sofar.Sofa` object. Can be written to disk with
+        :py:func:`sofar.write_sofa`.
     DTFT_inverse : pyfar Signal object
-        The inverse diffuse field transfer function as a `pyfar signal object
-        <https://pyfar.readthedocs.io/en/latest/classes/pyfar.audio.html#\
-        pyfar.classes.audio.Signal>`_
+        The inverse diffuse field transfer function as a
+        :py:class:`pyfar.Signal`.
     """
 
     if isinstance(sofa, str):
