@@ -1,6 +1,23 @@
 History
 =======
 
+v1.3.0 (20 March 2026)
+----------------------
+* Feature: NumCalc does not converge in some cases. The experimental NumCalc option `adapt_fmmlength` can be used to adapt the truncation parameter of the multipole expansion to the radii of the clusters. In the tested cases, this resolved the convergence issues. The feature is not yet formally evaluated.
+* Fix: The Mesh2HRTF Blender export using `Mesh2Input.py`` failed in Blender 5.0. The reason was using the `filter_collada` flag when saving the blender project using `bpy.ops.wm.save_as_mainfile`. The flag was removed in Blender 5.0. Its only purpose was to not show collada files in the export user interface. Since it is not required when scripting an export this flag and all other `filter_*` flags that were used are now removed. This should be saver for future Blender releases in case other flags get removed.
+* Fix: The test  in `tests/test_assign_materials.py` applied the `AssignMaterials.py` script to a mesh in Blender, saved the mesh and compared it against a saved reference. The test started to fail in Blender 5.0 because the material data was saved slightly differently compared to Blender 4.x. The new tests, exports the indices of the faces that are assigned to each material and uses these data for testing.
+* Fix: The documentation was not building any more. This was fixed by updating `.readthedocs.yml`` to the latest Python version and new `pip install ".[docs]"` method
+* Dependencies: Update dependencies for to require pyfar v0.8.0 or higher which required
+
+  - spharpy v1.0.0 or higher
+  - scipy v1.17.0 or higher
+  - numpy v1.2.3 or higher
+  - stopping the support for Python 3.9 and 3.10
+  - replace usages of the deprecated `pyfar.samplings` module with `spharpy.samplings`
+
+* Maintenance: Use intersphinx instead of URLs for linking to documentations of external packages
+* Maintenance: add Python packaging files in .gitignore
+
 v1.2.4 (12 August 2025)
 -----------------------
 * Enhancement: `mesh2hhrtf.write_evaluation_grid` from the Python API can now write arbitrary evaluation grids. Previously, the grids were always Delauney triangulated, which did not work in some cases (e.g., evaluation points on a line, or spherical grids with multiple radii). Without triangulating, values computed on the evaluation grid can not be visualized in ParaView, which is a minor drawback.
@@ -154,6 +171,7 @@ Mesh2HRTF Developers
 ====================
 
 Mesh2HRTF is currently maintained and developed by
+
 * Piotr Majdak (Conceptualization, Maintainence),
 * Fabian Brinkmann (Python & Matlab API, Blender Export, Testing, Documentation),
 * Wolfang Kreuzer (NumCalc, Documentation),
