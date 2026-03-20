@@ -1,6 +1,7 @@
 import numpy as np
 import sofar as sf
 import pyfar as pf
+import spharpy
 
 
 def compute_dtfs(
@@ -100,7 +101,8 @@ def compute_dtfs(
     if weights == "equal":
         weights = None
     elif weights == "voronoi":
-        weights = pf.samplings.calculate_sph_voronoi_weights(coordinates)
+        weights = spharpy.samplings.calculate_sampling_weights(
+            spharpy.SamplingSphere.from_coordinates(coordinates))
         weights = weights[..., None]
     elif isinstance(weights, (list, np.ndarray)):
         weights = np.asarray(weights).flatten()
