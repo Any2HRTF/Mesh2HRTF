@@ -2,6 +2,10 @@
 mesh2hrtf/NumCalc/src/*.o
 mesh2hrtf/NumCalc/bin/NumCalc
 
+# Distribution / packaging
+.Python
+build/
+
 # Python cach and install files
 *__pycache__
 .eggs/*
