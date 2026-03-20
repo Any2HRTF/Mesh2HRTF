@@ -110,7 +110,7 @@ To release a new Mesh2HRTF version do the following
 - Update HISTORY.rst (also include new contributors)
 - check if installing the python package works via ``pip install -e .``
 - check if the tests pass
-- check if the documentation is building
+- check if the documentation is building (configure at https://app.readthedocs.org/projects/mesh2hrtf/)
 - merge develop into main
 - add a tag and release on github
 - merge main into develop

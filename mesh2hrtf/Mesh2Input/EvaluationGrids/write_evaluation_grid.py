@@ -48,15 +48,15 @@ def write_evaluation_grid(
     Examples
     --------
 
-    Generate a spherical sampling grid with pyfar and write it to the current
+    Generate a spherical sampling grid with spharpy and write it to the current
     working directory
 
     .. plot::
 
         >>> import mesh2hrtf as m2h
-        >>> import pyfar as pf
+        >>> import spharpy
         >>>
-        >>> points = pf.samplings.sph_lebedev(sh_order=10)
+        >>> points = spharpy.samplings.lebedev(n_max=10)
         >>> m2h.write_evaluation_grid(
         ...     points, "Lebedev_N10", discard=None, show=True)
     """
