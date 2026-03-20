@@ -373,10 +373,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # save Blender project for documentation --------------------------------------
         bpy.ops.wm.save_as_mainfile(
             filepath=os.path.join(filepath1, "3d Model.blend"),
-            check_existing=False, filter_blender=True, filter_image=False,
-            filter_movie=False, filter_python=False, filter_font=False,
-            filter_sound=False, filter_text=False, filter_btx=False,
-            filter_collada=False, filter_folder=True, filemode=8,
+            check_existing=False, filter_blender=True, filemode=8,
             compress=True, relative_remap=True, copy=True)
 
 
