@@ -36,6 +36,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'matplotlib.sphinxext.plot_directive',
+    'sphinx.ext.intersphinx',
     'autodocsumm']
 
 # show tocs for classes and functions of modules using the autodocsumm
@@ -45,6 +46,13 @@ autodoc_default_options = {'autosummary': True}
 # show the code of plots that follows the command .. plot:: based on the
 # package matplotlib.sphinxext.plot_directive
 plot_include_source = True
+
+# intersphinx mapping
+intersphinx_mapping = {
+    'pyfar': ('https://pyfar.readthedocs.io/en/stable/', None),
+    'sofar': ('https://sofar.readthedocs.io/en/stable/', None),
+    'spharpy': ('https://spharpy.readthedocs.io/en/stable/', None),
+    }
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
