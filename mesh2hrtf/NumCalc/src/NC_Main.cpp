@@ -91,6 +91,7 @@ absolute convergence of the fmm expansion, let's take this now
 //double farFieldClusterFactor_ = sqrt(5.0)/2.0, minClusterDistance_;
 double maxClusterRadiusBE_, avgClusterRadiusBE_, minClusterRadiusBE_, maxClusterRadiusRM_, avgClusterRadiusRM_, minClusterRadiusRM_;
 int numExpansionTerms_;
+bool adapt_fmmlength_ = false;
 int numIntegrationPointsUnitSphere_, numIntegrationPointsThetaDirection_, numIntegrationPointsPhiDirection_;
 int methodFMM_;
 bool boolComputeTVector_;
@@ -154,6 +155,7 @@ int main(int argc, char **argv)
       printf("-nitermax int : max number of CGS iterations\n");
       printf("-estimate_ram : estimation the RAM consumption of ML-FMM-BEM and write estimate to Memory.txt. Estimate is obtained from the number of non-zeros in the FMM matrices.\n");
       printf("-check_normals : check if all normals point to the same domain\n");
+      printf("-adapt_fmmlength: the truncation parameter of the multipole expansion is adapted to the radii of the cluster involved\n");
       printf("-h            : this message\n");
       exit(0);
     }
@@ -178,6 +180,9 @@ int main(int argc, char **argv)
     }
     else if(!strcmp(argv[i],"-check_normals")) {
       check_normals = true;
+    }
+    else if(!strcmp(argv[i],"-adapt_fmmlength")) {
+      adapt_fmmlength_ = true;
     }
     else {
       cerr << "\nNumCalc was called with an unknown parameter or flag. Use NumCalc -h for help.\n";

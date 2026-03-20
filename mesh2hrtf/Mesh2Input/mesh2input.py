@@ -15,7 +15,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Mesh2HRTF export add-on",
     "author": "The Mesh2HRTF developers",
-    "version": (1, 2, 4),
+    "version": (1, 3, 0),
     "blender": (2, 80, 0),
     "location": "File > Export",
     "description": "Export Blender scene as Mesh2HRTF project",
@@ -373,10 +373,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # save Blender project for documentation --------------------------------------
         bpy.ops.wm.save_as_mainfile(
             filepath=os.path.join(filepath1, "3d Model.blend"),
-            check_existing=False, filter_blender=True, filter_image=False,
-            filter_movie=False, filter_python=False, filter_font=False,
-            filter_sound=False, filter_text=False, filter_btx=False,
-            filter_collada=False, filter_folder=True, filemode=8,
+            check_existing=False, filter_blender=True, filemode=8,
             compress=True, relative_remap=True, copy=True)
 
 

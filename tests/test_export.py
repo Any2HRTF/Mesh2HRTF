@@ -259,7 +259,7 @@ def test_blender_export(
 
     # --- Exercise ---
     # run mesh2input from Blender command line interface w/ Python script
-    subprocess.run(
+    result = subprocess.run(  # noqa (result can be used for debugging)
         [os.path.join(blender_path, 'blender'), '--background',
          blender_file_name, '--python',
          os.path.join(tmp.name, 'blender_script.py')],
