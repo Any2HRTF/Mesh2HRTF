@@ -30,251 +30,264 @@ using namespace std;                                                            
 class Complex {
 
 protected:
-	double re_, im_;
-
+  double re_, im_;
+  
 public:
+  
+  /* constructors and destructor */
+  Complex() 
+  {
+    re_ = im_ = 0.0;
+  }
+  Complex(double rel, double img) 
+  {
+    re_ = rel;
+    im_ = img;
+  }
+  Complex(const Complex &c)
+  {
+    re_ = c.re();
+    im_ = c.im();
+  }
 
-	/* constructors and destructor */
-	Complex() 
-	{
-		re_ = im_ = 0.0;
-	}
-	Complex(double rel, double img) 
-	{
-		re_ = rel;
-		im_ = img;
-	}
-    Complex(const Complex &c)
-    {
-        re_ = c.re();
-        im_ = c.im();
-    }
-
-    ~Complex(){}
-
-    /* public functions */
-    double re() const 
-    {
-        return(re_);
-    }
-    double im() const 
-    {
-        return(im_);
-    }
-    void set(double x, double y) 
-    {
-        re_ = x;
-        im_ = y;
-    }
-    void set(const Complex z) 
-    {
-        re_ = z.re();
-        im_ = z.im();
-    }
-    void mul_c(const Complex& x, const Complex& y)
-    {
-        re_ = x.re()*y.re() - x.im()*y.im();
-        im_ = x.im()*y.re() + x.re()*y.im();
-    }
-    void mul_c(const Complex& x)
-    {
-        double tmp = re_;
-        re_ = tmp*x.re() - im_*x.im();
-        im_ = tmp*x.im() + im_*x.re();
-    }
-    void mul_r(const double& x)
-    {
-        re_ *= x;
-        im_ *= x;
-    }
-    void mul_i(const double& y)
-    {
-        double tmp = re_;
-        re_ = -im_*y;
-        im_ = tmp*y;
-    }
-    void div_c(const Complex& x, const Complex& y)
-    {
-        double dy = y.re()*y.re() + y.im()*y.im();
-        re_ = (x.re()*y.re() + x.im()*y.im())/dy;
-        im_ = (x.im()*y.re() - x.re()*y.im())/dy;
-    }
-    void div_c(const Complex& x)
-    {
-        double tmp = re_, dx = x.re()*x.re() + x.im()*x.im();
-        re_ = (tmp*x.re() + im_*x.im())/dx;
-        im_ = (im_*x.re() - tmp*x.im())/dx;
-    }
-    void div_r(const double& x)
-    {
-        re_ /= x;
-        im_ /= x;
-    }
-    void div_i(const double& y)
-    {
-        double tmp = re_;
-        re_ = im_/y;
-        im_ = -tmp/y;
-    }
-    void nega()
-    {
-        re_ = -re_;
-        im_ = -im_;
-    }
-    void conju()
-    {
-        im_ = -im_;
-    }
-    Complex conjugate() const 
-    {
-        Complex z(re_, -im_);
-        return(z);
-    }
-    double norm() const 
-    {
-        return sqrt(re_*re_ + im_*im_);
-    }
-    double qnorm() const 
-    {
-        return (re_*re_ + im_*im_);
-    }
-    double argu() const 
-    {
-        return atan2(im_, re_);
-    }
-    Complex zsqrt() const
-    {
-        double r, theta;
-        r = sqrt(re_*re_ + im_*im_);
-        theta = atan2(im_, re_)*0.5;
-        r = sqrt(r);
-
-        Complex z(r*cos(theta), r*sin(theta));
-        return(z);
-    }
-    Complex zexp() const
-    {
-        double r = exp(re_);
-        Complex z(r*cos(im_), r*sin(im_));
-        return(z);
-    }
-    Complex zlog() const
-    {
-        Complex z(0.5*log(re_*re_ + im_*im_), atan2(im_, re_));
-        return(z);
-    }
-    Complex zinv() const
-    {
-        double r = re_*re_ + im_*im_;
-        Complex z(re_/r, -im_/r);
-        return(z);
-    }
-    Complex znega() const
-    {
-        Complex z(-re_, -im_);
-        return(z);
-    }
-
-    /* operators */
-    Complex operator+(const Complex& x) const
-    {
-        Complex z(re_ + x.re(), im_ + x.im());
-        return(z);
-    }
-    Complex operator+(const double& x) const
-    {
-        Complex z(re_ + x, im_);
-        return(z);
-    }
-    Complex operator-(const Complex& x) const
-    {
-        Complex z(re_ - x.re(), im_ - x.im());
-        return(z);
-    }
-    Complex operator-(const double& x) const
-    {
-        Complex z(re_ - x, im_);
-        return(z);
-    }
-    Complex operator*(const Complex& x) const
-    {
-        Complex z(re_*x.re() - im_*x.im(), re_*x.im() + im_*x.re());
-        return(z);
-    }
-    Complex operator*(const double& x) const
-    {
-        Complex z(re_*x, im_*x);
-        return(z);
-    }
-    Complex operator/(const Complex& x) const
-    {
-        double tmp = x.re()*x.re() + x.im()*x.im();
-        Complex z((re_*x.re() + im_*x.im())/tmp, (im_*x.re() - re_*x.im())/tmp);
-        return(z); 
-    }
-    Complex operator/(const double& x) const
-    {
-        Complex z(re_/x, im_/x);
-        return(z);
-    }
-    Complex& operator=(const int& i)
-    {
-        re_ = (double)i;
-        im_ = 0.0; 
-        return *this;
-    }
-    Complex& operator=(const double& d)
-    {
-        re_ = d;
-        im_ = 0.0; 
-        return *this;
-    }
-    Complex& operator=(const Complex& x)
-    {
-        re_ = x.re();
-        im_ = x.im(); 
-        return *this;
-    }
-    void operator+=(const Complex& x)
-    {
-        re_ += x.re(); 
-        im_ += x.im(); 
-    }
-    void operator+=(const double& x)
-    {
-        re_ += x;  
-    }
-    void operator-=(const Complex& x)
-    {
-        re_ -= x.re(); 
-        im_ -= x.im(); 
-    }
-    void operator-=(const double& x)
-    {
-        re_ -= x;  
-    }
-    void operator*=(const Complex& x)
-    {
-        double tmpr = re_;
-        re_ = tmpr*x.re() - im_*x.im(); 
-        im_ = tmpr*x.im() + im_*x.re(); 
-    }
-    void operator*=(const double& x)
-    {
-        re_ *= x; 
-        im_ *= x; 
-    }
-    void operator/=(const Complex& x)
-    {
-        double tmpr = re_, tmp = x.re()*x.re() + x.im()*x.im();
-        re_ = (tmpr*x.re() + im_*x.im())/tmp; 
-        im_ = (im_*x.re() - tmpr*x.im())/tmp; 
-    }
-    void operator/=(const double& x)
-    {
-        re_ /= x; 
-        im_ /= x; 
-    }
+  Complex(const int &i)
+  {
+    re_ = (double)i;
+    im_ = 0.0;
+  }
+  
+  ~Complex(){}
+  
+  /* public functions */
+  double re() const 
+  {
+    return(re_);
+  }
+  double im() const 
+  {
+    return(im_);
+  }
+  void set(double x, double y) 
+  {
+    re_ = x;
+    im_ = y;
+  }
+  void set(const Complex z) 
+  {
+    re_ = z.re();
+    im_ = z.im();
+  }
+  void mul_c(const Complex& x, const Complex& y)
+  {
+    re_ = x.re()*y.re() - x.im()*y.im();
+    im_ = x.im()*y.re() + x.re()*y.im();
+  }
+  void mul_c(const Complex& x)
+  {
+    double tmp = re_;
+    re_ = tmp*x.re() - im_*x.im();
+    im_ = tmp*x.im() + im_*x.re();
+  }
+  void mul_r(const double& x)
+  {
+    re_ *= x;
+    im_ *= x;
+  }
+  void mul_i(const double& y)
+  {
+    double tmp = re_;
+    re_ = -im_*y;
+    im_ = tmp*y;
+  }
+  void div_c(const Complex& x, const Complex& y)
+  {
+    double dy = y.re()*y.re() + y.im()*y.im();
+    re_ = (x.re()*y.re() + x.im()*y.im())/dy;
+    im_ = (x.im()*y.re() - x.re()*y.im())/dy;
+  }
+  void div_c(const Complex& x)
+  {
+    double tmp = re_, dx = x.re()*x.re() + x.im()*x.im();
+    re_ = (tmp*x.re() + im_*x.im())/dx;
+    im_ = (im_*x.re() - tmp*x.im())/dx;
+  }
+  void div_r(const double& x)
+  {
+    re_ /= x;
+    im_ /= x;
+  }
+  void div_i(const double& y)
+  {
+    double tmp = re_;
+    re_ = im_/y;
+    im_ = -tmp/y;
+  }
+  void nega()
+  {
+    re_ = -re_;
+    im_ = -im_;
+  }
+  void conju()
+  {
+    im_ = -im_;
+  }
+  Complex conjugate() const 
+  {
+    Complex z(re_, -im_);
+    return(z);
+  }
+  double norm() const 
+  {
+    return sqrt(re_*re_ + im_*im_);
+  }
+  double qnorm() const 
+  {
+    return (re_*re_ + im_*im_);
+  }
+  double argu() const 
+  {
+    return atan2(im_, re_);
+  }
+  Complex zsqrt() const
+  {
+    double r, theta;
+    r = sqrt(re_*re_ + im_*im_);
+    theta = atan2(im_, re_)*0.5;
+    r = sqrt(r);
+    
+    Complex z(r*cos(theta), r*sin(theta));
+    return(z);
+  }
+  Complex zexp() const
+  {
+    double r = exp(re_);
+    Complex z(r*cos(im_), r*sin(im_));
+    return(z);
+  }
+  Complex zlog() const
+  {
+    Complex z(0.5*log(re_*re_ + im_*im_), atan2(im_, re_));
+    return(z);
+  }
+  Complex zinv() const
+  {
+    double r = re_*re_ + im_*im_;
+    Complex z(re_/r, -im_/r);
+    return(z);
+  }
+  Complex znega() const
+  {
+    Complex z(-re_, -im_);
+    return(z);
+  }
+  
+  /* operators */
+  Complex operator+(const Complex& x) const
+  {
+    Complex z(re_ + x.re(), im_ + x.im());
+    return(z);
+  }
+  Complex operator+(const double& x) const
+  {
+    Complex z(re_ + x, im_);
+    return(z);
+  }
+  Complex operator-(const Complex& x) const
+  {
+    Complex z(re_ - x.re(), im_ - x.im());
+    return(z);
+  }
+  Complex operator-(const double& x) const
+  {
+    Complex z(re_ - x, im_);
+    return(z);
+  }
+  Complex operator-() const//KC unary -
+  {
+    Complex z(-re_, -im_);
+    return(z);
+  }
+  
+  
+  Complex operator*(const Complex& x) const
+  {
+    Complex z(re_*x.re() - im_*x.im(), re_*x.im() + im_*x.re());
+    return(z);
+  }
+  Complex operator*(const double& x) const
+  {
+    Complex z(re_*x, im_*x);
+    return(z);
+  }
+  Complex operator/(const Complex& x) const
+  {
+    double tmp = x.re()*x.re() + x.im()*x.im();
+    Complex z((re_*x.re() + im_*x.im())/tmp, (im_*x.re() - re_*x.im())/tmp);
+    return(z); 
+  }
+  Complex operator/(const double& x) const
+  {
+    Complex z(re_/x, im_/x);
+    return(z);
+  }
+  Complex& operator=(const int& i)
+  {
+    re_ = (double)i;
+    im_ = 0.0; 
+    return *this;
+  }
+  Complex& operator=(const double& d)
+  {
+    re_ = d;
+    im_ = 0.0; 
+    return *this;
+  }
+  Complex& operator=(const Complex& x)
+  {
+    re_ = x.re();
+    im_ = x.im(); 
+    return *this;
+  }
+  void operator+=(const Complex& x)
+  {
+    re_ += x.re(); 
+    im_ += x.im(); 
+  }
+  void operator+=(const double& x)
+  {
+    re_ += x;  
+  }
+  void operator-=(const Complex& x)
+  {
+    re_ -= x.re(); 
+    im_ -= x.im(); 
+  }
+  void operator-=(const double& x)
+  {
+    re_ -= x;  
+  }
+  void operator*=(const Complex& x)
+  {
+    double tmpr = re_;
+    re_ = tmpr*x.re() - im_*x.im(); 
+    im_ = tmpr*x.im() + im_*x.re(); 
+  }
+  void operator*=(const double& x)
+  {
+    re_ *= x; 
+    im_ *= x; 
+  }
+  void operator/=(const Complex& x)
+  {
+    double tmpr = re_, tmp = x.re()*x.re() + x.im()*x.im();
+    re_ = (tmpr*x.re() + im_*x.im())/tmp; 
+    im_ = (im_*x.re() - tmpr*x.im())/tmp; 
+  }
+  void operator/=(const double& x)
+  {
+    re_ /= x; 
+    im_ /= x; 
+  }
 };
 
 // definition of the vector template
@@ -596,39 +609,41 @@ void Tfbelim(T *Coef, T *rhsv, const int& n_row_col)
 // structure of an element cluster
 struct ElCluster
 {
-    int NuElGr;            // number of the element group to which the cluster belongs
-    int NumOfEl;           // number of elements in the cluster
-    int listElementPropertyEl;          // = 0: surface elements
-                           // = 1: middle face elements
-                           // = 2: evaluation elements
-    bool IfMonoEl;         // = true:  all elements of the cluster are of the same number of nodes 
-                           // = false: the cluster contains elements with different number of nodes
-    bool IfAdmiBc;         // = true: admittance boundary condition are prescribed
-    int NumOfDOFs;         // number of the unknown DOFs of the cluster
-    int NDOFsPeEl;         // number of the unknown DOFs per element
-    int *NumsOfEl;         // numbers of the elements in the cluster
-    double CoorCent[3];	   // coordinates of the center of the cluster
-    double RadiClus;       // radius of the cluster
-    int NumNeaClus;        // number of near clusters
-    int NumFarClus;        // number of far clusters
-    int *NumsNeaClus;      // numbers of the near clusters
-    int *NumsFarClus;      // numbers of the far clusters
-    int OriClust;          // number of the corresponding original cluster
-    int nuref;             // number of the reflection (= one number in [0, 1, ..., 7])
-    int rffac;             // factor for velocity boundary condition (= 1 or -1)
-    bool ifmirro;          // = false: element conectivities are ident to original ones
-                           // = true:  these are mirror image of the original ones
-    bool ifrfdi[3];        // ifrfdi[i] = treu: elements must be reflected in the
-                           //                   ith-direction
-                           //           = false: do not reflected in this direction
-    int nuFather;          // number of the father cluster
-    int n_Son;             // number of the son clusters
-    int nuSon[8];          // numbers of the son clusters
-    int nuLev;             // number of the level to which the cluster belongs
-    int NumFanClus;        // number of clusters, that is located in the far field of
-                           // current cluster but the fathers are located in the near
-                           // field
-    int *NumsFanClus;      // numbers of the above clusters
+  int NuElGr;            // number of the element group to which the cluster belongs
+  int NumOfEl;           // number of elements in the cluster
+  int listElementPropertyEl;          // = 0: surface elements
+  // = 1: middle face elements
+  // = 2: evaluation elements
+  bool IfMonoEl;         // = true:  all elements of the cluster are of the same number of nodes 
+  // = false: the cluster contains elements with different number of nodes
+  bool IfAdmiBc;         // = true: admittance boundary condition are prescribed
+  bool IfNonZeroBc;      // = true: there is an element with a non-zero bc in
+  
+  int NumOfDOFs;         // number of the unknown DOFs of the cluster
+  int NDOFsPeEl;         // number of the unknown DOFs per element
+  int *NumsOfEl;         // numbers of the elements in the cluster
+  double CoorCent[3];	   // coordinates of the center of the cluster
+  double RadiClus;       // radius of the cluster
+  int NumNeaClus;        // number of near clusters
+  int NumFarClus;        // number of far clusters
+  int *NumsNeaClus;      // numbers of the near clusters
+  int *NumsFarClus;      // numbers of the far clusters
+  int OriClust;          // number of the corresponding original cluster
+  int nuref;             // number of the reflection (= one number in [0, 1, ..., 7])
+  int rffac;             // factor for velocity boundary condition (= 1 or -1)
+  bool ifmirro;          // = false: element conectivities are ident to original ones
+  // = true:  these are mirror image of the original ones
+  bool ifrfdi[3];        // ifrfdi[i] = treu: elements must be reflected in the
+  //                   ith-direction
+  //           = false: do not reflected in this direction
+  int nuFather;          // number of the father cluster
+  int n_Son;             // number of the son clusters
+  int nuSon[8];          // numbers of the son clusters
+  int nuLev;             // number of the level to which the cluster belongs
+  int NumFanClus;        // number of clusters, that is located in the far field of
+  // current cluster but the fathers are located in the near
+  // field
+  int *NumsFanClus;      // numbers of the above clusters
 };
 
 // structure of a cluster of internal points
@@ -642,6 +657,7 @@ struct IpCluster
 
 // structure of a level of a cluster tree
 struct ClusterLev
+
 {
     // all the variables and arrays are defined for a given level in the tree
     int nClustSLv;         // number of all clusters 
@@ -678,7 +694,7 @@ struct ClusterLev
     Complex **zIntpMtx;    // interpolation matrix from the current level to the father
                            // level
     Complex **zFiltMtx;    // filter matrix from the current level to the son level
-    ElCluster *ClastArLv;  // array of clusters
+    ElCluster *ClustArLv;  // array of clusters
 };
 
 // structure of the D-matrices
@@ -730,6 +746,75 @@ struct inputLineBoundaryCondition
             nNegRealRef,
             nNegImagRef;
 };
+
+class zNeartype {
+  /* this is the version for a Nearfield matrix that is dependent on the
+     different clusters, thus we have inear that tells where each cluster
+     begins in zdata, and nrows and ncols which tell us, how big each
+     subblock is.
+  */
+public:
+  Complex* zdata;  // array containing the near field for all blocks
+                   // let's store row-wise
+  int* inear; // index in zdata where the block for the i-th cluster begins
+  int* nrows; // number of rows of the cluster near field matrix
+  int* ncols; // number of columns of the cluster in the near field
+  // destructor
+  ~zNeartype() {
+    delete[] inear;
+    delete[] nrows;
+    delete[] ncols;
+    delete[] zdata;
+  }
+};
+
+class zSparsetype {
+  // "classic" definition of a sparse matrix
+public:
+  Complex* zdata;  // array that contains the non zero entries
+  int* startlist = NULL;  // index where in zdata or indexlist the
+  // i-th row / column begins
+  int* indxlist;  // column/row index of the entry
+  bool rowwise;    // how the matrix is stored, if the matrix uses
+  // rowwise storage, thus, if the array zdata contains
+  // a_11 ... a_1n, a_21, ...
+  // destructuros
+  void delete_arrays() {
+    delete[] zdata;
+    delete[] indxlist;
+    delete[] startlist;
+    zdata = NULL;
+    indxlist = NULL;
+    startlist = NULL;
+  };		   
+  ~zSparsetype() {
+    delete[] zdata;
+    delete[] indxlist;
+    delete[] startlist;
+    zdata = NULL;
+    indxlist = NULL;
+    startlist = NULL;
+  }
+};
+
+class zSparseVec {
+  /* if an element inside a cluster has a bc != 0, number of nodes on the
+     sphere entries need to be added to zdata and the clusterindex will be
+     added to clusterindx
+  */
+public:
+  Complex* zdata;
+  int* clusterindx; 
+  int nonzeroblocks;  // number of nonzeroclusters
+  ~zSparseVec() {
+    delete[] zdata;
+    delete[] clusterindx;
+    nonzeroblocks = 0;
+  }
+};
+
+
+
 
 
 

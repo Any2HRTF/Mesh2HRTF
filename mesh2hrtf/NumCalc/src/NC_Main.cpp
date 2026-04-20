@@ -38,20 +38,20 @@ typedef unsigned int uint;                                                      
 
 
 
-void NC_ControlProgram(ofstream&,int,bool,bool);
+void NC_ControlProgram(ofstream&,int,bool,bool,bool);
 void NC_FrequencyInformations(ostream&, ofstream&);
 
 
 
 extern void NC_Read(ofstream&,FILE *,char*,string[],double*,bool);
 extern void NC_ReadBasicParametersA(ofstream&,FILE* inputFile_,char*, string[]);
-extern int NC_DeclareArrays(ofstream&,double*,bool);
+extern int NC_DeclareArrays(ofstream&,double*,bool,bool);
 extern void NC_AllocateSDTmtxsSLFMM(ofstream&);
 void NC_AllocateSDTmtxsMLFMM(ofstream&);
 extern void NC_DeleteArrays(const int&,const int&,const int&);
 extern void NC_SetupEquationSystem(ofstream&);
 extern void NC_UpdateFreqCurves(ofstream&,double*);
-extern void NC_PostProcessing(ofstream&);
+extern void NC_PostProcessing(ofstream&, bool);
 
 // 17.11.22  Let's include LAPACK
 #ifdef USE_LAPACK
@@ -91,6 +91,22 @@ absolute convergence of the fmm expansion, let's take this now
 //double farFieldClusterFactor_ = sqrt(5.0)/2.0, minClusterDistance_;
 double maxClusterRadiusBE_, avgClusterRadiusBE_, minClusterRadiusBE_, maxClusterRadiusRM_, avgClusterRadiusRM_, minClusterRadiusRM_;
 int numExpansionTerms_;
+
+
+// stuff with the interpolation version
+zSparsetype zNear; // nearfield matrix 
+zSparsetype zU; // LU factors for zNear;
+zSparsetype zL;
+double* zNearscalefact;
+Complex*** zMmat; // cluster2cluster matrix
+Complex*** zFmat;
+zSparseVec zFvec;
+Complex** zSmat;
+double** dYmat;
+Complex*** zF;
+Complex*** zG;
+
+
 bool adapt_fmmlength_ = false;
 int numIntegrationPointsUnitSphere_, numIntegrationPointsThetaDirection_, numIntegrationPointsPhiDirection_;
 int methodFMM_;
@@ -143,6 +159,7 @@ int main(int argc, char **argv)
   char filename[200];  //* filename for the outputfile
   bool estimate_ram = false; //* parameter for ram estimation
   bool check_normals = false; //* checkflag for normalvector direction
+  bool evalonly = false;
   istart_ = 0;    //* first freq step
 
 
@@ -156,6 +173,7 @@ int main(int argc, char **argv)
       printf("-estimate_ram : estimation the RAM consumption of ML-FMM-BEM and write estimate to Memory.txt. Estimate is obtained from the number of non-zeros in the FMM matrices.\n");
       printf("-check_normals : check if all normals point to the same domain\n");
       printf("-adapt_fmmlength: the truncation parameter of the multipole expansion is adapted to the radii of the cluster involved\n");
+      printf("-evalonly : restart the evaluation of a new evalgrid but use already computed values at the surface\n");
       printf("-h            : this message\n");
       exit(0);
     }
@@ -178,6 +196,11 @@ int main(int argc, char **argv)
     else if(!strcmp(argv[i],"-estimate_ram")) {
       estimate_ram = true;
     }
+
+    else if(!strcmp(argv[i],"-evalonly")) {
+      evalonly = true;
+    }
+    
     else if(!strcmp(argv[i],"-check_normals")) {
       check_normals = true;
     }
@@ -251,14 +274,14 @@ int main(int argc, char **argv)
       // and the data in it
 #ifdef isWindows
       int ifmkd;
-      if( (istart_ == 0 && iend == 0) && (!estimate_ram)) { // no steps are given, remove the old directory
+      if( (istart_ == 0 && iend == 0) && (!estimate_ram) && !evalonly) { // no steps are given, remove the old directory
 	if(system("rmdir /s /q be.out")==-1) cout << "\nCannot create directory be.out";
 	//	if(system("rmdir /s /q fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
       ifmkd = _mkdir("be.out"); // WINDOWS
       //   ifmkd = _mkdir("fe.out");
 #else
-      if(istart_ == 0 && iend == 0 && !estimate_ram) {
+      if(istart_ == 0 && iend == 0 && !estimate_ram && !evalonly ) {
 	if(system("rm -f -r be.out")==-1) cout << "\nCannot create directory be.out";
 	//	if(system("rm -f -r fe.out")==-1) cout << "\nCannot create directory fe.out";
       }
@@ -267,26 +290,26 @@ int main(int argc, char **argv)
 #endif
 
 	// call the control program
-      NC_ControlProgram(NCout,iend,estimate_ram,check_normals);
+      NC_ControlProgram(NCout,iend,estimate_ram,check_normals,evalonly);
 
-	// compute the end time
-	lot = time(NULL);
-	d_t = localtime(&lot);
+      // compute the end time
+      lot = time(NULL);
+      d_t = localtime(&lot);
 
 	// end informations
-    NCout << "\nEnd time: " << d_t->tm_mday << "/" << d_t->tm_mon + 1 << "/" <<
+      NCout << "\nEnd time: " << d_t->tm_mday << "/" << d_t->tm_mon + 1 << "/" <<
         d_t->tm_year + 1900 << " " << d_t->tm_hour << ":" << d_t->tm_min << ":" <<
         d_t->tm_sec << endl;
-
-	cout << "\n---------- NumCalc ended: " << d_t->tm_mday << "/" << d_t->tm_mon + 1 <<
-		"/" << d_t->tm_year + 1900 << " " << d_t->tm_hour << ":" << d_t->tm_min <<
-		":" << d_t->tm_sec << " ----------" << endl;
-
-	return(0);
+      
+      cout << "\n---------- NumCalc ended: " << d_t->tm_mday << "/" << d_t->tm_mon + 1 <<
+	"/" << d_t->tm_year + 1900 << " " << d_t->tm_hour << ":" << d_t->tm_min <<
+	":" << d_t->tm_sec << " ----------" << endl;
+      
+      return(0);
 }
 
 // control program
-void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_normals)
+void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_normals, bool evalonly)
 {
   double *Freqs = nullptr;
 
@@ -394,7 +417,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	  << endl;
 
     // address computation
-    ifdiff = NC_DeclareArrays(NCout, Freqs, estimate_ram);
+    ifdiff = NC_DeclareArrays(NCout, Freqs, estimate_ram, evalonly);
 
     // write the analysis type and cluster informations
     if(ifdiff) NC_FrequencyInformations(cout, NCout);
@@ -402,7 +425,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
     // Asign some arrays on the finest level to the corresponding actual arrays
     if(methodFMM_ >= 2 && currentFrequency_ > istart_)
       {
-	ClustArray = clulevarry[nlevtop_].ClastArLv;
+	ClustArray = clulevarry[nlevtop_].ClustArLv;
 
 	numOriginalClusters_ = clulevarry[nlevtop_].nClustOLv;
 	numOriginalReflectedClusters_ = clulevarry[nlevtop_].nClustSLv;
@@ -450,6 +473,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	// number of points on the unit sphere
 	numIntegrationPointsUnitSphere_ = numIntegrationPointsThetaDirection_*numIntegrationPointsPhiDirection_;
 	break;
+      case 2: // MLFMM interpolated
       case 3: // DMLFMBEM
 	cout << endl;
 	NCout << endl;
@@ -462,18 +486,19 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	    if(rw - (double)terml >= 0.5) terml++;
 	    if(terml < minExpansionTermsFMM_) terml = minExpansionTermsFMM_;
 	    npthet = clulevarry[l].nExpaTermLv = terml;
-
-	    // For the second interpolation scheme of IMLFMBEM, numbers of Gaussean points in the theta-direction on two successive levels must be even at least on one of them
+	    
+	    // kr: this would be a good point to restrict the maximum expansion
+	    //     length. Thus if rw gets too big, subdivide the respective
+	    //     clusters
 	    clulevarry[l].nPoinThetLv = npthet;
 
 	    // number of the Gauss points must not excess the allowable maximum
-	    if(npthet > N_GAUORDER)
-	      {
-		NC_Error_Exit_2(NCout,
-				"Too many integral points in the theta-direction!",
-				"Number of integration points = ", npthet,
-				"Maximum allowable number of integration points = ", N_GAUORDER);
-	      }
+	    if(npthet > N_GAUORDER) {
+	      NC_Error_Exit_2(NCout,
+			      "Too many integral points in the theta-direction!",
+			      "Number of integration points = ", npthet,
+			      "Maximum allowable number of integration points = ", N_GAUORDER);
+	    }
 
 	    // number of points in the Phi direction
 	    npphi = 2*npthet;
@@ -616,6 +641,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 
 	cout << "S Matrix: " << nnonzers << "\n";
 	break;
+      case 2:  //MLFMM with interpolation
       case 3:  //MLFMM no interpolation
 	/* **********************************************
 	   The unit sphere
@@ -651,17 +677,20 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	/* *************************************************
            T Matrix
 	   ************************************************* */
-	for(nlv=0; nlv<numClusterLevels_; nlv++) {
+	for( nlv = 0; nlv < numClusterLevels_; nlv++ ) {
 	  // compute number of rows of the T-matrix and the T-vector
 	  nnonzers = 0;
-	  for(i=0; i<clulevarry[nlv].nClustSLv; i++)
-	    nnonzers += clulevarry[nlv].ClastArLv[i].NumOfDOFs;
-	  nnonzers *= clulevarry[nlv].nPoinSpheLv;
-
-	  cout << "Tmatrix level " << nlv << ": " << nnonzers << "\n";
-
-	  nint += (uint)nnonzers + (uint)clulevarry[nlv].nClustSLv*clulevarry[nlv].nPoinSpheLv + 1;
-	  ncmplx += (uint)nnonzers;
+	  // loop over all clusters at that level
+	  for( i = 0 ; i < clulevarry[nlv].nClustSLv; i++)
+	    nnonzers += clulevarry[nlv].ClustArLv[i].NumOfDOFs;
+	  // for collocation with constant elements 
+	  // nnonzers should be the number of BE elements now
+	  if( methodFMM_ == 3 || nlv == numClusterLevels_ - 1 ) {
+	    nnonzers *= clulevarry[nlv].nPoinSpheLv;
+	    cout << "Tmatrix level " << nlv << ": " << nnonzers << "\n";
+	    nint += (uint)nnonzers + (uint)clulevarry[nlv].nClustSLv*clulevarry[nlv].nPoinSpheLv + 1;
+	    ncmplx += (uint)nnonzers;
+	  }
 	}
 
 	/* **************************************************
@@ -672,7 +701,7 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	  // compute the relevant far clusters for the current level
 	  if(nlv == 0) {// the TRUNK level
 	    for(i=0; i<clulevarry[nlv].nClustOLv; i++) {
-	      nclufar[i] = clulevarry[nlv].ClastArLv[i].NumFarClus;
+	      nclufar[i] = clulevarry[nlv].ClustArLv[i].NumFarClus;
             }
 	  }
 	  else {// the BRANCH and LEAF levels
@@ -681,16 +710,16 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	      nclusf = clulevarry[nlf].nClustSLv;
             Matrix<bool> ifnear(ncluof, nclusf, false);
 	    for(i=0; i<ncluof; i++) {
-	      for(j=0; j<clulevarry[nlf].ClastArLv[i].NumNeaClus; j++)
-		ifnear(i, clulevarry[nlf].ClastArLv[i].NumsNeaClus[j]) = true;
+	      for(j=0; j<clulevarry[nlf].ClustArLv[i].NumNeaClus; j++)
+		ifnear(i, clulevarry[nlf].ClustArLv[i].NumsNeaClus[j]) = true;
 	    }
 	    for(i=0; i<clulevarry[nlv].nClustOLv; i++) {
-	      ifa = clulevarry[nlv].ClastArLv[i].nuFather;
+	      ifa = clulevarry[nlv].ClustArLv[i].nuFather;
 	      nclufar[i] = 0;
-	      for(j=0; j<clulevarry[nlv].ClastArLv[i].NumFarClus; j++)
+	      for(j=0; j<clulevarry[nlv].ClustArLv[i].NumFarClus; j++)
                 {
-		  jself = clulevarry[nlv].ClastArLv[i].NumsFarClus[j];
-		  jfa = clulevarry[nlv].ClastArLv[jself].nuFather;
+		  jself = clulevarry[nlv].ClustArLv[i].NumsFarClus[j];
+		  jfa = clulevarry[nlv].ClustArLv[jself].nuFather;
 		  if(ifnear(ifa, jfa))
 		    nclufar[i]++;
                 }
@@ -709,13 +738,20 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 	/* ************************************************
 	   The S Matrix
 	   ************************************************ */
-	for(nlv=0; nlv<numClusterLevels_; nlv++) {
-	  nnonzers = numRowsOfCoefficientMatrix_ * clulevarry[nlv].nPoinSpheLv;
+	for( nlv = 0; nlv < numClusterLevels_; nlv++) {
+	  if( methodFMM_ == 3 || nlv == numClusterLevels_ - 1) {
+	    // this will only work for constant elements
+	    nnonzers = numRowsOfCoefficientMatrix_ * clulevarry[nlv].nPoinSpheLv;
+	    nint += (uint)nnonzers + (uint)numRowsOfCoefficientMatrix_ + 1;
+	    ncmplx += (uint)nnonzers;
+	    cout << "S Matrix level " << nlv << ": " << nnonzers << "\n";
+	  }
+	}
 
-	  nint += (uint)nnonzers + (uint)numRowsOfCoefficientMatrix_ + 1;
-	  ncmplx += (uint)nnonzers;
-
-	  cout << "S Matrix level " << nlv << ": " << nnonzers << "\n";
+	if( methodFMM_ == 2 ) {
+	  // add the size of the interpolation matrices
+	  for ( nlv = 0; nlv < numClusterLevels_ - 1; nlv++)
+	    ncmplx += 0.5 * clulevarry[nlv].nPoinSpheLv * clulevarry[nlv+1].nPoinSpheLv;
 	}
 	break;
       } // the FMM switch
@@ -746,203 +782,300 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
      *
      ******************************************************* */
 
-	// initialize the right hand side vector
-    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-      {
-	zrhs[i].set(0.0, 0.0);
-      }
-
-        // generate and initialize the coefficient matrices
-    switch(methodFMM_)
-      {
-      case 0: // TBEM
-	// create and initialize the coefficient matrices
-	zcoefl = new Complex[numComponentsOfCoefficientMatrix_];
-	for(i=0; i<numComponentsOfCoefficientMatrix_; i++) zcoefl[i].set(0.0, 0.0);
-	break;
-      case 1: // SLFMBEM
-	// compute the auxiliary arrays used for storing the sparse far field matrices
-	NC_AllocateSDTmtxsSLFMM(NCout);
-
-	// coordinates and weights of the integration points on the unit sphere
+    if(!evalonly) {
+      // initialize the right hand side vector
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+	{
+	  zrhs[i].set(0.0, 0.0);
+	}
+      
+      // generate and initialize the coefficient matrices
+      switch(methodFMM_)
+	{
+	case 0: // TBEM
+	  // create and initialize the coefficient matrices
+	  zcoefl = new Complex[numComponentsOfCoefficientMatrix_];
+	  for(i=0; i<numComponentsOfCoefficientMatrix_; i++) zcoefl[i].set(0.0, 0.0);
+	  break;
+	case 1: // SLFMBEM
+	  // compute the auxiliary arrays used for storing the sparse far field matrices
+	  NC_AllocateSDTmtxsSLFMM(NCout);
+	  
+	  // coordinates and weights of the integration points on the unit sphere
+	  uvcsphe = new double*[numIntegrationPointsUnitSphere_];
+	  for(i=0; i<numIntegrationPointsUnitSphere_; i++)
+	    {
+	      uvcsphe[i] = new double[NDIM];
+	    }
+	  weisphe = new double[numIntegrationPointsUnitSphere_];
+	  
+	  // generate the "T-vector" ( = [T] * {x})
+	  if(boolComputeTVector_) ztvct = new Complex[numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_];
+	  
+	  // generate and initialize the near field matrix
+	  zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
+	  for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
+	  
+	  // generate the "T-matrix" ([T])
+	  ztmtx = new Complex[irowtmtx[numOriginalReflectedClusters_*numIntegrationPointsUnitSphere_]];
+	  
+	  // generate the "D-matrix" ([D])
+	  dmtxlev[0].zDmxLv = new Complex[dmtxlev[0].nEntriesD];
+	  
+	  // generate he "S-matrix" ([S])
+	  zsmtx = new Complex[irowsmtx[numRowsOfCoefficientMatrix_]];
+	  
+	  break;
+	case 2: // interpolated MLFMM
+	case 3: // DMLFMBEM
+	  /* compute the auxiliary arrays used for storing the sparse far
+	     field matrices. the interpolated version has a slightly different
+	     and newer matrix format, thus things are not needed to be allocated
+	     yet. */
+	  if( methodFMM_ == 3 ) {
+	    NC_AllocateSDTmtxsMLFMM(NCout);
+	    
+	    // create and initialize the near field matrix
+	    zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
+	    for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
+	  }
+	  // loop over levels
+	  for(j=0; j<numClusterLevels_; j++)
+	    {
+	      // number of the integration points on the unit sphere
+	      int nthej = clulevarry[j].nPoinThetLv;
+	      int npsh = clulevarry[j].nPoinSpheLv;
+	      
+	      if( methodFMM_ == 3 ) {
+		// create the working arrays for the T- and S-matrices
+		clulevarry[j].zwkT = new Complex[clulevarry[j].nClustSLv*npsh];
+		clulevarry[j].zwkS = new Complex[clulevarry[j].nClustOLv*npsh];
+	      }
+	      
+	      // create the arrays of coordinates and weights of the integral points on the unit sphere
+	      clulevarry[j].uvcsphe = new double*[npsh];
+	      for(i=0; i<npsh; i++) clulevarry[j].uvcsphe[i] = new double[NDIM];
+	      clulevarry[j].weisphe = new double[npsh];
+	      
+	      // create the arrays of the coorninates and weights of the Gauss points in the theta-direction
+	      clulevarry[j].CrdGauLv = new double[nthej];
+	      clulevarry[j].WeiGauLv = new double[nthej];
+	      
+	      // create the T-matrix and the T-vector, the D- and S-matrices
+	      if( methodFMM_ == 3 ) {
+		tmtxlev[j].zTmxLv = new Complex[tmtxlev[j].nEntriesT];
+		if(boolComputeTVector_) tmtxlev[j].zTvcLv = new Complex[clulevarry[j].nClustSLv*npsh];
+		dmtxlev[j].zDmxLv = new Complex[dmtxlev[j].nEntriesD];
+		smtxlev[j].zSmxLv = new Complex[smtxlev[j].nEntriesS];
+	      }
+	    }
+	  
+	  break;
+	} // end of SWITCH
+      
+      // set up the equation system
+      NC_SetupEquationSystem(NCout);
+      
+      time(&ltim[4]);
+      lti_est = ltim[4] - ltim[3];
+      lti_eqa += lti_est;
+      
+      // solve the equation system
+      switch(methodSolver_)
+	{
+	case 0: // CGS method
+	  NC_IterativeSolverCGS(NCout);
+	  break;
+	case 4: // direct method, usable only to the TBEM factorize the coefficient matrix
+#ifdef USE_LAPACK
+	  int info = 0;
+	  int* ipiv;
+	  cout << "Using LAPACK\n";
+	  ipiv = new int[numRowsOfCoefficientMatrix_];
+	  
+	  info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR,numRowsOfCoefficientMatrix_, numRowsOfCoefficientMatrix_, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv);
+	  if(info != 0) {
+	    cerr << "Problem with factorization of the stiffness matrix.\n";
+	    cerr << "Info = " << info << "\n";
+	    exit(-1);
+	  }
+	  info = LAPACKE_zgetrs(LAPACK_ROW_MAJOR, 'N', numRowsOfCoefficientMatrix_, 1, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv,  (lapack_complex_double*)zrhs, 1);
+	  if(info != 0) {
+	    cerr << "Problem with the solution of the system (LAPACKE).\n";
+	    cerr << "Info = "<< info << "\n";
+	    exit(-1);
+	  }
+	  delete[] ipiv;
+#else
+	  
+	  Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
+	  
+	// forward substitution and backward eliminations
+	  Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
+#endif
+	  break;
+	}
+      
+      // destroy the coefficient matrices, for the interpolated version
+      // this is done via the class definition
+      if( methodFMM_ == 3 ) 
+	delete [] zcoefl;
+      
+      switch(methodFMM_)
+	{
+	case 1:
+	  delete [] jcoltmtx;
+	  delete [] irowtmtx;
+	  
+	  delete [] jcolsmtx;
+	  delete [] irowsmtx;
+	  
+	  delete [] zsmtx;
+	  delete [] ztmtx;
+	  if(boolComputeTVector_) delete [] ztvct;
+	  break;
+	case 2: 
+	case 3:
+	  if( methodFMM_ == 3 ) {
+	    if(boolComputeTVector_) {
+	      for(j=0; j<numClusterLevels_; j++)
+		delete [] tmtxlev[j].zTvcLv;
+	    }
+	    for(j=0; j<numClusterLevels_; j++) {
+	      delete [] tmtxlev[j].jcolTmxLv;
+	      delete [] tmtxlev[j].irowTmxLv;
+	      delete [] tmtxlev[j].zTmxLv;
+	      
+	      delete [] smtxlev[j].jcolSmxLv;
+	      delete [] smtxlev[j].irowSmxLv;
+	      delete [] smtxlev[j].zSmxLv;
+	    }
+	  }
+	  else {
+	    // delete the interpolation matrices
+	    if( dYmat != NULL ) {
+	      for( i = 0; i < nlevtop_; i++ ) {
+		if( clulevarry[i+1].nPoinSpheLv != clulevarry[i].nPoinSpheLv) {
+		  //		  if( i == 0 ) {
+		  //		if( clulevarry[i].isNearClust || clulevarry[i].nClustOLv == 1 )
+		  if( clulevarry[i].nClustOLv == 1 )
+		    continue;
+		  //}
+		  delete [] dYmat[i];
+		  dYmat[i] = NULL;
+		}
+	      }
+	      delete [] dYmat;
+	      dYmat = NULL;
+	    }
+	  }  
+	  break;
+	}
+      time(&ltim[5]);
+      lti_sst = ltim[5] - ltim[4];
+      lti_sol += lti_sst;
+    }  // if !evalonly
+    else {
+            // just keep the time for evalonly
+      time(&ltim[4]);
+      lti_est = ltim[4] - ltim[3];
+      lti_eqa += lti_est;
+      
+      time(&ltim[5]);
+      lti_sst = ltim[5] - ltim[4];
+      lti_sol += lti_sst;
+      // we need the uvcsphere in case of FMM
+      
+      if( methodFMM_ == 1) {
 	uvcsphe = new double*[numIntegrationPointsUnitSphere_];
 	for(i=0; i<numIntegrationPointsUnitSphere_; i++)
 	  {
 	    uvcsphe[i] = new double[NDIM];
 	  }
 	weisphe = new double[numIntegrationPointsUnitSphere_];
-
-	// generate the "T-vector" ( = [T] * {x})
-	if(boolComputeTVector_) ztvct = new Complex[numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_];
-
-	// generate and initialize the near field matrix
-	zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
-	for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
-
-	// generate the "T-matrix" ([T])
-	ztmtx = new Complex[irowtmtx[numOriginalReflectedClusters_*numIntegrationPointsUnitSphere_]];
-
-	// generate the "D-matrix" ([D])
-	dmtxlev[0].zDmxLv = new Complex[dmtxlev[0].nEntriesD];
-
-	// generate he "S-matrix" ([S])
-	zsmtx = new Complex[irowsmtx[numRowsOfCoefficientMatrix_]];
-
-	break;
-      case 3: // DMLFMBEM
-	// compute the auxiliary arrays used for storing the sparse far field matrices
-	NC_AllocateSDTmtxsMLFMM(NCout);
-
-	// create and initialize the near field matrix
-	zcoefl = new Complex[irownea[numRowsOfCoefficientMatrix_]];
-	for(i=0; i<irownea[numRowsOfCoefficientMatrix_]; i++) zcoefl[i].set(0.0, 0.0);
-
-	// loop over levels
-	for(j=0; j<numClusterLevels_; j++)
-	  {
-	    // number of the integration points on the unit sphere
-	    int nthej = clulevarry[j].nPoinThetLv;
-	    int npsh = clulevarry[j].nPoinSpheLv;
-
-	    // create the working arrays for the T- and S-matrices
-	    clulevarry[j].zwkT = new Complex[clulevarry[j].nClustSLv*npsh];
-	    clulevarry[j].zwkS = new Complex[clulevarry[j].nClustOLv*npsh];
-
-	    // create the arrays of coordinates and weights of the integral points on the unit sphere
-	    clulevarry[j].uvcsphe = new double*[npsh];
-	    for(i=0; i<npsh; i++) clulevarry[j].uvcsphe[i] = new double[NDIM];
-	    clulevarry[j].weisphe = new double[npsh];
-
-	    // create the arrays of the coorninates and weights of the Gauss points in the theta-direction
-	    clulevarry[j].CrdGauLv = new double[nthej];
-	    clulevarry[j].WeiGauLv = new double[nthej];
-
-	    // create the T-matrix and the T-vector, the D- and S-matrices
-	    tmtxlev[j].zTmxLv = new Complex[tmtxlev[j].nEntriesT];
-	    if(boolComputeTVector_) tmtxlev[j].zTvcLv = new Complex[clulevarry[j].nClustSLv*npsh];
-	    dmtxlev[j].zDmxLv = new Complex[dmtxlev[j].nEntriesD];
-	    smtxlev[j].zSmxLv = new Complex[smtxlev[j].nEntriesS];
-	  }
-
-	break;
-      } // end of SWITCH
-
-    // set up the equation system
-    NC_SetupEquationSystem(NCout);
-
-    time(&ltim[4]);
-    lti_est = ltim[4] - ltim[3];
-    lti_eqa += lti_est;
-
-    // solve the equation system
-    switch(methodSolver_)
-      {
-      case 0: // CGS method
-	NC_IterativeSolverCGS(NCout);
-	break;
-      case 4: // direct method, usable only to the TBEM factorize the coefficient matrix
-#ifdef USE_LAPACK
-	int info = 0;
-	int* ipiv;
-	cout << "Using LAPACK\n";
-	ipiv = new int[numRowsOfCoefficientMatrix_];
-
-	info = LAPACKE_zgetrf(LAPACK_ROW_MAJOR,numRowsOfCoefficientMatrix_, numRowsOfCoefficientMatrix_, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv);
-	if(info != 0) {
-	  cerr << "Problem with factorization of the stiffness matrix.\n";
-	  cerr << "Info = " << info << "\n";
-	  exit(-1);
-	}
-	info = LAPACKE_zgetrs(LAPACK_ROW_MAJOR, 'N', numRowsOfCoefficientMatrix_, 1, (lapack_complex_double*)zcoefl, numRowsOfCoefficientMatrix_, ipiv,  (lapack_complex_double*)zrhs, 1);
-	if(info != 0) {
-	  cerr << "Problem with the solution of the system (LAPACKE).\n";
-	  cerr << "Info = "<< info << "\n";
-	  exit(-1);
-	}
-	delete[] ipiv;
-#else
-
-	Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
-
-	// forward substitution and backward eliminations
-	Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
-#endif
-	break;
+	NC_ComputeUnitVectorOnUnitSphere(NCout, numIntegrationPointsThetaDirection_, numIntegrationPointsPhiDirection_, weisphe, uvcsphe);
       }
-
-    // destroy the coefficient matrices
-    delete [] zcoefl;
-
-    switch(methodFMM_)
-      {
-      case 1:
-	delete [] jcoltmtx;
-	delete [] irowtmtx;
-
-	delete [] jcolsmtx;
-	delete [] irowsmtx;
-
-	delete [] zsmtx;
-	delete [] ztmtx;
-	if(boolComputeTVector_) delete [] ztvct;
-	break;
-      case 3:
-	if(boolComputeTVector_)
-	  {
-	    for(j=0; j<numClusterLevels_; j++) delete [] tmtxlev[j].zTvcLv;
-	  }
-	for(j=0; j<numClusterLevels_; j++)
-	  {
-	    delete [] tmtxlev[j].jcolTmxLv;
-	    delete [] tmtxlev[j].irowTmxLv;
-	    delete [] tmtxlev[j].zTmxLv;
-
-	    delete [] smtxlev[j].jcolSmxLv;
-	    delete [] smtxlev[j].irowSmxLv;
-	    delete [] smtxlev[j].zSmxLv;
-	  }
-	break;
+      //
+      if( methodFMM_ > 1) {
+	int npsh = clulevarry[0].nPoinSpheLv;
+	int nthej = clulevarry[0].nPoinThetLv;
+	
+	clulevarry[0].zwkT = new Complex[clulevarry[0].nClustSLv*npsh];
+	clulevarry[0].uvcsphe = new double*[npsh];
+	for(i=0; i<npsh; i++)
+	  clulevarry[0].uvcsphe[i] = new double[NDIM];
+	clulevarry[0].weisphe = new double[npsh];
+	NC_ComputeUnitVectorOnUnitSphere(NCout, clulevarry[0].nPoinThetLv, clulevarry[0].nPoinPhiLv, clulevarry[0].weisphe, clulevarry[0].uvcsphe);
+	
+	
       }
-
-    time(&ltim[5]);
-    lti_sst = ltim[5] - ltim[4];
-    lti_sol += lti_sst;
-
+      
+    }
+    
     // post process: compute and output the results
-    NC_PostProcessing(NCout);
+    NC_PostProcessing(NCout,evalonly);
 
-    switch(methodFMM_)
-      {
+    if( !evalonly ) {
+      switch(methodFMM_) {
       case 1: // SLFMBEM
 	for(i=0; i<numIntegrationPointsUnitSphere_; i++) delete [] uvcsphe[i];
 	delete [] uvcsphe;
 	delete [] weisphe;
-
+	
 	delete [] dmtxlev[0].jcolDmxLv;
 	delete [] dmtxlev[0].irowDmxLv;
 	delete [] dmtxlev[0].zDmxLv;
 	break;
+      case 2: // interpolated MLFMM
+	if( clulevarry[0].zwkT != NULL ) {
+	  delete [] clulevarry[0].zwkT;
+	  clulevarry[0].zwkT = NULL;
+	}
       case 3: // DMLFMBEM
-	for(j=0; j<numClusterLevels_; j++)
-	  {
-	    delete [] clulevarry[j].CrdGauLv;
-	    delete [] clulevarry[j].WeiGauLv;
-
-	    for(i=0; i<clulevarry[j].nPoinSpheLv; i++) delete [] clulevarry[j].uvcsphe[i];
-	    delete [] clulevarry[j].uvcsphe;
-	    delete [] clulevarry[j].weisphe;
-
+	for( j = 0; j < numClusterLevels_; j++) {
+	  delete [] clulevarry[j].CrdGauLv;
+	  delete [] clulevarry[j].WeiGauLv;
+	  clulevarry[j].CrdGauLv = NULL; 
+	  clulevarry[j].WeiGauLv = NULL;
+	  
+	  for(i=0; i<clulevarry[j].nPoinSpheLv; i++)
+	    delete [] clulevarry[j].uvcsphe[i];
+	  delete [] clulevarry[j].uvcsphe;
+	  delete [] clulevarry[j].weisphe;
+	  
+	  clulevarry[j].uvcsphe = NULL;
+	  clulevarry[j].weisphe = NULL;
+	  
+	  if( methodFMM_ == 3 ) {
 	    delete [] clulevarry[j].zwkT;
 	    delete [] clulevarry[j].zwkS;
-
-
+	    clulevarry[j].zwkT = NULL; 
+	    clulevarry[j].zwkS = NULL;
+	  }
+	  clulevarry[j].nPoinSpheLv = 0;
+	  
+	  if( methodFMM_ == 3 ) {
 	    delete [] dmtxlev[j].jcolDmxLv;
 	    delete [] dmtxlev[j].irowDmxLv;
 	    delete [] dmtxlev[j].zDmxLv;
+	    dmtxlev[j].jcolDmxLv = NULL;
+	    dmtxlev[j].irowDmxLv = NULL;		
+	    dmtxlev[j].zDmxLv = NULL;
 	  }
+	  if( methodFMM_ == 2 )
+	    Cleanup_MLFMM(true);
+	}
 	break;
       }
-
+    } // !evalonly
+    else {
+      if( methodFMM_ ) {
+	for(i=0; i<numIntegrationPointsUnitSphere_; i++)
+	  delete [] uvcsphe[i];
+	delete [] uvcsphe;
+	delete [] weisphe;
+      }
+    }
     time(&ltim[6]);
     lti_pst = ltim[6] - ltim[5];
     lti_pos += lti_pst;
@@ -963,7 +1096,8 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
     cout << endl;
 
     // delete arrays generated by 3-d address computations
-    if(currentFrequency_ == iend - 1)  NC_DeleteArrays(methodFMM_, numClusterLevels_, 1);
+    if(currentFrequency_ == iend - 1 && !evalonly)
+      NC_DeleteArrays(methodFMM_, numClusterLevels_, 1);
 
   } // end of loop I_FREQ (Loop over Frequencies)
 
@@ -1065,94 +1199,99 @@ void NC_FrequencyInformations
 	switch(methodFMM_)
 	{
 	case 0:
-		xout << "\nTraditional BEM" << endl;
-		break;
+	  xout << "\nTraditional BEM" << endl;
+	  break;
 	case 1:
-		xout << "\nSingle level fast multipole BEM" << endl;
-		break;
+	  xout << "\nSingle level fast multipole BEM" << endl;
+	  break;
+	case 2:
+	  xout << "\nMLFMM interpolated version" << endl;
+	  break;
 	case 3:
-		xout << "\nDirect multilevel fast multipole BEM" << endl;
-		break;
+	    xout << "\nDirect multilevel fast multipole BEM" << endl;
+	  break;
 	}
 
 	// write the parameters of the equation system
-	if(currentFrequency_ == istart_)
-	{
-		xout << "\nNumber of equations = " << numRowsOfCoefficientMatrix_  << endl;
-		if(methodFMM_ == 0) {
-			xout << "Number of entries of the coefficient matrix = " << numComponentsOfCoefficientMatrix_ << endl;
-		}
+	if(currentFrequency_ == istart_) {
+	  xout << "\nNumber of equations = " << numRowsOfCoefficientMatrix_  << endl;
+	  if(methodFMM_ == 0) {
+	    xout << "Number of entries of the coefficient matrix = " << numComponentsOfCoefficientMatrix_ << endl;
+	  }
 	}
-
+	
 	// write infomations of clusters
 	if(methodFMM_) {
-		xout << "\nInformations about clusters:" << endl;
-		xout << "   Level    Num. of clusters    Maximum radius   Minimum radius" << endl;
-		for(i=0; i<numClusterLevels_; i++) {
-			if(methodFMM_ == 1) {
-				n = numOriginalClusters_;
-				r_max = maxClusterRadiusBE_;
-				r_min = minClusterRadiusBE_;
-			} else {
-				n = clulevarry[i].nClustOLv;
-				r_max = clulevarry[i].RadiMaxLv;
-				r_min = clulevarry[i].RadiMinLv;
-			}
-			xout << "   " << setw(3) << i << "       " << setw(6) << n
-				<< "                " << setw(6) << r_max
-				<< "         " << setw(6) << r_min << endl;
-		}
-		if(numInternalPointsClusters_) {
-			xout << " resu. nets" << "  " << setw(6) << numInternalPointsClusters_ <<
-				"                " << setw(6) << maxClusterRadiusRM_  <<
-				"         " << setw(6) << minClusterRadiusRM_ << endl;
-		}
+	  xout << "\nInformations about clusters:" << endl;
+	  xout << "   Level    Num. of clusters    Maximum radius   Minimum radius" << endl;
+	  for(i=0; i<numClusterLevels_; i++) {
+	    if(methodFMM_ == 1) {
+	      n = numOriginalClusters_;
+	      r_max = maxClusterRadiusBE_;
+	      r_min = minClusterRadiusBE_;
+	    } else {
+	      n = clulevarry[i].nClustOLv;
+	      r_max = clulevarry[i].RadiMaxLv;
+	      r_min = clulevarry[i].RadiMinLv;
+	    }
+	    xout << "   " << setw(3) << i << "       " << setw(6) << n
+		 << "                " << setw(6) << r_max
+		 << "         " << setw(6) << r_min << endl;
+	  }
+	  if(numInternalPointsClusters_) {
+	    xout << " resu. nets" << "  " << setw(6) << numInternalPointsClusters_ <<
+	      "                " << setw(6) << maxClusterRadiusRM_  <<
+	      "         " << setw(6) << minClusterRadiusRM_ << endl;
+	  }
 	}
-
+	
 	switch(methodFMM_)
-	{
-	case 0:
-		yout << "\nTraditional BEM" << endl;
-		break;
-	case 1:
+	  {
+	  case 0:
+	    yout << "\nTraditional BEM" << endl;
+	    break;
+	  case 1:
 		yout << "\nSingle level fast multipole BEM" << endl;
 		break;
-	case 3:
-		yout << "\nDirect multilevel fast multipole BEM" << endl;
-		break;
-	}
-
+	  case 2:
+	    yout << "\nInterpolated MLFMM" << endl;
+	    break;
+	  case 3:
+	    yout << "\nDirect multilevel fast multipole BEM" << endl;
+	    break;
+	  }
+	
 	// write the parameters of the equation system
 	if(currentFrequency_ == istart_)
-	{
-		yout << "\nNumber of equations = " << numRowsOfCoefficientMatrix_  << endl;
-		if(methodFMM_ == 0) {
-			yout << "Number of entries of the coefficient matrix = " << numComponentsOfCoefficientMatrix_ << endl;
-		}
-	}
-
+	  {
+	    yout << "\nNumber of equations = " << numRowsOfCoefficientMatrix_  << endl;
+	    if(methodFMM_ == 0) {
+	      yout << "Number of entries of the coefficient matrix = " << numComponentsOfCoefficientMatrix_ << endl;
+	    }
+	  }
+	
 	// write infomations of clusters
 	if(methodFMM_) {
-		yout << "\nInformations about clusters:" << endl;
-		yout << "   Level    Num. of clusters    Maximum radius   Minimum radius" << endl;
-		for(i=0; i<numClusterLevels_; i++) {
-			if(methodFMM_ == 1) {
-				n = numOriginalClusters_;
-				r_max = maxClusterRadiusBE_;
-				r_min = minClusterRadiusBE_;
-			} else {
-				n = clulevarry[i].nClustOLv;
-				r_max = clulevarry[i].RadiMaxLv;
-				r_min = clulevarry[i].RadiMinLv;
-			}
-			yout << "   " << setw(3) << i << "       " << setw(6) << n
-				<< "                " << setw(6) << r_max
-				<< "         " << setw(6) << r_min << endl;
-		}
-		if(numInternalPointsClusters_) {
-			yout << " resu. nets" << "  " << setw(6) << numInternalPointsClusters_ <<
-				"                " << setw(6) << maxClusterRadiusRM_  <<
-				"         " << setw(6) << minClusterRadiusRM_ << endl;
-		}
+	  yout << "\nInformations about clusters:" << endl;
+	  yout << "   Level    Num. of clusters    Maximum radius   Minimum radius" << endl;
+	  for(i=0; i<numClusterLevels_; i++) {
+	    if(methodFMM_ == 1) {
+	      n = numOriginalClusters_;
+	      r_max = maxClusterRadiusBE_;
+	      r_min = minClusterRadiusBE_;
+	    } else {
+	      n = clulevarry[i].nClustOLv;
+	      r_max = clulevarry[i].RadiMaxLv;
+	      r_min = clulevarry[i].RadiMinLv;
+	    }
+	    yout << "   " << setw(3) << i << "       " << setw(6) << n
+		 << "                " << setw(6) << r_max
+		 << "         " << setw(6) << r_min << endl;
+	  }
+	  if(numInternalPointsClusters_) {
+	    yout << " resu. nets" << "  " << setw(6) << numInternalPointsClusters_ <<
+	      "                " << setw(6) << maxClusterRadiusRM_  <<
+	      "         " << setw(6) << minClusterRadiusRM_ << endl;
+	  }
 	}
 }

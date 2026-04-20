@@ -952,15 +952,25 @@ void Cluster2ClusterEval(Complex** zF, Complex** zG) {
 	//z1z2[nn] = -z1z2[nn];
       }
       r = sqrt(r);
+#ifdef USE_GSL
       gsl_sf_bessel_jl_array(L,r * waveNumbers_, jn);
       gsl_sf_bessel_yl_array(L,r * waveNumbers_, yn);
+#else
+      jn = sph_bessel(L, r * waveNumbers_);
+      yn = sph_neumann(L, r * waveNumbers_);
+#endif
       // P_l( (z1 - z2) * s )
       for(int s = 0; s < nsphere; s++) {
 	v = 0.0;
 	for( nn = 0; nn < NDIM; nn++ )
 	  v += z1z2[nn] * clulevarry[0].uvcsphe[s][nn];
 	v = v / r;
+#ifdef USE_GSL
 	gsl_sf_legendre_Pl_array(L, v, Pl[s]);
+#else
+	for(int l = 0; l < L + 1; l++) 
+	  Pl[s][l] = legendre(L,v);
+#endif
       }
       
       for( s = 0; s < nsphere; s++ )
@@ -1121,15 +1131,27 @@ void Cluster2Clustermat(int maxlev, bool allocateFMM) {
 	  //z1z2[nn] = -z1z2[nn];
 	}
 	r = sqrt(r);
+#ifdef USE_GSL
 	gsl_sf_bessel_jl_array(explength,r * waveNumbers_, jn);
 	gsl_sf_bessel_yl_array(explength,r * waveNumbers_, yn);
+#else
+	for ( int l = 0; l  < explength + 1; l++) {
+	  jn[l] = sph_bessel(l, r * waveNumbers_);
+	  yn[l] = sph_neumann(l, r * waveNumbers_);
+	}
+#endif
 	// P_l( (z1 - z2) * s )
 	for(s = 0; s < nsphere; s++) {
 	  v = 0.0;
 	  for( nn = 0; nn < NDIM; nn++ )
 	    v += z1z2[nn] * clulevarry[level].uvcsphe[s][nn];
 	  v = v / r;
+#ifdef USE_GSL
 	  gsl_sf_legendre_Pl_array(L, v, Pl[s]);
+#else
+	  for ( int l = 0; l < L + 1; l++ ) 
+	    Pl[s][l] = legendre(l, v);
+#endif
 	}
 	
 	for( s = 0; s < nsphere; s++ )
@@ -1371,14 +1393,26 @@ void Cluster2Cluster(Complex* zF,Complex* zG,int nsphere, int L, double* z1z2, d
   for( i = 0; i < NDIM; i++ ) 
     r += z1z2[i] * z1z2[i];
   r = sqrt(r);
+#ifdef USE_GSL
   gsl_sf_bessel_jl_array(L,r * waveNumbers_, jn);
   gsl_sf_bessel_yl_array(L,r * waveNumbers_, yn);
+#else
+  for ( int l = 0; l < L + 1; l++) {
+    jn[l] = sph_bessel(l, r * waveNumbers_);
+    yn[l] = sph_neumann(l, r * waveNumbers_);
+  }
+#endif
   for(n = 0; n < nsphere; n++) {
     v = 0.0;
     for( j = 0; j < NDIM; j++ )
       v += z1z2[j] * uvcsphere[i][j];
     v = waveNumbers_ * v / r;
+#ifdef USE_GSL
     gsl_sf_legendre_Pl_array(L, v, Pl[n]);
+#else
+    for( l = 0; l < L + 1; l++ )
+      Pl[n][l] = legendre(L,v);
+#endif
   }
   
   for (l = 0; l < L + 1; l++) {

@@ -253,14 +253,14 @@ void NC_ReadBasicParametersB
 	methodSolver_ = NC_String2Integer(chterms[8]);
 
 	if(numElements_ < 1) NC_Error_Exit_1(NCout, "Number of elements must > 0!",
-		"Number of elements = ", numElements_);
+					     "Number of elements = ", numElements_);
 
 	if(numNodes_ < 1) NC_Error_Exit_1(NCout, "Number of nodes must > 0!", "Number of nodes = ", numNodes_);
 
 	if(minExpansionTermsFMM_ == 0) minExpansionTermsFMM_ = 8;
 	if(minExpansionTermsFMM_ < 5 || minExpansionTermsFMM_ > 10) {
 		NC_Error_Exit_1(NCout, "minExpansionTermsFMM_  must be in [5 10]!", "minExpansionTermsFMM_ = ", minExpansionTermsFMM_);
-    }
+	}
 
 	if(numSymmetricPlanes_ < 0 || numSymmetricPlanes_ > 3)
 		NC_Error_Exit_1(NCout, "Number of symmetry planes must be in [0 3]!",
@@ -269,20 +269,23 @@ void NC_ReadBasicParametersB
 	if(methodSolver_ < 0 || methodSolver_ > 4)
         NC_Error_Exit_1(NCout, "ISOLVER must be 0 or 4!", "ISOLVER = ", methodSolver_);
 
-    if(methodSolver_ > 0 && methodSolver_ < 4)
-        NC_Error_Exit_1(NCout, "ISOLVER must be 0 or 4!", "ISOLVER = ", methodSolver_);
-
+	if(methodSolver_ > 0 && methodSolver_ < 4)
+	  NC_Error_Exit_1(NCout, "ISOLVER must be 0 or 4!", "ISOLVER = ", methodSolver_);
+	
 	switch(methodBEM_)    // input parameter
 	{
 	case 0:
-		methodFMM_ = 0; // TBEM
-		break;
+	  methodFMM_ = 0; // TBEM
+	  break;
 	case 1:
-		methodFMM_ = 1; // SLFMBEM
-		break;
+	  methodFMM_ = 1; // SLFMBEM
+	  break;
+	case 2:
+	  methodFMM_ = 2;
+	  break;
 	case 4:
-		methodFMM_ = 3; // DMLFMBEM
-		break;
+	  methodFMM_ = 3; // DMLFMBEM
+	  break;
 	default:
 		NC_Error_Exit_1(NCout, "methodBEM_ must be in {0,1,4}!", "methodBEM_ = ", methodBEM_);
 	}

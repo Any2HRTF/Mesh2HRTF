@@ -33,14 +33,14 @@ using namespace std;                                                            
 
 
 // local functions
-void NC_ComputeTvecSLFMM(ofstream&);
-void NC_ComputeTvecMLFMM(ofstream&);
+void NC_ComputeTvecSLFMM(ofstream&,bool,Matrix<Complex>&,Matrix<Complex>&);
+void NC_ComputeTvecMLFMM(ofstream&,bool,Matrix<Complex>&,Matrix<Complex>&);
 void NC_ContributionTvecFMM(ofstream&,const int&,int&,Vector<double>&,Matrix<double>&,Complex&,Vector<Complex>&, double**,Vector<Complex>&);
 void NC_WriteResultsObjectMesh(ofstream&,Matrix<Complex>&,Matrix<Complex>&,Matrix<Complex>&,Matrix<double>&);
-void NC_WriteResultsEvaluationGrid(ofstream&, Matrix<Complex>&, Matrix<Complex>&);
+void NC_WriteResultsEvaluationGrid(ofstream&, Matrix<Complex>&, Matrix<Complex>&, bool);
 Complex NC_ContributionIncidentWaves(ofstream&,Vector<double>&,Vector<Complex>&,const int&);
 void NC_ContributionTBEM(ofstream&,Matrix<Complex>&,Matrix<Complex>&,int&,int&,Vector<double>&,Vector<Complex>&,Matrix<Complex>&);
-void NC_ContributionFMM(ofstream&,Matrix<Complex>&,Matrix<Complex>&,Vector<int>&,Vector<Complex>&,Matrix<Complex>&);
+void NC_ContributionFMM(ofstream&,Matrix<Complex>&,Matrix<Complex>&,Vector<int>&,Vector<Complex>&,Matrix<Complex>&,bool);
 Complex NC_IntegrationTBEM(ofstream&,Vector<double>&,const double&,const double&,const int&,const double&,const int&,Matrix<double>,const Complex,const int&,Vector<Complex>&,Vector<Complex>&,const int&, const int&);
 void NC_Magnitude2dBdeg(Vector<double>&, const Complex&, const int&);
 
@@ -74,228 +74,334 @@ static bool IfTvc = false;
 // the main program for postprecessing
 void NC_PostProcessing
 (
-	ofstream& NCout
-)
+ ofstream& NCout,
+ bool evalonly // flag that zrhs has not been calculated but needs to be read from file
+ )
 {
-	Matrix<Complex> cVpotele(numElements_, 2), cVeloele(numElements_, NNODPE*2), cVeloelo(numElements_, NNODPE);
-	Matrix<double> rEninele(numElements_, NNODPE*2);
-
-	// create the BE output directories
-	sprintf(Dfname_3d, "be.out/be.%d",  currentFrequency_ + 1);
+  Matrix<Complex> zVpotele(numElements_, 2), zVeloele(numElements_, NNODPE*2), zVeloelo(numElements_, NNODPE);
+  Matrix<double> rEninele(numElements_, NNODPE*2);
+  
+  // create the BE output directories
+  sprintf(Dfname_3d, "be.out/be.%d",  currentFrequency_ + 1);
 #ifdef isWindows
-	int ifmkd;
-    ifmkd = _mkdir(Dfname_3d); // WINDOWS
+  int ifmkd;
+  ifmkd = _mkdir(Dfname_3d); // WINDOWS
 #else
-	mkdir(Dfname_3d, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
+  mkdir(Dfname_3d, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
 #endif
-
-	// create the FE output directories
-	//	sprintf(Dfname_3d, "fe.out/fe.%d",  currentFrequency_ + 1);
+  
+  // create the FE output directories
+  //	sprintf(Dfname_3d, "fe.out/fe.%d",  currentFrequency_ + 1);
 #ifdef isWindows
-	//    ifmkd = _mkdir(Dfname_3d); // WINDOWS
+  //    ifmkd = _mkdir(Dfname_3d); // WINDOWS
 #else
-	//mkdir(Dfname_3d, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
+  //mkdir(Dfname_3d, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);  // UNIX
 #endif
+  
+  // compute the bool variable indicating if the T-vector should be computed
+  if(numInternalPointsClusters_) IfTvc = true;
 
-	// compute the bool variable indicating if the T-vector should be computed
-	if(numInternalPointsClusters_) IfTvc = true;
 
-	// compute the T-vector
-	if(IfTvc)
-	{
-		switch(methodFMM_)
-		{
-		case 1: // SLFMBEM
-			zT_vc = new Complex[numOriginalReflectedClusters_*numIntegrationPointsUnitSphere_];
-			NC_ComputeTvecSLFMM(NCout);
-			break;
-		case 3: // DMLFMBEM
-			NC_ComputeTvecMLFMM(NCout);
-			break;
-		}
-	}
+  if( evalonly ) {
+    /* kreiza 2024: If we want to just compute the field on the evalgrid,
+       we do have a slight problem, because there is no zrhs.
+       In principle we do not need it, we currently just need
+       zVpotele and zVeloele. Thus, read them now.
+       Use the c version for reading the files, since all other file
+       operations are also c-style
+    */
+    FILE* lu_pelem;
+    FILE* lu_velem;
+    char stringdummy[100];
+    int iel,nelemgrp,idummy;
+    double realpart, imagpart;
+    sprintf(Dfname_3d,"be.out/be.%d/pBoundary",currentFrequency_ + 1);
+    lu_pelem = fopen(Dfname_3d,"r");
+    if ( !lu_pelem )
+      NC_Error_Exit_1(NCout,  "Can not open the file ", Dfname_3d);
+    //
+    sprintf(Dfname_3d,"be.out/be.%d/vBoundary",currentFrequency_ + 1);
+    lu_velem = fopen(Dfname_3d,"r");
+    if ( !lu_velem )
+      NC_Error_Exit_1(NCout,  "Can not open the file ", Dfname_3d);
+    //
+    // get ride of the header and number of groups
+    fgets( stringdummy, 100, lu_pelem);
+    fgets( stringdummy, 100, lu_velem);
+    fgets( stringdummy, 100, lu_pelem);
+    fgets( stringdummy, 100, lu_velem);
 
-	// compute and output the results at the boundary elements
-	NC_WriteResultsObjectMesh(NCout, cVpotele, cVeloele, cVeloelo, rEninele);
+    //
+    // read the grp number and the number of elements in the group
+    // should be the same for p and v, in general, this should be easy to
+    // read but we have to consider multiple grps
+    do {
+      int newgroup;
+      // eof is tricky, if there is a whitespace at the end, the while
+      // loop will be repeated without data
+      newgroup = fscanf( lu_pelem, "%d %d", &nelemgrp, &idummy);
+      if( newgroup < 0 )
+	break;
+      fscanf( lu_velem, "%d %d", &nelemgrp, &idummy);
+      for (iel = 0; iel < numElements_; iel++) {
+	if(listElementProperty[iel] == 2 || nelemgrp != listElementsElementGroup[iel]) continue;
+	fscanf( lu_pelem, "%d %lf %lf",&idummy,&realpart,&imagpart);
+	// Be careful. pBoundary contains the pressure, we need the
+	// velocity potential
+	zVpotele(iel,0).set(imagpart/rpfact_,-realpart/rpfact_);
+	fscanf( lu_velem, "%d %lf %lf",&idummy,&realpart,&imagpart);
+	//	zVeloele(iel,0).set(imagpart/rpfact_,-realpart/rpfact_);
+	// kreiza 2024: this is a bit much, because we would not need
+	// the velocity at each node, however, a later routine uses that
+	for( int j = 0; j < 4; j++) 
+	  zVeloele(iel,j).set(realpart,imagpart);
+      }
+      // if the file is not finished repeat the procedure with a new group
+    } while( !feof(lu_pelem) );
+    fclose( lu_pelem );
+    fclose( lu_velem );
+  } // if evalonly
 
-	// compute and output the results at nodes of the evaluation mesh
-	if(numNodesOfEvaluationMesh_ > 0)
+
+
+
+
+  
+  // compute the T-vector
+  if(IfTvc)
     {
-        NC_WriteResultsEvaluationGrid(NCout, cVpotele, cVeloele);
+      switch(methodFMM_)
+	{
+	case 1: // SLFMBEM
+	  zT_vc = new Complex[numOriginalReflectedClusters_*numIntegrationPointsUnitSphere_];
+	  NC_ComputeTvecSLFMM(NCout,evalonly,zVpotele,zVeloele);
+	  break;
+	case 2:
+	case 3: // DMLFMBEM
+	  NC_ComputeTvecMLFMM(NCout,evalonly,zVpotele,zVeloele);
+	  break;
+	}
+    }
+  
+  // compute and output the results at the boundary elements
+  if( !evalonly )
+    NC_WriteResultsObjectMesh(NCout, zVpotele, zVeloele, zVeloelo, rEninele);
+
+  // compute and output the results at nodes of the evaluation mesh
+  if(numNodesOfEvaluationMesh_ > 0)
+    {
+      NC_WriteResultsEvaluationGrid(NCout, zVpotele, zVeloele, evalonly);
     }
 
-	// destroy the T-vector
-	if(IfTvc && (methodFMM_ == 1 || methodFMM_ == 2)) delete [] zT_vc;
+  // destroy the T-vector
+  if(IfTvc && (methodFMM_ == 1 || methodFMM_ == 2)) delete [] zT_vc;
+  if( IfTvc && methodFMM_ > 1 && evalonly ) delete [] zT_vc;
 }
 
 // compute the T-vector for the SL-FMM
 void NC_ComputeTvecSLFMM
 (
-	ofstream& NCout
+ ofstream& NCout,
+ bool evalonly,
+ Matrix<Complex>& zVpotele,  // velopot on the colloc node
+ Matrix<Complex>& zVeloele  // partvelo on the colloc node
  )
 {
-    int i, j, inod0 = 0, k, ibg, jel, iveloj, ifadmij, inodj;
-    Vector<double> center_i(NDIM);
-    Vector<int> jdofaddre(2);
-    Vector<double> centerj(NDIM), norvecj(NDIM*(NNODPE + 1));
-    Matrix<double> crdelj(NNODPE, NDIM);
-    Vector<Complex> zpotej(2);
-    Vector<Complex> zveloj(NNODPE);
+  int i, j, inod0 = 0, k, ibg, jel, iveloj, ifadmij, inodj;
+  Vector<double> center_i(NDIM);
+  Vector<int> jdofaddre(2);
+  Vector<double> centerj(NDIM), norvecj(NDIM*(NNODPE + 1));
+  Matrix<double> crdelj(NNODPE, NDIM);
+  Vector<Complex> zpotej(2);
+  Vector<Complex> zveloj(NNODPE);
     
-    int nrf_cl, rfa_cl;
-    bool mir_cl;
-    Vector<bool> rfdi_cl(NDIM);
+  int nrf_cl, rfa_cl;
+  bool mir_cl;
+  Vector<bool> rfdi_cl(NDIM);
+  
+  
+  // contribution of the element to the T-vector
+  Vector<Complex> zTele(numIntegrationPointsUnitSphere_);
+  
+  // compute the T-vector
+  for(i=0; i<numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_; i++)
+    zT_vc[i].set(0.0, 0.0);
+  ibg = 0;
+  for(i=0; i<numOriginalReflectedClusters_; i++) {
+    // cluster parameters
+    nrf_cl = ClustArray[i].nuref;
+    rfa_cl = ClustArray[i].rffac;
+    if(nrf_cl)
+      {
+	mir_cl = ClustArray[i].ifmirro;
+	for(j=0; j<NDIM; j++) rfdi_cl[j] = ClustArray[i].ifrfdi[j];
+      }
     
+    // compute the number of gaussean points and their local coordinates and weights
+    if(ClustArray[i].IfMonoEl)
+      {
+	inod0 = listNumberNodesPerElement[ClustArray[i].NumsOfEl[0]];
+	npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
+      }
     
-    // contribution of the element to the T-vector
-    Vector<Complex> zTele(numIntegrationPointsUnitSphere_);
+    // center of the cluster
+    for(k=0; k<NDIM; k++) center_i[k] = ClustArray[i].CoorCent[k];
     
-    // compute the T-vector
-    for(i=0; i<numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_; i++) zT_vc[i].set(0.0, 0.0);
-    ibg = 0;
-    for(i=0; i<numOriginalReflectedClusters_; i++)
-    {
-        // cluster parameters
-        nrf_cl = ClustArray[i].nuref;
-        rfa_cl = ClustArray[i].rffac;
-        if(nrf_cl)
-        {
-            mir_cl = ClustArray[i].ifmirro;
-            for(j=0; j<NDIM; j++) rfdi_cl[j] = ClustArray[i].ifrfdi[j];
-        }
+    // loop over elements of the cluster
+    for(j=0; j<ClustArray[i].NumOfEl; j++)
+      {
+	jel = ClustArray[i].NumsOfEl[j];
         
-        // compute the number of gaussean points and their local coordinates and weights
-        if(ClustArray[i].IfMonoEl)
-        {
-            inod0 = listNumberNodesPerElement[ClustArray[i].NumsOfEl[0]];
-            npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
-        }
-        
-        // center of the cluster
-        for(k=0; k<NDIM; k++) center_i[k] = ClustArray[i].CoorCent[k];
-        
-        // loop over elements of the cluster
-        for(j=0; j<ClustArray[i].NumOfEl; j++)
-        {
-            jel = ClustArray[i].NumsOfEl[j];
-            
-            // compute the number of gaussean points and their local coordinates and weights
-            if(!ClustArray[i].IfMonoEl && listNumberNodesPerElement[jel] != inod0)
-            {
-                inod0 = listNumberNodesPerElement[jel];
-                npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
-            }
-            
-            // compute the element data
-            NC_ComputeElementData(jel, 1, inodj, iveloj,
-                                  ifadmij, jdofaddre, centerj, norvecj, zpotej,
-                                  zveloj, crdelj);
-            
-            // reflection of the element
-            if(nrf_cl) NC_ReflectElementFMM(rfa_cl, mir_cl, rfdi_cl, inodj, 0,
-                                            centerj, norvecj, zveloj, crdelj);
-            if(nrf_cl && rfa_cl == -1) zpotej[0].nega();
-            
-            // compute the contribution of the element to the T-vectors
-            for(k=0; k<numIntegrationPointsUnitSphere_; k++) zTele[k].set(0.0, 0.0);
-            NC_ContributionTvecFMM(NCout, jel, numIntegrationPointsUnitSphere_, center_i, crdelj, zpotej[0],
-                                   zveloj, uvcsphe, zTele);
-            
-            for(k=0; k<numIntegrationPointsUnitSphere_; k++) zT_vc[ibg + k] += zTele[k];
-        } // end of loop J
-        ibg += numIntegrationPointsUnitSphere_;
-    } // end of loop I
+	// compute the number of gaussean points and their local coordinates and weights
+	if(!ClustArray[i].IfMonoEl && listNumberNodesPerElement[jel] != inod0)
+	  {
+	    inod0 = listNumberNodesPerElement[jel];
+	    npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
+	  }
+
+	/* there is the small problem that ComputeElementData needs zrhs hich is
+	   not available in the evalonly case. Lets do a small trick with
+	   the flags
+	*/
+	if( evalonly ) {
+	  NC_ComputeElementData(jel, 0, inodj, iveloj,
+				ifadmij, jdofaddre, centerj, norvecj, zpotej,
+				zveloj, crdelj);
+	  zpotej[0] = zVpotele(jel,0);
+	  // we can probably just use k = 0
+	  for (k = 0; k < inodj; k++ ) 
+	    zveloj[k] = zVeloele(jel,0);
+	}
+	else {
+	  
+	  // compute the element data
+	  NC_ComputeElementData(jel, 1, inodj, iveloj,
+				ifadmij, jdofaddre, centerj, norvecj, zpotej,
+				zveloj, crdelj);
+	}
+	// reflection of the element
+	if(nrf_cl) NC_ReflectElementFMM(rfa_cl, mir_cl, rfdi_cl, inodj, 0,
+					centerj, norvecj, zveloj, crdelj);
+	if(nrf_cl && rfa_cl == -1) zpotej[0].nega();
+	
+	// compute the contribution of the element to the T-vectors
+	for(k=0; k<numIntegrationPointsUnitSphere_; k++) zTele[k].set(0.0, 0.0);
+	NC_ContributionTvecFMM(NCout, jel, numIntegrationPointsUnitSphere_, center_i, crdelj, zpotej[0],
+			       zveloj, uvcsphe, zTele);
+	
+	for(k=0; k<numIntegrationPointsUnitSphere_; k++) zT_vc[ibg + k] += zTele[k];
+      } // end of loop J
+    ibg += numIntegrationPointsUnitSphere_;
+  } // end of loop I
 }
 
 // function to compute the T-vectors for the ML-FMM
 void NC_ComputeTvecMLFMM
 (
-	ofstream& NCout
+ ofstream& NCout,
+ bool evalonly,
+ Matrix<Complex>& zVpotele,  // velopot on the colloc node
+ Matrix<Complex>& zVeloele  // partvelo on the colloc node
  )
 {
-    int i, j, inod0 = 0, k, ibg, jel, iveloj, ifadmij, inodj, ilv;
-    Vector<double> center_i(NDIM);
-    Vector<int> jdofaddre(2);
-    Vector<double> centerj(NDIM), norvecj(NDIM*(NNODPE + 1));
-    Matrix<double> crdelj(NNODPE, NDIM);
-    Vector<Complex> zpotej(2);
-    Vector<Complex> zveloj(NNODPE);
-    
-    int nrf_cl, rfa_cl;
-    bool mir_cl;
-    Vector<bool> rfdi_cl(NDIM);
-    
-    ElCluster *clusArray;
-    
-    
-    // contribution of the element to the T-vector
-    Vector<Complex> zTele(clulevarry[0].nPoinSpheLv);
-    
+  int i, j, inod0 = 0, k, ibg, jel, iveloj, ifadmij, inodj, ilv;
+  Vector<double> center_i(NDIM);
+  Vector<int> jdofaddre(2);
+  Vector<double> centerj(NDIM), norvecj(NDIM*(NNODPE + 1));
+  Matrix<double> crdelj(NNODPE, NDIM);
+  Vector<Complex> zpotej(2);
+  Vector<Complex> zveloj(NNODPE);
+  
+  int nrf_cl, rfa_cl;
+  bool mir_cl;
+  Vector<bool> rfdi_cl(NDIM);
+  
+  ElCluster *clusArray;
+  
+  
+  // contribution of the element to the T-vector
+  Vector<Complex> zTele(clulevarry[0].nPoinSpheLv);
+
+  if( evalonly )
+    numClusterLevels_ = 1;
+  
     // compute the T-vectors
-    for(ilv=0; ilv<numClusterLevels_; ilv++)
-    {
-        // defines
-        clusArray = clulevarry[ilv].ClastArLv;
-        
-        // initialize
-        for(i=0; i<clulevarry[ilv].nPoinSpheLv*clulevarry[ilv].nClustSLv; i++)
-            clulevarry[ilv].zwkT[i].set(0.0, 0.0);
-        
-        ibg = 0;
-        for(i=0; i<clulevarry[ilv].nClustSLv; i++)
-        {
-            // cluster parameters
-            nrf_cl = clusArray[i].nuref;
-            rfa_cl = clusArray[i].rffac;
-            if(nrf_cl)
-            {
-                mir_cl = clusArray[i].ifmirro;
-                for(j=0; j<NDIM; j++) rfdi_cl[j] = clusArray[i].ifrfdi[j];
-            }
-            
-            // compute the number of gaussean points and their local coordinates and weights
-            if(clusArray[i].IfMonoEl)
-            {
-                inod0 = listNumberNodesPerElement[clusArray[i].NumsOfEl[0]];
-                npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
-            }
-            
-            // center of the cluster
-            for(k=0; k<NDIM; k++) center_i[k] = clusArray[i].CoorCent[k];
-            
-            // loop over elements of the cluster
-            for(j=0; j<clusArray[i].NumOfEl; j++)
-            {
-                jel = clusArray[i].NumsOfEl[j];
+    //    for( ilv = 0; ilv < numClusterLevels_; ilv++) we only look
+    // a the root level
+  for( ilv = 0; ilv < 1; ilv++) {
+    // defines
+    clusArray = clulevarry[ilv].ClustArLv;
+    if( methodFMM_ == 2 )
+      if( clulevarry[0].zwkT == NULL )
+	clulevarry[ilv].zwkT = new Complex[clulevarry[0].nPoinSpheLv*clulevarry[0].nClustSLv];
+    // initialize
+    for(i=0; i<clulevarry[ilv].nPoinSpheLv*clulevarry[ilv].nClustSLv; i++)
+      clulevarry[ilv].zwkT[i].set(0.0, 0.0);
+    
+    ibg = 0;
+    for(i=0; i<clulevarry[ilv].nClustSLv; i++) {
+      // cluster parameters
+      nrf_cl = clusArray[i].nuref;
+      rfa_cl = clusArray[i].rffac;
+      if(nrf_cl)
+	{
+	  mir_cl = clusArray[i].ifmirro;
+	  for(j=0; j<NDIM; j++) rfdi_cl[j] = clusArray[i].ifrfdi[j];
+	}
+      
+      // compute the number of gaussean points and their local coordinates and weights
+      if(clusArray[i].IfMonoEl)
+	{
+	  inod0 = listNumberNodesPerElement[clusArray[i].NumsOfEl[0]];
+	  npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
+	}
+      
+      // center of the cluster
+      for(k=0; k<NDIM; k++) center_i[k] = clusArray[i].CoorCent[k];
+      
+      // loop over elements of the cluster
+      for(j=0; j<clusArray[i].NumOfEl; j++)
+	{
+	  jel = clusArray[i].NumsOfEl[j];
+          
+	  // compute the number of gaussean points and their local coordinates and  weights
+	  if(!clusArray[i].IfMonoEl && listNumberNodesPerElement[jel] != inod0)
+	    {
+	      inod0 = listNumberNodesPerElement[jel];
+	      npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
+	    }
+	  
+	  // compute the element data
+	  if( evalonly ) {
+	    NC_ComputeElementData(jel, 0, inodj, iveloj,
+				  ifadmij, jdofaddre, centerj, norvecj, zpotej,
+				  zveloj, crdelj);
+	    zpotej[0] = zVpotele(jel,0);
+	    // we can probably just use k = 0
+	    for (k = 0; k < inodj; k++ ) 
+	      zveloj[k] = zVeloele(jel,0);
+	  }
+	  else
+	    NC_ComputeElementData(jel, 1, inodj, iveloj,
+				  ifadmij, jdofaddre, centerj, norvecj, zpotej,
+				  zveloj, crdelj);
                 
-                // compute the number of gaussean points and their local coordinates and  weights
-                if(!clusArray[i].IfMonoEl && listNumberNodesPerElement[jel] != inod0)
-                {
-                    inod0 = listNumberNodesPerElement[jel];
-                    npFMGp = NC_ComputeGausseanPoints(csipFMgau, etapFMgau, weipFMgau, inod0, GaupFMBOrde);
-                }
+	  // reflection of the element
+	  if(nrf_cl) NC_ReflectElementFMM(rfa_cl, mir_cl, rfdi_cl, inodj, 0,
+					  centerj, norvecj, zveloj, crdelj);
+	  if(nrf_cl && rfa_cl == -1) zpotej[0].nega();
                 
-                // compute the element data 
-                NC_ComputeElementData(jel, 1, inodj, iveloj,
-                                      ifadmij, jdofaddre, centerj, norvecj, zpotej,
-                                      zveloj, crdelj);
-                
-                // reflection of the element
-                if(nrf_cl) NC_ReflectElementFMM(rfa_cl, mir_cl, rfdi_cl, inodj, 0,
-                                                centerj, norvecj, zveloj, crdelj);
-                if(nrf_cl && rfa_cl == -1) zpotej[0].nega();
-                
-                // compute the contribution of the element to the T-vectors
-                for(k=0; k<clulevarry[ilv].nPoinSpheLv; k++) zTele[k].set(0.0, 0.0);
-                NC_ContributionTvecFMM(NCout, jel, clulevarry[ilv].nPoinSpheLv, center_i, crdelj,
-                                       zpotej[0], zveloj, clulevarry[ilv].uvcsphe, zTele);
-                
-                for(k=0; k<clulevarry[ilv].nPoinSpheLv; k++) 
-                    clulevarry[ilv].zwkT[ibg + k] += zTele[k];
-            } // end of loop J
-            ibg += clulevarry[ilv].nPoinSpheLv;
-        } // end of loop I
-    } // end of loop ILV
+	  // compute the contribution of the element to the T-vectors
+	  for(k=0; k<clulevarry[ilv].nPoinSpheLv; k++) zTele[k].set(0.0, 0.0);
+	  NC_ContributionTvecFMM(NCout, jel, clulevarry[ilv].nPoinSpheLv, center_i, crdelj,
+				 zpotej[0], zveloj, clulevarry[ilv].uvcsphe, zTele);
+	  
+	  for(k=0; k<clulevarry[ilv].nPoinSpheLv; k++) 
+	    clulevarry[ilv].zwkT[ibg + k] += zTele[k];
+	} // end of loop J
+      ibg += clulevarry[ilv].nPoinSpheLv;
+    } // end of loop I
+  } // end of loop ILV
 }
 
 // compute the contribution of an element to the T-vectors
@@ -367,9 +473,9 @@ void NC_ContributionTvecFMM
 void NC_WriteResultsObjectMesh 
 (
 	ofstream& NCout,
-	Matrix<Complex>& cVpotele,
-	Matrix<Complex>& cVeloele,
-	Matrix<Complex>& cVeloelo,  
+	Matrix<Complex>& zVpotele,
+	Matrix<Complex>& zVeloele,
+	Matrix<Complex>& zVeloelo,  
 	Matrix<double>& rEninele
 )
 {
@@ -400,17 +506,17 @@ void NC_WriteResultsObjectMesh
         switch(ibvi_0)
         {
         case 0: // velocity boundary condition
-            cVpotele(iel, 0) = zrhs[idofaddre[0]];
-            for(i=0; i<inodi; i++) cVeloelo(iel, i) = cVeloele(iel, i) = zbvi_0[i];
+            zVpotele(iel, 0) = zrhs[idofaddre[0]];
+            for(i=0; i<inodi; i++) zVeloelo(iel, i) = zVeloele(iel, i) = zbvi_0[i];
             if(ifadmii) 
             {
-                z1 = (cVpotele(iel, 0)*admi[0])*Tao_;
-                for(i=0; i<inodi; i++) cVeloele(iel, i) -= z1;
+                z1 = (zVpotele(iel, 0)*admi[0])*Tao_;
+                for(i=0; i<inodi; i++) zVeloele(iel, i) -= z1;
             }
             break;
         case 1: // pressure boundary condition
-            cVpotele(iel, 0) = zbvi_0[0];
-            for(i=0; i<inodi; i++) cVeloelo(iel, i) = cVeloele(iel, i) =
+            zVpotele(iel, 0) = zbvi_0[0];
+            for(i=0; i<inodi; i++) zVeloelo(iel, i) = zVeloele(iel, i) =
                 zrhs[idofaddre[0]];
             break;
         case 2: // transfer admittance boundary condition
@@ -418,8 +524,8 @@ void NC_WriteResultsObjectMesh
         }
 
         for(i=0; i<inodi; i++) rEninele(iel, i) = 
-            (cVpotele(iel, 0).re()*cVeloele(iel, i).im() - 
-             cVpotele(iel, 0).im()*cVeloele(iel, i).re())*rpfact_*Tao_;
+            (zVpotele(iel, 0).re()*zVeloele(iel, i).im() - 
+             zVpotele(iel, 0).im()*zVeloele(iel, i).re())*rpfact_*Tao_;
 	} // end if loop IEL
 
 	// open the files
@@ -509,8 +615,8 @@ void NC_WriteResultsObjectMesh
 				k = elementsConnectivity[iel][j];
 				mdgrp[k]++;
 				if(nundgrp[k] == -1) nundgrp[k] = extNumbersOfNodes[k];
-				zpregrp(k, 0) += cVpotele(iel, 0);
-				zvelgrp[k] += cVeloelo(iel, j);
+				zpregrp(k, 0) += zVpotele(iel, 0);
+				zvelgrp[k] += zVeloelo(iel, j);
 				enegrp(k, 0) += rEninele(iel, j);
 			}
 		} // end of loop IEL
@@ -538,10 +644,10 @@ void NC_WriteResultsObjectMesh
 	       element nodes use the values calculated above
 	    */
             Complex tmp;
-            tmp=cVpotele(iel, 0);
+            tmp=zVpotele(iel, 0);
             tmp.mul_i(rpfact_);
             fprintf(Lu_pBoundary, "%5d % E % E\n", extNumbersOfElements[iel], tmp.re(), tmp.im());
-            tmp=cVeloele(iel, 0);
+            tmp=zVeloele(iel, 0);
             fprintf(Lu_vBoundary, "%5d % E % E\n", extNumbersOfElements[iel], tmp.re(), tmp.im());
         }
 	/* if you want dB values write Vmagdbph to a file */
@@ -580,10 +686,11 @@ void NC_WriteResultsObjectMesh
 // compute and write the sound pressure, velocity and energy intensities at nodes of the evaluation mesh (i. e. the internal points)
 void NC_WriteResultsEvaluationGrid
 (
-	ofstream& NCout,
-	Matrix<Complex>& cVpotele,  // velocity potential at collocnodes
-	Matrix<Complex>& cVeloele   // particle velocity at collocnodes
-)
+ ofstream& NCout,
+ Matrix<Complex>& zVpotele,  // velocity potential at collocnodes
+ Matrix<Complex>& zVeloele,   // particle velocity at collocnodes
+ bool evalonly
+ )
 {
 
   /* 11.12.2020
@@ -606,167 +713,168 @@ void NC_WriteResultsEvaluationGrid
     fprintf(lu_vEvalGrid, "%s\n", versionNumber_.c_str());
 
 	// local variables and arrays
-	int inp, i, j, ndip, idip;
-	double enresu, re1;
-	Complex zprip, z1;
-	Vector<double> crdip(NDIM), veip(NDIM);
-	Vector<Complex> zprint(numNodesOfEvaluationMesh_);
-	Vector<int> nuinnode(numNodesOfEvaluationMesh_);
-	Matrix<Complex> zveint(numNodesOfEvaluationMesh_, NDIM + 1);
-	Matrix<double> denint(numNodes_, NDIM);
-
-
-	// compute the vector NUINNODE
-	j = 0;
-	for(i=0; i<numNodes_; i++) if(isNodeMeshOrEvalNode[i] == -1) nuinnode[j++] = i;
-
-	// initialize the result arrays
-	for(i=0; i<numNodesOfEvaluationMesh_; i++)
-	{
-		zprint[i].set(0.0, 0.0);
-		for(j=0; j<NDIM; j++) zveint(i, j).set(0.0, 0.0);
-	}
-
-	// computing potentials and velocities at internal points
-
+    int inp, i, j, ndip, idip;
+    double enresu, re1;
+    Complex zprip, z1;
+    Vector<double> crdip(NDIM), veip(NDIM);
+    Vector<Complex> zprint(numNodesOfEvaluationMesh_);
+    Vector<int> nuinnode(numNodesOfEvaluationMesh_);
+    Matrix<Complex> zveint(numNodesOfEvaluationMesh_, NDIM + 1);
+    Matrix<double> denint(numNodes_, NDIM);
+    
+    
+    // compute the vector NUINNODE
+    j = 0;
+    for(i=0; i<numNodes_; i++) if(isNodeMeshOrEvalNode[i] == -1) nuinnode[j++] = i;
+    
+    // initialize the result arrays
+    for(i=0; i<numNodesOfEvaluationMesh_; i++)
+      {
+	zprint[i].set(0.0, 0.0);
+	for(j=0; j<NDIM; j++) zveint(i, j).set(0.0, 0.0);
+      }
+    
+    // computing potentials and velocities at internal points
+    
+    
+    if(numInternalPointsClusters_ > 0) // SLFMBEM or MLFMBEM
+      {
+	// contributions of all elements to the results at the internal point
+	NC_ContributionFMM(NCout, zVpotele, zVeloele, nuinnode, zprint,
+			   zveint, evalonly);
 	
-	if(numInternalPointsClusters_ > 0) // SLFMBEM or MLFMBEM
-	{
-		// contributions of all elements to the results at the internal point
-		NC_ContributionFMM(NCout, cVpotele, cVeloele, nuinnode, zprint,
-			zveint);
-
-		// contribution of the incident waves
-		if(numIncidentPlaneWaves_ || numPointSources_) for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
-		{
-			// nodal number and coordinates of the current point
-			ndip = nuinnode[inp];
-			for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i];
-
-			z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
-			zprint[inp] += z1;
-			for(j=0; j<NDIM; j++) zveint(inp, j) += Zvelopoi_3d[j];
-		}
-	}
-	else // TBEM
-	{
-		for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
-		{
-			// nodal number and coordinates of the current point
-			ndip = nuinnode[inp];
-			for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i];
-
-			// contributions of all elements to the results at the internal point
-			NC_ContributionTBEM(NCout, cVpotele, cVeloele, inp, ndip,
+	// contribution of the incident waves
+	if(numIncidentPlaneWaves_ || numPointSources_)
+	  for(inp=0; inp<numNodesOfEvaluationMesh_; inp++) {
+	    // nodal number and coordinates of the current point
+	    ndip = nuinnode[inp];
+	    for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i];
+	    
+	    z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
+	    zprint[inp] += z1;
+	    for(j=0; j<NDIM; j++) zveint(inp, j) += Zvelopoi_3d[j];
+	  }
+      }
+    else // TBEM
+      {
+	for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
+	  {
+	    // nodal number and coordinates of the current point
+	    ndip = nuinnode[inp];
+	    for(i=0; i<NDIM; i++) crdip[i] = nodesCoordinates[ndip][i];
+	    
+	    // contributions of all elements to the results at the internal point
+	    NC_ContributionTBEM(NCout, zVpotele, zVeloele, inp, ndip,
 				crdip, zprint, zveint);
-
-			// contribution of the incident waves
-			if(numIncidentPlaneWaves_ || numPointSources_) 
-			{
-				z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
-				zprint[inp] += z1;
-				for(j=0; j<NDIM; j++) zveint(inp, j) += Zvelopoi_3d[j];
-			}
-		} // end of loop INP
-	} // end of ELSE
-
+	    
+	    // contribution of the incident waves
+	    if(numIncidentPlaneWaves_ || numPointSources_) 
+	      {
+		z1 = NC_ContributionIncidentWaves(NCout, crdip, Zvelopoi_3d, 1);
+		zprint[inp] += z1;
+		for(j=0; j<NDIM; j++) zveint(inp, j) += Zvelopoi_3d[j];
+	      }
+	  } // end of loop INP
+      } // end of ELSE
+    
 	/* 
 	   zprint contains the pressure at the evalnode, zveint the components of the particle
            velocity
 	*/
-	
+    
 	// group number of the evaluation mesh
-	int nugrinme = -1;
-	for(i=0; i<numElements_; i++) if(listElementProperty[i] == 2)
+    int nugrinme = -1;
+    for(i=0; i<numElements_; i++)
+      if(listElementProperty[i] == 2)
 	{
-		nugrinme = listElementsElementGroup[i];
-		break;
+	  nugrinme = listElementsElementGroup[i];
+	  break;
 	}
-
-	int ngrp = 0;
+    
+    int ngrp = 0;
     if(numNodesOfEvaluationMesh_ > 0) ngrp = 1;
     fprintf(lu_vEvalGrid, "%5d\n", ngrp);
-
-	if(numNodesOfEvaluationMesh_ > 0)
-	{
+    
+    if(numNodesOfEvaluationMesh_ > 0)
+      {
         fprintf(lu_vEvalGrid, "%5d %5d\n", nugrinme, numNodesOfEvaluationMesh_);
-	}
-
-	// loop over nodes of the evaluation mesh
-	for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
+      }
+    
+    // loop over nodes of the evaluation mesh
+    for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
+      {
+	// external nodal number of the current node
+	ndip = extNumbersOfNodes[nuinnode[inp]];
+	
+	// components of velocity
+	for(j=0; j<NDIM; j++)
 	  {
-	    // external nodal number of the current node
-	    ndip = extNumbersOfNodes[nuinnode[inp]];
-	    
-	    // components of velocity
-	    for(j=0; j<NDIM; j++)
-	      {
-		NC_Magnitude2dBdeg(
-				   Vmagdbph_v_3d, zveint(inp, j), 1
-				   );
-		veip[j] = Vmagdbph_v_3d[1];
-	      }
-	    
-		// norm of the velocity
-	    /*  changed by kreiza
+	    NC_Magnitude2dBdeg(
+			       Vmagdbph_v_3d, zveint(inp, j), 1
+			       );
+	    veip[j] = Vmagdbph_v_3d[1];
+	  }
+	
+	// norm of the velocity
+	/*  changed by kreiza
 	    z1.set(0.0, 0.0);
 	    for(j=0; j<NDIM; j++) z1 += zveint(inp, j)*zveint(inp, j);
 	    z1 = BLzsqrt(z1);
-	    */
-	    /* in dB */
-	    /*  commented by kreiza dec 2020
-	      NC_Magnitude2dBdeg(Vmagdbph_v_3d, z1, 1); 
+	*/
+	/* in dB */
+	/*  commented by kreiza dec 2020
+	    NC_Magnitude2dBdeg(Vmagdbph_v_3d, z1, 1); 
 	    
-	      fprintf(lu_vEvalGrid, "%5d % E % E\n", ndip, z1.re(), z1.im());
-	    */
-	    fprintf(lu_vEvalGrid,"%5d %E %E %E %E %E %E\n", ndip,
-		    zveint(inp,0).re(), zveint(inp,0).im(),
-		    zveint(inp,1).re(), zveint(inp,1).im(),
-		    zveint(inp,2).re(), zveint(inp,2).im());
-	    
-	} // end of loop INP
-    
-	fprintf(lu_pEvalGrid, "%5d\n", ngrp);
-	if(numNodesOfEvaluationMesh_ > 0)
-	  {
-	    fprintf(lu_pEvalGrid, "%5d %5d\n", nugrinme, numNodesOfEvaluationMesh_);
-	  }
+	    fprintf(lu_vEvalGrid, "%5d % E % E\n", ndip, z1.re(), z1.im());
+	*/
+	fprintf(lu_vEvalGrid,"%5d %E %E %E %E %E %E\n", ndip,
+		zveint(inp,0).re(), zveint(inp,0).im(),
+		zveint(inp,1).re(), zveint(inp,1).im(),
+		zveint(inp,2).re(), zveint(inp,2).im());
 	
-	// loop over nodes of the evaluation mesh
-	for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
-	{
-		// internal and external nodal number of the current node
-		idip = nuinnode[inp];
-		ndip = extNumbersOfNodes[idip];
-
-		// sound pressure at the current node
-		zprip = zprint[inp];
-		zprip.mul_i(rpfact_);
+      } // end of loop INP
+    
+    fprintf(lu_pEvalGrid, "%5d\n", ngrp);
+    if(numNodesOfEvaluationMesh_ > 0)
+      {
+	fprintf(lu_pEvalGrid, "%5d %5d\n", nugrinme, numNodesOfEvaluationMesh_);
+      }
+    
+    // loop over nodes of the evaluation mesh
+    for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
+      {
+	// internal and external nodal number of the current node
+	idip = nuinnode[inp];
+	ndip = extNumbersOfNodes[idip];
+	
+	// sound pressure at the current node
+	zprip = zprint[inp];
+	zprip.mul_i(rpfact_);
         
-		NC_Magnitude2dBdeg(Vmagdbph_pp_3d, zprip, 0);
-		
-		fprintf(lu_pEvalGrid, "%5d % E % E\n", ndip, zprip.re(), zprip.im());
-	} // end of loop INP
-
+	NC_Magnitude2dBdeg(Vmagdbph_pp_3d, zprip, 0);
+	
+	fprintf(lu_pEvalGrid, "%5d % E % E\n", ndip, zprip.re(), zprip.im());
+      } // end of loop INP
+    
 	// loop over nodes of the evaluation mesh
-	for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
-	{
-		// external nodal number of the current node
-		ndip = extNumbersOfNodes[nuinnode[inp]];
-
-		// compute the energy intensity at the current node
-		z1 = zprint[inp];
-		z1.mul_i(rpfact_);
-		enresu = 0.0;
-		for(j=0; j<NDIM; j++)
-		{
-			re1 = z1.re()*zveint(inp, j).re() + z1.im()*zveint(inp, j).im();
-			denint(nuinnode[inp], j) = re1;
-			enresu += re1*re1;
-		}
-		enresu = sqrt(enresu);
-	} // end of loop INP
-
+    for(inp=0; inp<numNodesOfEvaluationMesh_; inp++)
+      {
+	// external nodal number of the current node
+	ndip = extNumbersOfNodes[nuinnode[inp]];
+	
+	// compute the energy intensity at the current node
+	z1 = zprint[inp];
+	z1.mul_i(rpfact_);
+	enresu = 0.0;
+	for(j=0; j<NDIM; j++)
+	  {
+	    re1 = z1.re()*zveint(inp, j).re() + z1.im()*zveint(inp, j).im();
+	    denint(nuinnode[inp], j) = re1;
+	    enresu += re1*re1;
+	  }
+	enresu = sqrt(enresu);
+      } // end of loop INP
+    
 	// close the files
     fclose(lu_pEvalGrid);
     fclose(lu_vEvalGrid);
@@ -869,8 +977,8 @@ Complex NC_ContributionIncidentWaves
 void NC_ContributionTBEM
 (
 	ofstream& NCout,
-	Matrix<Complex>& cVpotele,
-	Matrix<Complex>& cVeloele,
+	Matrix<Complex>& zVpotele,
+	Matrix<Complex>& zVeloele,
 	int& inp,                       // I: local number of the internal point
 	int& ndip,                      // I: global number of the internal point
 	Vector<double>& crdip,          // I: coordinate of the internal point
@@ -910,8 +1018,8 @@ void NC_ContributionTBEM
 			zvi_d, crdeli);
 		areli = areael[ie];
 
-        zpoto = cVpotele(ie, 0);
-        for(i=0; i<inode; i++) zvi_d[i] = cVeloele(ie, i);
+        zpoto = zVpotele(ie, 0);
+        for(i=0; i<inode; i++) zvi_d[i] = zVeloele(ie, i);
 
 		ivi_d = 0;
 		for(i=0; i<inode; i++) 
@@ -977,44 +1085,46 @@ void NC_ContributionTBEM
 // compute contributions of the boundary elements to the sound pressures and velocities at the internal points by using the FMBEM
 void NC_ContributionFMM
 (
-	ofstream& NCout,
-	Matrix<Complex>& cVpotele,
-	Matrix<Complex>& cVeloele,
-	Vector<int>& nuinnode,
-	Vector<Complex>& zprint,		// O: pressure at the internal points
-	Matrix<Complex>& zveint			// O: velocity at the internal points
-)
+ ofstream& NCout,
+ Matrix<Complex>& zVpotele,
+ Matrix<Complex>& zVeloele,
+ Vector<int>& nuinnode,
+ Vector<Complex>& zprint,  // O: pressure at the internal points
+ Matrix<Complex>& zveint,  // O: velocity at the internal points
+ bool evalonly
+ )
 {
-	// local variables and arrays
-	int ie, i, j, inode, nsbe, jsb, ipc, ic, isum, k, ig, ipp, inp, ndip;
-	double areli, di0, dik, scprd, wavruim = waveNumbers_*harmonicTimeFactor_;
-	Complex zprip, zmun, zi, zk, *ztvcwork = nullptr;
+  // local variables and arrays
+  int ie, i, j, inode, nsbe, jsb, ipc, ic, isum, k, ig, ipp, inp, ndip;
+  double areli, di0, dik, scprd, wavruim = waveNumbers_*harmonicTimeFactor_;
+  Complex zprip, zmun, zi, zk, *ztvcwork = nullptr;
 
-	switch(methodFMM_)
-	{
-	case 1: // SLFMBEM
-		ztvcwork = zT_vc;
-		break;
-	case 3: // DMLFMBEM
-
-		ztvcwork = clulevarry[0].zwkT;
-
-		// for MLFMBEM assign the coarsest level to be the level used in this function
-		ClustArray = clulevarry[0].ClastArLv;
-
-		numOriginalClusters_ = clulevarry[0].nClustOLv;
-		numOriginalReflectedClusters_ = clulevarry[0].nClustSLv;
-
-		numExpansionTerms_ = clulevarry[0].nExpaTermLv;
-		numIntegrationPointsUnitSphere_ = clulevarry[0].nPoinSpheLv;
-		maxClusterRadiusBE_ = clulevarry[0].RadiMaxLv;
-		avgClusterRadiusBE_ = clulevarry[0].RadiAveLv;
-		minClusterRadiusBE_ = clulevarry[0].RadiMinLv;
-
-		weisphe = clulevarry[0].weisphe;
-		uvcsphe = clulevarry[0].uvcsphe;
-		break;
-	}
+  switch(methodFMM_)
+    {
+    case 1: // SLFMBEM
+      ztvcwork = zT_vc;
+      break;
+    case 2:
+    case 3: // DMLFMBEM
+      
+      ztvcwork = clulevarry[0].zwkT;
+      
+      // for MLFMBEM assign the coarsest level to be the level used in this function
+      ClustArray = clulevarry[0].ClustArLv;
+      
+      numOriginalClusters_ = clulevarry[0].nClustOLv;
+      numOriginalReflectedClusters_ = clulevarry[0].nClustSLv;
+      
+      numExpansionTerms_ = clulevarry[0].nExpaTermLv;
+      numIntegrationPointsUnitSphere_ = clulevarry[0].nPoinSpheLv;
+      maxClusterRadiusBE_ = clulevarry[0].RadiMaxLv;
+      avgClusterRadiusBE_ = clulevarry[0].RadiAveLv;
+      minClusterRadiusBE_ = clulevarry[0].RadiMinLv;
+      
+      weisphe = clulevarry[0].weisphe;
+      uvcsphe = clulevarry[0].uvcsphe;
+      break;
+    }
 
 	Vector<double> csip(NNODPE), etap(NNODPE), dwk0(NDIM), Pm(numExpansionTerms_),
 		crdip(NDIM);
@@ -1150,8 +1260,8 @@ void NC_ContributionFMM
 						zvi_d, crdeli);
 			  areli = areael[ie];
 			  
-			  zpotd = cVpotele(ie, 0);
-			  for(k=0; k<inode; k++) zvi_d[k] = cVeloele(ie, k);
+			  zpotd = zVpotele(ie, 0);
+			  for(k=0; k<inode; k++) zvi_d[k] = zVeloele(ie, k);
 			  
 			  ivi_d = 0;
 			  for(k=0; k<inode; k++) 

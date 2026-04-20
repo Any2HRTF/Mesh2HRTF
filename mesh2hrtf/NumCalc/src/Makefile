@@ -1,11 +1,12 @@
 CC=g++
-CFLAGS=-c -std=c++11
+CFLAGS=-c #-std=c++11
 SOURCES= NC_3dFunctions.cpp  NC_CommonFunctions.cpp  NC_Input.cpp \
          NC_PostProcessing.cpp NC_Addresses.cpp    NC_EquationSystem.cpp \
-         NC_Main.cpp
+         NC_Main.cpp NC_MLFMM.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=../bin/NumCalc
 OPTIM=-O2
+LDFLAGS=-llapacke -lgsl -lblas
 #DEBUG=-g
 
 all: $(SOURCES) $(EXECUTABLE)

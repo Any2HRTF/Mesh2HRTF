@@ -1065,608 +1065,670 @@ void BLGauCooWe
 // CGS solver for the BEM equation system (Andreas Meister, p 168)
 void NC_IterativeSolverCGS
 (
-	ofstream& NCout
-)
+ ofstream& NCout
+ )
 {
-	Vector<Complex> zX_j(numRowsOfCoefficientMatrix_), zR_0(numRowsOfCoefficientMatrix_), zR_j(numRowsOfCoefficientMatrix_), zP_j(numRowsOfCoefficientMatrix_), zV_j(numRowsOfCoefficientMatrix_),
-		zQ_j(numRowsOfCoefficientMatrix_), zU_j(numRowsOfCoefficientMatrix_), zUQ_j(numRowsOfCoefficientMatrix_), zAUQ_j(numRowsOfCoefficientMatrix_);
-	int i, j;
-	double err_ori = 0.0, err_rel = 1.0, dwk1;
-	Complex zalph, zbet, zrjr0, zrjr1;
-	bool ifmodyprecond = false;
-
-BeginCGS:
-	// compute the arrays used by the preconditioners
-	switch(methodPreconditioner_)
-	{
-	case 0: // ILU
-		NC_IncompleteLUDecomposition(NCout);
-		break;
-	case 1: // row scanning
-		NC_ComputeScalingVector(NCout);
-		break;
+  Vector<Complex> zX_j(numRowsOfCoefficientMatrix_),
+    zR_0(numRowsOfCoefficientMatrix_),
+    zR_j(numRowsOfCoefficientMatrix_),
+    zP_j(numRowsOfCoefficientMatrix_),
+    zV_j(numRowsOfCoefficientMatrix_),
+    zQ_j(numRowsOfCoefficientMatrix_),
+    zU_j(numRowsOfCoefficientMatrix_),
+    zUQ_j(numRowsOfCoefficientMatrix_),
+    zAUQ_j(numRowsOfCoefficientMatrix_);
+  int i, j;
+  double err_ori = 0.0, err_rel = 1.0, dwk1;
+  Complex zalph, zbet, zrjr0, zrjr1;
+  bool ifmodyprecond = false;
+  
+  
+  
+  if( methodFMM_ == 2 ) {
+    Get_Interpolation_Matrices( dYmat, nlevtop_);
+    allocate_zFG();
+  }
+  
+  // for debugging
+  /* for( j = 0; j < 128; j++ )
+     cout << dYmat[0][j] << "\n";
+     exit(0);
+  */
+  
+ BeginCGS:
+  // compute the arrays used by the preconditioners
+  switch(methodPreconditioner_)
+    {
+    case 0: // ILU
+      NC_IncompleteLUDecomposition(NCout);
+      break;
+    case 1: // row scanning
+      NC_ComputeScalingVector(NCout);
+      break;
+    }
+  
+  
+  // initialize the solution vector by using the random function
+  for(j=0; j<numRowsOfCoefficientMatrix_; j++)
+    {
+      zX_j[j].set(((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0,
+		  ((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0);
+      //      zX_j[j].set(0.0,0.0);
+    }
+  
+  NC_MatrixVectorMultiplication(zX_j, zV_j);
+  
+  //see if the ILU-preconditioning matrix is almost singular
+  if(!methodPreconditioner_) {
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++) {
+      if(zV_j[i].norm() > 1.0e8) {
+	if(methodFMM_) {
+	  ifmodyprecond = true;
+	  methodPreconditioner_ = 1;
+	  NC_Error_Warning_0(NCout,
+			     "ILU preconditioning failed, the row scanning method is used!");
+	  goto BeginCGS;
 	}
-
-
-	// initialize the solution vector by using the random function
-	for(j=0; j<numRowsOfCoefficientMatrix_; j++)
-	{
-	  //        zX_j[j].set(((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0,
-          //              ((double)(rand())/(double)(RAND_MAX) - 0.5)*2.0);
-	  zX_j[j].set(0.0,0.0);
-	}
-
-	NC_MatrixVectorMultiplication(zX_j, zV_j);
-
-	//see if the ILU-preconditioning matrix is almost singular
-	if(!methodPreconditioner_)
-	{
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			if(zV_j[i].norm() > 1.0e8)
-			{
-				if(methodFMM_)
-				{
-					ifmodyprecond = true;
-					methodPreconditioner_ = 1;
-					NC_Error_Warning_0(NCout,
-					"ILU preconditioning failed, the row scanning method is used!");
-					goto BeginCGS;
-				}
-				else
-				{
-					goto DirectCGS;
-				}
-			}
-		}
-	}
-
-	for(i=0; i<numRowsOfCoefficientMatrix_; i++) zU_j[i] = zR_j[i] = zP_j[i] = zR_0[i] = zrhs[i] - zV_j[i];
-
-	for(j=0; j<=niter_max_; j++)
-	{
-		NC_MatrixVectorMultiplication(zP_j, zV_j);
-
-		if(j==0) {zrjr0 = zR_j*zR_0;} else {zrjr0 = zrjr1;}
-		zalph = zrjr0/(zV_j*zR_0);
-
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) zQ_j[i] = zU_j[i] - zalph*zV_j[i];
-		zUQ_j = zU_j + zQ_j;
-
-		NC_MatrixVectorMultiplication(zUQ_j, zAUQ_j);
-
-		dwk1 = 0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-		  zX_j[i] += zalph*zUQ_j[i];
-		  zR_j[i] -= zalph*zAUQ_j[i];
-		  
-		  dwk1 += zR_j[i].qnorm();
-		}
-
-		if(j == 0)
-		{
-			err_ori = sqrt(dwk1);
-			cout << "\nCGS: err_ori = " << err_ori << endl;
-		}
-		else
-		{
-            err_rel = sqrt(dwk1)/err_ori;
-		}
-
-		if(j > 0 && j/10*10 == j) {
-		  cout << j << " " << err_rel << endl;
-		  cout << j << " Abs Error:" << sqrt(dwk1) << endl;
-		}
-
-		if(err_rel < ErroIterSols || j == niter_max_)
-		{
-			if(j/10*10 != j) cout << j << " " << err_rel << "\n" << endl;
-			for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] = zX_j[i];
-			if(j == niter_max_) {
-				NC_Error_Warning_0(NCout, "Warning: Maximum number of iterations is reached!");
-			}
-			break;
-		}
-
-		zrjr1 = zR_j*zR_0;
-		zbet = zrjr1/zrjr0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) zU_j[i] = zR_j[i] + zbet*zQ_j[i];
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) zP_j[i] = zU_j[i] + zbet*(zQ_j[i] + zbet*zP_j[i]);
+	else
+	  {
+	    goto DirectCGS;
+	  }
+      }
+    }
+  }
+  
+  for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+    zU_j[i] = zR_j[i] = zP_j[i] = zR_0[i] = zrhs[i] - zV_j[i];
+  
+  for(j=0; j<=niter_max_; j++) {
+    NC_MatrixVectorMultiplication(zP_j, zV_j);
+    
+    if(j==0) {zrjr0 = zR_j*zR_0;} else {zrjr0 = zrjr1;}
+    zalph = zrjr0/(zV_j*zR_0);
+	  
+	  for(i=0; i<numRowsOfCoefficientMatrix_; i++) zQ_j[i] = zU_j[i] - zalph*zV_j[i];
+	  zUQ_j = zU_j + zQ_j;
+	  
+	  NC_MatrixVectorMultiplication(zUQ_j, zAUQ_j);
+	  
+	  dwk1 = 0;
+	  for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+	    {
+	      zX_j[i] += zalph*zUQ_j[i];
+	      zR_j[i] -= zalph*zAUQ_j[i];
+	      
+	      dwk1 += zR_j[i].qnorm();
+	    }
+	  
+	  if(j == 0)
+	    {
+	      err_ori = sqrt(dwk1);
+	      cout << "\nCGS: err_ori = " << err_ori << endl;
+	    }
+	  else
+	    {
+	      err_rel = sqrt(dwk1)/err_ori;
+	    }
+	  
+	  if(j > 0 && j/10*10 == j) {
+	    cout << j << " " << err_rel << endl;
+	    cout << j << " Abs Error:" << sqrt(dwk1) << endl;
+	  }
+	  
+	  if(err_rel < ErroIterSols || j == niter_max_)
+	    {
+	      if(j/10*10 != j) cout << j << " " << err_rel << "\n" << endl;
+	      for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] = zX_j[i];
+	      if(j == niter_max_) {
+		NC_Error_Warning_0(NCout, "Warning: Maximum number of iterations is reached!");
+	      }
+	      break;
+	    }
+	  
+	  zrjr1 = zR_j*zR_0;
+	  zbet = zrjr1/zrjr0;
+	  for(i=0; i<numRowsOfCoefficientMatrix_; i++) zU_j[i] = zR_j[i] + zbet*zQ_j[i];
+	  for(i=0; i<numRowsOfCoefficientMatrix_; i++) zP_j[i] = zU_j[i] + zbet*(zQ_j[i] + zbet*zP_j[i]);
 	} // end of loop j
-
+	
 	NCout << "\nCGS solver: number of iterations = "
-		<< j << ", relative error = " << err_rel << endl;
-
+	      << j << ", relative error = " << err_rel << endl;
+	
 	if(j >= niter_max_ && methodFMM_ == 0)
-	{
-DirectCGS:
-		NC_Error_Warning_0(NCout, "Iteration method CGS failed, direct method is used!");
-
-		// Gauss elimination method
-		Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
-		Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
-
-		return;
-	}
-
+	  {
+	  DirectCGS:
+	    NC_Error_Warning_0(NCout, "Iteration method CGS failed, direct method is used!");
+	    
+	    // Gauss elimination method
+	    Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
+	    Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
+	    
+	    return;
+	  }
+	
 	// if a preconditioner is used, modify the result
 	switch(methodPreconditioner_)
-	{
-	case 0: // ILU
-		NC_IncompleteLUForBack();
-		NC_DeleteIncompleteLUMatrices();
-		break;
-	case 1: // row scanning
-        for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] *= dscaling[i];
-		delete [] dscaling;
-		break;
-	}
-
+	  {
+	  case 0: // ILU
+	    NC_IncompleteLUForBack();
+	    NC_DeleteIncompleteLUMatrices();
+	    break;
+	  case 1: // row scanning
+	    for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] *= dscaling[i];
+	    delete [] dscaling;
+	    break;
+	  }
+	
 	if(ifmodyprecond) methodPreconditioner_ = 0;
-
+	
 }
 
 // compute the product of the coefficient matrix and a vector
 void NC_MatrixVectorMultiplication
 (
-	Vector<Complex>& zmultvect,		//I: multiplier vector
-	Vector<Complex>& zresuvect      //O: result vector
-)
+ Vector<Complex>& zmultvect,		//I: multiplier vector
+ Vector<Complex>& zresuvect      //O: result vector
+ )
 {
-	int i, j, k, ilv;
-	Vector<Complex> ztmp(numRowsOfCoefficientMatrix_);
-
-	// prconditioning
-	switch(methodPreconditioner_)
+  int i, j, k, ilv;
+  Vector<Complex> ztmp(numRowsOfCoefficientMatrix_);
+  
+  // prconditioning
+  switch(methodPreconditioner_)
+    {
+    case 0: // ILU
+      NC_IncompleteLUForBack(NCout, zmultvect, ztmp);
+      break;
+    case 1: // scaling
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++) ztmp[i] = zmultvect[i]*dscaling[i];
+      break;
+    case 2: // no preconditioning
+      ztmp = zmultvect;
+      break;
+    }
+  
+  // compute the product
+  switch(methodFMM_) {
+  case 0: // TBEM
+    k = 0;
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++) {
+      zresuvect[i].set(0.0, 0.0);
+      for(j=0; j<numRowsOfCoefficientMatrix_; j++) zresuvect[i] += zcoefl[k + j]*ztmp[j];
+      k += numRowsOfCoefficientMatrix_;
+    }
+    break;
+    
+  case 1: // SLFMBEM
+    {
+      Vector<Complex> zvc_t(numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_), zvc_d(dmtxlev[0].nRowsD);
+      
+      for(i=0; i<numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_; i++)
 	{
-	case 0: // ILU
-		NC_IncompleteLUForBack(NCout, zmultvect, ztmp);
-		break;
-	case 1: // scaling
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) ztmp[i] = zmultvect[i]*dscaling[i];
-		break;
-	case 2: // no preconditioning
-		ztmp = zmultvect;
-		break;
+	  zvc_t[i].set(0.0, 0.0);
+	  for(j=irowtmtx[i]; j<irowtmtx[i + 1]; j++)
+	    zvc_t[i] += ztmtx[j]*ztmp[jcoltmtx[j]];
 	}
-
-	// compute the product
-	switch(methodFMM_)
+      
+      for(i=0; i<dmtxlev[0].nRowsD; i++)
 	{
-	case 0: // TBEM
-		k = 0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			zresuvect[i].set(0.0, 0.0);
-			for(j=0; j<numRowsOfCoefficientMatrix_; j++) zresuvect[i] += zcoefl[k + j]*ztmp[j];
-			k += numRowsOfCoefficientMatrix_;
-		}
-		break;
-
-	case 1: // SLFMBEM
-		{
-			Vector<Complex> zvc_t(numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_), zvc_d(dmtxlev[0].nRowsD);
-
-			for(i=0; i<numIntegrationPointsUnitSphere_*numOriginalReflectedClusters_; i++)
-			{
-				zvc_t[i].set(0.0, 0.0);
-				for(j=irowtmtx[i]; j<irowtmtx[i + 1]; j++)
-					zvc_t[i] += ztmtx[j]*ztmp[jcoltmtx[j]];
-			}
-
-			for(i=0; i<dmtxlev[0].nRowsD; i++)
-			{
-				zvc_d[i].set(0.0, 0.0);
-				for(j=dmtxlev[0].irowDmxLv[i]; j<dmtxlev[0].irowDmxLv[i + 1]; j++)
-					zvc_d[i] += dmtxlev[0].zDmxLv[j]*zvc_t[dmtxlev[0].jcolDmxLv[j]];
-			}
-
-			for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-			{
-				zresuvect[i].set(0.0, 0.0);
-
-				// contribution of the near field matrix
-				for(j=irownea[i]; j<irownea[i + 1]; j++)
-					zresuvect[i] += zcoefl[j]*ztmp[jcolnea[j]];
-
-				// contribution of the far field matrix
-				for(j=irowsmtx[i]; j<irowsmtx[i + 1]; j++)
-					zresuvect[i] += zsmtx[j]*zvc_d[jcolsmtx[j]];
-			}
-		}
-		break;
-	case 3: // DMLFMBEM
-		// contribution of the near fields
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			zresuvect[i].set(0.0, 0.0);
-			for(j=irownea[i]; j<irownea[i + 1]; j++)
-				zresuvect[i] += zcoefl[j]*ztmp[jcolnea[j]];
-		}
-
-		// contributions of the far fields
-		for(ilv=0; ilv<numClusterLevels_; ilv++)
-		{
-			// compute the T-vector t = T*vect
-			for(i=0; i<clulevarry[ilv].nPoinSpheLv*clulevarry[ilv].nClustSLv; i++)
-			{
-				clulevarry[ilv].zwkT[i].set(0.0, 0.0);
-				for(j=tmtxlev[ilv].irowTmxLv[i]; j<tmtxlev[ilv].irowTmxLv[i + 1]; j++)
-					clulevarry[ilv].zwkT[i] +=
-					tmtxlev[ilv].zTmxLv[j]*ztmp[tmtxlev[ilv].jcolTmxLv[j]];
-			}
-
-			// compute the S-vectors s = D*t
-			for(i=0; i<dmtxlev[ilv].nRowsD; i++)
-			{
-				clulevarry[ilv].zwkS[i].set(0.0, 0.0);
-				for(j=dmtxlev[ilv].irowDmxLv[i]; j<dmtxlev[ilv].irowDmxLv[i+1]; j++)
-					clulevarry[ilv].zwkS[i] +=
-					dmtxlev[ilv].zDmxLv[j]*clulevarry[ilv].zwkT[dmtxlev[ilv].jcolDmxLv[j]];
-			}
-
-			// contributions to the result vector: resu += S*s
-			for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-			{
-				for(j=smtxlev[ilv].irowSmxLv[i]; j<smtxlev[ilv].irowSmxLv[i + 1]; j++)
-					zresuvect[i] +=
-					smtxlev[ilv].zSmxLv[j]*clulevarry[ilv].zwkS[smtxlev[ilv].jcolSmxLv[j]];
-			}
-		} // end of loop ILV
-		break;
+	  zvc_d[i].set(0.0, 0.0);
+	  for(j=dmtxlev[0].irowDmxLv[i]; j<dmtxlev[0].irowDmxLv[i + 1]; j++)
+	    zvc_d[i] += dmtxlev[0].zDmxLv[j]*zvc_t[dmtxlev[0].jcolDmxLv[j]];
 	}
+      
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+	{
+	  zresuvect[i].set(0.0, 0.0);
+	  
+	  // contribution of the near field matrix
+	  for(j=irownea[i]; j<irownea[i + 1]; j++)
+	    zresuvect[i] += zcoefl[j]*ztmp[jcolnea[j]];
+	  
+	  // contribution of the far field matrix
+	  for(j=irowsmtx[i]; j<irowsmtx[i + 1]; j++)
+	    zresuvect[i] += zsmtx[j]*zvc_d[jcolsmtx[j]];
+	}
+    }
+    break;
+  case 2: // interpolated version
+    int C_j, Gamma_j;
+    int C_i, Gamma_i;
+    int l,s,nsphere;
+    // near field contrubutions
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++) {
+      zresuvect[i].set(0.0, 0.0);
+      for( j = zNear.startlist[i]; j < zNear.startlist[i + 1]; j++)
+	zresuvect[i] += zNear.zdata[j]*ztmp[ zNear.indxlist[j] ];
+    }
+    // leaf level
+    nsphere = clulevarry[numClusterLevels_ - 1].nPoinSpheLv;
+    // use the LU scaled right hand side for the expansion
+    apply_localExpansion(zF, ztmp);
+    cluster2clusterlv(zF,  zG, nlevtop_);
+    
+    // up and downpasses
+    for( l = nlevtop_; l > 0; l-- ) {
+      // upwardpass for F + FMM interaction
+      // Ymat is defined from 0 to maxlevel-1
+      if( l == 1 )
+	if( clulevarry[0].nClustOLv == 1 ) //|| clulevarry[0].isNearClust)
+	  continue;
+      UpPass( zF,  dYmat[l-1], l);
+      cluster2clusterlv(zF,  zG, l-1);
+    }
+    // downpass
+    for(l = 0; l < numClusterLevels_ - 1; l++) {  
+      // child , parent, Y, level
+      if( l == 0 )
+	if( clulevarry[0].nClustOLv == 1 ) //|| clulevarry[0].isNearClust)
+	  continue;
+      DownPass( zG[l], zG[l+1], dYmat[l], l);
+    }
+    // local expansion
+    Expand2local(zG[nlevtop_],  &zresuvect[0]);
+    break;
+  case 3: // DMLFMBEM
+    // contribution of the near fields
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	zresuvect[i].set(0.0, 0.0);
+	for(j=irownea[i]; j<irownea[i + 1]; j++)
+	  zresuvect[i] += zcoefl[j]*ztmp[jcolnea[j]];
+      }
+    
+    // contributions of the far fields
+    for(ilv=0; ilv<numClusterLevels_; ilv++)
+      {
+	// compute the T-vector t = T*vect
+	for(i=0; i<clulevarry[ilv].nPoinSpheLv*clulevarry[ilv].nClustSLv; i++)
+	  {
+	    clulevarry[ilv].zwkT[i].set(0.0, 0.0);
+	    for(j=tmtxlev[ilv].irowTmxLv[i]; j<tmtxlev[ilv].irowTmxLv[i + 1]; j++)
+	      clulevarry[ilv].zwkT[i] +=
+		tmtxlev[ilv].zTmxLv[j]*ztmp[tmtxlev[ilv].jcolTmxLv[j]];
+	  }
+	
+	// compute the S-vectors s = D*t
+	for(i=0; i<dmtxlev[ilv].nRowsD; i++)
+	  {
+	    clulevarry[ilv].zwkS[i].set(0.0, 0.0);
+	    for(j=dmtxlev[ilv].irowDmxLv[i]; j<dmtxlev[ilv].irowDmxLv[i+1]; j++)
+	      clulevarry[ilv].zwkS[i] +=
+		dmtxlev[ilv].zDmxLv[j]*clulevarry[ilv].zwkT[dmtxlev[ilv].jcolDmxLv[j]];
+	  }
+	
+	// contributions to the result vector: resu += S*s
+	for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+	  {
+	    for(j=smtxlev[ilv].irowSmxLv[i]; j<smtxlev[ilv].irowSmxLv[i + 1]; j++)
+	      zresuvect[i] +=
+		smtxlev[ilv].zSmxLv[j]*clulevarry[ilv].zwkS[smtxlev[ilv].jcolSmxLv[j]];
+	  }
+      } // end of loop ILV
+    break;
+  }
 }
 
 // compute the scaling vector
 void NC_ComputeScalingVector
 (
-	ofstream& NCout
+ ofstream& NCout
 )
 {
-	int i, j, k;
-	double dwk;
-
-	dscaling = new double[numRowsOfCoefficientMatrix_];
-
-	switch(methodFMM_)
+  int i, j, k;
+  double dwk;
+  
+  dscaling = new double[numRowsOfCoefficientMatrix_];
+  
+  switch(methodFMM_)
+    {
+    case 0: // TBEM
+      k = 0;
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++)
 	{
-	case 0: // TBEM
-		k = 0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			dwk = 0.0;
-			for(j=0; j<numRowsOfCoefficientMatrix_; j++) dwk += zcoefl[k + j].qnorm();
-			dscaling[i] = sqrt((double)(numRowsOfCoefficientMatrix_)/dwk);
-			k += numRowsOfCoefficientMatrix_;
-		}
-		break;
-	case 1: // SLFMBEM
-	case 3: // DMLFMBEM
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			dwk = 0.0;
-			for(j=irownea[i]; j<irownea[i+1]; j++) dwk += zcoefl[j].qnorm();
-			dscaling[i] = sqrt((double)(irownea[i+1] - irownea[i])/dwk);
-		}
-		break;
+	  dwk = 0.0;
+	  for(j=0; j<numRowsOfCoefficientMatrix_; j++) dwk += zcoefl[k + j].qnorm();
+	  dscaling[i] = sqrt((double)(numRowsOfCoefficientMatrix_)/dwk);
+	  k += numRowsOfCoefficientMatrix_;
 	}
+      break;
+    case 1: // SLFMBEM
+    case 2: // interp version
+    case 3: // DMLFMBEM
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+	{
+	  dwk = 0.0;
+	  for(j=irownea[i]; j<irownea[i+1]; j++) dwk += zcoefl[j].qnorm();
+	  dscaling[i] = sqrt((double)(irownea[i+1] - irownea[i])/dwk);
+	}
+      break;
+    }
 }
 
 // incomplete decomposition of the coefficient matrix by using three bool vectors to respresent the sparse muster (smaller storage, quick) (see Andreas Meister, p 197)
 void NC_IncompleteLUDecomposition
 (
-	ofstream& NCout
-)
+ ofstream& NCout
+ )
 {
-	int i, j, k, kl, ku, m, j1 = 0, ml, mu, n_trues = 0, ilv;
-	int nunzL, nunzU;
-	double threshfac; // threshold factor
-	double dwk, dw1;
-	Vector<bool> Mirow(numRowsOfCoefficientMatrix_), Micol(numRowsOfCoefficientMatrix_), Mkvct(numRowsOfCoefficientMatrix_);
-
-	if(methodFMM_ == 0) { // TRBEM
-		if(scanningDegreeLU_ == 0) {
-			threshfac = 1.2;
-		} else if(scanningDegreeLU_ == 1) {
-			threshfac = 1.0;
-		} else if(scanningDegreeLU_ == 2) {
-			threshfac = 0.8;
-		} else {
-			threshfac = 0.6;
-		}
-	} else if(methodFMM_ == 1) { // SLFMBEM
-		if(scanningDegreeLU_ == 0) {
-			//threshfac = 1.1;
-			threshfac = 0.9;
-		} else if(scanningDegreeLU_ == 1) {
-			//threshfac = 0.5;
-			threshfac = 0.35;
-		} else if(scanningDegreeLU_ == 2) {
-			//threshfac = 0.1;
-			threshfac = 0.07;
-		} else {
-			threshfac = 0.01;
-		}
-	} else { // MLFMBEM
-		if(scanningDegreeLU_ == 0) {
-			//threshfac = 0.8;
-			threshfac = 0.65;
-		} else if(scanningDegreeLU_ == 1) {
-			//threshfac = 0.3;
-			threshfac = 0.15;
-		} else if(scanningDegreeLU_ == 2) {
-			//threshfac = 0.1;
-			threshfac = 0.05;
-		} else {
-			threshfac = 0.005;
-		}
-	}
-
-	switch(methodFMM_)
+  int i, j, k, kl, ku, m, j1 = 0, ml, mu, n_trues = 0, ilv;
+  int nunzL, nunzU;
+  double threshfac; // threshold factor
+  double dwk, dw1;
+  Vector<bool> Mirow(numRowsOfCoefficientMatrix_), Micol(numRowsOfCoefficientMatrix_), Mkvct(numRowsOfCoefficientMatrix_);
+  
+  if(methodFMM_ == 0) { // TRBEM
+    if(scanningDegreeLU_ == 0) {
+      threshfac = 1.2;
+    } else if(scanningDegreeLU_ == 1) {
+      threshfac = 1.0;
+    } else if(scanningDegreeLU_ == 2) {
+      threshfac = 0.8;
+    } else {
+      threshfac = 0.6;
+    }
+  } else if(methodFMM_ == 1) { // SLFMBEM
+    if(scanningDegreeLU_ == 0) {
+      //threshfac = 1.1;
+      threshfac = 0.9;
+    } else if(scanningDegreeLU_ == 1) {
+      //threshfac = 0.5;
+      threshfac = 0.35;
+    } else if(scanningDegreeLU_ == 2) {
+      //threshfac = 0.1;
+      threshfac = 0.07;
+    } else {
+      threshfac = 0.01;
+    }
+  } else { // MLFMBEM
+    if(scanningDegreeLU_ == 0) {
+      //threshfac = 0.8;
+      threshfac = 0.65;
+    } else if(scanningDegreeLU_ == 1) {
+      //threshfac = 0.3;
+      threshfac = 0.15;
+    } else if(scanningDegreeLU_ == 2) {
+      //threshfac = 0.1;
+      threshfac = 0.05;
+    } else {
+      threshfac = 0.005;
+    }
+  }
+  
+  switch(methodFMM_) {
+  case 0: // TBEM
+    // scaling the coefficient matrix and the right hand side vector, compute number of "TRUES"
+    k = 0;
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	dw1 = 0.0;
+	for(j=0; j<numRowsOfCoefficientMatrix_; j++) dw1 += zcoefl[k + j].qnorm();
+	dwk = sqrt((double)(numRowsOfCoefficientMatrix_)/dw1);
+	for(j=0; j<numRowsOfCoefficientMatrix_; j++)
+	  {
+	    zcoefl[k + j] *= dwk;
+	    if(zcoefl[k + j].norm() > threshfac || i == j) n_trues++;
+	  }
+	zrhs[i] *= dwk;
+	k += numRowsOfCoefficientMatrix_;
+      } // end of loop I
+    break;
+  case 1: // SLFMBEM
+    // scaling the near fied matrix, the S-matrix and the right hand side vector, compute number of "TRUES"
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	dw1 = 0.0;
+	for(j=irownea[i]; j<irownea[i + 1]; j++) dw1 += zcoefl[j].qnorm();
+	dwk = sqrt((double)(irownea[i + 1] - irownea[i])/dw1);
+	for(j=irownea[i]; j<irownea[i + 1]; j++)
+	  {
+	    zcoefl[j] *= dwk;
+	    if(zcoefl[j].norm() > threshfac || jcolnea[j] == i) n_trues++;
+	  }
+	for(j=irowsmtx[i]; j<irowsmtx[i + 1]; j++) zsmtx[j] *= dwk;
+	zrhs[i] *= dwk;
+      }
+    break;
+  case 2: // interpolated version
+    break;
+  case 3: // DMLFMBEM
+    // scaling the near fied matrix, the S-matrices and the right hand side vector, compute number of "TRUES"
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++) {
+      dw1 = 0.0;
+      for(j=irownea[i]; j<irownea[i + 1]; j++) dw1 += zcoefl[j].qnorm();
+      dwk = sqrt((double)(irownea[i + 1] - irownea[i])/dw1);
+      for(j=irownea[i]; j<irownea[i + 1]; j++)
 	{
-	case 0: // TBEM
-		// scaling the coefficient matrix and the right hand side vector, compute number of "TRUES"
-		k = 0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			dw1 = 0.0;
-			for(j=0; j<numRowsOfCoefficientMatrix_; j++) dw1 += zcoefl[k + j].qnorm();
-			dwk = sqrt((double)(numRowsOfCoefficientMatrix_)/dw1);
-			for(j=0; j<numRowsOfCoefficientMatrix_; j++)
-			{
-				zcoefl[k + j] *= dwk;
-				if(zcoefl[k + j].norm() > threshfac || i == j) n_trues++;
-			}
-			zrhs[i] *= dwk;
-			k += numRowsOfCoefficientMatrix_;
-		} // end of loop I
-		break;
-	case 1: // SLFMBEM
-		// scaling the near fied matrix, the S-matrix and the right hand side vector, compute number of "TRUES"
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			dw1 = 0.0;
-			for(j=irownea[i]; j<irownea[i + 1]; j++) dw1 += zcoefl[j].qnorm();
-			dwk = sqrt((double)(irownea[i + 1] - irownea[i])/dw1);
-			for(j=irownea[i]; j<irownea[i + 1]; j++)
-			{
-				zcoefl[j] *= dwk;
-				if(zcoefl[j].norm() > threshfac || jcolnea[j] == i) n_trues++;
-			}
-			for(j=irowsmtx[i]; j<irowsmtx[i + 1]; j++) zsmtx[j] *= dwk;
-			zrhs[i] *= dwk;
-		}
-		break;
-	case 3: // DMLFMBEM
-		// scaling the near fied matrix, the S-matrices and the right hand side vector, compute number of "TRUES"
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			dw1 = 0.0;
-			for(j=irownea[i]; j<irownea[i + 1]; j++) dw1 += zcoefl[j].qnorm();
-			dwk = sqrt((double)(irownea[i + 1] - irownea[i])/dw1);
-			for(j=irownea[i]; j<irownea[i + 1]; j++)
-			{
-				zcoefl[j] *= dwk;
-				if(zcoefl[j].norm() > threshfac || jcolnea[j] == i) n_trues++;
-			}
-
-			for(ilv=0; ilv<numClusterLevels_; ilv++)
-			{
-				for(j=smtxlev[ilv].irowSmxLv[i]; j<smtxlev[ilv].irowSmxLv[i + 1]; j++)
-					smtxlev[ilv].zSmxLv[j] *= dwk;
-			}
-
-			zrhs[i] *= dwk;
-		}
-		break;
+	  zcoefl[j] *= dwk;
+	  if(zcoefl[j].norm() > threshfac || jcolnea[j] == i) n_trues++;
 	}
-
-	Vector<int> jcol_tru(n_trues), nrow_tru(numRowsOfCoefficientMatrix_ + 1), irow_tru(n_trues),
-		ncol_tru(numRowsOfCoefficientMatrix_ + 1);
-
-	// compute the vectors to store the column numbers and row numbers of the "TRUES"
-	switch(methodFMM_)
+      
+      for(ilv=0; ilv<numClusterLevels_; ilv++)
 	{
-	case 0: // TBEM
-		kl = k = 0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
-		{
-			nrow_tru[i] = kl;
-			for(j=0; j<numRowsOfCoefficientMatrix_; j++) // loop over columns
-			{
-				if(zcoefl[k + j].norm() > threshfac || i == j) jcol_tru[kl++] = j;
-			}
-			k += numRowsOfCoefficientMatrix_;
-		}
-		nrow_tru[numRowsOfCoefficientMatrix_] = kl;
-		break;
-	case 1: // SLFMBEM
-	case 3: // DMLFMBEM
-		kl = 0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
-		{
-			nrow_tru[i] = kl;
-			for(j=irownea[i]; j<irownea[i + 1]; j++) // loop over nonzeros of the row
-			{
-				if(zcoefl[j].norm() > threshfac || jcolnea[j] == i)
-					jcol_tru[kl++] = jcolnea[j];
-			}
-		}
-		nrow_tru[numRowsOfCoefficientMatrix_] = kl;
-		break;
+	  for(j=smtxlev[ilv].irowSmxLv[i]; j<smtxlev[ilv].irowSmxLv[i + 1]; j++)
+	    smtxlev[ilv].zSmxLv[j] *= dwk;
 	}
+      
+      zrhs[i] *= dwk;
+    }
+    break;
+  }
+  if( methodFMM_ == 2 ) // interpolated version
+    setup_preconditioning(zNearscalefact);
+  else {
+    Vector<int> jcol_tru(n_trues), nrow_tru(numRowsOfCoefficientMatrix_ + 1), irow_tru(n_trues),
+      ncol_tru(numRowsOfCoefficientMatrix_ + 1);
 
-	// compute the arrays NCOL_TRU and IROW_TRUE
+    // compute the vectors to store the column numbers and row numbers of the "TRUES"
+    switch(methodFMM_)
+      {
+      case 0: // TBEM
+	kl = k = 0;
+	for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
+	  {
+	    nrow_tru[i] = kl;
+	    for(j=0; j<numRowsOfCoefficientMatrix_; j++) // loop over columns
+	      {
+		if(zcoefl[k + j].norm() > threshfac || i == j) jcol_tru[kl++] = j;
+	      }
+	    k += numRowsOfCoefficientMatrix_;
+	  }
+	nrow_tru[numRowsOfCoefficientMatrix_] = kl;
+	break;
+      case 1: // SLFMBEM
+      case 2: // interp. version
+      case 3: // DMLFMBEM
 	kl = 0;
-	for(j=0; j<numRowsOfCoefficientMatrix_; j++) // loop over columns
-	{
-		ncol_tru[j] = kl;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
-		{
-			for(k=nrow_tru[i]; k<nrow_tru[i+1]; k++)
-			{
-				if(jcol_tru[k] == j)
-				{
-					irow_tru[kl++] = i;
-					break;
-				}
-			}
-		}
-	}
-	ncol_tru[numRowsOfCoefficientMatrix_] = kl;
-
-	// generate the L-matrix (stored by rows) and the U-matrix (stored by columns)
-	nunzL = nunzU = 0;
+	for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
+	  {
+	    nrow_tru[i] = kl;
+	    for(j=irownea[i]; j<irownea[i + 1]; j++) // loop over nonzeros of the row
+	      {
+		if(zcoefl[j].norm() > threshfac || jcolnea[j] == i)
+		  jcol_tru[kl++] = jcolnea[j];
+	      }
+	  }
+	nrow_tru[numRowsOfCoefficientMatrix_] = kl;
+	break;
+      }
+    
+    // compute the arrays NCOL_TRU and IROW_TRUE
+    kl = 0;
+    for(j=0; j<numRowsOfCoefficientMatrix_; j++) // loop over columns
+      {
+	ncol_tru[j] = kl;
+	for(i=0; i<numRowsOfCoefficientMatrix_; i++) // loop over rows
+	  {
+	    for(k=nrow_tru[i]; k<nrow_tru[i+1]; k++)
+	      {
+		if(jcol_tru[k] == j)
+		  {
+		    irow_tru[kl++] = i;
+		    break;
+		  }
+	      }
+	  }
+      }
+    ncol_tru[numRowsOfCoefficientMatrix_] = kl;
+    
+    // generate the L-matrix (stored by rows) and the U-matrix (stored by columns)
+    nunzL = nunzU = 0;
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	for(j=0; j<=i; j++) Mirow[j] = Micol[j] = false;
+	for(j=nrow_tru[i]; j<nrow_tru[i+1]; j++) Mirow[jcol_tru[j]] = true;
+	for(j=ncol_tru[i]; j<ncol_tru[i+1]; j++) Micol[irow_tru[j]] = true;
+	
+	for(j=0; j<=i; j++) if(Mirow[j]) nunzL++;
+	for(j=0; j<i; j++) if(Micol[j]) nunzU++;
+      }
+    nL_colnu = new int[nunzL];
+    nL_firnu = new int[numRowsOfCoefficientMatrix_ + 1];
+    nU_rownu = new int[nunzU];
+    nU_firnu = new int[numRowsOfCoefficientMatrix_ + 1];
+    zL_incom = new Complex[nunzL];
+    zU_incom = new Complex[nunzU];
+    
+    kl = ku = 0;
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	for(j=0; j<=i; j++) Mirow[j] = Micol[j] = false;
+	for(j=nrow_tru[i]; j<nrow_tru[i+1]; j++) Mirow[jcol_tru[j]] = true;
+	for(j=ncol_tru[i]; j<ncol_tru[i+1]; j++) Micol[irow_tru[j]] = true;
+	
+	nL_firnu[i] = kl;
+	for(j=0; j<=i; j++) if(Mirow[j]) nL_colnu[kl++] = j;
+	
+	nU_firnu[i] = ku;
+	for(j=0; j<i; j++) if(Micol[j]) nU_rownu[ku++] = j;
+      }
+    nL_firnu[numRowsOfCoefficientMatrix_] = kl;
+    nU_firnu[numRowsOfCoefficientMatrix_] = ku;
+    
+    // compute the L- and U-matrices
+    switch(methodFMM_)
+      {
+      case 0: // TBEM
+	k = 0;
 	for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-	{
-		for(j=0; j<=i; j++) Mirow[j] = Micol[j] = false;
-		for(j=nrow_tru[i]; j<nrow_tru[i+1]; j++) Mirow[jcol_tru[j]] = true;
-		for(j=ncol_tru[i]; j<ncol_tru[i+1]; j++) Micol[irow_tru[j]] = true;
-
-		for(j=0; j<=i; j++) if(Mirow[j]) nunzL++;
-		for(j=0; j<i; j++) if(Micol[j]) nunzU++;
-	}
-	nL_colnu = new int[nunzL];
-	nL_firnu = new int[numRowsOfCoefficientMatrix_ + 1];
-	nU_rownu = new int[nunzU];
-	nU_firnu = new int[numRowsOfCoefficientMatrix_ + 1];
-	zL_incom = new Complex[nunzL];
-	zU_incom = new Complex[nunzU];
-
-	kl = ku = 0;
+	  {
+	    for(j=nL_firnu[i]; j<nL_firnu[i + 1]; j++) zL_incom[j] = zcoefl[k + nL_colnu[j]];
+	    
+	    for(j=nU_firnu[i]; j<nU_firnu[i + 1]; j++)
+	      zU_incom[j] = zcoefl[nU_rownu[j]*numRowsOfCoefficientMatrix_ + i];
+	    k += numRowsOfCoefficientMatrix_;
+	  }
+	break;
+      case 1: // SLFMBEM
+      case 2:
+      case 3: // DMLFMBEM
 	for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-	{
-		for(j=0; j<=i; j++) Mirow[j] = Micol[j] = false;
-		for(j=nrow_tru[i]; j<nrow_tru[i+1]; j++) Mirow[jcol_tru[j]] = true;
-		for(j=ncol_tru[i]; j<ncol_tru[i+1]; j++) Micol[irow_tru[j]] = true;
-
-		nL_firnu[i] = kl;
-		for(j=0; j<=i; j++) if(Mirow[j]) nL_colnu[kl++] = j;
-
-		nU_firnu[i] = ku;
-		for(j=0; j<i; j++) if(Micol[j]) nU_rownu[ku++] = j;
-	}
-	nL_firnu[numRowsOfCoefficientMatrix_] = kl;
-	nU_firnu[numRowsOfCoefficientMatrix_] = ku;
-
-	// compute the L- and U-matrices
-	switch(methodFMM_)
-	{
-	case 0: // TBEM
-		k = 0;
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			for(j=nL_firnu[i]; j<nL_firnu[i + 1]; j++) zL_incom[j] = zcoefl[k + nL_colnu[j]];
-
-			for(j=nU_firnu[i]; j<nU_firnu[i + 1]; j++)
-				zU_incom[j] = zcoefl[nU_rownu[j]*numRowsOfCoefficientMatrix_ + i];
-			k += numRowsOfCoefficientMatrix_;
-		}
-		break;
-	case 1: // SLFMBEM
-	case 3: // DMLFMBEM
-		for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-		{
-			for(j=nL_firnu[i]; j<nL_firnu[i + 1]; j++)
-			{
-				for(k=irownea[i]; k<irownea[i + 1]; k++) if(jcolnea[k] == nL_colnu[j])
-				{
-					kl = k;
-					break;
-				}
-				zL_incom[j] = zcoefl[kl];
-			}
-
-			for(j=nU_firnu[i]; j<nU_firnu[i + 1]; j++)
-			{
-				for(k=irownea[nU_rownu[j]]; k<irownea[nU_rownu[j] + 1]; k++)
-				if(jcolnea[k] == i)
-				{
-					ku = k;
-					break;
-				}
-				zU_incom[j] = zcoefl[ku];
-			}
-		} // end of loop I
-		break;
-	}
-
-	// incomplete LU decomposition
-	for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-	{
-		for(j=0; j<numRowsOfCoefficientMatrix_; j++) Mirow[j] = Micol[j] = false;
-		for(j=nrow_tru[i]; j<nrow_tru[i+1]; j++) Mirow[jcol_tru[j]] = true;
-		for(j=ncol_tru[i]; j<ncol_tru[i+1]; j++) Micol[irow_tru[j]] = true;
-
-		for(k=i; k<numRowsOfCoefficientMatrix_; k++)
-		{
-			if(!Micol[k]) continue;
-
-			for(j=nL_firnu[k]; j<nL_firnu[k + 1]; j++)
-			{
-				if(nL_colnu[j] == i)
-				{
-					j1 = j;
-					break;
-				}
-			}
-
-			for(j=0; j<numRowsOfCoefficientMatrix_; j++) Mkvct[j] = false;
-			for(j=nrow_tru[k]; j<nrow_tru[k+1]; j++) Mkvct[jcol_tru[j]] = true;
-
-			ml = mu = 0;
-			for(m=0; m<i; m++)
-			{
-				if(Mkvct[m] && Micol[m])
-				{
-					zL_incom[j1] -= zL_incom[nL_firnu[k] + ml]*zU_incom[nU_firnu[i] + mu];
-				}
-				if(Mkvct[m]) ml++;
-				if(Micol[m]) mu++;
-			}
-		}
-
-		for(k=i+1; k<numRowsOfCoefficientMatrix_; k++)
-		{
-			if(!Mirow[k]) continue;
-
-			for(j=nU_firnu[k]; j<nU_firnu[k + 1]; j++)
-			{
-				if(nU_rownu[j] == i)
-				{
-					j1 = j;
-					break;
-				}
-			}
-
-			for(j=0; j<numRowsOfCoefficientMatrix_; j++) Mkvct[j] = false;
-			for(j=ncol_tru[k]; j<ncol_tru[k+1]; j++) Mkvct[irow_tru[j]] = true;
-
-			ml = mu = 0;
-			for(m=0; m<i; m++)
-			{
-				if(Mirow[m] && Mkvct[m])
-				{
-					zU_incom[j1] -= zL_incom[nL_firnu[i] + ml]*zU_incom[nU_firnu[k] + mu];
-				}
-				if(Mirow[m]) ml++;
-				if(Mkvct[m]) mu++;
-			}
-			zU_incom[j1] /= zL_incom[nL_firnu[i + 1] - 1];
-		}
-	} // end of loop I
+	  {
+	    for(j=nL_firnu[i]; j<nL_firnu[i + 1]; j++)
+	      {
+		for(k=irownea[i]; k<irownea[i + 1]; k++)
+		  if(jcolnea[k] == nL_colnu[j])
+		    {
+		      kl = k;
+		      break;
+		    }
+		zL_incom[j] = zcoefl[kl];
+	      }
+	    
+	    for(j=nU_firnu[i]; j<nU_firnu[i + 1]; j++)
+	      {
+		for(k=irownea[nU_rownu[j]]; k<irownea[nU_rownu[j] + 1]; k++)
+		  if(jcolnea[k] == i)
+		    {
+		      ku = k;
+		      break;
+		    }
+		zU_incom[j] = zcoefl[ku];
+	      }
+	  } // end of loop I
+	break;
+      }
+    
+    // incomplete LU decomposition
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	for(j=0; j<numRowsOfCoefficientMatrix_; j++) Mirow[j] = Micol[j] = false;
+	for(j=nrow_tru[i]; j<nrow_tru[i+1]; j++) Mirow[jcol_tru[j]] = true;
+	for(j=ncol_tru[i]; j<ncol_tru[i+1]; j++) Micol[irow_tru[j]] = true;
+	
+	for(k=i; k<numRowsOfCoefficientMatrix_; k++)
+	  {
+	    if(!Micol[k]) continue;
+	    
+	    for(j=nL_firnu[k]; j<nL_firnu[k + 1]; j++)
+	      {
+		if(nL_colnu[j] == i)
+		  {
+		    j1 = j;
+		    break;
+		  }
+	      }
+	    
+	    for(j=0; j<numRowsOfCoefficientMatrix_; j++) Mkvct[j] = false;
+	    for(j=nrow_tru[k]; j<nrow_tru[k+1]; j++) Mkvct[jcol_tru[j]] = true;
+	    
+	    ml = mu = 0;
+	    for(m=0; m<i; m++)
+	      {
+		if(Mkvct[m] && Micol[m])
+		  {
+		    zL_incom[j1] -= zL_incom[nL_firnu[k] + ml]*zU_incom[nU_firnu[i] + mu];
+		  }
+		if(Mkvct[m]) ml++;
+		if(Micol[m]) mu++;
+	      }
+	  }
+	
+	for(k=i+1; k<numRowsOfCoefficientMatrix_; k++)
+	  {
+	    if(!Mirow[k]) continue;
+	    
+	    for(j=nU_firnu[k]; j<nU_firnu[k + 1]; j++)
+	      {
+		if(nU_rownu[j] == i)
+		  {
+		    j1 = j;
+		    break;
+		  }
+	      }
+	    
+	    for(j=0; j<numRowsOfCoefficientMatrix_; j++) Mkvct[j] = false;
+	    for(j=ncol_tru[k]; j<ncol_tru[k+1]; j++) Mkvct[irow_tru[j]] = true;
+	    
+	    ml = mu = 0;
+	    for(m=0; m<i; m++)
+	      {
+		if(Mirow[m] && Mkvct[m])
+		  {
+		    zU_incom[j1] -= zL_incom[nL_firnu[i] + ml]*zU_incom[nU_firnu[k] + mu];
+		  }
+		if(Mirow[m]) ml++;
+		if(Mkvct[m]) mu++;
+	      }
+	    zU_incom[j1] /= zL_incom[nL_firnu[i + 1] - 1];
+	  }
+      } // end of loop I
+  } // else loop
 }
 
+  
 // destroy the incomplete L- and U-matrices
+// for the interpol. version this is down elsewhere
 void NC_DeleteIncompleteLUMatrices()
 {
-	delete [] nL_colnu;
-	delete [] nL_firnu;
-	delete [] nU_rownu;
-	delete [] nU_firnu;
-	delete [] zL_incom;
-	delete [] zU_incom;
+  if( methodFMM_ != 2 ) { 
+    delete [] nL_colnu;
+    delete [] nL_firnu;
+    delete [] nU_rownu;
+    delete [] nU_firnu;
+    delete [] zL_incom;
+    delete [] zU_incom;
+  }
 }
 
 // multiplication of a vector with the inverse of the incomplete LU-matrices
@@ -1677,45 +1739,81 @@ void NC_IncompleteLUForBack
 	Vector<Complex>& zprodvect      //O: product vector
 )
 {
-	int i, j, k;
+  int i, j, k;
 
-	zprodvect = zmultvect;
+  zprodvect = zmultvect;
 
-	// forward elemination by using the L-matrix (stored by rows)
-	zprodvect[0] /= zL_incom[0];
-	for(i=1; i<numRowsOfCoefficientMatrix_; i++)
-	{
-		k = nL_firnu[i + 1] - 1;
-		for(j=nL_firnu[i]; j<k; j++) zprodvect[i] -= zL_incom[j]*zprodvect[nL_colnu[j]];
-		zprodvect[i] /= zL_incom[k];
-	}
-
-	// Backward substitution by using the U-matrix (stored by columns)
-	for(i=numRowsOfCoefficientMatrix_-1; i>0; i--)
-	{
-		for(j=nU_firnu[i]; j<nU_firnu[i+1]; j++)
-			zprodvect[nU_rownu[j]] -= zU_incom[j]*zprodvect[i];
-	}
+  if( methodFMM_ == 2 ) {
+    zprodvect[0] /= zL.zdata[0];
+    for( i = 1; i < numRowsOfCoefficientMatrix_; i++) {
+      k = zL.startlist[i+1] - 1;
+      for( j = zL.startlist[i]; j<k; j++)
+	zprodvect[i] -= zL.zdata[j] * zprodvect[ zL.indxlist[j] ];
+      zprodvect[i] /= zL.zdata[k];
+    }
+    for( i = numRowsOfCoefficientMatrix_ - 1; i > 0; i--){
+      for( j = zU.startlist[i]; j < zU.startlist[i+1]; j++ )
+	zprodvect[ zU.indxlist[j] ] -= zU.zdata[j] * zprodvect[i];
+    }
+    
+  }
+  else {
+    // non-interpolated version
+    // forward elemination by using the L-matrix (stored by rows)
+    zprodvect[0] /= zL_incom[0];
+    for(i=1; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	k = nL_firnu[i + 1] - 1;
+	for(j=nL_firnu[i]; j<k; j++)
+	  zprodvect[i] -= zL_incom[j]*zprodvect[nL_colnu[j]];
+	zprodvect[i] /= zL_incom[k];
+      }
+  
+    // Backward substitution by using the U-matrix (stored by columns)
+    for(i=numRowsOfCoefficientMatrix_-1; i>0; i--)
+      {
+	for(j=nU_firnu[i]; j<nU_firnu[i+1]; j++)
+	  zprodvect[nU_rownu[j]] -= zU_incom[j]*zprodvect[i];
+      }
+  }
 }
+
 void NC_IncompleteLUForBack
 (
 )
 {
-	int i, j, k;
+  int i, j, k;
+  
+  // forward elemination by using the L-matrix (stored by rows)
 
-	// forward elemination by using the L-matrix (stored by rows)
-	zrhs[0] /= zL_incom[0];
-	for(i=1; i<numRowsOfCoefficientMatrix_; i++)
-	{
-		k = nL_firnu[i + 1] - 1;
-		for(j=nL_firnu[i]; j<k; j++) zrhs[i] -= zL_incom[j]*zrhs[nL_colnu[j]];
-		zrhs[i] /= zL_incom[k];
-	}
+  if( methodFMM_ == 2 ) {
 
-	// Backward substitution by using the U-matrix (stored by columns)
-	for(i=numRowsOfCoefficientMatrix_-1; i>0; i--)
-	{
-		for(j=nU_firnu[i]; j<nU_firnu[i+1]; j++)
-			zrhs[nU_rownu[j]] -= zU_incom[j]*zrhs[i];
-	}
+    zrhs[0] /= zL.zdata[0];
+    for( i = 1; i < numRowsOfCoefficientMatrix_; i++) {
+      k = zL.startlist[i+1] - 1;
+      for( j = zL.startlist[i]; j<k; j++)
+	zrhs[i] -= zL.zdata[j] * zrhs[ zL.indxlist[j] ];
+      zrhs[i] /= zL.zdata[k];
+    }
+    for( i = numRowsOfCoefficientMatrix_ - 1; i > 0; i--){
+      for( j = zU.startlist[i]; j < zU.startlist[i+1]; j++ )
+	zrhs[ zU.indxlist[j] ] -= zU.zdata[j] * zrhs[i];
+    }
+  }
+  else {
+    zrhs[0] /= zL_incom[0];
+    for(i=1; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	k = nL_firnu[i + 1] - 1;
+	for(j=nL_firnu[i]; j<k; j++) zrhs[i] -= zL_incom[j]*zrhs[nL_colnu[j]];
+	zrhs[i] /= zL_incom[k];
+      }
+    
+    // Backward substitution by using the U-matrix (stored by columns)
+    for(i=numRowsOfCoefficientMatrix_-1; i>0; i--)
+      {
+	for(j=nU_firnu[i]; j<nU_firnu[i+1]; j++)
+	  zrhs[nU_rownu[j]] -= zU_incom[j]*zrhs[i];
+      }
+  }
 }

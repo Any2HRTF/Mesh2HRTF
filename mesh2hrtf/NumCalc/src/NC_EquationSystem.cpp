@@ -90,6 +90,7 @@ void NC_SetupEquationSystem
 		NC_BuildSystemTBEM(NCout);
 		break;
 	case 1: // SLFMBEM
+	case 2:
 	case 3: // DMLFMBEM
 		NC_BuildSystemFMBEM(NCout);
 	}
@@ -303,65 +304,103 @@ void NC_ComputeEntriesForTBEM
 // generate the fast multipole BEM equation system
 void NC_BuildSystemFMBEM
 (
-	ofstream& NCout
+ ofstream& NCout
  )
 {
-    int nlv;
+  int nlv;
+  bool allocateFMM_ = true;
+  switch(methodFMM_) {
+  case 1: // SLFMBEM
+    // compute the near field coefficient matrix
+    NC_BuildNforSLFMM(NCout);
     
-    switch(methodFMM_)
-    {
-        case 1: // SLFMBEM
-            // compute the near field coefficient matrix
-            NC_BuildNforSLFMM(NCout);
-            
-            // compute the coordinates and weights of integration points on the unit sphere
-            NC_ComputeUnitVectorOnUnitSphere(NCout, numIntegrationPointsThetaDirection_, numIntegrationPointsPhiDirection_, weisphe, uvcsphe);
-            
-            // compute the D-matrix or D-matrices
-            NC_BuildDforSLFMM(NCout);
-            
-            // compute the T-matrix and the T-vector
-            NC_BuildTforSLFMM(NCout);
-            
-            // compute the S-matrix
-            NC_BuildSforSLFMM(NCout);
-            
-            break;
-        case 3: // DMLFMBEM
-            // compute the near field coefficient matrix
-            NC_BuildNforMLFMM(NCout);
-            
-            // compute the coordinates and weights of integration points on the unit sphere
-            for(nlv=0; nlv<numClusterLevels_; nlv++)
-            {
-                NC_ComputeUnitVectorOnUnitSphere(NCout, clulevarry[nlv].nPoinThetLv, clulevarry[nlv].nPoinPhiLv,
-                                                 clulevarry[nlv].weisphe, clulevarry[nlv].uvcsphe);
-            }
-            
-            // compute the D-matrices
-            NC_BuildDforMLFMM(NCout);
-            
-            //weisphe = clulevarry[nlevtop_].weisphe;
-            //uvcsphe = clulevarry[nlevtop_].uvcsphe;
-            
-            // compute the T-matrices the T-vectors
-            NC_BuildTforMLFMM(NCout);
-            
-            // compute the S-matrices
-            NC_BuildSforMLFMM(NCout);
+    // compute the coordinates and weights of integration points on the unit sphere
+    NC_ComputeUnitVectorOnUnitSphere(NCout, numIntegrationPointsThetaDirection_, numIntegrationPointsPhiDirection_, weisphe, uvcsphe);
+    
+    // compute the D-matrix or D-matrices
+    NC_BuildDforSLFMM(NCout);
+    
+    // compute the T-matrix and the T-vector
+    NC_BuildTforSLFMM(NCout);
+    
+    // compute the S-matrix
+    NC_BuildSforSLFMM(NCout);
+    
+    break;
+  case 2:
+    int l;
+    // allocate and calculate the near field matrix
+    get_nearfield(nlevtop_, zNearscalefact, zBta3, allocateFMM_);
+    // reserve space for the interpolation matrix
+    
+    dYmat = new double*[nlevtop_];
+    if( dYmat == NULL ) {
+      cerr << "Sorry, cannot allocate dYmat\n";
+      exit(-1);
     }
+
+    for (l = 0; l < nlevtop_; l++ ) {
+      //	if( clulevarry[l+1].nPoinSpheLv != clulevarry[l].nPoinSpheLv) {
+      //if( l == 0) {
+      //      if( clulevarry[l].isNearClust || clulevarry[l].nClustOLv == 1 )
+      if( clulevarry[l].nClustOLv == 1 )
+	continue;
+      //}
+      dYmat[l] = new double[ clulevarry[l+1].nPoinSpheLv * clulevarry[l].nPoinSpheLv];
+      cout << "Interpolationsmatrix Level " << l << "\n";
+      cout << "Double: " << clulevarry[l+1].nPoinSpheLv * clulevarry[l].nPoinSpheLv << "\n";
+      if( dYmat[l] == NULL ) {
+	cerr << "Sorry, cannot allocate dYmat\n";
+	exit(-1);
+      }
+      //}
+    }
+    for( nlv = 0; nlv < numClusterLevels_; nlv++)
+      NC_ComputeUnitVectorOnUnitSphere(NCout, clulevarry[nlv].nPoinThetLv, clulevarry[nlv].nPoinPhiLv, clulevarry[nlv].weisphe, clulevarry[nlv].uvcsphe);
+
+    get_interactionlist();
+    Cluster2Clustermat(numClusterLevels_, allocateFMM_);
+    LocalExpansionMat(nlevtop_, allocateFMM_);
+    Cluster2LocalMtx(zBta3, allocateFMM_);
+    break;
+  case 3: // DMLFMBEM
+    // compute the near field coefficient matrix
+    NC_BuildNforMLFMM(NCout);
     
-    // compute the contribution of the T-vector to the right hand side vector ({r} += [S]*[D]*{t})
-    if(boolComputeTVector_) 
+    // compute the coordinates and weights of integration points on the unit sphere
+    for(nlv=0; nlv<numClusterLevels_; nlv++)
+      {
+	NC_ComputeUnitVectorOnUnitSphere(NCout, clulevarry[nlv].nPoinThetLv, clulevarry[nlv].nPoinPhiLv,
+					 clulevarry[nlv].weisphe, clulevarry[nlv].uvcsphe);
+      }
+    
+    // compute the D-matrices
+    NC_BuildDforMLFMM(NCout);
+    
+    //weisphe = clulevarry[numClusterLevels_].weisphe;
+    //uvcsphe = clulevarry[numClusterLevels_].uvcsphe;
+    
+    // compute the T-matrices the T-vectors
+    NC_BuildTforMLFMM(NCout);
+    
+    // compute the S-matrices
+    NC_BuildSforMLFMM(NCout);
+  }
+  
+  // compute the contribution of the T-vector to the right hand side vector ({r} += [S]*[D]*{t})
+  if(boolComputeTVector_) 
     {
-        switch(methodFMM_)
+      switch(methodFMM_)
         {
-            case 1: // SLFMBEM
-                NC_RHSvecTofSLFMM(NCout);
-                break;
-            case 3: // DMLFMBEM
-                NC_RHSvecTofMLFMM(NCout);
-                break;
+	case 1: // SLFMBEM
+	  NC_RHSvecTofSLFMM(NCout);
+	  break;
+	case 2: // interpolated version
+	  cluster2clusterVec() ;
+	  break;
+	case 3: // DMLFMBEM
+	  NC_RHSvecTofMLFMM(NCout);
+	  break;
         }
     }
 }
@@ -548,63 +587,62 @@ void NC_BuildDforSLFMM
 // compute the S-matrix for SL-FMM  (see eq. (21) in [1])
 void NC_BuildSforSLFMM
 (
-	ofstream& NCout
-)
+ ofstream& NCout
+ )
 {
-	int icl, iel, nel, i, jip, iterm0;
-	double scpr_dv, d0, wavruim = waveNumbers_*harmonicTimeFactor_;
-	Complex z0;
-	Vector<double> dcenel(NDIM);
-	double *norel;
-	bool ifadm;
-	Vector<Complex> zvcun(numIntegrationPointsUnitSphere_), zvcdun(numIntegrationPointsUnitSphere_);
-	Complex *zs_mtx;
-
-	// define the array to store the S-matrix
-	zs_mtx = zsmtx;
-
-	// loop over the original clusters
-	for(icl=0; icl<numOriginalClusters_; icl++)
-	{
-		ifadm = ClustArray[icl].IfAdmiBc;
-
-		// loop over elements of the cluster
-		for(iel=0; iel<ClustArray[icl].NumOfEl; iel++)
-		{
-			nel = ClustArray[icl].NumsOfEl[iel]; // number of the element
-
-			// coordinate difference of the element center and the cluster center
-			for(i=0; i<NDIM; i++) dcenel[i] = centel[nel][i] - ClustArray[icl].CoorCent[i];
-
-			// unit normal vector at the element center
-			norel = elenor[nel];
-
-			// loop over the integral points on the unit sphere
-			for(jip=0; jip<numIntegrationPointsUnitSphere_; jip++)
-			{
-				// scalar product of two vectors
-				scpr_dv = Scprod_dim3_(dcenel, uvcsphe[jip]);
-
-				// compute the result vectors
-				d0 = scpr_dv*wavruim;
-				z0.set(cos(d0), sin(d0));
-				z0 *= weisphe[jip];
-				zvcun[jip] = z0;
-
-				d0 = Scprod_dim3_(uvcsphe[jip], norel);
-				d0 *= wavruim;
-				z0.mul_i(d0);
-				zvcdun[jip] = z0;
-			} // end of loop over JIP
-
-			// store the results
-			iterm0 = irowsmtx[jelist[nel][0]];
-        
-            for(i=0; i<numIntegrationPointsUnitSphere_; i++)
-            {zs_mtx[iterm0 + i] = zvcun[i]*Gama3 + zvcdun[i]*(zBta3*Tao_);}
-
-		} // end of loop over IEL
-	} // end of loop ICL
+  int icl, iel, nel, i, jip, iterm0;
+  double scpr_dv, d0, wavruim = waveNumbers_*harmonicTimeFactor_;
+  Complex z0;
+  Vector<double> dcenel(NDIM);
+  double *norel;
+  bool ifadm;
+  Vector<Complex> zvcun(numIntegrationPointsUnitSphere_), zvcdun(numIntegrationPointsUnitSphere_);
+  Complex *zs_mtx;
+  
+  // define the array to store the S-matrix
+  zs_mtx = zsmtx;
+  
+  // loop over the original clusters
+  for(icl=0; icl<numOriginalClusters_; icl++)
+    {
+      ifadm = ClustArray[icl].IfAdmiBc;
+      
+      // loop over elements of the cluster
+      for(iel=0; iel<ClustArray[icl].NumOfEl; iel++) {
+	nel = ClustArray[icl].NumsOfEl[iel]; // number of the element
+	
+	// coordinate difference of the element center and the cluster center
+	for(i=0; i<NDIM; i++) dcenel[i] = centel[nel][i] - ClustArray[icl].CoorCent[i];
+	
+	// unit normal vector at the element center
+	norel = elenor[nel];
+	
+	// loop over the integral points on the unit sphere
+	for(jip=0; jip<numIntegrationPointsUnitSphere_; jip++)
+	  {
+	    // scalar product of two vectors
+	    scpr_dv = Scprod_dim3_(dcenel, uvcsphe[jip]);
+	    
+	    // compute the result vectors
+	    d0 = scpr_dv*wavruim;
+	    z0.set(cos(d0), sin(d0));
+	    z0 *= weisphe[jip];
+	    zvcun[jip] = z0;
+	    
+	    d0 = Scprod_dim3_(uvcsphe[jip], norel);
+	    d0 *= wavruim;
+	    z0.mul_i(d0);
+	    zvcdun[jip] = z0;
+	  } // end of loop over JIP
+	
+	// store the results
+	iterm0 = irowsmtx[jelist[nel][0]];
+	
+	for(i=0; i<numIntegrationPointsUnitSphere_; i++)
+	  {zs_mtx[iterm0 + i] = zvcun[i]*Gama3 + zvcdun[i]*(zBta3*Tao_);}
+	
+      } // end of loop over IEL
+    } // end of loop ICL
 }
 
 // compute the near field equation system for SL-FMM
@@ -725,7 +763,7 @@ void NC_BuildTforMLFMM
         nPoSphe = clulevarry[nlv].nPoinSpheLv;
         nClustL = clulevarry[nlv].nClustSLv;
         nrowT = nPoSphe*nClustL;
-        clustArraLn = clulevarry[nlv].ClastArLv;
+        clustArraLn = clulevarry[nlv].ClustArLv;
         zTvcLn = tmtxlev[nlv].zTvcLv;
         zTmxLn = tmtxlev[nlv].zTmxLv;
         irowTmxLn = tmtxlev[nlv].irowTmxLv;
@@ -858,10 +896,10 @@ void NC_BuildDforMLFMM
         identry = 0; // address of first entry of the submatrices of the D-matrix that correspond to the cluster i
         for(i=0; i<clulevarry[nlv].nClustOLv; i++) {
 	  // compute and store the nonzeros corresponding to the current cluster
-	  for(j=0; j<clulevarry[nlv].ClastArLv[i].NumFanClus; j++) {
-	    jcl = clulevarry[nlv].ClastArLv[i].NumsFanClus[j];
+	  for(j=0; j<clulevarry[nlv].ClustArLv[i].NumFanClus; j++) {
+	    jcl = clulevarry[nlv].ClustArLv[i].NumsFanClus[j];
 	    for(k=0; k<NDIM; k++)
-	      disij[k] = clulevarry[nlv].ClastArLv[i].CoorCent[k] - clulevarry[nlv].ClastArLv[jcl].CoorCent[k];
+	      disij[k] = clulevarry[nlv].ClustArLv[i].CoorCent[k] - clulevarry[nlv].ClustArLv[jcl].CoorCent[k];
 	    Vcnorm_dim3_(disij, dij);
 	    dkij = dij*waveNumbers_;
 
@@ -869,7 +907,7 @@ void NC_BuildDforMLFMM
 	      // change the truncation based on the radii of the clusters
 	      // involved, not on the max radius for the level
 	      // helps with differently sized clusters
-	      double d = clulevarry[nlv].ClastArLv[i].RadiClus + clulevarry[nlv].ClastArLv[jcl].RadiClus;
+	      double d = clulevarry[nlv].ClustArLv[i].RadiClus + clulevarry[nlv].ClustArLv[jcl].RadiClus;
 	      double rw = d*waveNumbers_ + 1.8*log10(d*waveNumbers_ + PI);
 	      expalength = (int)(rw);
 	      if((double)expalength - rw >= 0.5) expalength++;
@@ -903,11 +941,11 @@ void NC_BuildDforMLFMM
                 // store the nonzeros into the D-matrix
                 for(k=0; k<clulevarry[nlv].nPoinSpheLv; k++)
                 {
-                    ikjadre = identry + k*clulevarry[nlv].ClastArLv[i].NumFanClus + j;
+                    ikjadre = identry + k*clulevarry[nlv].ClustArLv[i].NumFanClus + j;
                     zwork_d[ikjadre] = zdiat[k];
                 }
             } // end of loop J
-            identry += clulevarry[nlv].nPoinSpheLv*clulevarry[nlv].ClastArLv[i].NumFanClus;
+            identry += clulevarry[nlv].nPoinSpheLv*clulevarry[nlv].ClustArLv[i].NumFanClus;
         } // end of loop I
     } // end of loop NLV
 }
@@ -915,78 +953,75 @@ void NC_BuildDforMLFMM
 // compute the S-matrices for ML-FMM  (see eq. (21), (26) in [1])
 void NC_BuildSforMLFMM
 (
-	ofstream& NCout
+ ofstream& NCout
 )
 {
-	int icl, iel, nel, i, jip, iterm0, nlv;
-	double scpr_dv, d0, wavruim = waveNumbers_*harmonicTimeFactor_;
-	Complex z0;
-	Vector<double> dcenel(NDIM);
-	bool ifadm;
-	Vector<Complex> zvcun(clulevarry[0].nPoinSpheLv), zvcdun(clulevarry[0].nPoinSpheLv);
-	double *norel;
-
-	int nPoSphe;
-	ElCluster *clustArraLn;
-	Complex *zSmxLn;
-	int *irowSmxLn;
-	double **uvshln;
-	double *wshln;
-
-	// loop over cluster levels
-	for(nlv=0; nlv<numClusterLevels_; nlv++)
-	{
-		// assign the parameters and arrays
-		nPoSphe = clulevarry[nlv].nPoinSpheLv;
-		clustArraLn = clulevarry[nlv].ClastArLv;
-		zSmxLn = smtxlev[nlv].zSmxLv;
-		irowSmxLn = smtxlev[nlv].irowSmxLv;
-		uvshln = clulevarry[nlv].uvcsphe;
-		wshln = clulevarry[nlv].weisphe;
-
-		// loop over clusters of the top level
-		for(icl=0; icl<clulevarry[nlv].nClustOLv; icl++)
-		{
-			ifadm = clustArraLn[icl].IfAdmiBc;
-
-			// loop over elements of the cluster
-			for(iel=0; iel<clustArraLn[icl].NumOfEl; iel++)
-			{
-				nel = clustArraLn[icl].NumsOfEl[iel]; // number of the element
-
-				// coordinate difference of the element center and the cluster center
-				for(i=0; i<NDIM; i++) dcenel[i] = centel[nel][i] - clustArraLn[icl].CoorCent[i];
-
-				// unit normal vector at the element center
-				norel = elenor[nel];
-
-				// loop over the integral points on the unit sphere
-				for(jip=0; jip<nPoSphe; jip++)
-				{
-					// scalar product of two vectors
-					scpr_dv = Scprod_dim3_(dcenel, uvshln[jip]);
-
-					// compute the result vectors
-					d0 = scpr_dv*wavruim;
-					z0.set(cos(d0), sin(d0));
-					z0 *= wshln[jip];
-					zvcun[jip] = z0;
-
-					d0 = Scprod_dim3_(uvshln[jip], norel);
-					d0 *= wavruim;
-					z0.mul_i(d0);
-					zvcdun[jip] = z0;
-				} // end of loop over JIP
-
+  int icl, iel, nel, i, jip, iterm0, nlv;
+  double scpr_dv, d0, wavruim = waveNumbers_ * harmonicTimeFactor_;
+  Complex z0;
+  Vector<double> dcenel(NDIM);
+  bool ifadm;
+  Vector<Complex> zvcun(clulevarry[0].nPoinSpheLv), zvcdun(clulevarry[0].nPoinSpheLv);
+  double *norel;
+  
+  int nPoSphe;
+  ElCluster *clustArraLn;
+  Complex *zSmxLn;
+  int *irowSmxLn;
+  double **uvshln;
+  double *wshln;
+  
+  // loop over cluster levels
+  for(nlv=0; nlv<numClusterLevels_; nlv++) {
+    // assign the parameters and arrays
+    nPoSphe = clulevarry[nlv].nPoinSpheLv;
+    clustArraLn = clulevarry[nlv].ClustArLv;
+    zSmxLn = smtxlev[nlv].zSmxLv;
+    irowSmxLn = smtxlev[nlv].irowSmxLv;
+    uvshln = clulevarry[nlv].uvcsphe;
+    wshln = clulevarry[nlv].weisphe;
+    
+    // loop over clusters of the top level
+    for(icl=0; icl<clulevarry[nlv].nClustOLv; icl++) {
+      ifadm = clustArraLn[icl].IfAdmiBc;
+      
+      // loop over elements of the cluster
+      for(iel=0; iel<clustArraLn[icl].NumOfEl; iel++) {
+	nel = clustArraLn[icl].NumsOfEl[iel]; // number of the element
+	
+	// coordinate difference of the element center and the cluster center
+	for(i=0; i<NDIM; i++) dcenel[i] = centel[nel][i] - clustArraLn[icl].CoorCent[i];
+	
+	// unit normal vector at the element center
+	norel = elenor[nel];
+	
+	// loop over the integral points on the unit sphere
+	for(jip=0; jip<nPoSphe; jip++)
+	  {
+	    // scalar product of two vectors
+	    scpr_dv = Scprod_dim3_(dcenel, uvshln[jip]);
+	    
+	    // compute the result vectors
+	    d0 = scpr_dv*wavruim;
+	    z0.set(cos(d0), sin(d0));
+	    z0 *= wshln[jip];
+	    zvcun[jip] = z0;
+	    
+	    d0 = Scprod_dim3_(uvshln[jip], norel);
+	    d0 *= wavruim;
+	    z0.mul_i(d0);
+	    zvcdun[jip] = z0;
+	  } // end of loop over JIP
+	
 				// store the results
-				iterm0 = irowSmxLn[jelist[nel][0]];
-
-                for(i=0; i<nPoSphe; i++)
-                {zSmxLn[iterm0 + i] = zvcun[i]*Gama3 + zvcdun[i]*(zBta3*Tao_);}
-
-			} // end of loop IEL
-		} // end of loop ICL
-	} // end of loop NLV
+	iterm0 = irowSmxLn[jelist[nel][0]];
+	
+	for(i=0; i<nPoSphe; i++)
+	  {zSmxLn[iterm0 + i] = zvcun[i]*Gama3 + zvcdun[i]*(zBta3*Tao_);}
+	
+      } // end of loop IEL
+    } // end of loop ICL
+  } // end of loop NLV
 }
 
 // compute the near field equation system for ML-FMM

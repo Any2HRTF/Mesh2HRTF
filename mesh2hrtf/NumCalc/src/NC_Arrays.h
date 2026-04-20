@@ -15,7 +15,9 @@
 
 //================================= I N C L U D E S ==================================
 // local includes                                                                   //
-#include"NC_TypeDefinition.h"                                                       //
+#include"NC_TypeDefinition.h"
+#include"NC_MLFMM.h"
+//
 //                                                                                  //
 // system includes                                                                  //
 //====================================================================================
@@ -118,6 +120,21 @@ extern double *weisphe;   // weight of each integarl points of the unit sphere
 
 extern Complex *zcoefl;   // coefficient matrix of BEM or near field matrix of FMBEM
 extern Complex *zrhs;     // right hand side vector
+
+
+extern zSparsetype zNear;  // near field matrix and LU components
+extern zSparsetype zL,zU;
+extern double* zNearscalefact;
+extern Complex*** zMmat;
+extern Complex*** zFmat;
+extern zSparseVec zFvec;
+extern Complex** zSmat;
+extern double** dYmat; // interpolation matrix for MLFMM
+extern Complex*** zF;
+extern Complex*** zG;
+
+
+
 
 extern ClusterLev *clulevarry; // array of cluster levels of a cluster tree
 extern ElCluster *ClustArray;  // working array of clusters

@@ -179,5 +179,5 @@ extern string fileMeshBoundarySurface_,
               fileWavesPlanar_,
               fileWavesSpherical_;
 
-
+extern bool allocateFMM_;
 #endif /* Don't add any thing after this line! */
