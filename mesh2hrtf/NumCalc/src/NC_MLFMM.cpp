@@ -584,9 +584,14 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
 	  if( l == 0 )
 	    //	    Ylev[lev-1][i * Ncurrent + j] = 0.25/PI;
 	    Ylev[lev-1][i * Ncurrent + j] = 1.0;
-	  else
+	  else {
 	    //	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) / (4.0 * PI) * legendre(l,Angle);
+#ifdef USE_GSL
+	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * gsl_sf_legendrePl(l,Angle);   
+#else
 	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * legendre(l,Angle);
+#endif
+	  }
 	}
       }
     }
