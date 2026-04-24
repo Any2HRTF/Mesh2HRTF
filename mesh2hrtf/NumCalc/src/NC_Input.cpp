@@ -1411,31 +1411,29 @@ void NC_StoreBoundaryConditions
 // write the job parameters into the output file
 void NC_WriteParameters
 (
-	ofstream& NCout,
-	double* Freqs
+ ofstream& NCout,
+ double* Freqs
  )
 {
-    int i, j, j1, k, k1, numFrequencies_ori = numFrequencies_;
-    double freq_max, dmesh_ave= 0.0, dmesh_eqi = 0.0, dmesh_max = 0, dmesh_min = 1.0e20,
+  int i, j, j1, k, k1, numFrequencies_ori = numFrequencies_;
+  double freq_max, dmesh_ave= 0.0, dmesh_eqi = 0.0, dmesh_max = 0, dmesh_min = 1.0e20,
     dist, dis_ref;
-
-    // compute the maximum, minimum and average distance between two neighbouring nodes
-    k1 = 0;
-    for(i=0; i<numElements_; i++)
-    {
-        j1 = listNumberNodesPerElement[i];
-
-        if(j1 != NETYP3 && j1 != NETYP4) NC_Error_Exit_1(NCout, "An element must have 3 or 4 nodes!",
-                                                         "Number of the false element = ", extNumbersOfElements[i]);
-
-        if(listElementProperty[i] == 2) continue;
-
-        if(j1 > NETYP4) j1 /= 2;
-        if(areael[i] < 0.0) NC_Error_Exit_2(NCout, "Element with negative area is found!",
-                                            "external elemen number = ", extNumbersOfElements[i], "internal element number = ", i);
-        dis_ref = sqrt(areael[i]);
-        if(j1 == NETYP3) dis_ref *= 1.51967;
-        for(j=0; j<j1; j++)
+  
+  // compute the maximum, minimum and average distance between two neighbouring nodes
+  k1 = 0;
+  for( i = 0; i < numElements_; i++) {
+    j1 = listNumberNodesPerElement[i];
+    
+    if(j1 != NETYP3 && j1 != NETYP4) NC_Error_Exit_1(NCout, "An element must have 3 or 4 nodes!", "Number of the false element = ", extNumbersOfElements[i]);
+    
+    if(listElementProperty[i] == 2) continue;
+    
+    if(j1 > NETYP4) j1 /= 2;
+    if(areael[i] < 0.0) NC_Error_Exit_2(NCout, "Element with negative area is found!", "external elemen number = ", extNumbersOfElements[i], "internal element number = ", i);
+    dis_ref = sqrt(areael[i]); // for a square this would be an edgelength
+    if(j1 == NETYP3) dis_ref *= 1.51967;  // ( 4/sqrt(3) )^1/2 equilat triangle
+    // dis_ref is an approximation for the average edge length
+    for(j=0; j<j1; j++)
         {
             k = j + 1;
             if(k == j1) k = 0;

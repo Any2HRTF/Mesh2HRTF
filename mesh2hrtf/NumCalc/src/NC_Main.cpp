@@ -705,14 +705,17 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
             }
 	  }
 	  else {// the BRANCH and LEAF levels
+	    // old version uses father nearclusters, new one
+	    // relies on the current level
             int nlf = nlv-1, ifa, jfa, jself;
-            int ncluof = clulevarry[nlf].nClustOLv,
-	      nclusf = clulevarry[nlf].nClustSLv;
+            int ncluof = clulevarry[nlv].nClustOLv,
+	      nclusf = clulevarry[nlv].nClustSLv;
             Matrix<bool> ifnear(ncluof, nclusf, false);
 	    for(i=0; i<ncluof; i++) {
-	      for(j=0; j<clulevarry[nlf].ClustArLv[i].NumNeaClus; j++)
-		ifnear(i, clulevarry[nlf].ClustArLv[i].NumsNeaClus[j]) = true;
+	      for(j=0; j<clulevarry[nlv].ClustArLv[i].NumNeaClus; j++)
+		ifnear(i, clulevarry[nlv].ClustArLv[i].NumsNeaClus[j]) = true;
 	    }
+#if 0  // old version
 	    for(i=0; i<clulevarry[nlv].nClustOLv; i++) {
 	      ifa = clulevarry[nlv].ClustArLv[i].nuFather;
 	      nclufar[i] = 0;
@@ -724,6 +727,20 @@ void NC_ControlProgram(ofstream& NCout,int iend, bool estimate_ram, bool check_n
 		    nclufar[i]++;
                 }
             }
+#endif
+	    // new version
+	    for( i = 0; i < clulevarry[nlv].nClustOLv; i++) {
+	      ifa = clulevarry[nlv].ClustArLv[i].nuFather;
+	      nclufar[i] = 0;
+	      for (j = 0; j < clulevarry[nlv - 1].ClustArLv[ifa].NumNeaClus; j++) {
+		int uncle = clulevarry[nlv - 1].ClustArLv[ifa].NumsNeaClus[j];
+		for (int ncousin = 0; ncousin < clulevarry[nlv -1 ].ClustArLv[uncle].n_Son; ncousin++) {
+		  int cousin = clulevarry[nlv -1].ClustArLv[uncle].nuSon[ncousin];
+		  if( !ifnear(i, cousin) )
+		    nclufar[i]++;
+		}
+	      }
+	    }
 	  } // end of ELSE
 
 	  for(i=0; i<clulevarry[nlv].nClustOLv; i++)
