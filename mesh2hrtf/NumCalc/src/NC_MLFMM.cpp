@@ -1830,10 +1830,14 @@ void setup_preconditioning(double* scalefact) {
   int counter = 0;
   int rowstart = 0;
   int rowentry = 0;
-  int roworder[numRowsOfCoefficientMatrix_];
+  //  int* roworder;
+  //roworder = new int[numRowsOfCoefficientMatrix_];
+  //  int roworder[numRowsOfCoefficientMatrix_];
   int entriesU, entriesL; // number of nonzero entries in L and U
   zSparsetype zU0;
-  int ncols[numRowsOfCoefficientMatrix_-1];
+  int* ncols;
+  ncols = new int[numRowsOfCoefficientMatrix_-1];
+  //  int ncols[numRowsOfCoefficientMatrix_-1];
   int m,currentmL, currentmU;
 
   if(methodFMM_ == 1) { // SLFMBEM
@@ -1960,16 +1964,18 @@ void setup_preconditioning(double* scalefact) {
 
   // U is a bit trickier,
   // 'cause we have to switch from rowwise to columnswise
-  int colpos[numRowsOfCoefficientMatrix_-1];
+  //  int colpos[numRowsOfCoefficientMatrix_-1];
   for (i = 0; i < numRowsOfCoefficientMatrix_-1; i++) {
     // first nonzero column in every row, remember: upper triangle
     // diagonal is not included
-    colpos[i] =  i+1;
+    //colpos[i] =  i+1;
     // number of columns in each row
     ncols[i] = zU0.startlist[i+1] - zU0.startlist[i];
   }
-
-  int colindx_in_row[numRowsOfCoefficientMatrix_];
+  int* colindx_in_row;
+  colindx_in_row = new int[numRowsOfCoefficientMatrix_];
+  //int colindx_in_row[numRowsOfCoefficientMatrix_];
+  
   for ( i = 0; i < numRowsOfCoefficientMatrix_; i++ ) {
     if( zU0.startlist[i+1] - zU0.startlist[i] > 0 )
       colindx_in_row[i] = zU0.startlist[i];
@@ -1993,7 +1999,7 @@ void setup_preconditioning(double* scalefact) {
       }
     }
   }
-  
+  delete [] colindx_in_row;
   
   zU.startlist[ numRowsOfCoefficientMatrix_ ] = counter;
   zU.rowwise = false;
@@ -2052,6 +2058,7 @@ void setup_preconditioning(double* scalefact) {
       zU.zdata[ zU.startlist[k] + i0 ] /= zL.zdata[ zL.startlist[i+1] - 1];
     }
   }
+  delete [] ncols;
 }
   
 
@@ -2415,7 +2422,9 @@ void Expand2local(Complex** zGmat, Complex* zy) {
   int nsphere; // number of quad nodes on the sphere
   int Gamma_i;
   Complex alpha,beta;
-  Complex zdummy[numRowsOfCoefficientMatrix_]; // max possible length
+  Complex* zdummy;
+  zdummy = new Complex[numRowsOfCoefficientMatrix_]; // max possible length
+  //  Complex zdummy[numRowsOfCoefficientMatrix_]; // max possible length
   alpha.set(1.0,0.0);
   beta.set(0.0,0.0);
 
@@ -2450,6 +2459,7 @@ void Expand2local(Complex** zGmat, Complex* zy) {
     }
     */
   }
+  delete [] zdummy;
 }
 
 
