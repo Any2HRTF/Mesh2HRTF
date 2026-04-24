@@ -7,15 +7,14 @@
 #include<gsl/gsl_sf_bessel.h>
 #include<gsl/gsl_sf_legendre.h>
 #include<vector>
-#include <bits/stdc++.h>
-//#include<x86_64-linux-gnu/cblas64_mangling.h>
+#include<cmath>
+#include<gsl/gsl_cblas.h>
 
-#include<x86_64-linux-gnu/cblas64.h>
 extern Vector<double> Sourpoi3;
 extern Vector<double> Norvci3;
 extern void BAsinguII(ofstream&, Vector<Complex>&, const int&,
 	       const int&, Vector<Complex>&, Matrix<double>&,
-	       const int&, const int&); 
+	       const int&, const int&);
 extern void BAreguII(ofstream&, Vector<Complex>&, const int&,
 	    const int&, const int&, const int&,
 	    Vector<Complex>&, Matrix<double>&,
