@@ -1483,8 +1483,13 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
   */
 
   //  Matrix<double> crdelj(NNODPE, NDIM);
-  double rownorm2[numRowsOfCoefficientMatrix_];
-  int nentryinrow[numRowsOfCoefficientMatrix_] = {0};
+  double* rownorm2;
+  rownorm2 = new double[numRowsOfCoefficientMatrix_];
+  //  double rownorm2[numRowsOfCoefficientMatrix_];
+  int* nentryinrow;
+  nentryinrow = new int[numRowsOfCoefficientMatrix_];
+  
+  
   int totallength,blockstart,rowstart;
   int Ibvi03, Ibvj03, Ifcrh3;
   // for compatibility reasons we have to use a vector here instead of just
@@ -1501,8 +1506,10 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
   Vector<double> center_j(3);
   Vector<Complex> zrsintel(6);
   int localstart,rowlength;
-  for( i = 0; i < numRowsOfCoefficientMatrix_; i++)
+  for( i = 0; i < numRowsOfCoefficientMatrix_; i++) {
+    nentryinrow[i] = 0;
     rownorm2[i] = 0.0;
+  }
   // get the number of total nonzero entries in the near field matrix
   // loop over all cluster
   for ( n = 0; n < clulevarry[level].nClustOLv; n++) {
@@ -1762,7 +1769,8 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 
     
   }
-
+  delete [] rownorm2;
+  delete [] nentryinrow;
   
 }
 
