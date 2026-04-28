@@ -9,8 +9,10 @@ GSLFLAG=-DUSE_GSL
 LAPACKFLAG=-DUSE_LAPACK
 OPTIM=-O2
 GSL_PREFIX ?= /usr/local
-LDFLAGS=-llapacke -lgsl -lblas -L$(GSL_PREFIX)/lib
+LAPACK_PREFIX ?= /usr/local
+LDFLAGS=-L$(LAPACK_PREFIX)/lib -L$(GSL_PREFIX)/lib -llapacke -lgsl -lblas
 CFLAGS+=-I$(GSL_PREFIX)/include
+CFLAGS+=-I$(LAPACK_PREFIX)/include
 #DEBUG=-g
 
 all: $(SOURCES) $(EXECUTABLE)
