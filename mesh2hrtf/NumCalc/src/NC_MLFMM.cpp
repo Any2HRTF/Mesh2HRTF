@@ -20,7 +20,7 @@ using namespace std;
   zFvec: zFvec[ leafclusters ][pointsphere]
 
   zSmat: zSmat[clusters at leaf][elems in cluster][points sphere]
-  
+
 */
 extern Complex NC_IncidentWaveRHS( ofstream&);
 extern void NC_SingularIntegration(ofstream&,Vector<Complex>&,const int&,const int&,Vector<Complex>&,Matrix<double>&);
@@ -44,13 +44,13 @@ void Cleanup_MLFMM(bool deleteF) {
   }
 
   if( zSmat != NULL ) {
-    for (int i = 0; i < clulevarry[nlevtop_].nClustOLv; i++) 
+    for (int i = 0; i < clulevarry[nlevtop_].nClustOLv; i++)
       delete[] zSmat[i];
     delete[] zSmat;
     //zNear.~zSparsetype();
     zSmat = NULL;
   }
-  
+
   if( deleteF && zFmat != NULL) {
     for( int i = 0; i < clulevarry[nlevtop_].nClustOLv; i++) {
       for ( int s = 0; s < clulevarry[nlevtop_].nPoinSpheLv; s++) {
@@ -73,24 +73,24 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
     Calculation Routine for the local FMM expansion matrices at root level
     sum_{Gamma in C} int_Gamma e^{ik (y - z)^T s}d\Gamma x_i
     at leaf level, also calculate the right hand side contributions
-    
+
     Variables
 	        nclusters: Number of clusters at the level
 	        Number quad nodes sphere: Number of quadrature nodes on the sphere
               Depends on the expansion length L
 				    N = (L+1)^2
 	maxlevel: max fmm level
-	  
+
     The integral over Gamma can be calculated by discretizing
     y = v0 + e1 * xi + e2 * eta with xi in [0,1] and \eta in [0,xi]
     where v0 is the first vertex of the element, and e1,e2 are two edges
     (either triangle or quadrilateral)
-    
+
     thus we have for the G part
     kappa_Gamma e^{ik (v0-z)*s) int_0^1 e^{ik e1*s xi} \int_0^{xi} e^{ik e2*s \eta}d\eta d\xi
     where kappa is the scaling from unit triangle/quadrilateral to Gamma
     this integrals can be calculated analytically
-    
+
     using s1 = s*e1 and s2 = s*e2 the result(s) of the integral are
 
     s1 neq 0, s2 neq 0, s1 + s2 neq 0
@@ -98,17 +98,17 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
                                  k^2 ( s1s2^2 + s1^2 s2 )
     s1 = 0, s2 neq 0
     I = (iks2 + 1 - e^{iks2}) / (k^2 s2^2)
- 
+
     s1 neq 0, s2 = 0
     I = ( (1 - iks1) e^{iks1} - 1 )/ (k^2 s1^2)
-    
+
     s1 = 0, s2 = 0
     I = 1/2
 
     s1 + s2 = 0
     (iks1 + 1 - e^{iks1}) / ( k^2 s1^2 )
 
-    
+
     Global variables:
        elementsConnectivity: int**, elementsConnectivity[elem][node] is the nodenumber of the vertices
        listNumberNodesPerElement: int* , listNumberNodesPerElement[elem] is the number of vertices of elem
@@ -118,7 +118,7 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
 	  contains:
 	     Clust: pointer to ElCluster, and info about expansion lenght, points
 	     on the sphere ....
-	     use variables 
+	     use variables
 	     nPoinSpheLv: int: number of quadrature nodes on the spere
 	     nExpaTermLv: int: expansion length on current level
 	     uvcsphe: **double: coordinates of the quadrature nodes on the
@@ -164,12 +164,12 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
   double z0[NDIM];
   double s0,s1,s2,kappa,rval;
   Complex zs0,zs1,zs2,zval,bcval,admival;
-  int Ibvj03 = 0;  
+  int Ibvj03 = 0;
   bool Ifadmij = false;
   bool nonzerobc;
   int Gamma_j,nvert;
-  int tentries = 0;  
-  
+  int tentries = 0;
+
   if( allocateFMM ) {
     /* ****************************************
                          zFmat
@@ -182,20 +182,20 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
     }
     for ( i = 0; i < clulevarry[maxlevel].nClustOLv; i++ ) {
       zFmat[i] = new Complex*[ clulevarry[maxlevel].nPoinSpheLv ];
-      
+
       if( zFmat[i] == NULL ) {
 	cerr << "Sorry could not allocate zFmat\n";
 	exit(-1);
       }
       for ( s = 0; s < clulevarry[maxlevel].nPoinSpheLv; s++ ) {
 	zFmat[i][s] = new Complex[ clulevarry[maxlevel].ClustArLv[i].NumOfEl ];
-	tentries += clulevarry[maxlevel].ClustArLv[i].NumOfEl;	
+	tentries += clulevarry[maxlevel].ClustArLv[i].NumOfEl;
 	if( zFmat[i][s] == NULL ) {
 	  cerr << "Sorry could not allocate zFmat\n";
 	  exit(-1);
-	}	
+	}
       }
-     
+
     }
 
     /* *******************************************************
@@ -225,13 +225,13 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
   cout << "Matrix T:\n";
   cout << "Complex: " << tentries << "\n";
   int nsphere = clulevarry[maxlevel].nPoinSpheLv;
-  int zFvecblock = 0;  
+  int zFvecblock = 0;
   // loop over all leaf clusters
-  for (n = 0; n < clulevarry[maxlevel].nClustOLv; n++) { 
+  for (n = 0; n < clulevarry[maxlevel].nClustOLv; n++) {
     // coordinates of the cluster midpoint
-    for (j = 0; j < NDIM; j++) 
-      z0[j] = clulevarry[maxlevel].ClustArLv[n].CoorCent[j];  
-    
+    for (j = 0; j < NDIM; j++)
+      z0[j] = clulevarry[maxlevel].ClustArLv[n].CoorCent[j];
+
     // loop over all elements in the cluster
     for (i = 0; i < clulevarry[maxlevel].ClustArLv[n].NumOfEl; i++) {
       // look at each single element in current cluster
@@ -240,7 +240,7 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
       // if zbval0 is > 0 at this element, thats a contribution to the rhs
       switch( ibval[Gamma_j] ) {
       case 0:         // velocity prescribed
-	Ibvj03 = 0;  
+	Ibvj03 = 0;
 	Ifadmij = false;
 	break;
       case 1:         // pressure prescribed
@@ -249,7 +249,7 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
 	break;
       case 2:         // velocity and surface admittance prescribed
       case 5:
-	Ibvj03 = 0;  
+	Ibvj03 = 0;
 	Ifadmij = true;
 	break;
       default:
@@ -271,33 +271,33 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
       if( Ifadmij ) {
 	admival = zbval1[Gamma_j];
       }
-	
+
       // get vertices of each element and two edges
       nvert = listNumberNodesPerElement[Gamma_j];
       // scaling from unit element to global element
       kappa = areael[Gamma_j];
       if( nvert == 3)
 	kappa *= 2.0;
-      
+
       if( nvert > 4 ) {
 	cout << "Sorry not implemented yet \n";
 	exit(-1);
       }
       // for the analytic solution of int_\Gamma_j e^{ik (z1-y)s}
-      // as function of s 
+      // as function of s
       // we need one vertex and two edges of the triangle
       // chen uses r = |y - x| in the greens function, but here
       // we go to the more regular r = |x-y| formulation
       iv = elementsConnectivity[Gamma_j][0];
       iv1 = elementsConnectivity[Gamma_j][1];
       iv2 = elementsConnectivity[Gamma_j][2];
-      // sign changed for debugging purposes  
+      // sign changed for debugging purposes
       for( nn = 0; nn < NDIM; nn++) {
 	v0[nn] = -(nodesCoordinates[iv][nn] - z0[nn]);  // vertex 0 - z0
 	e1[nn] = -(nodesCoordinates[iv1][nn] - nodesCoordinates[iv][nn]);  // edge 1
 	e2[nn] = -(nodesCoordinates[iv2][nn] - nodesCoordinates[iv1][nn]); // edge 2
-      }  
-            
+      }
+
     // loop over the quadrature nodes of the sphere
       for ( s = 0; s < nsphere; s++ ) {
 	s0 = 0.0;
@@ -353,12 +353,12 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
 	    // depending on the boundary condition on Gamma_j we have different
 	    // combinations of G,H,H', and E, plus for a nonzero bc value the
 	    // integral is a contribution for the rhs not for the system matrix
-	    
+
 	    // no matter what bc we will always have at least one exp part in
 	    // the system matrix either with or without derivative with respect
 	    // to y:
 	    // Dirichlet: Matrix: G + zBta3 * H', rhs: -p0/2 + Hp0 + zBta3 E p0
-	    // Neumann: Matrix: H + zBta3 * E,  rhs: -zBta3 v0/2 - (G - zbta3 H')v0 
+	    // Neumann: Matrix: H + zBta3 * E,  rhs: -zBta3 v0/2 - (G - zbta3 H')v0
 	    if( nvert == 3 ) {
 	      zFmat[n][s][i] *= ( zs2 * s1  - (zs1 - 1.0) * s2 - zs1 * s1 );
 	      zFmat[n][s][i].div_r(s1 * s2 * s2 + s1 * s1 * s2);
@@ -404,7 +404,7 @@ void LocalExpansionMat(int maxlevel, bool allocateFMM) {
 	  rval = 0.0;
 	  for (j = 0; j< NDIM; j++)
 	    rval += elenor[Gamma_j][j] * clulevarry[maxlevel].uvcsphe[s][j];
-	  rval *= waveNumbers_; 
+	  rval *= waveNumbers_;
 	  zval.set(0.0,rval);  // ikn
 	  if( nonzerobc ) {
 	    // admittance is not necessary here
@@ -439,7 +439,7 @@ void apply_localExpansion(Complex* zF, Vector<Complex>& velopot, Vector<Complex>
      Global:
      zFmat: in, zFmat[cluster][number of elems in cluster][number nodes sphere]
          local expansion matrix on leaf level
-     zFvec: 
+     zFvec:
   */
   int nsphere = clulevarry[nlevtop_].nPoinSpheLv;
   int Gamma_j;
@@ -454,7 +454,7 @@ void apply_localExpansion(Complex* zF, Vector<Complex>& velopot, Vector<Complex>
 	  ztmp = velopot[Gamma_j];
 	else
 	  ztmp = partvelo[Gamma_j];
-	
+
 	zF[n*nsphere + s] += zFmat[n][s][j] * ztmp;
       }
     }
@@ -477,7 +477,7 @@ void apply_localExpansion(Complex*** zF, Vector<Complex>& ztmp) {
                 local expansion matrix on leaf level
      zF:    out,   zFmat * x, where x is the approximation of the solution
                    in the iterative solver
-		   
+
      ztmp:  in: [number of elements in mesh] contains the
                        "solution" vector x for all collocnodes
 
@@ -514,11 +514,11 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
      T_{ij} = sum_\ell (2l + 1)/(4pi) P_l( y_i x_j ),
      where the x_j are the quadrature nodes on the "children" sphere
      and y_i are the  nodes not the parent sphere
-     currently the quadrture weights need to be drawn to the input vector 
+     currently the quadrture weights need to be drawn to the input vector
 
      YLev: output: pointer to a Matrix: each matrix contains the
                    T_ij mentioned above
-     
+
      nlevels: input: number of levels
 
 
@@ -530,7 +530,7 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
            done later for efficiency reasons
      It is assumed that the gsl is compiled with this code
      Written by kreiza: 19.11.24
-     
+
      Global
      clastarry: Clustertree for all levels
 
@@ -548,13 +548,13 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
     //if( lev == 1 )
     if( clulevarry[lev-1].nClustOLv == 1 ) //|| clulevarry[lev-1].isNearClust)
 	continue;
-    
+
     // expansion length of level and parent
     currentL = clulevarry[lev].nExpaTermLv;
     parentL = clulevarry[lev - 1].nExpaTermLv;
     Ncurrent = clulevarry[lev].nPoinSpheLv;
     Nparent = clulevarry[lev-1].nPoinSpheLv;
-    
+
     QNodescurrent = clulevarry[lev].uvcsphe;
     QNodesparent = clulevarry[lev-1].uvcsphe;
 
@@ -568,14 +568,14 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
 
     exit(0);
     */
-    
+
     if( currentL == parentL ) {
       // do nothing
       //      continue;
     }
 
     // loop over sphere points
-    for( j = 0; j < Ncurrent; j++ )  { // nodes on the sphere 
+    for( j = 0; j < Ncurrent; j++ )  { // nodes on the sphere
       for ( i = 0; i < Nparent; i++ ) {
 	Angle = 0.0;
 	for ( n = 0; n < NDIM; n++ )
@@ -587,7 +587,7 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
 	  else {
 	    //	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) / (4.0 * PI) * legendre(l,Angle);
 #ifdef USE_GSL
-	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * gsl_sf_legendrePl(l,Angle);   
+	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * gsl_sf_legendrePl(l,Angle);
 #else
 	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * legendre(l,Angle);
 #endif
@@ -597,7 +597,7 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
     }
   }
 }
- 
+
 void UpPass(Complex*** zF, const double* dY, int currentlevel) {
 /* interpolate zFchild for the nodes necessary for the parent
    (in general different expansion order, thus different nodes on the sphere)
@@ -614,7 +614,7 @@ void UpPass(Complex*** zF, const double* dY, int currentlevel) {
       scale with exp(1.0i * k * (zparent - zchild) * s)
 
    Variables:
-      zFchild: Complex matrix: 
+      zFchild: Complex matrix:
                dimension: number of clusters times
 	                  number of nodes on the sphere
                contains the local expansion inside each cluster as function
@@ -623,7 +623,7 @@ void UpPass(Complex*** zF, const double* dY, int currentlevel) {
       dY:    double matrix containing the transformation matrix.
              Use column wise storage
       currentlevel: number of the current level
-      
+
    GLOBAL: ClusterLev* clulevarry: cluster tree containing
                                    the clusters at all levels
 
@@ -641,7 +641,7 @@ void UpPass(Complex*** zF, const double* dY, int currentlevel) {
   Complex zexpfact, zdummy; // e^{ik (z2-z1)^T s}
   int parent;
   double* weisphe;
-  
+
   nclus = clulevarry[currentlevel].nClustOLv;
   msphere = clulevarry[currentlevel-1].nPoinSpheLv;
   nsphere = clulevarry[currentlevel].nPoinSpheLv;
@@ -652,22 +652,22 @@ void UpPass(Complex*** zF, const double* dY, int currentlevel) {
   // set father entries to zero
   // for the far future, think about allocating the space
   // for zF in one go, and use memset
-  
+
   //if( clulevarry[currentlevel-1].nClustOLv == 1 || clulevarry[currentlevel-1].isNearClust)
   //  return;
-  
+
   for (i = 0; i < clulevarry[currentlevel-1].nClustOLv; i++)
-    for ( j = 0; j < msphere; j++ ) 
+    for ( j = 0; j < msphere; j++ )
       zF[currentlevel-1][i][j].set(0.0,0.0);
-    
+
   for (child = 0; child < nclus; child++) {
     parent = clulevarry[currentlevel].ClustArLv[child].nuFather;
     for( j = 0; j < NDIM; j++ ){
-      z1z2[j] = (clulevarry[currentlevel-1].ClustArLv[parent].CoorCent[j] - 
+      z1z2[j] = (clulevarry[currentlevel-1].ClustArLv[parent].CoorCent[j] -
 		  clulevarry[currentlevel].ClustArLv[child].CoorCent[j]);
-    
+
     }
-    
+
     if(msphere == nsphere ) { // no interpolation necessary just shift the
                            // cluster midpoint
       for (i = 0; i < msphere; i++) {
@@ -681,13 +681,13 @@ void UpPass(Complex*** zF, const double* dY, int currentlevel) {
     }
     else {
   // now we have different expansion length in parent and child
-  
+
   // Do the interpolation
   // 1) multiply with the quadrature weights
       for( i = 0; i < nsphere; i++) {
 	zF[currentlevel][child][i] *= weisphe[i];
       }
-      
+
       // 2) multiplay with the interpolation matrix
       ddummy = 0.0;
 #ifdef USE_LAPACK
@@ -698,7 +698,7 @@ void UpPass(Complex*** zF, const double* dY, int currentlevel) {
       }
       //      for (i = 0; i < nsphere; i++ )
       //	ddummymat[nsphere + i] = zF[currentlevel][child][i].im();
-      
+
       //cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,msphere,2,nsphere,1.0,dY,msphere,ddummymat,nsphere,0.0,ddummymat2,msphere);
       cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, msphere, 2, nsphere, 1.0, dY, nsphere, ddummymat, 2, 0.0, ddummymat2, 2);
       /*
@@ -742,18 +742,18 @@ void UpPasslocal(Complex* zFchild,Complex** zFparent, const double* dY, int curr
  // read + imag part for Fnew
   Complex zexpfact, zdummy; // e^{ik (z2-z1)^T s}
   int parent;
-  
+
   msphere = clulevarry[currentlevel-1].nPoinSpheLv;
   nsphere = clulevarry[currentlevel].nPoinSpheLv;
 
   double ddummymat[2*nsphere]; // real + imag part for Fold
-  double ddummymat2[2*msphere]; 
+  double ddummymat2[2*msphere];
 
-  
+
   parent = clulevarry[currentlevel].ClustArLv[iclus].nuFather;
   if(msphere == nsphere) { // no interpolation necessary
     for( j = 0; j < NDIM; j++ ){
-      z1z2[i] = clulevarry[currentlevel-1].ClustArLv[parent].CoorCent[j] - 
+      z1z2[i] = clulevarry[currentlevel-1].ClustArLv[parent].CoorCent[j] -
 	clulevarry[currentlevel].ClustArLv[iclus].CoorCent[j];
     }
     for (i = 0; i < msphere; i++) {
@@ -797,18 +797,18 @@ void UpPasslocal(Complex* zFchild,Complex** zFparent, const double* dY, int curr
     }
     zexpfact.set(cos( waveNumbers_ *  ddummy),sin( waveNumbers_*ddummy ));
     for( j = 0; j < nsphere; j++)
-      zFparent[parent][i] += zexpfact * ( zFchild[j] * dY[i*nsphere + j] ); 
+      zFparent[parent][i] += zexpfact * ( zFchild[j] * dY[i*nsphere + j] );
   }
 #endif
 }
 
 
 void DownPass(Complex** zGparent,Complex** zGchild, const double* dY, int currentlevel) {
-/* shift the midpoint of the cluster farfield expansion G and filters the 
+/* shift the midpoint of the cluster farfield expansion G and filters the
    nodes of the sphere
 
    Lets assume we alread have the interpolation matrix Y from the uppass
-   
+
    However, we still need to multiply Fold with the quadrature weights over
    the sphere. Also it is assumed that it has been checked if an UpwardPass
    is even necessary
@@ -819,7 +819,7 @@ void DownPass(Complex** zGparent,Complex** zGchild, const double* dY, int curren
       scale with exp(1.0i * k * (zparent - zchild) * s)
 
    Variables:
-      zFchild: Complex matrix: 
+      zFchild: Complex matrix:
                dimension: number of clusters times
 	                  number of nodes on the sphere
                contains the local expansion inside each cluster as function
@@ -836,9 +836,9 @@ void DownPass(Complex** zGparent,Complex** zGchild, const double* dY, int curren
   double z1z2[3]; // difference of cluster midpoints
   double ddummy;
   Complex alpha;
- 
+
   int nChild,childcluster;
-  
+
   nclus = clulevarry[currentlevel].nClustOLv;
   msphere = clulevarry[currentlevel].nPoinSpheLv;
   nsphere = clulevarry[currentlevel+1].nPoinSpheLv;
@@ -849,14 +849,14 @@ void DownPass(Complex** zGparent,Complex** zGchild, const double* dY, int curren
   Complex zdummy[msphere];
   Complex ztest;
 
-  if( msphere != nsphere) { 
-    // interpolation necessary 
+  if( msphere != nsphere) {
+    // interpolation necessary
     for( int n = 0;  n < nclus; n++) {
       for( int s = 0; s < msphere; s++)
 	zGparent[n][s].mul_r( clulevarry[currentlevel].weisphe[s] );
     }
   }
-  
+
   for (int n = 0;  n < nclus; n++) { // parent cluster
     nChild = clulevarry[currentlevel].ClustArLv[n].n_Son;
     for (int ichild = 0; ichild < nChild; ichild++) {
@@ -868,7 +868,7 @@ void DownPass(Complex** zGparent,Complex** zGchild, const double* dY, int curren
       // shift between different cluster midpoints (+ demodulate)
       for(int i = 0; i < msphere; i++ ) {
 	ddummy = 0.0;
-	for( int j = 0; j < NDIM; j++) 
+	for( int j = 0; j < NDIM; j++)
 	  ddummy += clulevarry[currentlevel].uvcsphe[i][j] * z1z2[j];
 	zexpfact.set( cos(waveNumbers_ * ddummy), sin(waveNumbers_ * ddummy) );
 	zdummy[i] = zexpfact * zGparent[n][i];
@@ -891,13 +891,13 @@ void DownPass(Complex** zGparent,Complex** zGchild, const double* dY, int curren
 	  ztest.set(ddummymat2[2*i],ddummymat2[2*i + 1]);
 	  zGchild[childcluster][i] += ztest;
 	}
-      }  
+      }
       else
 	for( int i = 0; i < nsphere; i++ )
 	  zGchild[childcluster][i] += zdummy[i];
-      
+
 #else
-      if( msphere != nsphere ) {  
+      if( msphere != nsphere ) {
 	for (int i = 0; i < nsphere; i++)
 	  for( int j = 0; j < msphere; j++)
 	    zGchild[childcluster][i] += zdummy[j] * dY[j * nsphere + i];
@@ -924,7 +924,7 @@ void Cluster2ClusterEval(Complex** zF, Complex** zG) {
      ninpclus_ number of evalclusters
 
      No explicit calulcation of the zMmat is necessary
-     
+
   */
   L = clulevarry[0].nExpaTermLv;
   nsphere = clulevarry[0].nPoinSpheLv;
@@ -942,10 +942,10 @@ void Cluster2ClusterEval(Complex** zF, Complex** zG) {
       exit(-1);
     }
   }
-  // loop over all clusters in level 
+  // loop over all clusters in level
   for ( int n = 0; n < clulevarry[0].nClustOLv; n++ ) {
     // cluster center
-    for( int nn = 0; nn < NDIM; nn++) 
+    for( int nn = 0; nn < NDIM; nn++)
       z2[nn] = clulevarry[level].ClustArLv[n].CoorCent[nn];
     for ( int i = 0; i < ninpclus_; i++) {
       r = 0.0;
@@ -973,11 +973,11 @@ void Cluster2ClusterEval(Complex** zF, Complex** zG) {
 #ifdef USE_GSL
 	gsl_sf_legendre_Pl_array(L, v, Pl[s]);
 #else
-	for(int l = 0; l < L + 1; l++) 
+	for(int l = 0; l < L + 1; l++)
 	  Pl[s][l] = legendre(L,v);
 #endif
       }
-      
+
       for( s = 0; s < nsphere; s++ )
 	zM[s].set(0.0,0.0);
       for (l = 0; l < L; l++) {
@@ -1005,7 +1005,7 @@ void Cluster2ClusterEval(Complex** zF, Complex** zG) {
       for( int s = 0; s < nsphere; s++ ) {
 	zG[i][s] += zM[s] * zF[n][s];
       }
-    } // loop for i 
+    } // loop for i
   } // loop n
   for (s = 0; s < nsphere; s++) {
     delete[] Pl[s];
@@ -1016,7 +1016,7 @@ void Cluster2ClusterEval(Complex** zF, Complex** zG) {
 #endif
 
 void Cluster2Clustermat(int maxlev, bool allocateFMM) {
-  /* computers the cluster to cluster interaction matrix 
+  /* computers the cluster to cluster interaction matrix
      for all levels
      zMmat[level][clusterinlevel][interactionlist*nodesphere]
 
@@ -1034,7 +1034,7 @@ void Cluster2Clustermat(int maxlev, bool allocateFMM) {
    */
 
   double r,v;
-  double rwfact_ = 1.8; 
+  double rwfact_ = 1.8;
   // we currently use one order more then chen, check if this yields
   // much difference
   double** Pl; //[nsphere* (L+1)];
@@ -1101,15 +1101,15 @@ void Cluster2Clustermat(int maxlev, bool allocateFMM) {
 	exit(-1);
       }
     }
-    // loop over all clusters in level 
+    // loop over all clusters in level
     for ( Clustj = 0; Clustj < clulevarry[level].nClustOLv; Clustj++ ) {
       // cluster center
-      for( nn = 0; nn < NDIM; nn++) 
+      for( nn = 0; nn < NDIM; nn++)
 	z2[nn] = clulevarry[level].ClustArLv[Clustj].CoorCent[nn];
       for ( j = 0; j < clulevarry[level].ClustArLv[Clustj].NumFanClus; j++) {
 	// interaction list for cluster_n
 
-	
+
 	C_i = clulevarry[level].ClustArLv[Clustj].NumsFanClus[j];
 
 	if( adapt_fmmlength_ ) {
@@ -1123,9 +1123,9 @@ void Cluster2Clustermat(int maxlev, bool allocateFMM) {
 	}
 	else
 	  explength = L;
-       
 
-	
+
+
 	r = 0.0;
 	for( nn = 0; nn < NDIM; nn++) {
 	  // interaction cluster - current cluster
@@ -1154,11 +1154,11 @@ void Cluster2Clustermat(int maxlev, bool allocateFMM) {
 #ifdef USE_GSL
 	  gsl_sf_legendre_Pl_array(L, v, Pl[s]);
 #else
-	  for ( int l = 0; l < L + 1; l++ ) 
+	  for ( int l = 0; l < L + 1; l++ )
 	    Pl[s][l] = legendre(l, v);
 #endif
 	}
-	
+
 	for( s = 0; s < nsphere; s++ )
 	  zMmat[level][Clustj][s + nsphere * j].set(0.0,0.0);
 	for (l = 0; l < explength; l++) {
@@ -1190,22 +1190,22 @@ void Cluster2Clustermat(int maxlev, bool allocateFMM) {
     }
     delete[] Pl;
   } // loop level
-}   
-  
+}
+
 void cluster2clusterlv(Complex*** zF, Complex*** zG, int level) {
   // does the cluster to cluster interaction at a given level
-  /*  
+  /*
       zF: in: zF[level][cluster][nodes sphere], local expansion for each cluster
               we define that for each level, although the old zF is not needed
 	      after the uppass, but the allocated space changes from level
 	      to level
       zG: out: zG[level][cluster2][nodes on sphere], the transformed zF
       level:  in: current level
-      
+
       Note: we use zG with the actual clusternumber Gamma_i of the
             interaction cluster
 
-      Global: zMmat: in: zMmat[level][clusterinlevel][interactionlist * nodessphere] translation matrix    
+      Global: zMmat: in: zMmat[level][clusterinlevel][interactionlist * nodessphere] translation matrix
   */
   int i,C_i,s,n;
   int nsphere = clulevarry[level].nPoinSpheLv;
@@ -1213,16 +1213,16 @@ void cluster2clusterlv(Complex*** zF, Complex*** zG, int level) {
   for (n = 0; n < clulevarry[level].nClustOLv; n++)
     for( s = 0; s < nsphere; s++)
       zG[level][n][s].set(0.0,0.0);
-  
+
   for( n = 0; n < clulevarry[level].nClustOLv; n++) {
-    
+
     // cluster2cluster
     for (i = 0; i < clulevarry[level].ClustArLv[n].NumFanClus; i++) {
       C_i = clulevarry[level].ClustArLv[n].NumsFanClus[i];
       for( s = 0; s < nsphere; s++)
 	zG[level][C_i][s] += zMmat[level][n][s + nsphere * i] * zF[level][n][s];
     }
-    
+
   }
 }
 
@@ -1238,7 +1238,7 @@ void cluster2clusterVec() {
   */
   int nsphere = clulevarry[nlevtop_].nPoinSpheLv;
   int n, i, C_i, C_j, s, l;
-  
+
   //Complex*** zG;
 
   /*
@@ -1247,14 +1247,14 @@ void cluster2clusterVec() {
     cerr << "Sorry could not allocate zG\n";
     exit(-1);
   }
-  
+
   for (i = 0; i < numClusterLevels_; i++) {
     zG[i] = new Complex*[ clulevarry[i].nClustOLv ];
     if( zG[i] == NULL) {
       cerr << "Sorry, Could not allocate zG\n";
       exit(-1);
     }
-    
+
     for( C_j = 0; i < clulevarry[nlevtop_].nClustOLv; C_j++) {
       zG[i][C_j] = new Complex[ clulevarry[i].nPoinSpheLv ];
       if( zG[i][C_j] == NULL ) {
@@ -1262,7 +1262,7 @@ void cluster2clusterVec() {
 	exit(-1);
       }
     }
-    
+
   }
   */
   /* ********************************************************
@@ -1280,7 +1280,7 @@ void cluster2clusterVec() {
   **                      Up and Down                        **
   ********************************************************** */
   // allocate zF
-  
+
   // Complex*** zF;
   int iclus;
   /*
@@ -1322,7 +1322,7 @@ void cluster2clusterVec() {
 	  continue;
       UpPass( zF,  dYmat[l-1], l);
     }
-    
+
     // zF[l] is not needed anymore
     /*
     for( C_j = 0; i < clulevarry[l].nClustOLv; C_j++) {
@@ -1335,7 +1335,7 @@ void cluster2clusterVec() {
     cluster2clusterlv(zF,  zG, l-1);
   }
   /*
-  for( i = 0; i < clulevarry[0].nClustOLv; i++) 
+  for( i = 0; i < clulevarry[0].nClustOLv; i++)
     delete[] zF[0][i];
   delete[] zF[0];
   delete zF;
@@ -1350,7 +1350,7 @@ void cluster2clusterVec() {
     DownPass( zG[l], zG[l+1], dYmat[l], l);
     // delete zG[level]
     /*
-    for (i = 0; i < clulevarry[l].nClustOLv; i++) 
+    for (i = 0; i < clulevarry[l].nClustOLv; i++)
       delete[] zG[l][i];
 	  delete[] zG[l];
     */
@@ -1358,14 +1358,14 @@ void cluster2clusterVec() {
   // local expansion
   Expand2local(zG[nlevtop_], zrhs);
   /*
-  for (i = 0; i < clulevarry[nlevtop_].nClustOLv; i++) 
+  for (i = 0; i < clulevarry[nlevtop_].nClustOLv; i++)
     delete[] zG[nlevtop_][i];
   delete[] zG[nlevtop_];
   delete[] zG;
   zG = NULL;
   */
 }
-  
+
 void Cluster2Cluster(Complex* zF,Complex* zG,int nsphere, int L, double* z1z2, double** uvcsphere) {
   /* computers the cluster to cluster interaction
      zF  in: complex vector length number of quad nodes on sphere, contains the local expansion
@@ -1380,7 +1380,7 @@ void Cluster2Cluster(Complex* zF,Complex* zG,int nsphere, int L, double* z1z2, d
   double** Pl; //[nsphere* (L+1)];
   int i,j,l,n;
   Complex zfact,hn;
-  
+
   Pl = new double*[nsphere];
   if( Pl == NULL ) {
     cerr << "Cannot allocate the Legendrepolynomials\n";
@@ -1395,7 +1395,7 @@ void Cluster2Cluster(Complex* zF,Complex* zG,int nsphere, int L, double* z1z2, d
   }
 
   r = 0.0;
-  for( i = 0; i < NDIM; i++ ) 
+  for( i = 0; i < NDIM; i++ )
     r += z1z2[i] * z1z2[i];
   r = sqrt(r);
 #ifdef USE_GSL
@@ -1419,7 +1419,7 @@ void Cluster2Cluster(Complex* zF,Complex* zG,int nsphere, int L, double* z1z2, d
       Pl[n][l] = legendre(L,v);
 #endif
   }
-  
+
   for (l = 0; l < L + 1; l++) {
     switch( l % 4 ) {
     case 0:
@@ -1446,19 +1446,19 @@ void Cluster2Cluster(Complex* zF,Complex* zG,int nsphere, int L, double* z1z2, d
     Pl[i] = NULL;
   }
   delete[] Pl;
-}   
+}
 
 void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFMM) {
   /* set up the Near field matrix for the leaf clusters
 
-    
+
      level: in:  leaf level index
      scalefact: out: vector(numRowsOfCoefficientMatrix_)
                      factor used in the preconditioning for scaling an
-                     individual row of system matrix and rhs 		 
+                     individual row of system matrix and rhs
      zBta3: in: complex, Burton Miller factor
      allocateFMM: in: bool, should the matrices be also allocated ?
-     
+
      A major "problem" here is that depending on the boundary conditions
      the formulation needs to be adapted, thus we need to consider the integral
      over the boundary integral operators, the right hand side, and the
@@ -1466,7 +1466,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 
      Note: In the original version, Chen used the system
           -u/2 + Hu - Gv = u_inc
-	  
+
      Global:
      zrhs: in/out Complex array of length numRowsOfCoefficientMatrix_, contains the entries for
            the right hand side
@@ -1483,8 +1483,8 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 		 sparse rowwise format
      zrhs: out: nearfield contributions of boundary conditions to the right
                 hand side
-     
-     
+
+
   */
 
   //  Matrix<double> crdelj(NNODPE, NDIM);
@@ -1493,8 +1493,8 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
   //  double rownorm2[numRowsOfCoefficientMatrix_];
   int* nentryinrow;
   nentryinrow = new int[numRowsOfCoefficientMatrix_];
-  
-  
+
+
   int totallength,blockstart,rowstart;
   int Ibvi03, Ibvj03, Ifcrh3;
   // for compatibility reasons we have to use a vector here instead of just
@@ -1518,7 +1518,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
   // get the number of total nonzero entries in the near field matrix
   // loop over all cluster
   for ( n = 0; n < clulevarry[level].nClustOLv; n++) {
-    nGamma_j = clulevarry[level].ClustArLv[n].NumOfEl; 
+    nGamma_j = clulevarry[level].ClustArLv[n].NumOfEl;
       // loop over all near field clusters
     for ( i = 0; i < clulevarry[level].ClustArLv[n].NumNeaClus; i++ ) {
       Ci = clulevarry[level].ClustArLv[n].NumsNeaClus[i]; // this would be the target clusters
@@ -1531,18 +1531,18 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
   }
   if( zNear.zdata != NULL )
     allocateFMM = false;
-  
+
   totallength = 0;
-  if( allocateFMM || zNear.startlist == NULL)  
+  if( allocateFMM || zNear.startlist == NULL)
     zNear.startlist = new int[numRowsOfCoefficientMatrix_+1];
-  
+
   zNear.startlist[0] = 0;
   for (i = 0; i < numRowsOfCoefficientMatrix_; i++) {
     // now really ordered with respect to Gamma_i
-    zNear.startlist[i+1] = zNear.startlist[i] + nentryinrow[i];  
+    zNear.startlist[i+1] = zNear.startlist[i] + nentryinrow[i];
     totallength += nentryinrow[i];
   }
-  
+
   // now we are ready to initialize zNear
   if( allocateFMM || zNear.zdata == NULL) {
     if( zNear.zdata != NULL ) {
@@ -1570,7 +1570,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
   cout << "Nearfield matrix\n";
   cout << "Integer: " << numRowsOfCoefficientMatrix_+1 + totallength << "\n";
   cout << "Complex: " << totallength << "\n";
-  
+
   for( i = 0; i < numRowsOfCoefficientMatrix_; i++)
     nentryinrow[i] = 0;
 
@@ -1601,7 +1601,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
       cerr << "Sorry wrong boundary condition\n";
       exit(-1);
     }
-    for (j = 0; j < NNODPE; j++) 
+    for (j = 0; j < NNODPE; j++)
       Zbvi03[j] = zbval0[i][j];
 
     if( Zbvi03[0].norm() > EPSY )
@@ -1618,10 +1618,10 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
     // not really necessary for surface elements and constant
     // collocation, but sooner or later necessary for other cases
     // Dofpos_i = jelist[Gamma_i][0];
-    
+
     // right hand side parts, don't forget chens uses -1/2u + ...
-    if( Ibvi03 ) { // PRES 
-      if( bcval_i ) 
+    if( Ibvi03 ) { // PRES
+      if( bcval_i )
 	zrhs[i] += Zbvi03[0] * 0.5;
     }
     else { // VELO condition
@@ -1649,7 +1649,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 	// nentryinrow will be updated on the fly for each entry
 	rowstart = zNear.startlist[Gamma_i] + nentryinrow[Gamma_i];
 	// get the boundary conditions
-	
+
         // leaf cluster element loop
 	for (j = 0; j < clulevarry[level].ClustArLv[n].NumOfEl; j++) {
 	  // Number of field element
@@ -1660,7 +1660,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 	      Crdej3(j1,j2) = nodesCoordinates[ elementsConnectivity[Gamma_j][j1] ][j2];
 	    }
 	  }
-	  
+
 	  // get the boundary conditions and the normalvec (kappa) and
 	  // the distance to the collocnode
 	  /*BLeldat(Gamma_j, 0, Inoj3, Thiej3, Ibvj_03,
@@ -1685,7 +1685,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 	    exit(-1);
 	  }
 
-	  for( j2 = 0; j2 < NNODPE; j2++) 
+	  for( j2 = 0; j2 < NNODPE; j2++)
 	    Zbvj03[j2] = zbval0[Gamma_j][j2];
 	  if( Zbvj03[0].norm() > EPSY )
 	    bcval_j = 1;
@@ -1693,7 +1693,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 	    bcval_j = 0;
 	  if( Ifadmij )
 	    Admia3 = zbval1[Gamma_j];
-	  
+
 	  /* Calculate the integrals over Gamma_j
 	  do the sgl integration
 	  zrsintel[0..5] has the results of the sgl integration
@@ -1704,7 +1704,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 	  [4] -> rhs
 	  it may seem weird, but chen messes up the signs, and he
 	  uses r = | y - x | */
-	  if ( Gamma_i == Gamma_j ) 
+	  if ( Gamma_i == Gamma_j )
 	    NC_SingularIntegration(NCout, zrsintel, listNumberNodesPerElement[Gamma_i], bcval_j, Zbvj03, Crdej3);
 	  else {
 	    for (int n1 = 0; n1 < NDIM; n1++)
@@ -1719,13 +1719,13 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
 	      zNear.zdata[rowstart + j] += zrsintel[0] * Admia3 + zrsintel[2] * Admia3 * zBta3;
 	    }
 	  }
-	  
+
 	  if( bcval_j ) // there are some contributions to the rhs
 	    zrhs[Gamma_i] += zrsintel[4];
 	  //cout << "Warning sign for the rhs may be wrong!\n";
-	  
+
 	  // Free terms u/2 and beta v/2 and (1 + beta alpha)/2
-	  // depending on the boundary condition 
+	  // depending on the boundary condition
 	  if( Gamma_i == Gamma_j ) {
 	    if( Ibvj03 ) // PRES CONDITION
 	      zNear.zdata[rowstart + j] -= zBta3 * 0.5;
@@ -1744,7 +1744,7 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
       } // loop Gamma_i
     } // loop Near cluster
   } //loop cluster
-  
+
   for (i = 0; i < numRowsOfCoefficientMatrix_; i++) {
     scalefact[i] = sqrt( (double)nentryinrow[i] / rownorm2[i]);
   }
@@ -1757,11 +1757,11 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
   Complex dummy[maxlength];
   int idummy[maxlength];
   // sort the rows of zNear
-  
+
   for (i = 0; i < numRowsOfCoefficientMatrix_; i++) {
     localstart = zNear.startlist[i];
     rowlength = zNear.startlist[i+1] - zNear.startlist[i];
-    // maybe thing about 
+    // maybe thing about
     sortArr( &zNear.indxlist[localstart], rowlength, indxlist );
     for (j = 0; j < rowlength; j++) {
       dummy[j] = zNear.zdata[ localstart + indxlist[j] ];
@@ -1772,11 +1772,11 @@ void get_nearfield(int level, double* scalefact, Complex& zBta3, bool allocateFM
       //zNear.indxlist[ localstart + j ] = idummy[ j ];
     }
 
-    
+
   }
   delete [] rownorm2;
   delete [] nentryinrow;
-  
+
 }
 
 void setup_preconditioning(double* scalefact) {
@@ -1821,7 +1821,7 @@ void setup_preconditioning(double* scalefact) {
 
   */
 
-  double threshfac; // threshold for incomplete LU 
+  double threshfac; // threshold for incomplete LU
                     // non-zero pattern
 
   int n,i,i0,i1,j,j0,clusterstart,k;
@@ -1892,9 +1892,9 @@ void setup_preconditioning(double* scalefact) {
       }
     }
   }
-  
+
   // initialise U and L
-  
+
   zL.zdata = new Complex[entriesL];
   if( zL.zdata == NULL ) {
     cerr << "Sorry, could not allocate zL\n";
@@ -1929,14 +1929,14 @@ void setup_preconditioning(double* scalefact) {
     cerr << "Sorry, could not allocate zU\n";
     exit(-1);
   }
-  
+
   // for U the diagonal is not counted
   // we first save U as U0 in rowwise format
   entriesL = 0;
   entriesU = 0;
   zL.startlist[0] = 0;
   zU0.startlist[0] = 0;
-  
+
   for( i = 0; i < numRowsOfCoefficientMatrix_; i++ ) { // rows of N
     for( j = zNear.startlist[i]; j < zNear.startlist[i+1]; j++) {
       // i-th row, j-indices should be already ordered
@@ -1975,7 +1975,7 @@ void setup_preconditioning(double* scalefact) {
   int* colindx_in_row;
   colindx_in_row = new int[numRowsOfCoefficientMatrix_];
   //int colindx_in_row[numRowsOfCoefficientMatrix_];
-  
+
   for ( i = 0; i < numRowsOfCoefficientMatrix_; i++ ) {
     if( zU0.startlist[i+1] - zU0.startlist[i] > 0 )
       colindx_in_row[i] = zU0.startlist[i];
@@ -2000,7 +2000,7 @@ void setup_preconditioning(double* scalefact) {
     }
   }
   delete [] colindx_in_row;
-  
+
   zU.startlist[ numRowsOfCoefficientMatrix_ ] = counter;
   zU.rowwise = false;
   //zU0.delete(); destruct should be called anyway
@@ -2008,7 +2008,7 @@ void setup_preconditioning(double* scalefact) {
   cout << "indx = [";
   for( i = 0; i < entriesU; i++ )
     cout << zU.indxlist[i] << "\n";
-  
+
   cout << "];\n";
   cout << "startindx = [";
   for( i = 0; i < numRowsOfCoefficientMatrix_; i++ )
@@ -2060,7 +2060,7 @@ void setup_preconditioning(double* scalefact) {
   }
   delete [] ncols;
 }
-  
+
 
 bool IsNonZero_LU(int i, int j, int& kpos, zSparsetype& A) {
   /* checks if A_{ij} != 0 and returns the correct index in the sparse format in
@@ -2074,7 +2074,7 @@ bool IsNonZero_LU(int i, int j, int& kpos, zSparsetype& A) {
   int k;
   int startindx;
   int endindx;
-  
+
   if( A.rowwise ) {
     // we have L
     startindx = A.startlist[i];
@@ -2116,7 +2116,7 @@ bool IsNonZero_LU(int i, int j, zSparsetype& A) {
   int k;
   int start;
   int end;
-  
+
   if( A.rowwise ) {
     // we have L
     start = A.startlist[i];
@@ -2170,7 +2170,7 @@ void sortArr(int x[], int n, int indx[]) {
 
 void Cluster2Local(Complex** zGmat, double* scalefact, Complex* zx, Complex& zBta3) {
   /* local cluster to element expansion on the leaf level,
-  
+
      zGmat: in: matrix containing the the value of the MLFMM at each
             quadrature node of the sphere
      scalefact: scaling factor from the preconditioning
@@ -2186,19 +2186,19 @@ void Cluster2Local(Complex** zGmat, double* scalefact, Complex* zx, Complex& zBt
   int nsphere;
   int n,i,j,Gamma_i,s;
   double z1[3],x[3]; // coordinates of the cluster center, coord of elem center
- 
+
   double nvec[3]; // normal vector of the element
   int Ibvi03, Ifadmii; // boundary conditions of the target element
   double sn, sx; // node on the sphere times normal vector to element
                        // node on the sphere times x
   Complex sfact,expfact;
-  
+
 
   //dont forget the multiplication with zbta3
-  
+
 
   nsphere = clulevarry[nlevtop_].nPoinSpheLv;
-  
+
 
   for (n = 0; n < clulevarry[nlevtop_].nClustOLv; n++) {
     for( s = 0; s < nsphere; s++) {
@@ -2216,7 +2216,7 @@ void Cluster2Local(Complex** zGmat, double* scalefact, Complex* zx, Complex& zBt
       // check the boundary condition at the collocnode
       switch( ibval[Gamma_i] ) {
 	case 0:         // velocity prescribed
-	  Ibvi03 = 0;  
+	  Ibvi03 = 0;
 	  Ifadmii = 0;
 	  break;
 	case 1:         // pressure prescribed
@@ -2225,7 +2225,7 @@ void Cluster2Local(Complex** zGmat, double* scalefact, Complex* zx, Complex& zBt
 	  break;
 	case 2:         // velocity and surface admittance prescribed
 	case 5:
-	  Ibvi03 = 0;  
+	  Ibvi03 = 0;
 	  Ifadmii = 1;
 	  break;
       }
@@ -2259,27 +2259,27 @@ void Cluster2LocalMtx(Complex &zBta3,bool allocateFMM) {
        a matrix that can be used for all iteration steps, does not
        do the multiplication with the FMM field, *nor* the scaling for
      the preconditiong and the multiplication with the weights on the sphere
-  
+
 
      zBta3: BurtonMillerfactor
-     
+
      Note: We do not use Gamma_i explicitely for zSmat, thus a multiplication
            with zSmat will result in a vector that has to be reordered
 	   explicitely to match the ordering of the elements
-	   
+
      Global: clulevarray: clustertree for all levels
              nlevtop_: leaf level
 	     centel: midpoint of each element = collocnode
              zSmat: out: matrix containing the the value of the MLFMM at each
 	               quadrature node of the sphere
-	               zSmat[cluster][elem][sphere] 
+	               zSmat[cluster][elem][sphere]
 
      Note: Do not forget, the quadrature nodes on the sphere and the scaling
            for the incomplete LU factorization are *not* included in the matrix
 
 	   zSmat: out: matrix containing the the value of the MLFMM at each
 	   quadrature node of the sphere
-	   zSmat[cluster][elem][sphere] 
+	   zSmat[cluster][elem][sphere]
   */
   int nsphere; // number of quad nodes on the sphere
   int Gamma_i,s;
@@ -2291,14 +2291,14 @@ void Cluster2LocalMtx(Complex &zBta3,bool allocateFMM) {
   Complex expfact;
   int sentries = 0;
   if( allocateFMM ) {
-    
+
     nsphere = clulevarry[nlevtop_].nPoinSpheLv;
     zSmat = new Complex*[ clulevarry[nlevtop_].nClustOLv ];
     if( zSmat == NULL ) {
       cerr << "Sorry could not allocate Smat\n";
       exit(-1);
     }
-  
+
     for (int i = 0; i < clulevarry[nlevtop_].nClustOLv; i++) {
       zSmat[i] = new Complex[  clulevarry[nlevtop_].ClustArLv[i].NumOfEl * nsphere];
       sentries += clulevarry[nlevtop_].ClustArLv[i].NumOfEl * nsphere;
@@ -2306,7 +2306,7 @@ void Cluster2LocalMtx(Complex &zBta3,bool allocateFMM) {
 	cerr << "Sorry could not allocate Smat\n";
 	exit(-1);
       }
-      
+
     }
 
   }
@@ -2328,7 +2328,7 @@ void Cluster2LocalMtx(Complex &zBta3,bool allocateFMM) {
       // check the boundary condition at the collocnode
       switch( ibval[Gamma_i] ) {
 	case 0:         // velocity prescribed
-	  Ibvi03 = 0;  
+	  Ibvi03 = 0;
 	  Ifadmii = 0;
 	  break;
 	case 1:         // pressure prescribed
@@ -2337,7 +2337,7 @@ void Cluster2LocalMtx(Complex &zBta3,bool allocateFMM) {
 	  break;
 	case 2:         // velocity and surface admittance prescribed
 	case 5:
-	  Ibvi03 = 0;  
+	  Ibvi03 = 0;
 	  Ifadmii = 1;
 	  break;
       }
@@ -2370,19 +2370,19 @@ void Cluster2LocalMtx(Complex &zBta3,bool allocateFMM) {
 void Expand2Eval(Complex** zG, Complex* zy, int* glob2local) {
   /* see the description below, this is the routine for the evalnodes
      Global:
-     
+
      ipcluarry[ipc] evalcluster array, ipc in [0,ninpclus_)
      ninpclus_ number of evalclusters
   */
-  
+
   for(int n = 0; n < ninpclus_; n++) {
     for (int s = 0; s < nsphere; s++)
       G[n][s] *= clulevarry[0].weisphe[s];
-    
+
     for( int nn = 0; nn < NDIM; nn++) {
       z0(nn) = ipcluarry[n].CoorCent[nn];
     }
-    
+
     for( int j = 0; j < ipcluarry[n].NumOfIps; i++ ) {
       eglobal = ipcluarry[n].NumsOfIps[j]; // global number of the node
       elocal = glob2local[eglobal];
@@ -2430,14 +2430,14 @@ void Expand2local(Complex** zGmat, Complex* zy) {
 
   nsphere = clulevarry[nlevtop_].nPoinSpheLv;
   for (int n = 0; n < clulevarry[nlevtop_].nClustOLv; n++) {
-    for(int s = 0; s < nsphere ; s++) 
+    for(int s = 0; s < nsphere ; s++)
       zGmat[n][s] *= clulevarry[nlevtop_].weisphe[s];
-    
+
     nelinclus = clulevarry[nlevtop_].ClustArLv[n].NumOfEl;
-    
+
 #ifdef USE_LAPACK
     cblas_zgemv(CblasRowMajor, CblasNoTrans, nelinclus, nsphere, &alpha, zSmat[n],  nsphere, zGmat[n], 1, &beta, zdummy, 1);
-    
+
 #else
     for (int i = 0; i < nelinclus; i++) {
       zdummy[i].set(0.0,0.0);
@@ -2452,7 +2452,7 @@ void Expand2local(Complex** zGmat, Complex* zy) {
       Gamma_i = clulevarry[nlevtop_].ClustArLv[n].NumsOfEl[j];
       zy[Gamma_i] += zdummy[j] * zNearscalefact[Gamma_i];
     }
-    
+
     // this needs to be done later
     /* for ( i = 0; i < numRowsOfCoefficientMatrix_; i++) {
       zy[i] *= scalefact[i];
@@ -2466,7 +2466,7 @@ void Expand2local(Complex** zGmat, Complex* zy) {
 
 void allocate_zFG() {
   /* Does what it says */
-     
+
   int i,C_j;
   zF = new Complex**[numClusterLevels_];
   if( zF == NULL ) {
@@ -2490,7 +2490,7 @@ void allocate_zFG() {
       cerr << "Sorry, Could not allocate zG\n";
       exit(-1);
     }
-    
+
     for( C_j = 0; C_j < clulevarry[i].nClustOLv; C_j++) {
       zF[i][C_j] = new Complex[ clulevarry[i].nPoinSpheLv ];
       if( zF[i][C_j] == NULL ) {
@@ -2516,7 +2516,7 @@ void get_interactionlist() {
   // clulevarry[level].NumsFanClus
 
   // global clulevarry inout: clustertree
-  
+
   int i,j,k,n,parent,nchild,child;
   int ninter, nearcl;
   bool nearclust;
@@ -2610,7 +2610,7 @@ void modify_rhs(zSparseVec& zFvec, Complex* zrhs) {
     for( j = 0; j < clulevarry[nlevtop_].ClustArLv[C_i].NumOfElems; j++) {
       Gamma_j = clulevarry[nlevtop_].ClustArLv[C_i].NumsOfElems[j];
       for ( i1 = 0; i1 < clulevarry[nlevtop_].ClustArLv[C_i].NumFanClus; i1++) {
-	zG[nlevtop_][Gamma_i][s] += 
+	zG[nlevtop_][Gamma_i][s] +=
       }
     }
   }
