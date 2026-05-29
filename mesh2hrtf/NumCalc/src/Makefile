@@ -5,18 +5,18 @@ SOURCES= NC_3dFunctions.cpp  NC_CommonFunctions.cpp  NC_Input.cpp \
          NC_Main.cpp NC_MLFMM.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=../bin/NumCalc
-GSLFLAG=-DUSE_GSL
-LAPACKFLAG=-DUSE_LAPACK
+#GSLFLAG=-DUSE_GSL
+#LAPACKFLAG=-DUSE_LAPACK
 OPTIM=-O2
-LDFLAGS=-llapacke -lgsl -lblas
+#LDFLAGS=-llapacke -lgsl -lblas
 #DEBUG=-g
 
 all: $(SOURCES) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(OBJECTS) $(LDFLAGS) $(OPTIM) $(GSLFLAG) $(LAPACKFLAG) -o $@
+	$(CC) $(OBJECTS) $(LDFLAGS) $(OPTIM)   -o $@
 
 .cpp.o:
-	$(CC) $(CFLAGS) $(DEBUG) $(OPTIM) $< 
+	$(CC) $(CFLAGS) $(DEBUG) $(OPTIM) $(LAPACKFLAG)  $(GSLFLAG) $< 
 clean:
 	rm *.o

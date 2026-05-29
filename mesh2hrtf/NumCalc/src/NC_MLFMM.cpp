@@ -571,26 +571,38 @@ void Get_Interpolation_Matrices(double** Ylev, int nlevels) {
     
     if( currentL == parentL ) {
       // do nothing
-      //      continue;
+      //      use a diagonal matrix for interpolating
+      // fill Ylev with zero
+      memset(Ylev[lev-1],0, sizeof( Ylev[lev-1]) );
+      for (i = 0; i < Nparent; i++)
+	Ylev[lev-1][i * Ncurrent + i] = 1.0;
     }
-
-    // loop over sphere points
-    for( j = 0; j < Ncurrent; j++ )  { // nodes on the sphere 
-      for ( i = 0; i < Nparent; i++ ) {
-	Angle = 0.0;
-	for ( n = 0; n < NDIM; n++ )
-	  Angle += QNodescurrent[j][n] * QNodesparent[i][n];
-	for ( l = 0; l < currentL; l++ ) {
-	  if( l == 0 )
-	    //	    Ylev[lev-1][i * Ncurrent + j] = 0.25/PI;
-	    Ylev[lev-1][i * Ncurrent + j] = 1.0;
-	  else {
-	    //	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) / (4.0 * PI) * legendre(l,Angle);
+    else {
+      // loop over sphere points
+      for( j = 0; j < Ncurrent; j++ )  { // nodes on the sphere 
+	for ( i = 0; i < Nparent; i++ ) {
+	  Angle = 0.0;
+	  for ( n = 0; n < NDIM; n++ )
+	    Angle += QNodescurrent[j][n] * QNodesparent[i][n];
+	  // just to be on the safe side, since both nodes are on the
+	  // unitsphere Angle \in [-1,1], but there may be slight numerical
+	  // problems
+	  if( Angle > 1.0)
+	    Angle = 1.0;
+	  if( Angle < -1.0 )
+	    Angle = -1.0;
+	  for ( l = 0; l < currentL; l++ ) {
+	    if( l == 0 )
+	      //	    Ylev[lev-1][i * Ncurrent + j] = 0.25/PI;
+	      Ylev[lev-1][i * Ncurrent + j] = 1.0;
+	    else {
+	      //	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) / (4.0 * PI) * legendre(l,Angle);
 #ifdef USE_GSL
-	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * gsl_sf_legendrePl(l,Angle);   
+	      Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * gsl_sf_legendre_Pl(l,Angle);   
 #else
-	    Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * legendre(l,Angle);
+	      Ylev[lev-1][i * Ncurrent + j] += (2.0 * double(l) + 1.0) * legendre(l,Angle);
 #endif
+	    }
 	  }
 	}
       }

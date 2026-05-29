@@ -48,7 +48,7 @@ void NC_Magnitude2dBdeg(Vector<double>&, const Complex&, const int&);
 
 // cantant values
 const double PREREF = 2.0e-5,
-			 VELREF = 5.0e-8;
+  VELREF = 5.0e-8;
 
 
 

@@ -31,7 +31,9 @@
 #else                                                                               //
 #include<sys/stat.h> // for mkdir UNIX                                              //
 #include<unistd.h>                                                                  //
-#endif                                                                              //
+#endif
+#include <cstdlib>
+//
 using namespace std;                                                                //
 typedef unsigned int uint;                                                          //
 //====================================================================================
@@ -59,6 +61,7 @@ extern "C" {
 #include<lapacke_config.h>
 #include<lapacke_utils.h>
 #include<lapacke.h>
+  
 }
 #endif
 
@@ -162,7 +165,6 @@ int main(int argc, char **argv)
   bool evalonly = false;
   istart_ = 0;    //* first freq step
 
-
   /* check the caommand line */
   i = 1;
   while (i < argc) {
@@ -173,7 +175,7 @@ int main(int argc, char **argv)
       printf("-estimate_ram : estimation the RAM consumption of ML-FMM-BEM and write estimate to Memory.txt. Estimate is obtained from the number of non-zeros in the FMM matrices.\n");
       printf("-check_normals : check if all normals point to the same domain\n");
       printf("-adapt_fmmlength: the truncation parameter of the multipole expansion is adapted to the radii of the cluster involved\n");
-      printf("-evalonly : restart the evaluation of a new evalgrid but use already computed values at the surface\n");
+      printf("-evalonly : restart the evaluation but use already computed values at the boundary\n");
       printf("-h            : this message\n");
       exit(0);
     }
