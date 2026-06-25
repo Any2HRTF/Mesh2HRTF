@@ -127,7 +127,7 @@ extern zSparsetype zL,zU;
 extern double* zNearscalefact;
 extern Complex*** zMmat;
 extern Complex*** zFmat;
-extern zSparseVec zFvec;
+extern zSparseVec* zFvec;
 extern Complex** zSmat;
 extern double** dYmat; // interpolation matrix for MLFMM
 extern Complex*** zF;

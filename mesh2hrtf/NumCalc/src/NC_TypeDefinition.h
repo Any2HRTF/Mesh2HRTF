@@ -687,8 +687,8 @@ struct ClusterLev
     Complex *ZmPhiLv;      // the m-vector in the phi-direction for spline interpolaton
     Complex *PbarnmLv;     // P_bar^{m}_{n} at all Gaussean points in the theta-direction
     Complex *PbarfaLv;     // P_bar^{m}_{n} at all Gaussean points of the father level
-    Complex *zwkT;		   // working array for T-vectors
-    Complex *zwkS;		   // working array for S-vectors
+    Complex *zwkT=NULL;		   // working array for T-vectors
+    Complex *zwkS=NULL;		   // working array for S-vectors
     double **uvcsphe;      // coordinates of the integration points on the unit sphere
     double *weisphe;       // weights of these integration points
     Complex **zIntpMtx;    // interpolation matrix from the current level to the father
@@ -804,12 +804,12 @@ class zSparseVec {
   */
 public:
   Complex* zdata;
-  int* clusterindx; 
-  int nonzeroblocks;  // number of nonzeroclusters
+  int* indx; 
   ~zSparseVec() {
     delete[] zdata;
-    delete[] clusterindx;
-    nonzeroblocks = 0;
+    zdata == NULL;
+    delete[] indx;
+
   }
 };
 

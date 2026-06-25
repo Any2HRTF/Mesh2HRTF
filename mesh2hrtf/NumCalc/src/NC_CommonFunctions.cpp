@@ -1085,7 +1085,7 @@ void NC_IterativeSolverCGS
   
   
   if( methodFMM_ == 2 ) {
-    Get_Interpolation_Matrices( dYmat, nlevtop_);
+    //Get_Interpolation_Matrices( dYmat, nlevtop_);
     allocate_zFG();
   }
   
@@ -1145,82 +1145,91 @@ void NC_IterativeSolverCGS
     
     if(j==0) {zrjr0 = zR_j*zR_0;} else {zrjr0 = zrjr1;}
     zalph = zrjr0/(zV_j*zR_0);
-	  
-	  for(i=0; i<numRowsOfCoefficientMatrix_; i++) zQ_j[i] = zU_j[i] - zalph*zV_j[i];
-	  zUQ_j = zU_j + zQ_j;
-	  
-	  NC_MatrixVectorMultiplication(zUQ_j, zAUQ_j);
-	  
-	  dwk1 = 0;
-	  for(i=0; i<numRowsOfCoefficientMatrix_; i++)
-	    {
-	      zX_j[i] += zalph*zUQ_j[i];
-	      zR_j[i] -= zalph*zAUQ_j[i];
-	      
-	      dwk1 += zR_j[i].qnorm();
-	    }
-	  
-	  if(j == 0)
-	    {
-	      err_ori = sqrt(dwk1);
-	      cout << "\nCGS: err_ori = " << err_ori << endl;
-	    }
-	  else
-	    {
-	      err_rel = sqrt(dwk1)/err_ori;
-	    }
-	  
-	  if(j > 0 && j/10*10 == j) {
-	    cout << j << " " << err_rel << endl;
-	    cout << j << " Abs Error:" << sqrt(dwk1) << endl;
-	  }
-	  
-	  if(err_rel < ErroIterSols || j == niter_max_)
-	    {
-	      if(j/10*10 != j) cout << j << " " << err_rel << "\n" << endl;
-	      for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] = zX_j[i];
-	      if(j == niter_max_) {
-		NC_Error_Warning_0(NCout, "Warning: Maximum number of iterations is reached!");
-	      }
-	      break;
-	    }
-	  
-	  zrjr1 = zR_j*zR_0;
-	  zbet = zrjr1/zrjr0;
-	  for(i=0; i<numRowsOfCoefficientMatrix_; i++) zU_j[i] = zR_j[i] + zbet*zQ_j[i];
-	  for(i=0; i<numRowsOfCoefficientMatrix_; i++) zP_j[i] = zU_j[i] + zbet*(zQ_j[i] + zbet*zP_j[i]);
-	} // end of loop j
+    
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++) zQ_j[i] = zU_j[i] - zalph*zV_j[i];
+    zUQ_j = zU_j + zQ_j;
+    
+    NC_MatrixVectorMultiplication(zUQ_j, zAUQ_j);
+    
+    dwk1 = 0;
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++)
+      {
+	zX_j[i] += zalph*zUQ_j[i];
+	zR_j[i] -= zalph*zAUQ_j[i];
 	
-	NCout << "\nCGS solver: number of iterations = "
-	      << j << ", relative error = " << err_rel << endl;
-	
-	if(j >= niter_max_ && methodFMM_ == 0)
-	  {
-	  DirectCGS:
-	    NC_Error_Warning_0(NCout, "Iteration method CGS failed, direct method is used!");
-	    
-	    // Gauss elimination method
-	    Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
-	    Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
-	    
-	    return;
-	  }
-	
-	// if a preconditioner is used, modify the result
-	switch(methodPreconditioner_)
-	  {
-	  case 0: // ILU
-	    NC_IncompleteLUForBack();
-	    NC_DeleteIncompleteLUMatrices();
-	    break;
-	  case 1: // row scanning
-	    for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] *= dscaling[i];
-	    delete [] dscaling;
-	    break;
-	  }
-	
-	if(ifmodyprecond) methodPreconditioner_ = 0;
-	
+	dwk1 += zR_j[i].qnorm();
+      }
+    
+    if(j == 0)
+      {
+	err_ori = sqrt(dwk1);
+	cout << "\nCGS: err_ori = " << err_ori << endl;
+      }
+    else
+      {
+	err_rel = sqrt(dwk1)/err_ori;
+      }
+    
+    if(j > 0 && j/10*10 == j) {
+      cout << j << " " << err_rel << endl;
+      cout << j << " Abs Error:" << sqrt(dwk1) << endl;
+    }
+    
+    if(err_rel < ErroIterSols || j == niter_max_)
+      {
+	if(j/10*10 != j) cout << j << " " << err_rel << "\n" << endl;
+	for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] = zX_j[i];
+	if(j == niter_max_) {
+	  NC_Error_Warning_0(NCout, "Warning: Maximum number of iterations is reached!");
+	}
+	break;
+      }
+    
+    zrjr1 = zR_j*zR_0;
+    zbet = zrjr1/zrjr0;
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++) zU_j[i] = zR_j[i] + zbet*zQ_j[i];
+    for(i=0; i<numRowsOfCoefficientMatrix_; i++) zP_j[i] = zU_j[i] + zbet*(zQ_j[i] + zbet*zP_j[i]);
+  } // end of loop j
+  
+  NCout << "\nCGS solver: number of iterations = "
+	<< j << ", relative error = " << err_rel << endl;
+  
+  if(j >= niter_max_ && methodFMM_ == 0)
+    {
+    DirectCGS:
+      NC_Error_Warning_0(NCout, "Iteration method CGS failed, direct method is used!");
+      
+      // Gauss elimination method
+      Tfactor_usy(zcoefl, numRowsOfCoefficientMatrix_);
+      Tfbelim(zcoefl, zrhs, numRowsOfCoefficientMatrix_);
+      if( methodFMM_ == 2 ) {
+	    delete_zFG();
+      }
+      
+      return;
+    }
+  
+  // if a preconditioner is used, modify the result
+  switch(methodPreconditioner_)
+    {
+    case 0: // ILU
+      NC_IncompleteLUForBack();
+      NC_DeleteIncompleteLUMatrices();
+      break;
+    case 1: // row scanning
+      for(i=0; i<numRowsOfCoefficientMatrix_; i++) zrhs[i] *= dscaling[i];
+      delete [] dscaling;
+      break;
+    }
+  
+  if(ifmodyprecond) methodPreconditioner_ = 0;
+
+  if( methodFMM_ == 2 ) {
+    delete_zFG();
+  }
+  
+
+  
 }
 
 // compute the product of the coefficient matrix and a vector

@@ -103,7 +103,7 @@ zSparsetype zL;
 double* zNearscalefact;
 Complex*** zMmat; // cluster2cluster matrix
 Complex*** zFmat;
-zSparseVec zFvec;
+zSparseVec* zFvec;
 Complex** zSmat;
 double** dYmat;
 Complex*** zF;

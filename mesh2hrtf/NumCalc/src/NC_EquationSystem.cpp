@@ -15,6 +15,7 @@
 #include"NC_Arrays.h"                                                               //
 #include"NC_Macros.h"                                                               //
 #include"NC_IntegrationConstants.h"                                                 //
+#include"NC_MLFMM.h"
 //                                                                                  //
 // system includes                                                                  //
 #include<iostream>                                                                  //
@@ -360,6 +361,8 @@ void NC_BuildSystemFMBEM
 
     get_interactionlist();
     Cluster2Clustermat(numClusterLevels_, allocateFMM_);
+    Get_Interpolation_Matrices( dYmat, nlevtop_);
+
     LocalExpansionMat(nlevtop_, allocateFMM_);
     Cluster2LocalMtx(zBta3, allocateFMM_);
     break;
@@ -388,22 +391,32 @@ void NC_BuildSystemFMBEM
   }
   
   // compute the contribution of the T-vector to the right hand side vector ({r} += [S]*[D]*{t})
-  if(boolComputeTVector_) 
-    {
-      switch(methodFMM_)
-        {
-	case 1: // SLFMBEM
-	  NC_RHSvecTofSLFMM(NCout);
+  bool add_rhs = false;
+  if(boolComputeTVector_) {
+    switch(methodFMM_) {
+    case 1: // SLFMBEM
+      NC_RHSvecTofSLFMM(NCout);
+      break;
+    case 2: // interpolated version
+      
+      for( int i = 0; i < clulevarry[nlevtop_].nClustOLv; i++) {
+	if (clulevarry[nlevtop_].ClustArLv[i].IfNonZeroBc) {
+	  add_rhs = true;
 	  break;
-	case 2: // interpolated version
-	  cluster2clusterVec() ;
-	  break;
-	case 3: // DMLFMBEM
-	  NC_RHSvecTofMLFMM(NCout);
-	  break;
-        }
+	}
+      }
+      if( add_rhs )
+	// Fvec should been allocated and defined with the local
+	// expansion
+	addbc2rhs(zFvec);
+      break;
+    case 3: // DMLFMBEM
+      NC_RHSvecTofMLFMM(NCout);
+      break;
     }
+  }
 }
+
 
 // compute the T-matrix and the T-vector for SL-FMM
 void NC_BuildTforSLFMM

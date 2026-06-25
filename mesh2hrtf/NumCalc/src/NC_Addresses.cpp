@@ -918,25 +918,25 @@ int NC_GenerateClustersAtLevelMLFMM
 	}
 	else // the BRANCH and LEAF levels
 	{
-		// number of original clusters at the father level
-		nbegrp_facl = clulevarry[nu_lev - 1].nClustOLv;
-
-		// does not be used
-		Vector<int> nubegrp(0);
-
-		// maximal number of elements of a father cluster
-		for(i=0; i<nbegrp_facl; i++)
-		{
-			j = clulevarry[nu_lev - 1].ClustArLv[i].NumOfEl;
-			if(j > melpergrp) melpergrp = j;
-		}
-		Vector<int> nuelbegrp(melpergrp);
-
-		// generate clusters
-		NC_GenerateClustersFMM(NCout, num_clus, nel_clus, nuel_clus, nbegrp_facl,
-					 nubegrp, nuelbegrp, nu_lev, nfath_clus);
+	  // number of original clusters at the father level
+	  nbegrp_facl = clulevarry[nu_lev - 1].nClustOLv;
+	  
+	  // does not be used
+	  Vector<int> nubegrp(0);
+	  
+	  // maximal number of elements of a father cluster
+	  for(i=0; i<nbegrp_facl; i++)
+	    {
+	      j = clulevarry[nu_lev - 1].ClustArLv[i].NumOfEl;
+	      if(j > melpergrp) melpergrp = j;
+	    }
+	  Vector<int> nuelbegrp(melpergrp);
+	  
+	  // generate clusters
+	  NC_GenerateClustersFMM(NCout, num_clus, nel_clus, nuel_clus, nbegrp_facl,
+				 nubegrp, nuelbegrp, nu_lev, nfath_clus);
 	} // end of BRANCH and LEAF level
-
+	
 	// generate the cluster structure at a given level
 	NC_GenerateClusterArrayAtLevelMLFMM(NCout, nel_clus, nuel_clus, num_clus, nu_lev, nfath_clus);
 
