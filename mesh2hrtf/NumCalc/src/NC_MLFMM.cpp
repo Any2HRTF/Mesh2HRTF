@@ -1,3 +1,13 @@
+/*===========================================================================*\
+ *                                                                            *
+ *  File name:      NC_Input.cpp                                              *
+ *  Description:    Input data of a job                                       *
+ *  Author:         W. Kreuzer and Z.S. Chen                                  *
+ *                                                                            *
+ \*===========================================================================*/
+
+
+
 #include "NC_MLFMM.h"
 #include "NC_ConstantsVariables.h"
 #include "NC_TypeDefinition.h"
