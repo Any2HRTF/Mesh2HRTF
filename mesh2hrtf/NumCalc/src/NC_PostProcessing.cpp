@@ -194,8 +194,8 @@ void NC_PostProcessing
     }
 
   // destroy the T-vector
-  if(IfTvc && (methodFMM_ == 1 || methodFMM_ == 2)) delete [] zT_vc;
-  if( IfTvc && methodFMM_ > 1 && evalonly ) delete [] zT_vc;
+  if(IfTvc && (methodFMM_ == 1) ) delete [] zT_vc;
+  if( IfTvc && methodFMM_ == 1 && evalonly ) delete [] zT_vc;
 }
 
 // compute the T-vector for the SL-FMM
