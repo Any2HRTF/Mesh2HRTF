@@ -50,26 +50,15 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 'Multilevel fast-multipole method BEM')],
         default='ML-FMM BEM',
         )
-    sourceType: EnumProperty(
+    sourceType: StringProperty(
         name="Source type",
-        description="Method for numerical simulation",
-        items=[('Both ears', 'Both ears',
-                    ("Mesh elements with user assigned material 'Left ear' "
-                     "and 'Right ear' act as the source")),
-               ('Left ear', 'Left ear',
-                    ("Mesh elements with user assigned material 'Left ear' "
-                     "act as the source")),
-               ('Right ear', 'Right ear',
-                    ("Mesh elements with user assigned material 'Right ear' "
-                     "act as the source")),
-               ('Point source', 'Point source',
-                    ("Analytical point source. Source position taken from "
-                     "the location of a user placed point light named 'Point "
-                     "source'")),
-               ('Plane wave', 'Plane wave',
-                    ("Analytical plane wave. Direction of incidence is taken "
-                    "from the location (not rotation) of a user placed "
-                     "area light named 'Plane wave'"))],
+        description=(
+            "'Point source' (point light named 'Point source'), "
+            "'Plane wave' (area light named 'Plane wave'), or the name(s) of "
+            "the material(s) whose mesh elements act as vibrating sources, "
+            "separated by semicolons, e.g. 'mic1; mic2'. Each material is "
+            "simulated as a separate source. 'Both ears' is short for "
+            "'Left ear; Right ear'"),
         default='Both ears',
         )
     programPath: StringProperty(
@@ -331,8 +320,11 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             # make subfolder
             os.mkdir(temp)
 
+        # materials acting as vibrating sources (None for analytical sources)
+        sourceMaterials = _get_source_materials(sourceType)
+
         # number of sources used to create NC.inp files
-        numSources = 1 if sourceType != "Both ears" else 2
+        numSources = 1 if sourceMaterials is None else len(sourceMaterials)
 
         # check input and assign unitFactor
         if unit not in ["mm", "m"]:
@@ -422,13 +414,22 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         materials = _get_materials(bpy.data.objects['Reference'])
 
         if materials is None:
-            if 'ear' in sourceType:
+            if sourceMaterials is not None:
                 raise ValueError(
-                    ("Material 'Left ear' and/or 'Right ear' "
-                     "must be defined for reciprocal simulations."))
+                    (f"Material(s) {sourceMaterials} must be assigned to the "
+                     "mesh for simulations with vibrating elements."))
         else:
+            # check if all source materials are assigned to the mesh
+            if sourceMaterials is not None:
+                for material in sourceMaterials:
+                    if material not in materials \
+                            or not materials[material]["is_used"]:
+                        raise ValueError(
+                            (f"Source material '{material}' is not assigned "
+                             "to any face of the 'Reference' mesh."))
+
             # add full path of material files to the dictionary
-            materials = _get_material_files(materials, materialSearchPaths)
+            materials = _get_material_files(materials, materialSearchPaths, sourceMaterials)
 
             # read the material data and add it to the dictionary
             materials = _read_material_data(materials)
@@ -454,7 +455,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             evaluationGrids, materialSearchPaths, materials,
             speedOfSound, densityOfMedium, unit, unitFactor,
             reference, computeHRIRs,
-            sourceType, numSources, sourceXPosition,
+            sourceType, sourceMaterials, numSources, sourceXPosition,
             sourceYPosition, sourceZPosition,
             frequencies, frequencyStepSize, numFrequencySteps)
 
@@ -466,7 +467,7 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
 # Write NumCalc input files for all sources (NC.inp) --------------------------
         _write_nc_inp(filepath1, version, title, speedOfSound,
                       densityOfMedium, frequencies, evaluationGrids, materials,
-                      method, sourceType, numSources,
+                      method, sourceType, sourceMaterials, numSources,
                       sourceXPosition, sourceYPosition, sourceZPosition)
 
 # Finish ----------------------------------------------------------------------
@@ -474,6 +475,30 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             bpy.data.objects[obj.name].select_set(False)
 
         return {'FINISHED'}
+
+
+def _get_source_materials(sourceType):
+    """
+    Get the names of the materials that act as vibrating sources.
+
+    Returns None for analytical sources ('Point source', 'Plane wave'),
+    otherwise a list with one material name per source.
+    """
+    if sourceType in ["Point source", "Plane wave"]:
+        return None
+    if sourceType == "Both ears":
+        return ["Left ear", "Right ear"]
+
+    sourceMaterials = [s.strip() for s in sourceType.split(";") if s.strip()]
+    if not sourceMaterials:
+        raise ValueError(
+            ("sourceType must be 'Point source', 'Plane wave', or the name(s) "
+             "of the source material(s) separated by semicolons."))
+    if len(set(sourceMaterials)) != len(sourceMaterials):
+        raise ValueError(
+            f"sourceType contains duplicate materials: {sourceMaterials}")
+
+    return sourceMaterials
 
 
 def _get_source_position(sourceType, unitFactor):
@@ -762,17 +787,15 @@ def _get_materials(obj):
         else:
             materials[material]["index_end"] = face.index
 
-    # add default materials if missing
-    for material in ["Skin", "Left ear", "Right ear"]:
-        if material not in materials.keys():
-            materials[material] = dict()
-            materials[material]["is_used"] = False
-
     return materials
 
 
-def _get_material_files(materials, materialSearchPaths):
-    """Check if material files exists and return full paths as a list."""
+def _get_material_files(materials, materialSearchPaths, sourceMaterials):
+    """Check if material files exists and return full paths as a list.
+
+    Materials without a file are rigid. This is only allowed for 'Skin',
+    'Left ear', 'Right ear', 'Rigid', and the source materials.
+    """
 
     # split search paths and remove leading/trailing white spaces
     paths = materialSearchPaths.split(';')
@@ -798,7 +821,8 @@ def _get_material_files(materials, materialSearchPaths):
             materials[material]["path"] = None
         # throw error if the material is not found
         if not materialFound \
-           and material not in ['Skin', 'Left ear', 'Right ear']:
+           and material not in ['Skin', 'Left ear', 'Right ear', 'Rigid'] \
+           + (sourceMaterials or []):
             raise ValueError(f"Material file '{material}.csv' not found.")
 
     return materials
@@ -871,25 +895,21 @@ def _write_parameters_json(
         evaluationGrids, materialSearchPaths, materials,
         speedOfSound, densityOfMedium, unit, unitFactor,
         reference, computeHRIRs,
-        sourceType, numSources, sourceXPosition,
+        sourceType, sourceMaterials, numSources, sourceXPosition,
         sourceYPosition, sourceZPosition,
         frequencies, frequencyStepSize, numFrequencySteps):
 
     # calculate missing parameters
-    if "ear" in sourceType:
-        # get the receiver/ear centers and areas
+    if sourceMaterials is not None:
+        # get the receiver centers and areas (one per source material)
         obj = bpy.data.objects['Reference']
         obj_data = obj.data
         sourceCenter, sourceArea = _calculateReceiverProperties(
-            obj, obj_data, unitFactor)
+            obj, obj_data, unitFactor, sourceMaterials)
 
-        # select ear specific data
-        if sourceType == "Left ear":
+        # single source: center as flat list [x, y, z]
+        if len(sourceMaterials) == 1:
             sourceCenter = sourceCenter[0]
-            sourceArea = [sourceArea[0]]
-        if sourceType == "Right ear":
-            sourceCenter = sourceCenter[1]
-            sourceArea = [sourceArea[1]]
 
     else:
         sourceCenter = [sourceXPosition, sourceYPosition, sourceZPosition]
@@ -931,32 +951,27 @@ def _write_parameters_json(
         json.dump(parameters, file, indent=4)
 
 
-def _calculateReceiverProperties(obj, obj_data, unitFactor):
+def _calculateReceiverProperties(obj, obj_data, unitFactor, sourceMaterials):
     """
     Calculate center and area of receiver elements in reciprocal simulation.
 
+    Returns one center [x, y, z] and one area per entry in `sourceMaterials`.
     """
 
-    # init ear area
-    earArea = [0., 0.]
-    # init min and max xyz coordinates for left and right ear
-    earCenter = [[[1e6, -1e6], [1e6, -1e6], [1e6, -1e6]],
-                 [[1e6, -1e6], [1e6, -1e6], [1e6, -1e6]]]
+    # init ear area (one entry per source material)
+    earArea = [0.] * len(sourceMaterials)
+    # init min and max xyz coordinates for each source material
+    earCenter = [[[1e6, -1e6], [1e6, -1e6], [1e6, -1e6]]
+                 for _ in sourceMaterials]
 
     # loop elements in obj_data
     for ii in range(len(obj_data.polygons[:])):
-        if obj.material_slots[obj_data.polygons[ii].material_index].name \
-                == obj.material_slots['Left ear'].name \
-                or \
-                obj.material_slots[obj_data.polygons[ii].material_index].name \
-                == obj.material_slots['Right ear'].name:
+        material = \
+            obj.material_slots[obj_data.polygons[ii].material_index].name
+        if material in sourceMaterials:
 
-            # select the ear
-            if obj.material_slots[obj_data.polygons[ii].material_index].name \
-                    == obj.material_slots['Left ear'].name:
-                ear = 0
-            else:
-                ear = 1
+            # select the source
+            ear = sourceMaterials.index(material)
 
             # update min and max x,y,z-values
             for vertex in range(3):
@@ -1022,14 +1037,9 @@ def _calculateReceiverProperties(obj, obj_data, unitFactor):
 
     # estimate the center from min and max x,y,z-values
     earCenter = [
-        [  # left ear center
-        (earCenter[0][0][0] + earCenter[0][0][1]) / 2 * unitFactor,
-        (earCenter[0][1][0] + earCenter[0][1][1]) / 2 * unitFactor,
-        (earCenter[0][2][0] + earCenter[0][2][1]) / 2 * unitFactor],
-        [  # right ear center
-        (earCenter[1][0][0] + earCenter[1][0][1]) / 2 * unitFactor,
-        (earCenter[1][1][0] + earCenter[1][1][1]) / 2 * unitFactor,
-        (earCenter[1][2][0] + earCenter[1][2][1]) / 2 * unitFactor]]
+        [(earCenter[ear][coord][0] + earCenter[ear][coord][1]) / 2 * unitFactor
+         for coord in range(3)]
+        for ear in range(len(sourceMaterials))]
 
     return earCenter, earArea
 
@@ -1166,7 +1176,8 @@ def _render_pictures(filepath1, unitFactor):
 
 def _write_nc_inp(filepath1, version, title,
                   speedOfSound, densityOfMedium, frequencies,
-                  evaluationGrids, materials, method, sourceType, numSources,
+                  evaluationGrids, materials, method, sourceType,
+                  sourceMaterials, numSources,
                   sourceXPosition, sourceYPosition, sourceZPosition):
     """Write NC.inp file that is read by NumCalc to start the simulation.
 
@@ -1258,7 +1269,7 @@ def _write_nc_inp(filepath1, version, title,
         # main parameters II --------------------------------------------------
         fw("## 2. Main Parameters II\n")
         # write number of plane waves and point sources
-        if "ear" in sourceType:
+        if sourceMaterials is not None:
             fw("0 0 ")
         elif "Plane" in sourceType:
             fw("1 0 ")
@@ -1299,20 +1310,16 @@ def _write_nc_inp(filepath1, version, title,
         fw("##\n")
 
         # assign mesh elements to boundary conditions -------------------------
-        # (including both, left, right ear)
+        # (including the vibrating source elements)
         fw("BOUNDARY\n")
-        # write velocity condition for the ears if using vibrating
-        # elements as the sound source
-        if "ear" in sourceType:
-            if source==0 and \
-                    sourceType in ['Both ears', 'Left ear']:
-                tmpEar='Left ear'
-            else:
-                tmpEar='Right ear'
-            fw(f"# {tmpEar} velocity source\n")
+        # write velocity condition for the current source material if using
+        # vibrating elements as the sound source
+        if sourceMaterials is not None:
+            tmpSource = sourceMaterials[source]
+            fw(f"# {tmpSource} velocity source\n")
             fw("ELEM %i TO %i VELO 0.1 -1 0.0 -1\n" % (
-                materials[tmpEar]["index_start"],
-                materials[tmpEar]["index_end"]))
+                materials[tmpSource]["index_start"],
+                materials[tmpSource]["index_end"]))
         # remaining conditions defined by frequency curves
         curves = 0
         steps = 0
