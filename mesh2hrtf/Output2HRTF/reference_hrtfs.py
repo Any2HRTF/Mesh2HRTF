@@ -16,13 +16,12 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
        SimpleFreeFieldHRTF or GeneralTF
     sourceType : str
         The referencing depends on the source type used for simulating the
-        sound pressure. Can be "Both ears", "Left ear", "Right ear",
-        "Point source", or "Plane wave"
+        sound pressure. Can be "Point source", "Plane wave", or the
+        material(s) acting as vibrating sources, e.g., "Both ears",
+        "Left ear", or "mic1; mic2"
     sourceArea : array like
-        The area of the source is required if `sourceType` is "Both ears" in
-        which case `sourceAre` is a list with two values or if `sourceType` is
-        "Left ear" or "Right ear" in which case `sourceArea` is a list with one
-        value.
+        The area of each vibrating source (one value per source). Required
+        if vibrating elements are used as source.
     speedOfSound : number
         The speed of sound in m/s
     densityOfAir : number
@@ -67,22 +66,7 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
     else:
         r = radius[..., np.newaxis, np.newaxis]
 
-    if sourceType in {'Both ears', 'Left ear', 'Right ear'}:
-
-        volumeFlow = 0.1 * np.ones(pressure.shape)
-        if 'sourceArea':
-            # has to be fixed for both ears....
-            for nn in range(len(sourceArea)):
-                volumeFlow[:, nn, :] = \
-                    volumeFlow[:, nn, :] * sourceArea[nn]
-
-        # point source in the origin evaluated at r
-        # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
-        ps = -1j * densityOfAir * 2 * np.pi * frequencies * \
-            volumeFlow / (4 * np.pi) * \
-            np.exp(1j * 2 * np.pi * frequencies / speedOfSound * r) / r
-
-    elif sourceType == 'Point source':
+    if sourceType == 'Point source':
 
         amplitude = 0.1  # hard coded in Mesh2HRTF
         ps = amplitude * \
@@ -94,10 +78,23 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
             ("Plane wave not implemented yet."))
 
     else:
-        raise ValueError(
-            ("Referencing is currently only implemented for "
-                "sourceType 'Both ears', 'Left ear', 'Right ear',"
-                "'Point source' and 'Plane wave'."))
+        # vibrating elements, e.g., 'Both ears', 'Left ear', or 'mic1; mic2'
+
+        if len(sourceArea) != pressure.shape[1]:
+            raise ValueError(
+                (f"sourceArea has {len(sourceArea)} entries but the data "
+                 f"contains {pressure.shape[1]} sources."))
+
+        volumeFlow = 0.1 * np.ones(pressure.shape)
+        for nn in range(len(sourceArea)):
+            volumeFlow[:, nn, :] = \
+                volumeFlow[:, nn, :] * sourceArea[nn]
+
+        # point source in the origin evaluated at r
+        # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
+        ps = -1j * densityOfAir * 2 * np.pi * frequencies * \
+            volumeFlow / (4 * np.pi) * \
+            np.exp(1j * 2 * np.pi * frequencies / speedOfSound * r) / r
 
     # here we go...
     pressure /= ps
