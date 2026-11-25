@@ -16,9 +16,8 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
        SimpleFreeFieldHRTF or GeneralTF
     sourceType : str
         The referencing depends on the source type used for simulating the
-        sound pressure. Can be "Point source", "Plane wave", or the
-        material(s) acting as vibrating sources, e.g., "Both ears",
-        "Left ear", or "mic1; mic2"
+        sound pressure. Can be "Both ears", "Left ear", "Right ear",
+        "Vibrating elements", "Point source", or "Plane wave"
     sourceArea : array like
         The area of each vibrating source (one value per source). Required
         if vibrating elements are used as source.
@@ -66,19 +65,8 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
     else:
         r = radius[..., np.newaxis, np.newaxis]
 
-    if sourceType == 'Point source':
-
-        amplitude = 0.1  # hard coded in Mesh2HRTF
-        ps = amplitude * \
-            np.exp(1j * 2 * np.pi * frequencies /
-                   speedOfSound * r) / (4 * np.pi * r)
-
-    elif sourceType == 'Plane wave':
-        raise ValueError(
-            ("Plane wave not implemented yet."))
-
-    else:
-        # vibrating elements, e.g., 'Both ears', 'Left ear', or 'mic1; mic2'
+    if sourceType in {'Both ears', 'Left ear', 'Right ear',
+                      'Vibrating elements'}:
 
         if len(sourceArea) != pressure.shape[1]:
             raise ValueError(
@@ -95,6 +83,23 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
         ps = -1j * densityOfAir * 2 * np.pi * frequencies * \
             volumeFlow / (4 * np.pi) * \
             np.exp(1j * 2 * np.pi * frequencies / speedOfSound * r) / r
+
+    elif sourceType == 'Point source':
+
+        amplitude = 0.1  # hard coded in Mesh2HRTF
+        ps = amplitude * \
+            np.exp(1j * 2 * np.pi * frequencies /
+                   speedOfSound * r) / (4 * np.pi * r)
+
+    elif sourceType == 'Plane wave':
+        raise ValueError(
+            ("Plane wave not implemented yet."))
+
+    else:
+        raise ValueError(
+            ("Referencing is currently only implemented for "
+                "sourceType 'Both ears', 'Left ear', 'Right ear', "
+                "'Vibrating elements', 'Point source' and 'Plane wave'."))
 
     # here we go...
     pressure /= ps

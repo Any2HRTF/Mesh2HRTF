@@ -50,16 +50,39 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
                 'Multilevel fast-multipole method BEM')],
         default='ML-FMM BEM',
         )
-    sourceType: StringProperty(
+    sourceType: EnumProperty(
         name="Source type",
-        description=(
-            "'Point source' (point light named 'Point source'), "
-            "'Plane wave' (area light named 'Plane wave'), or the name(s) of "
-            "the material(s) whose mesh elements act as vibrating sources, "
-            "separated by semicolons, e.g. 'mic1; mic2'. Each material is "
-            "simulated as a separate source. 'Both ears' is short for "
-            "'Left ear; Right ear'"),
+        description="Method for numerical simulation",
+        items=[('Both ears', 'Both ears',
+                    ("Mesh elements with user assigned material 'Left ear' "
+                     "and 'Right ear' act as the source")),
+               ('Left ear', 'Left ear',
+                    ("Mesh elements with user assigned material 'Left ear' "
+                     "act as the source")),
+               ('Right ear', 'Right ear',
+                    ("Mesh elements with user assigned material 'Right ear' "
+                     "act as the source")),
+               ('Point source', 'Point source',
+                    ("Analytical point source. Source position taken from "
+                     "the location of a user placed point light named 'Point "
+                     "source'")),
+               ('Plane wave', 'Plane wave',
+                    ("Analytical plane wave. Direction of incidence is taken "
+                    "from the location (not rotation) of a user placed "
+                     "area light named 'Plane wave'")),
+               ('Vibrating elements', 'Vibrating elements',
+                    ("Mesh elements with the materials given in 'Source "
+                     "materials' act as the sources (one source per "
+                     "material)"))],
         default='Both ears',
+        )
+    sourceMaterials: StringProperty(
+        name="Source materials",
+        description=("Materials whose mesh elements act as the sources if "
+                     "'Source type' is 'Vibrating elements', separated by "
+                     "semicolons, e.g. 'mic1; mic2'. Each material is "
+                     "simulated as a separate source"),
+        default="",
         )
     programPath: StringProperty(
         name="Mesh2HRTF-path",
@@ -185,6 +208,9 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         row.prop(self, "method")
         row = layout.row()
         row.prop(self, "sourceType")
+        if self.sourceType == "Vibrating elements":
+            row = layout.row()
+            row.prop(self, "sourceMaterials")
         row = layout.row()
         row.prop(self, "programPath")
         row = layout.row()
@@ -242,7 +268,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
              densityOfMedium='1.1839',
              unit='mm',
              programPath="path/to/mesh2hrtf",
-             sourceType='Both ears'
+             sourceType='Both ears',
+             sourceMaterials=''
              ):
         """Export Mesh2HRTF project."""
 
@@ -321,7 +348,8 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
             os.mkdir(temp)
 
         # materials acting as vibrating sources (None for analytical sources)
-        sourceMaterials = _get_source_materials(sourceType)
+        # (the string from the export menu becomes a list of material names)
+        sourceMaterials = _get_source_materials(sourceType, sourceMaterials)
 
         # number of sources used to create NC.inp files
         numSources = 1 if sourceMaterials is None else len(sourceMaterials)
@@ -477,26 +505,32 @@ class ExportMesh2HRTF(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
-def _get_source_materials(sourceType):
+def _get_source_materials(sourceType, sourceMaterials):
     """
     Get the names of the materials that act as vibrating sources.
 
     Returns None for analytical sources ('Point source', 'Plane wave'),
-    otherwise a list with one material name per source.
+    otherwise a list with one material name per source: 'Left ear' and/or
+    'Right ear' for the ears, the materials in `sourceMaterials` (separated
+    by semicolons) for 'Vibrating elements'.
     """
     if sourceType in ["Point source", "Plane wave"]:
         return None
     if sourceType == "Both ears":
         return ["Left ear", "Right ear"]
+    if sourceType in ["Left ear", "Right ear"]:
+        return [sourceType]
 
-    sourceMaterials = [s.strip() for s in sourceType.split(";") if s.strip()]
+    sourceMaterials = [
+        s.strip() for s in sourceMaterials.split(";") if s.strip()]
     if not sourceMaterials:
         raise ValueError(
-            ("sourceType must be 'Point source', 'Plane wave', or the name(s) "
-             "of the source material(s) separated by semicolons."))
+            ("sourceMaterials must contain the name(s) of the source "
+             "material(s) separated by semicolons if sourceType is "
+             "'Vibrating elements'."))
     if len(set(sourceMaterials)) != len(sourceMaterials):
         raise ValueError(
-            f"sourceType contains duplicate materials: {sourceMaterials}")
+            f"sourceMaterials contains duplicates: {sourceMaterials}")
 
     return sourceMaterials
 
@@ -933,6 +967,8 @@ def _write_parameters_json(
         "materials": materials,
         # Source definition
         "sourceType": sourceType,
+        **({"sourceMaterials": sourceMaterials}
+           if sourceType == "Vibrating elements" else {}),
         "numSources": numSources,
         "sourceCenter": sourceCenter,
         "sourceArea": sourceArea,
