@@ -103,11 +103,29 @@ def inspect_sofa_files(path, pattern=None, plot=None, plane="horizontal",
                                 dB_time, dB_freq, freq_scale)
 
 
+def _receiver_names(receiver_names, num_receivers):
+    """
+    Names of the receivers from the SOFA attribute "ReceiverNames" (separated
+    by semicolons). Falls back to "left ear"/"right ear" for two receivers and
+    "ch. 1", "ch. 2", ... otherwise.
+    """
+    if receiver_names is not None:
+        names = [n.strip() for n in str(receiver_names).split(";")]
+        if len(names) == num_receivers:
+            return names
+    if num_receivers == 2:
+        return ["left ear", "right ear"]
+    return [f"ch. {cc+1}" for cc in range(num_receivers)]
+
+
 def _inspect_sofa_files(file, savedir, atol, plot, plane,
                         dB_time, dB_freq, freq_scale):
 
     with Dataset(file, "r", format="NETCDF4") as sofa_file:
         data_type = getattr(sofa_file, "DataType")
+        # optional receiver names, e.g., "mic1; mic2" (written by
+        # finalize_hrtf_simulation.py)
+        receiver_names = getattr(sofa_file, "ReceiverNames", None)
 
     if data_type == "FIR":
         mode = "hrir"
@@ -118,8 +136,11 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
             f"The DataType of {file} is {data_type} but must 'FIR' or 'TF'")
 
     # load sofa file and source positions
-    signal, sources, _ = pf.io.read_sofa(file)
+    signal, sources, _ = pf.io.read_sofa(file, verbose=False)
     tail = os.path.basename(file)
+
+    # names of the receivers for legends and titles
+    names = _receiver_names(receiver_names, signal.cshape[-1])
 
     if "2D" in plot:
         with pf.plot.context():
@@ -165,11 +186,8 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
             # format axis and legend
             ax_freq[nn].set_ylim(max_db - 60, max_db)
 
-            if signal.cshape[-1] == 2:
-                ax_freq[nn].legend(["left ear", "right ear"], loc=3)
-            elif signal.cshape[-1] > 2:
-                ax_freq[nn].legend(
-                    [f"ch. {cc+1}" for cc in range(signal.cshape[-1])], loc=3)
+            if signal.cshape[-1] > 1 or receiver_names is not None:
+                ax_freq[nn].legend(names, loc=3)
 
             # save
             plt.savefig(os.path.join(savedir, tail[:-5] + "_2D.pdf"),
@@ -218,10 +236,6 @@ def _inspect_sofa_files(file, savedir, atol, plot, plane,
             # sort angles source positions
             idx = idx[0][np.argsort(angles)]
             angles = np.sort(angles)
-
-            # plot titles
-            names = ["left ear", "right ear"] if signal.cshape[-1] == 2 \
-                else [f"ch. {cc+1}" for cc in range(signal.cshape[-1])]
 
             # loop sources
             for cc, name in enumerate(names):

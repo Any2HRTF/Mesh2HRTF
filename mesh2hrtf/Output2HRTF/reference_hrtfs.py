@@ -17,12 +17,10 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
     sourceType : str
         The referencing depends on the source type used for simulating the
         sound pressure. Can be "Both ears", "Left ear", "Right ear",
-        "Point source", or "Plane wave"
+        "Vibrating elements", "Point source", or "Plane wave"
     sourceArea : array like
-        The area of the source is required if `sourceType` is "Both ears" in
-        which case `sourceAre` is a list with two values or if `sourceType` is
-        "Left ear" or "Right ear" in which case `sourceArea` is a list with one
-        value.
+        The area of each vibrating source (one value per source). Required
+        if vibrating elements are used as source.
     speedOfSound : number
         The speed of sound in m/s
     densityOfAir : number
@@ -67,14 +65,18 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
     else:
         r = radius[..., np.newaxis, np.newaxis]
 
-    if sourceType in {'Both ears', 'Left ear', 'Right ear'}:
+    if sourceType in {'Both ears', 'Left ear', 'Right ear',
+                      'Vibrating elements'}:
+
+        if len(sourceArea) != pressure.shape[1]:
+            raise ValueError(
+                (f"sourceArea has {len(sourceArea)} entries but the data "
+                 f"contains {pressure.shape[1]} sources."))
 
         volumeFlow = 0.1 * np.ones(pressure.shape)
-        if 'sourceArea':
-            # has to be fixed for both ears....
-            for nn in range(len(sourceArea)):
-                volumeFlow[:, nn, :] = \
-                    volumeFlow[:, nn, :] * sourceArea[nn]
+        for nn in range(len(sourceArea)):
+            volumeFlow[:, nn, :] = \
+                volumeFlow[:, nn, :] * sourceArea[nn]
 
         # point source in the origin evaluated at r
         # eq. (6.71) in: Williams, E. G. (1999). Fourier Acoustics.
@@ -96,8 +98,8 @@ def reference_hrtfs(sofa, sourceType, sourceArea, speedOfSound, densityOfAir,
     else:
         raise ValueError(
             ("Referencing is currently only implemented for "
-                "sourceType 'Both ears', 'Left ear', 'Right ear',"
-                "'Point source' and 'Plane wave'."))
+                "sourceType 'Both ears', 'Left ear', 'Right ear', "
+                "'Vibrating elements', 'Point source' and 'Plane wave'."))
 
     # here we go...
     pressure /= ps
